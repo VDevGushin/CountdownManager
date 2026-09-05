@@ -67,7 +67,7 @@ struct ManagerView: View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Countdown Manager").font(.headline)
-                Text("\(store.active.count) активных · только будущие даты").font(.caption).foregroundStyle(.secondary)
+                Text("\(store.active.count) активных · сегодня и позже").font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             Button(action: add) { Image(systemName: "plus") }
@@ -77,7 +77,8 @@ struct ManagerView: View {
     }
 
     private func row(_ item: Countdown) -> some View {
-        HStack(spacing: 10) {
+        let remainingDays = item.date.days(from: store.today)
+        return HStack(spacing: 10) {
             Text(item.emoji).font(.system(size: 27)).frame(width: 35)
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
@@ -86,8 +87,10 @@ struct ManagerView: View {
                 }
                 Text(item.date.date(), format: .dateTime.day().month(.wide).year())
                     .font(.caption).foregroundStyle(.secondary)
-                Text(dayLabel(item.date.days(from: store.today)))
-                    .font(.system(size: 16, weight: .semibold, design: .rounded)).monospacedDigit()
+                Text(countdownLabel(remainingDays))
+                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                    .foregroundStyle(remainingDays == 0 ? Color.accentColor : Color.primary)
+                    .monospacedDigit()
             }
             Spacer(minLength: 4)
             Button { Task { await store.makePrimary(item.id) } } label: {

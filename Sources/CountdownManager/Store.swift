@@ -49,13 +49,13 @@ final class Store: ObservableObject {
     }
 
     var active: [Countdown] {
-        data.items.filter { $0.date > today }.sorted {
+        data.items.filter { $0.date >= today }.sorted {
             if ($0.id == data.primaryID) != ($1.id == data.primaryID) { return $0.id == data.primaryID }
             return $0.date == $1.date ? $0.title.localizedStandardCompare($1.title) == .orderedAscending : $0.date < $1.date
         }
     }
     var primary: Countdown? { active.first { $0.id == data.primaryID } ?? active.first }
-    var statusTitle: String { primary.map { "\($0.emoji) \(dayLabel($0.date.days(from: today)))" } ?? "◷ Countdown" }
+    var statusTitle: String { primary.map { "\($0.emoji) \(countdownLabel($0.date.days(from: today)))" } ?? "◷ Countdown" }
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
 
     func refresh() {

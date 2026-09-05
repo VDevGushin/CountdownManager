@@ -37,6 +37,9 @@ final class CountdownCoreTests {
         let decoded = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
         XCTAssertEqual(decoded, data)
         data.normalize(today: day(2026, 9, 6))
+        XCTAssertEqual(data.items.count, 2)
+        XCTAssertEqual(data.primaryID, first.id)
+        data.normalize(today: day(2026, 9, 7))
         XCTAssertEqual(data.items.count, 1)
         XCTAssertEqual(data.primaryID, second.id)
         data.delete(second.id, today: today)
@@ -51,6 +54,8 @@ final class CountdownCoreTests {
     }
     func testPluralAndEmoji() {
         XCTAssertEqual([1, 2, 5, 11, 14, 21, 22, 111].map(dayLabel), ["1 день", "2 дня", "5 дней", "11 дней", "14 дней", "21 день", "22 дня", "111 дней"])
+        XCTAssertEqual(countdownLabel(0), "Сегодня")
+        XCTAssertEqual(countdownLabel(1), "1 день")
         for emoji in ["☀️", "🎉", "👨‍👩‍👧‍👦", "🇷🇺", "👍🏽", "1️⃣"] { XCTAssertTrue(CountdownData.isEmoji(emoji)) }
         for invalid in ["", "1", "ab", "🎉🎉"] { XCTAssertFalse(CountdownData.isEmoji(invalid)) }
     }
@@ -108,6 +113,6 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         checks.testRejectInvalidStoredDates()
         try checks.testDecodeLegacyCountdownWithoutNote()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
-        print("PASS: validation, notes, legacy JSON, CRUD, primary selection, expiry, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
+        print("PASS: validation, notes, legacy JSON, today state, CRUD, primary selection, expiry, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
     }
 }

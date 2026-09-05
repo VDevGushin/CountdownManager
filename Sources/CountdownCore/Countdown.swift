@@ -100,7 +100,7 @@ public struct CountdownData: Codable, Equatable {
     public init() {}
 
     public mutating func normalize(today: Day) {
-        items.removeAll { $0.date <= today }
+        items.removeAll { $0.date < today }
         if !items.contains(where: { $0.id == primaryID }) {
             primaryID = items.sorted {
                 $0.date == $1.date ? $0.id.uuidString < $1.id.uuidString : $0.date < $1.date
@@ -143,4 +143,8 @@ public func dayLabel(_ count: Int) -> String {
     let unit = abs(count) % 10
     let word = (11...14).contains(tail) ? "дней" : (unit == 1 ? "день" : ((2...4).contains(unit) ? "дня" : "дней"))
     return "\(count) \(word)"
+}
+
+public func countdownLabel(_ count: Int) -> String {
+    count == 0 ? "Сегодня" : dayLabel(count)
 }
