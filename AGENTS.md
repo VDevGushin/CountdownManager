@@ -54,6 +54,10 @@ Every commit must pass a deliberate self-review before it is created.
 - Allow at most five complete fix-and-verify cycles for the same task. If the test/review gate is still not green after the fifth cycle, stop without committing or pushing and escalate to the product manager with the concrete blocker, evidence, and viable options.
 - The product manager may explicitly authorize additional iterations. Stabilizing the test infrastructure to establish its first reliable green baseline may continue for as many iterations as needed, but must not weaken product behavior or remove valid assertions.
 
+## Public release command
+
+Treat the product manager's phrase “Собираем публичный релиз для пользователей” as explicit authorization to prepare and publish a GitHub Release. Unless a version is supplied, increment the patch version. Run the complete test/review gate, build and verify the app, package `Countdown Manager.app` as a ZIP archive, create the GitHub Release, attach the archive, and verify the published asset. This command does not authorize replacing the user's copy in `/Applications` unless that is requested separately.
+
 ## Verification
 
 - Run `swift run CoreChecks` after core changes.
