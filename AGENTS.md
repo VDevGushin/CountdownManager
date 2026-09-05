@@ -21,7 +21,7 @@ For the longer workflow and definition of done, see `AI_WORKFLOW.md`.
 
 - Production data is stored at `~/Library/Application Support/CountdownManager/countdowns.json`.
 - Never delete, replace, or rewrite that file as part of a diagnostic check.
-- Do not add countdown titles or emoji to diagnostics. They are user content.
+- Do not add countdown titles, notes, or emoji to diagnostics. They are user content.
 
 ## Diagnose a freeze before guessing
 

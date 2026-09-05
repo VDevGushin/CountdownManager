@@ -17,15 +17,17 @@ final class CountdownCoreTests {
         }
         XCTAssertThrowsError(try data.save(Countdown(title: "  ", date: day(2026, 9, 6), emoji: "🎉"), primary: false, today: day(2026, 9, 5)))
         XCTAssertThrowsError(try data.save(Countdown(title: "Test", date: day(2026, 9, 6), emoji: "abc"), primary: false, today: day(2026, 9, 5)))
+        XCTAssertThrowsError(try data.save(Countdown(title: "Test", note: String(repeating: "x", count: 281), date: day(2026, 9, 6), emoji: "🎉"), primary: false, today: day(2026, 9, 5)))
         XCTAssertTrue(data.items.isEmpty)
     }
     func testCRUDPrimaryExpiryAndPersistence() throws {
         var data = CountdownData()
         let today = day(2026, 9, 5)
-        var first = Countdown(title: "First", date: day(2026, 9, 6), emoji: "☀️")
+        var first = Countdown(title: "First", note: "  Small note  ", date: day(2026, 9, 6), emoji: "☀️")
         let second = Countdown(title: "Second", date: day(2026, 9, 8), emoji: "✈️")
         try data.save(first, primary: false, today: today)
         XCTAssertEqual(data.primaryID, first.id)
+        XCTAssertEqual(data.items[0].note, "Small note")
         try data.save(second, primary: true, today: today)
         XCTAssertEqual(data.primaryID, second.id)
         first.title = "Edited"
@@ -64,6 +66,12 @@ final class CountdownCoreTests {
         }
     }
 
+    func testDecodeLegacyCountdownWithoutNote() throws {
+        let json = #"{"id":"28B1DD31-4671-4BD1-AB0D-3F6232967299","title":"Legacy","date":{"year":2027,"month":5,"day":1},"emoji":"☀️"}"#
+        let decoded = try JSONDecoder().decode(Countdown.self, from: Data(json.utf8))
+        XCTAssertNil(decoded.note)
+    }
+
     func testRepositoryRoundTripAndRevisionOrdering() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("CountdownCoreChecks-\(UUID().uuidString)", isDirectory: true)
@@ -98,7 +106,8 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         checks.testCalendarDaysAcrossDSTAndYear()
         checks.testPluralAndEmoji()
         checks.testRejectInvalidStoredDates()
+        try checks.testDecodeLegacyCountdownWithoutNote()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
-        print("PASS: validation, CRUD, primary selection, expiry, JSON, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
+        print("PASS: validation, notes, legacy JSON, CRUD, primary selection, expiry, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
     }
 }

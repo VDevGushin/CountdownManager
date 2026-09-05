@@ -81,6 +81,9 @@ struct ManagerView: View {
             Text(item.emoji).font(.system(size: 27)).frame(width: 35)
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
+                if let note = item.note, !note.isEmpty {
+                    Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
                 Text(item.date.date(), format: .dateTime.day().month(.wide).year())
                     .font(.caption).foregroundStyle(.secondary)
                 Text(dayLabel(item.date.days(from: store.today)))
@@ -145,6 +148,7 @@ struct EditorView: View {
     let item: Countdown?
     let done: () -> Void
     @State private var title: String
+    @State private var note: String
     @State private var date: Date
     @State private var emoji: String
     @State private var primary: Bool
@@ -154,6 +158,7 @@ struct EditorView: View {
     init(store: Store, item: Countdown?, done: @escaping () -> Void) {
         self.store = store; self.item = item; self.done = done
         _title = State(initialValue: item?.title ?? "")
+        _note = State(initialValue: item?.note ?? "")
         _date = State(initialValue: item?.date.date() ?? store.tomorrow)
         _emoji = State(initialValue: item?.emoji ?? "🎉")
         _primary = State(initialValue: item == nil ? store.active.isEmpty : store.data.primaryID == item?.id)
@@ -163,15 +168,27 @@ struct EditorView: View {
     private var validDate: Bool { Day(date) > store.today }
     private var canSave: Bool {
         !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && validDate
+            && note.trimmingCharacters(in: .whitespacesAndNewlines).count <= 280
             && CountdownData.isEmoji(emoji.trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             Text(item == nil ? "Новый счётчик" : "Редактировать счётчик").font(.headline)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Название").font(.caption).foregroundStyle(.secondary)
                 TextField("Например, до отпуска", text: $title).textFieldStyle(.roundedBorder).focused($titleFocused)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Заметка · необязательно").font(.caption).foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(note.count)/280").font(.caption2)
+                        .foregroundStyle(note.count <= 280 ? Color.secondary : Color.red)
+                }
+                TextField("Пара слов о событии", text: $note, axis: .vertical)
+                    .textFieldStyle(.roundedBorder)
+                    .lineLimit(2...3)
             }
             VStack(alignment: .leading, spacing: 6) {
                 DatePicker("Дата", selection: $date, in: store.tomorrow..., displayedComponents: [.date])
@@ -207,7 +224,13 @@ struct EditorView: View {
                 }.keyboardShortcut(.cancelAction).disabled(isSaving)
                 Spacer()
                 Button {
-                    let countdown = Countdown(id: item?.id ?? UUID(), title: title, date: Day(date), emoji: emoji)
+                    let countdown = Countdown(
+                        id: item?.id ?? UUID(),
+                        title: title,
+                        note: note,
+                        date: Day(date),
+                        emoji: emoji
+                    )
                     isSaving = true
                     Task {
                         if await store.save(countdown, primary: primary) { done() }

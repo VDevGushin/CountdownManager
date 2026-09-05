@@ -73,19 +73,21 @@ public struct Day: Codable, Equatable, Comparable {
 public struct Countdown: Identifiable, Codable, Equatable {
     public let id: UUID
     public var title: String
+    public var note: String?
     public var date: Day
     public var emoji: String
 
-    public init(id: UUID = UUID(), title: String, date: Day, emoji: String) {
-        self.id = id; self.title = title; self.date = date; self.emoji = emoji
+    public init(id: UUID = UUID(), title: String, note: String? = nil, date: Day, emoji: String) {
+        self.id = id; self.title = title; self.note = note; self.date = date; self.emoji = emoji
     }
 }
 
 public enum CountdownError: LocalizedError {
-    case title, date, emoji
+    case title, note, date, emoji
     public var errorDescription: String? {
         switch self {
         case .title: return "Укажите название."
+        case .note: return "Заметка должна быть не длиннее 280 символов."
         case .date: return "Дата должна быть позже сегодняшней."
         case .emoji: return "Укажите один emoji, например ☀️ или 🎉."
         }
@@ -109,8 +111,11 @@ public struct CountdownData: Codable, Equatable {
     public mutating func save(_ item: Countdown, primary: Bool, today: Day) throws {
         var cleaned = item
         cleaned.title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned.note = item.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleaned.note?.isEmpty == true { cleaned.note = nil }
         cleaned.emoji = item.emoji.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.title.isEmpty else { throw CountdownError.title }
+        guard (cleaned.note?.count ?? 0) <= 280 else { throw CountdownError.note }
         guard cleaned.date > today else { throw CountdownError.date }
         guard Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         normalize(today: today)
