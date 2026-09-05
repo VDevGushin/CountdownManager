@@ -90,6 +90,56 @@ package func editorCanSave(
         && subtasksAreValid
 }
 
+package enum EditorFocusTarget: Hashable {
+    case title
+    case emoji
+    case subtask(UUID)
+}
+
+package struct EventEditorDraft: Equatable {
+    package var title: String
+    package var note: String
+    package var emoji: String
+    package var subtasks: [Subtask]
+
+    package init(item: Countdown?) {
+        title = item?.title ?? ""
+        note = item?.note ?? ""
+        emoji = item?.emoji ?? "🎉"
+        subtasks = item?.subtasks ?? []
+    }
+
+    @discardableResult
+    package mutating func addSubtask() -> EditorFocusTarget? {
+        guard subtasks.count < Subtask.maximumCount,
+              var subtask = try? Subtask(text: "Новая подзадача") else { return nil }
+        subtask.text = ""
+        subtasks.append(subtask)
+        return .subtask(subtask.id)
+    }
+
+    package func emojiPickerTarget() -> EditorFocusTarget {
+        .emoji
+    }
+
+    @discardableResult
+    package mutating func replaceEmoji(with symbol: String) -> EditorFocusTarget {
+        emoji = symbol
+        return .emoji
+    }
+
+    package func countdown(id: UUID, date: Day) -> Countdown {
+        Countdown(
+            id: id,
+            title: title,
+            note: note,
+            date: date,
+            emoji: emoji,
+            subtasks: subtasks
+        )
+    }
+}
+
 package struct SubtaskDisclosurePersistence {
     private let defaults: UserDefaults
     private let key: String

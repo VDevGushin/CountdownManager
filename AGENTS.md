@@ -28,6 +28,8 @@ For the longer workflow and definition of done, see `AI_WORKFLOW.md`.
 - Countdown Manager is about waiting for future events, not managing a todo backlog. The user-facing entity is always called `Событие`; internal `Countdown` names do not need a cosmetic rename.
 - There are no notifications, overdue state, archive, automatic date moves, or preservation of unfinished work after an event date. An event remains active through its calendar date and disappears after that day ends, even when subtasks remain unfinished.
 - An event may have at most five subtasks. Subtask text is at most 50 characters; a subtask has only text and completed state, with no date, priority, reminder, nesting, or other task-management metadata.
+- A new subtask created in the event editor is always active. The editor may change subtask text or remove it, but completion is changed only from the event card; editing text must preserve the existing completion state.
+- Event-editor focus is field-specific: opening starts in the title, a newly added subtask is focused and scrolled into view by its stable ID, and the system emoji button must select the emoji field for replacement without changing title, note, or subtask text.
 - Completing every subtask does not complete, move, or remove the event early. The event date always controls its lifecycle.
 - The menu bar shows only the primary event's one emoji and `N дней` / `Сегодня`, or `◷ Countdown` when empty. Never add event details or checklist progress there.
 - Preserve all existing user data and legacy JSON compatibility. A missing `subtasks` field means an empty list; invalid stored subtask data must fail safely without silently rewriting the file.

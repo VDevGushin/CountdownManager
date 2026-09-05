@@ -107,6 +107,49 @@ enum UIChecks {
             today: today
         ))
 
+        // The event editor creates active subtasks and targets the newest stable ID for focus.
+        var newDraft = EventEditorDraft(item: nil)
+        guard case let .subtask(firstNewID)? = newDraft.addSubtask() else {
+            fatalError("The first new subtask must receive a focus target")
+        }
+        precondition(newDraft.subtasks.count == 1)
+        precondition(newDraft.subtasks[0].id == firstNewID)
+        precondition(!newDraft.subtasks[0].isCompleted)
+        newDraft.subtasks[0].text = "First draft"
+        guard case let .subtask(secondNewID)? = newDraft.addSubtask() else {
+            fatalError("The second new subtask must receive a focus target")
+        }
+        precondition(secondNewID != firstNewID)
+        precondition(newDraft.subtasks.last?.id == secondNewID)
+        precondition(newDraft.subtasks.last?.isCompleted == false)
+        newDraft.subtasks[1].text = "Second draft"
+        let savedNewDraft = newDraft.countdown(id: UUID(), date: Day(tomorrowDate))
+        precondition(savedNewDraft.subtasks.map(\.isCompleted) == [false, false])
+
+        // Editing text never changes an existing completion state.
+        var existingDraft = EventEditorDraft(item: todayItem)
+        existingDraft.subtasks[0].text = "Active edited"
+        existingDraft.subtasks[1].text = "Completed edited"
+        let editedCountdown = existingDraft.countdown(id: todayItem.id, date: today)
+        precondition(editedCountdown.subtasks[0].text == "Active edited")
+        precondition(!editedCountdown.subtasks[0].isCompleted)
+        precondition(editedCountdown.subtasks[1].text == "Completed edited")
+        precondition(editedCountdown.subtasks[1].isCompleted)
+
+        // Emoji controls are isolated from every other user-text field.
+        let originalTitle = existingDraft.title
+        let originalNote = existingDraft.note
+        let originalSubtasks = existingDraft.subtasks
+        precondition(existingDraft.emojiPickerTarget() == .emoji)
+        precondition(existingDraft.title == originalTitle)
+        precondition(existingDraft.note == originalNote)
+        precondition(existingDraft.subtasks == originalSubtasks)
+        precondition(existingDraft.replaceEmoji(with: "🏖️") == .emoji)
+        precondition(existingDraft.emoji == "🏖️")
+        precondition(existingDraft.title == originalTitle)
+        precondition(existingDraft.note == originalNote)
+        precondition(existingDraft.subtasks == originalSubtasks)
+
         // Deterministic quick-operation state transitions used by card controls.
         var quickData = CountdownData()
         try quickData.save(futureItem, primary: true, today: today)
@@ -186,7 +229,7 @@ enum UIChecks {
         precondition(didSave)
         precondition(loaded == data)
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order and menu-bar presentation")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order and menu-bar presentation")
     }
 
     private static func invalidDraft() -> Subtask {

@@ -332,22 +332,16 @@ struct EditorView: View {
     @ObservedObject var store: Store
     let item: Countdown?
     let done: () -> Void
-    @State private var title: String
-    @State private var note: String
+    @State private var draft: EventEditorDraft
     @State private var date: Date
-    @State private var emoji: String
-    @State private var subtasks: [Subtask]
     @State private var primary: Bool
     @State private var isSaving = false
-    @FocusState private var titleFocused: Bool
+    @FocusState private var focusedField: EditorFocusTarget?
 
     init(store: Store, item: Countdown?, done: @escaping () -> Void) {
         self.store = store; self.item = item; self.done = done
-        _title = State(initialValue: item?.title ?? "")
-        _note = State(initialValue: item?.note ?? "")
+        _draft = State(initialValue: EventEditorDraft(item: item))
         _date = State(initialValue: item?.date.date() ?? store.tomorrow)
-        _emoji = State(initialValue: item?.emoji ?? "🎉")
-        _subtasks = State(initialValue: item?.subtasks ?? [])
         _primary = State(initialValue: item == nil ? store.active.isEmpty : store.data.primaryID == item?.id)
     }
 
@@ -356,11 +350,11 @@ struct EditorView: View {
     private var validDate: Bool { Day(date) > store.today || (item?.date == store.today && Day(date) == store.today) }
     private var canSave: Bool {
         editorCanSave(
-            title: title,
-            note: note,
+            title: draft.title,
+            note: draft.note,
             date: Day(date),
-            emoji: emoji,
-            subtasks: subtasks,
+            emoji: draft.emoji,
+            subtasks: draft.subtasks,
             today: store.today,
             originalDate: item?.date
         )
@@ -371,53 +365,64 @@ struct EditorView: View {
             Text(item == nil ? EventUIStrings.newEvent : EventUIStrings.editEvent)
                 .font(.headline)
                 .padding(.bottom, 12)
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Название").font(.caption).foregroundStyle(.secondary)
-                        TextField("Например, отпуск", text: $title).textFieldStyle(.roundedBorder).focused($titleFocused)
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Заметка · необязательно").font(.caption).foregroundStyle(.secondary)
-                            Spacer()
-                            Text("\(note.count)/280").font(.caption2)
-                                .foregroundStyle(note.count <= 280 ? Color.secondary : Color.red)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Название").font(.caption).foregroundStyle(.secondary)
+                            TextField("Например, отпуск", text: $draft.title)
+                                .textFieldStyle(.roundedBorder)
+                                .focused($focusedField, equals: .title)
                         }
-                        TextField("Пара слов о событии", text: $note, axis: .vertical)
-                            .textFieldStyle(.roundedBorder)
-                            .lineLimit(2...3)
-                            .accessibilityIdentifier("editor.note")
-                    }
-                    VStack(alignment: .leading, spacing: 6) {
-                        DatePicker("Дата", selection: $date, in: minimumDate..., displayedComponents: [.date])
-                            .datePickerStyle(.field)
-                        Text(dateHelp)
-                            .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
-                    }
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Emoji")
-                            TextField("🎉", text: $emoji).textFieldStyle(.roundedBorder).frame(width: 64)
-                            Button { NSApp.orderFrontCharacterPalette(nil) } label: { Image(systemName: "face.smiling") }
-                                .help("Открыть панель emoji").accessibilityLabel("Открыть панель emoji")
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text("Заметка · необязательно").font(.caption).foregroundStyle(.secondary)
+                                Spacer()
+                                Text("\(draft.note.count)/280").font(.caption2)
+                                    .foregroundStyle(draft.note.count <= 280 ? Color.secondary : Color.red)
+                            }
+                            TextField("Пара слов о событии", text: $draft.note, axis: .vertical)
+                                .textFieldStyle(.roundedBorder)
+                                .lineLimit(2...3)
+                                .accessibilityIdentifier("editor.note")
                         }
-                        HStack(spacing: 7) {
-                            ForEach(["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"], id: \.self) { symbol in
-                                Button(symbol) { emoji = symbol }.buttonStyle(.borderless).font(.system(size: 23))
+                        VStack(alignment: .leading, spacing: 6) {
+                            DatePicker("Дата", selection: $date, in: minimumDate..., displayedComponents: [.date])
+                                .datePickerStyle(.field)
+                            Text(dateHelp)
+                                .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
+                        }
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Emoji")
+                                TextField("🎉", text: $draft.emoji)
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 64)
+                                    .focused($focusedField, equals: .emoji)
+                                Button(action: openEmojiPicker) { Image(systemName: "face.smiling") }
+                                    .help("Открыть панель emoji").accessibilityLabel("Открыть панель emoji")
+                            }
+                            HStack(spacing: 7) {
+                                ForEach(["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"], id: \.self) { symbol in
+                                    Button(symbol) {
+                                        focusedField = draft.replaceEmoji(with: symbol)
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .font(.system(size: 23))
+                                }
+                            }
+                        }
+                        editorSubtasks(scrollProxy: proxy)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Toggle("Основное — показывать в строке меню", isOn: $primary)
+                                .disabled(isCurrentPrimary || store.active.isEmpty)
+                            if isCurrentPrimary {
+                                Text("Чтобы сменить основное событие, выберите другое.").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                     }
-                    editorSubtasks
-                    VStack(alignment: .leading, spacing: 5) {
-                        Toggle("Основное — показывать в строке меню", isOn: $primary)
-                            .disabled(isCurrentPrimary || store.active.isEmpty)
-                        if isCurrentPrimary {
-                            Text("Чтобы сменить основное событие, выберите другое.").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
+                    .padding(.trailing, 4)
                 }
-                .padding(.trailing, 4)
             }
             HStack {
                 Button("Отмена") {
@@ -426,14 +431,7 @@ struct EditorView: View {
                 }.keyboardShortcut(.cancelAction).disabled(isSaving)
                 Spacer()
                 Button {
-                    let countdown = Countdown(
-                        id: item?.id ?? UUID(),
-                        title: title,
-                        note: note,
-                        date: Day(date),
-                        emoji: emoji,
-                        subtasks: subtasks
-                    )
+                    let countdown = draft.countdown(id: item?.id ?? UUID(), date: Day(date))
                     isSaving = true
                     Task {
                         if await store.save(countdown, primary: primary) { done() }
@@ -450,7 +448,12 @@ struct EditorView: View {
             .padding(.top, 12)
         }
         .padding(20)
-        .onAppear { titleFocused = true }
+        .onAppear {
+            Task { @MainActor in
+                await Task.yield()
+                focusedField = .title
+            }
+        }
         .environment(\.locale, Locale(identifier: "ru_RU"))
         .environment(\.calendar, Day.calendar)
     }
@@ -462,41 +465,59 @@ struct EditorView: View {
         return validDate ? "Можно выбрать начиная с завтрашнего дня." : "Эта дата уже наступила. Выберите будущую."
     }
 
-    private var editorSubtasks: some View {
+    private func editorSubtasks(scrollProxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text("Подзадачи · необязательно").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Text("\(subtasks.count)/\(Subtask.maximumCount)").font(.caption2).foregroundStyle(.secondary)
+                Text("\(draft.subtasks.count)/\(Subtask.maximumCount)").font(.caption2).foregroundStyle(.secondary)
             }
-            ForEach($subtasks) { $subtask in
+            ForEach($draft.subtasks) { $subtask in
                 HStack(spacing: 7) {
-                    Toggle("", isOn: $subtask.isCompleted).labelsHidden().toggleStyle(.checkbox)
-                        .accessibilityLabel("Подзадача выполнена")
+                    if subtask.isCompleted {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Выполнена")
+                    }
                     TextField("Подзадача", text: $subtask.text)
                         .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .subtask(subtask.id))
                     Text("\(subtask.text.count)/\(Subtask.maximumTextLength)")
                         .font(.caption2)
                         .foregroundStyle(subtask.text.count <= Subtask.maximumTextLength ? Color.secondary : Color.red)
                         .frame(width: 34, alignment: .trailing)
                     Button(role: .destructive) {
-                        subtasks.removeAll { $0.id == subtask.id }
+                        draft.subtasks.removeAll { $0.id == subtask.id }
                     } label: { Image(systemName: "trash") }
                     .buttonStyle(.borderless)
                     .help("Удалить подзадачу")
                     .accessibilityLabel("Удалить подзадачу")
                 }
+                .id(subtask.id)
             }
-            if subtasks.count < Subtask.maximumCount {
+            if draft.subtasks.count < Subtask.maximumCount {
                 Button("+ Добавить") {
-                    var draft = try! Subtask(text: "Новая подзадача")
-                    draft.text = ""
-                    subtasks.append(draft)
+                    guard let target = draft.addSubtask(), case let .subtask(id) = target else { return }
+                    Task { @MainActor in
+                        await Task.yield()
+                        withAnimation { scrollProxy.scrollTo(id, anchor: .center) }
+                        focusedField = target
+                    }
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
                 .accessibilityLabel("Добавить подзадачу")
             }
+        }
+    }
+
+    private func openEmojiPicker() {
+        focusedField = draft.emojiPickerTarget()
+        Task { @MainActor in
+            await Task.yield()
+            guard focusedField == .emoji else { return }
+            (NSApp.keyWindow?.firstResponder as? NSTextView)?.selectAll(nil)
+            NSApp.orderFrontCharacterPalette(nil)
         }
     }
 }
