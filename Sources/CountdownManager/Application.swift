@@ -2,9 +2,8 @@ import AppKit
 import SwiftUI
 import Combine
 
-@main
-enum CountdownManagerMain {
-    @MainActor static func main() {
+public enum CountdownManagerApplication {
+    @MainActor public static func run() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -14,7 +13,7 @@ enum CountdownManagerMain {
 }
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var store: Store!

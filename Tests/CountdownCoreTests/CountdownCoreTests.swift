@@ -46,6 +46,46 @@ final class CountdownCoreTests {
         XCTAssertNil(data.primaryID)
         XCTAssertTrue(data.items.isEmpty)
     }
+
+    func testNoteBoundariesNormalizationAndRoundTrip() throws {
+        let today = day(2026, 9, 5)
+        var data = CountdownData()
+        let accepted = Countdown(
+            title: "Exact limit",
+            note: "  \(String(repeating: "я", count: 280))  ",
+            date: day(2026, 9, 6),
+            emoji: "📝"
+        )
+        try data.save(accepted, primary: false, today: today)
+        XCTAssertEqual(data.items[0].note?.count, 280)
+
+        var blankNote = Countdown(title: "Blank", note: " \n\t ", date: day(2026, 9, 7), emoji: "🎉")
+        try data.save(blankNote, primary: false, today: today)
+        XCTAssertNil(data.items.first(where: { $0.id == blankNote.id })?.note)
+
+        blankNote.note = String(repeating: "🙂", count: 281)
+        XCTAssertThrowsError(try data.save(blankNote, primary: false, today: today))
+
+        let decoded = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
+        XCTAssertEqual(decoded, data)
+    }
+
+    func testTodayLifecycleAndPrimaryReplacement() throws {
+        let event = Countdown(title: "Today", note: "Visible all day", date: day(2026, 9, 6), emoji: "☀️")
+        let later = Countdown(title: "Later", date: day(2026, 9, 8), emoji: "🚀")
+        var data = CountdownData()
+        try data.save(event, primary: true, today: day(2026, 9, 5))
+        try data.save(later, primary: false, today: day(2026, 9, 5))
+
+        data.normalize(today: day(2026, 9, 6))
+        XCTAssertEqual(data.items.count, 2)
+        XCTAssertEqual(data.primaryID, event.id)
+        XCTAssertEqual(countdownLabel(event.date.days(from: day(2026, 9, 6), calendar: calendar)), "Сегодня")
+
+        data.normalize(today: day(2026, 9, 7))
+        XCTAssertEqual(data.items, [later])
+        XCTAssertEqual(data.primaryID, later.id)
+    }
     func testCalendarDaysAcrossDSTAndYear() {
         XCTAssertEqual(day(2026, 3, 9).days(from: day(2026, 3, 7), calendar: calendar), 2)
         XCTAssertEqual(day(2026, 11, 2).days(from: day(2026, 10, 31), calendar: calendar), 2)
@@ -108,11 +148,13 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         let checks = CountdownCoreTests()
         try checks.testRejectTodayPastBlankAndInvalidEmoji()
         try checks.testCRUDPrimaryExpiryAndPersistence()
+        try checks.testNoteBoundariesNormalizationAndRoundTrip()
+        try checks.testTodayLifecycleAndPrimaryReplacement()
         checks.testCalendarDaysAcrossDSTAndYear()
         checks.testPluralAndEmoji()
         checks.testRejectInvalidStoredDates()
         try checks.testDecodeLegacyCountdownWithoutNote()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
-        print("PASS: validation, notes, legacy JSON, today state, CRUD, primary selection, expiry, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
+        print("PASS unit: validation, note boundaries and normalization, legacy JSON, today lifecycle, CRUD, primary selection, expiry, invalid dates, repository revisions, DST, leap year, plural forms, emoji")
     }
 }

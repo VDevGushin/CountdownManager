@@ -79,31 +79,36 @@ struct ManagerView: View {
     }
 
     private func row(_ item: Countdown) -> some View {
-        let remainingDays = item.date.days(from: store.today)
-        let isPrimary = store.data.primaryID == item.id
+        let presentation = CountdownRowPresentation(
+            item: item,
+            today: store.today,
+            primaryID: store.data.primaryID
+        )
         return HStack(spacing: 10) {
             Text(item.emoji).font(.system(size: 27)).frame(width: 35)
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
-                if let note = item.note, !note.isEmpty {
+                if let note = presentation.note, !note.isEmpty {
                     Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                        .accessibilityIdentifier("countdown.note")
                 }
                 Text(item.date.date(), format: .dateTime.day().month(.wide).year())
                     .font(.caption).foregroundStyle(.secondary)
-                Text(countdownLabel(remainingDays))
+                Text(presentation.remainingLabel)
                     .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .foregroundStyle(remainingDays == 0 ? Color.accentColor : Color.primary)
+                    .foregroundStyle(presentation.isToday ? Color.accentColor : Color.primary)
                     .monospacedDigit()
+                    .accessibilityIdentifier(presentation.isToday ? "countdown.today" : "countdown.remaining")
             }
             Spacer(minLength: 4)
             Button { Task { await store.makePrimary(item.id) } } label: {
-                Image(systemName: isPrimary ? "star.fill" : "star")
-                    .foregroundStyle(isPrimary ? Color.accentColor : .secondary)
-                    .scaleEffect(isPrimary ? 1.12 : 1)
-                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPrimary)
+                Image(systemName: presentation.isPrimary ? "star.fill" : "star")
+                    .foregroundStyle(presentation.isPrimary ? Color.accentColor : .secondary)
+                    .scaleEffect(presentation.isPrimary ? 1.12 : 1)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: presentation.isPrimary)
             }
             .buttonStyle(.borderless)
-            .help(isPrimary ? "Основной счётчик" : "Сделать основным")
+            .help(presentation.isPrimary ? "Основной счётчик" : "Сделать основным")
             .accessibilityLabel("Сделать основным: \(item.title)")
             Menu {
                 Button("Редактировать") {
@@ -119,9 +124,9 @@ struct ManagerView: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isPrimary ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.045))
+                .fill(presentation.isPrimary ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.045))
         )
-        .animation(.easeInOut(duration: 0.2), value: isPrimary)
+        .animation(.easeInOut(duration: 0.2), value: presentation.isPrimary)
     }
 
     private var footer: some View {
@@ -179,9 +184,7 @@ struct EditorView: View {
     private var isCurrentPrimary: Bool { item != nil && store.data.primaryID == item?.id }
     private var validDate: Bool { Day(date) > store.today }
     private var canSave: Bool {
-        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && validDate
-            && note.trimmingCharacters(in: .whitespacesAndNewlines).count <= 280
-            && CountdownData.isEmoji(emoji.trimmingCharacters(in: .whitespacesAndNewlines))
+        editorCanSave(title: title, note: note, date: Day(date), emoji: emoji, today: store.today)
     }
 
     var body: some View {
@@ -201,6 +204,7 @@ struct EditorView: View {
                 TextField("Пара слов о событии", text: $note, axis: .vertical)
                     .textFieldStyle(.roundedBorder)
                     .lineLimit(2...3)
+                    .accessibilityIdentifier("editor.note")
             }
             VStack(alignment: .leading, spacing: 6) {
                 DatePicker("Дата", selection: $date, in: store.tomorrow..., displayedComponents: [.date])

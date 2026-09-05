@@ -44,9 +44,20 @@ Every commit must pass a deliberate self-review before it is created.
 - Fix every actionable finding, stage the correction, and repeat the review. Commit only when no actionable findings remain.
 - Report what was reviewed and tested. Never describe a change as reviewed or verified when a relevant check was skipped; state any remaining verification gap explicitly.
 
+## Tests, review, and push gate
+
+- A completed behavior change must include or update unit tests for its logic and UI tests for its user-visible states and interactions where those can be automated reliably.
+- Run the relevant unit and UI suites after implementation. Then perform the complete pre-commit self-review, fix its findings, and run the same suites again against the reviewed code.
+- Do not commit or push while either test pass is failing. Do not weaken or delete a valid test merely to make the gate pass.
+- A push is still an external publishing action and requires the user's request. When requested, push only reviewed commits whose post-review test pass is green.
+- If platform tooling prevents a relevant UI interaction from being automated, add the closest deterministic UI smoke or state test, document the missing end-to-end check, and verify it manually when possible. Never label smoke coverage as full end-to-end coverage.
+- Allow at most five complete fix-and-verify cycles for the same task. If the test/review gate is still not green after the fifth cycle, stop without committing or pushing and escalate to the product manager with the concrete blocker, evidence, and viable options.
+- The product manager may explicitly authorize additional iterations. Stabilizing the test infrastructure to establish its first reliable green baseline may continue for as many iterations as needed, but must not weaken product behavior or remove valid assertions.
+
 ## Verification
 
 - Run `swift run CoreChecks` after core changes.
+- Run `swift run UIChecks` after user-interface changes.
 - Keep all production JSON reads and writes inside `CountdownRepository`; never move them back onto `Store`'s main actor.
 - When adding an asynchronous mutation, update the in-memory snapshot before awaiting persistence and preserve revision ordering.
 - Build the macOS executable after UI or diagnostics changes.
