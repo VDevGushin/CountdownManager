@@ -34,6 +34,16 @@ Start with the last 200 lines. Look for the last UI breadcrumb, `ui.stall detect
 
 Keep diagnostic events short and structured. Any new action that can block the UI or mutate stored data should log its start and result.
 
+## Mandatory pre-commit self-review
+
+Every commit must pass a deliberate self-review before it is created.
+
+- Inspect `git status` and the complete staged diff. Confirm that the commit contains only the intended change and no user data, secrets, build products, or unrelated edits.
+- Review the staged code for correctness, edge cases, error handling, concurrency and persistence ordering, backward compatibility, privacy, accessibility, and the macOS 13+ deployment target where applicable.
+- Run `git diff --cached --check` plus the relevant automated checks, build, and UI verification for the staged change.
+- Fix every actionable finding, stage the correction, and repeat the review. Commit only when no actionable findings remain.
+- Report what was reviewed and tested. Never describe a change as reviewed or verified when a relevant check was skipped; state any remaining verification gap explicitly.
+
 ## Verification
 
 - Run `swift run CoreChecks` after core changes.
