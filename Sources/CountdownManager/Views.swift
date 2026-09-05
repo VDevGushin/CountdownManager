@@ -33,7 +33,9 @@ struct ManagerView: View {
                     ScrollView {
                         LazyVStack(spacing: 8) {
                             ForEach(store.active) { item in row(item) }
-                        }.padding(12)
+                        }
+                        .padding(12)
+                        .animation(.easeInOut(duration: 0.28), value: store.data.primaryID)
                     }
                 }
                 Divider()
@@ -78,6 +80,7 @@ struct ManagerView: View {
 
     private func row(_ item: Countdown) -> some View {
         let remainingDays = item.date.days(from: store.today)
+        let isPrimary = store.data.primaryID == item.id
         return HStack(spacing: 10) {
             Text(item.emoji).font(.system(size: 27)).frame(width: 35)
             VStack(alignment: .leading, spacing: 4) {
@@ -94,11 +97,13 @@ struct ManagerView: View {
             }
             Spacer(minLength: 4)
             Button { Task { await store.makePrimary(item.id) } } label: {
-                Image(systemName: store.data.primaryID == item.id ? "star.fill" : "star")
-                    .foregroundStyle(store.data.primaryID == item.id ? Color.accentColor : .secondary)
+                Image(systemName: isPrimary ? "star.fill" : "star")
+                    .foregroundStyle(isPrimary ? Color.accentColor : .secondary)
+                    .scaleEffect(isPrimary ? 1.12 : 1)
+                    .animation(.spring(response: 0.28, dampingFraction: 0.7), value: isPrimary)
             }
             .buttonStyle(.borderless)
-            .help(store.data.primaryID == item.id ? "Основной счётчик" : "Сделать основным")
+            .help(isPrimary ? "Основной счётчик" : "Сделать основным")
             .accessibilityLabel("Сделать основным: \(item.title)")
             Menu {
                 Button("Редактировать") {
@@ -112,7 +117,11 @@ struct ManagerView: View {
             .accessibilityLabel("Действия: \(item.title)")
         }
         .padding(12)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.primary.opacity(0.045)))
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isPrimary ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.045))
+        )
+        .animation(.easeInOut(duration: 0.2), value: isPrimary)
     }
 
     private var footer: some View {
