@@ -32,7 +32,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         popover = NSPopover()
         popover.behavior = .transient
-        popover.contentSize = NSSize(width: 390, height: 460)
+        popover.contentSize = NSSize(width: 390, height: 540)
         popover.contentViewController = NSHostingController(rootView: ManagerView(store: store))
         subscription = store.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateTitle() }
@@ -42,7 +42,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func updateTitle() {
         statusItem.button?.title = store.statusTitle
-        statusItem.button?.toolTip = store.primary.map { "\($0.title) — \(store.statusTitle)" } ?? "Добавить первый счётчик"
+        statusItem.button?.toolTip = store.primary == nil ? "Добавить событие" : store.statusTitle
     }
 
     @objc private func togglePopover() {

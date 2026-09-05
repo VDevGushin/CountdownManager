@@ -20,6 +20,7 @@ public actor CountdownRepository {
     @discardableResult
     public func save(_ data: CountdownData, revision: Int) throws -> Bool {
         guard revision >= highestWrittenRevision else { return false }
+        try data.validateSubtasksForPersistence()
         try FileManager.default.createDirectory(
             at: fileURL.deletingLastPathComponent(),
             withIntermediateDirectories: true

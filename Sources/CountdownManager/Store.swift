@@ -10,18 +10,21 @@ final class Store: ObservableObject {
     @Published private(set) var isLoading = true
     @Published var error: String?
     @Published private(set) var loginStatus = SMAppService.mainApp.status
+    @Published private(set) var disclosureRevision = 0
     private let fileURL: URL
     private let repository: CountdownRepository
+    private let disclosurePersistence: SubtaskDisclosurePersistence
     private var readFailed = false
     private var revision = 0
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
 
-    init(fileURL: URL? = nil) {
+    init(fileURL: URL? = nil, disclosureDefaults: UserDefaults = .standard) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
         self.fileURL = resolvedURL
         repository = CountdownRepository(fileURL: resolvedURL)
+        disclosurePersistence = SubtaskDisclosurePersistence(defaults: disclosureDefaults)
         Task { await load() }
         rescheduleMidnightTimer()
         Timer.publish(every: 30, on: .main, in: .common).autoconnect()
@@ -44,7 +47,7 @@ final class Store: ObservableObject {
             readFailed = true
             isLoading = false
             DiagnosticLog.shared.record("data.load failure error=\(error.localizedDescription)")
-            self.error = "Не удалось прочитать сохранённые счётчики. Файл оставлен без изменений: \(fileURL.path)\n\(error.localizedDescription)"
+            self.error = "Не удалось прочитать сохранённые события. Файл оставлен без изменений: \(fileURL.path)\n\(error.localizedDescription)"
         }
     }
 
@@ -52,8 +55,19 @@ final class Store: ObservableObject {
         activeCountdowns(in: data, today: today)
     }
     var primary: Countdown? { active.first { $0.id == data.primaryID } ?? active.first }
-    var statusTitle: String { primary.map { "\($0.emoji) \(countdownLabel($0.date.days(from: today)))" } ?? "◷ Countdown" }
+    var statusTitle: String { statusBarTitle(data: data, today: today) }
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
+
+    func subtasksAreExpanded(for eventID: UUID) -> Bool {
+        _ = disclosureRevision
+        return disclosurePersistence.isExpanded(eventID: eventID)
+    }
+
+    func setSubtasksExpanded(_ isExpanded: Bool, for eventID: UUID) {
+        disclosurePersistence.setExpanded(isExpanded, eventID: eventID)
+        disclosureRevision += 1
+        DiagnosticLog.shared.record("subtask.disclosure id=\(eventID.uuidString) expanded=\(isExpanded)")
+    }
 
     func refresh() {
         let currentDay = Day(Date())
@@ -148,6 +162,70 @@ final class Store: ObservableObject {
         return await commit(updated, reason: "countdown.save")
     }
 
+    func addSubtask(to eventID: UUID, text: String) async -> Bool {
+        DiagnosticLog.shared.record("subtask.add begin event=\(eventID.uuidString)")
+        var updated = data
+        do {
+            _ = try updated.addSubtask(to: eventID, text: text, today: Day(Date()))
+        } catch {
+            DiagnosticLog.shared.record("subtask.add rejected event=\(eventID.uuidString) error=\(error.localizedDescription)")
+            self.error = error.localizedDescription
+            return false
+        }
+        let count = updated.items.first(where: { $0.id == eventID })?.subtasks.count ?? 0
+        let didSave = await commit(updated, reason: "subtask.add")
+        if didSave {
+            setSubtasksExpanded(true, for: eventID)
+            DiagnosticLog.shared.record("subtask.add success event=\(eventID.uuidString) count=\(count)")
+        }
+        return didSave
+    }
+
+    func editSubtask(eventID: UUID, subtaskID: UUID, text: String) async -> Bool {
+        DiagnosticLog.shared.record("subtask.edit begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        var updated = data
+        do {
+            try updated.editSubtask(eventID: eventID, subtaskID: subtaskID, text: text, today: Day(Date()))
+        } catch {
+            DiagnosticLog.shared.record("subtask.edit rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            self.error = error.localizedDescription
+            return false
+        }
+        return await commit(updated, reason: "subtask.edit")
+    }
+
+    func deleteSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
+        DiagnosticLog.shared.record("subtask.delete begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        var updated = data
+        do {
+            try updated.deleteSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(Date()))
+        } catch {
+            DiagnosticLog.shared.record("subtask.delete rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            self.error = error.localizedDescription
+            return false
+        }
+        let remaining = updated.items.first(where: { $0.id == eventID })?.subtasks.count ?? 0
+        let didSave = await commit(updated, reason: "subtask.delete")
+        if didSave, remaining == 0 {
+            disclosurePersistence.remove(eventID: eventID)
+            disclosureRevision += 1
+        }
+        return didSave
+    }
+
+    func toggleSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
+        DiagnosticLog.shared.record("subtask.toggle begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        var updated = data
+        do {
+            try updated.toggleSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(Date()))
+        } catch {
+            DiagnosticLog.shared.record("subtask.toggle rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            self.error = error.localizedDescription
+            return false
+        }
+        return await commit(updated, reason: "subtask.toggle")
+    }
+
     func makePrimary(_ id: UUID) async {
         let currentDay = Day(Date())
         if currentDay != today { today = currentDay }
@@ -163,7 +241,10 @@ final class Store: ObservableObject {
         DiagnosticLog.shared.record("countdown.delete id=\(id.uuidString)")
         var updated = data
         updated.delete(id, today: Day(Date()))
-        _ = await commit(updated, reason: "countdown.delete")
+        if await commit(updated, reason: "countdown.delete") {
+            disclosurePersistence.remove(eventID: id)
+            disclosureRevision += 1
+        }
     }
 
     func setLogin(_ enabled: Bool) {

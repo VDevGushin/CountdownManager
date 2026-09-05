@@ -12,37 +12,56 @@ enum UIChecks {
         let today = Day(Date())
         let yesterdayDate = Day.calendar.date(byAdding: .day, value: -1, to: today.date())!
         let tomorrowDate = Day.calendar.date(byAdding: .day, value: 1, to: today.date())!
+        let twoDaysDate = Day.calendar.date(byAdding: .day, value: 2, to: today.date())!
+        let activeOne = try Subtask(text: "First active")
+        let completedOne = try Subtask(text: "First completed", isCompleted: true)
+        let activeTwo = try Subtask(text: "Second active")
+        let completedTwo = try Subtask(text: "Second completed", isCompleted: true)
+        let activeThree = try Subtask(text: "Third active")
         let expiredItem = Countdown(title: "Expired UI", date: Day(yesterdayDate), emoji: "⌛️")
-        let todayItem = Countdown(title: "Today UI", note: "Visible note", date: today, emoji: "☀️")
+        let todayItem = Countdown(
+            title: "Today UI",
+            note: "Visible note",
+            date: today,
+            emoji: "☀️",
+            subtasks: [activeOne, completedOne, activeTwo, completedTwo, activeThree]
+        )
         let futureItem = Countdown(title: "Future UI", note: "Editable note", date: Day(tomorrowDate), emoji: "🚀")
         var data = CountdownData()
         data.items = [expiredItem, todayItem, futureItem]
         data.primaryID = futureItem.id
 
+        // User-facing terminology and empty state.
+        precondition(EventUIStrings.addEvent == "Добавить событие")
+        precondition(EventUIStrings.newEvent == "Новое событие")
+        precondition(EventUIStrings.editEvent == "Редактировать событие")
+        precondition(EventUIStrings.deleteEvent == "Удалить событие?")
+        precondition(EventUIStrings.emptyTitle == "Пока нет событий")
+        precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
+
+        // Primary first, then stable date order; expired events are absent.
         precondition(activeCountdowns(in: data, today: today).map(\.id) == [futureItem.id, todayItem.id])
         let todayRow = CountdownRowPresentation(item: todayItem, today: today, primaryID: data.primaryID)
         precondition(todayRow.note == "Visible note")
         precondition(todayRow.remainingLabel == "Сегодня")
+        precondition(todayRow.dateAndRemainingLabel == "\(humanDateLabel(today)) · Сегодня")
+        precondition(humanDateLabel(Day(DateComponents(calendar: Day.calendar, year: 2027, month: 5, day: 1).date!)) == "1 мая 2027")
         precondition(todayRow.isToday)
         precondition(!todayRow.isPrimary)
+        precondition(todayRow.completionLabel == "2/5")
+        precondition(todayRow.activeSubtasks.map(\.id) == [activeOne.id, activeTwo.id, activeThree.id])
+        precondition(todayRow.completedSubtasks.map(\.id) == [completedOne.id, completedTwo.id])
+        precondition(subtaskDisclosureLabel(isExpanded: false, completion: "2/5") == "▸ 2/5")
+        precondition(subtaskDisclosureLabel(isExpanded: true, completion: "2/5") == "▾ 2/5")
 
+        let emptyRow = CountdownRowPresentation(item: futureItem, today: today, primaryID: data.primaryID)
+        precondition(emptyRow.completionLabel == nil) // No disclosure and no 0/0.
+        precondition(emptyRow.dateAndRemainingLabel == "\(humanDateLabel(Day(tomorrowDate))) · 1 день")
+
+        // Creation versus editing an event on Today.
         precondition(editorCanSave(
             title: "Future UI",
             note: String(repeating: "я", count: 280),
-            date: futureItem.date,
-            emoji: futureItem.emoji,
-            today: today
-        ))
-        precondition(!editorCanSave(
-            title: "Future UI",
-            note: String(repeating: "я", count: 281),
-            date: futureItem.date,
-            emoji: futureItem.emoji,
-            today: today
-        ))
-        precondition(!editorCanSave(
-            title: "   ",
-            note: "",
             date: futureItem.date,
             emoji: futureItem.emoji,
             today: today
@@ -54,26 +73,125 @@ enum UIChecks {
             emoji: futureItem.emoji,
             today: today
         ))
+        precondition(editorCanSave(
+            title: "Today is editable",
+            note: "Changed",
+            date: today,
+            emoji: "🎂",
+            subtasks: todayItem.subtasks,
+            today: today,
+            originalDate: today
+        ))
+        precondition(editorCanSave(
+            title: "Move Today forward",
+            note: "",
+            date: Day(twoDaysDate),
+            emoji: "🎂",
+            subtasks: todayItem.subtasks,
+            today: today,
+            originalDate: today
+        ))
         precondition(!editorCanSave(
-            title: "Invalid emoji",
+            title: "Invalid note",
+            note: String(repeating: "я", count: 281),
+            date: futureItem.date,
+            emoji: futureItem.emoji,
+            today: today
+        ))
+        precondition(!editorCanSave(
+            title: "Invalid subtask",
             note: "",
             date: futureItem.date,
-            emoji: "abc",
+            emoji: futureItem.emoji,
+            subtasks: [invalidDraft()],
             today: today
         ))
 
+        // Deterministic quick-operation state transitions used by card controls.
+        var quickData = CountdownData()
+        try quickData.save(futureItem, primary: true, today: today)
+        let quickID = try quickData.addSubtask(to: futureItem.id, text: "Quick add", today: today)
+        var quickRow = CountdownRowPresentation(item: quickData.items[0], today: today, primaryID: quickData.primaryID)
+        precondition(quickRow.completionLabel == "0/1")
+        precondition(quickRow.activeSubtasks.map(\.id) == [quickID])
+        try quickData.editSubtask(eventID: futureItem.id, subtaskID: quickID, text: "Quick edit", today: today)
+        precondition(quickData.items[0].subtasks[0].text == "Quick edit")
+        try quickData.toggleSubtask(eventID: futureItem.id, subtaskID: quickID, today: today)
+        quickRow = CountdownRowPresentation(item: quickData.items[0], today: today, primaryID: quickData.primaryID)
+        precondition(quickRow.activeSubtasks.isEmpty)
+        precondition(quickRow.completedSubtasks.map(\.id) == [quickID])
+        precondition(quickRow.completionLabel == "1/1")
+        try quickData.toggleSubtask(eventID: futureItem.id, subtaskID: quickID, today: today)
+        quickRow = CountdownRowPresentation(item: quickData.items[0], today: today, primaryID: quickData.primaryID)
+        precondition(quickRow.activeSubtasks.map(\.id) == [quickID])
+        precondition(quickRow.completedSubtasks.isEmpty)
+        try quickData.deleteSubtask(eventID: futureItem.id, subtaskID: quickID, today: today)
+        quickRow = CountdownRowPresentation(item: quickData.items[0], today: today, primaryID: quickData.primaryID)
+        precondition(quickRow.completionLabel == nil) // Last deletion removes the disclosure state.
+        for number in 1...5 {
+            _ = try quickData.addSubtask(to: futureItem.id, text: "Task \(number)", today: today)
+        }
+        precondition(quickData.items[0].subtasks.count == 5)
+        do {
+            _ = try quickData.addSubtask(to: futureItem.id, text: "Sixth", today: today)
+            fatalError("The sixth quick subtask must be rejected")
+        } catch {}
+
+        // Collapse state is separate from countdown JSON and survives a new persistence instance.
+        let suiteName = "CountdownManagerUIChecks.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let firstDisclosure = SubtaskDisclosurePersistence(defaults: defaults)
+        precondition(firstDisclosure.isExpanded(eventID: todayItem.id))
+        firstDisclosure.setExpanded(false, eventID: todayItem.id)
+        precondition(firstDisclosure.isExpanded(eventID: futureItem.id))
+        let restoredDisclosure = SubtaskDisclosurePersistence(defaults: defaults)
+        precondition(!restoredDisclosure.isExpanded(eventID: todayItem.id))
+        restoredDisclosure.setExpanded(true, eventID: todayItem.id)
+        precondition(firstDisclosure.isExpanded(eventID: todayItem.id))
+        restoredDisclosure.remove(eventID: todayItem.id)
+        precondition(firstDisclosure.isExpanded(eventID: todayItem.id))
+
+        // Menu bar contains only the primary emoji and day count / Today.
+        precondition(statusBarTitle(data: data, today: today) == "🚀 1 день")
+        var farFuture = CountdownData()
+        let in238Days = Day.calendar.date(byAdding: .day, value: 238, to: today.date())!
+        let farEvent = Countdown(title: "Hidden from menu bar", date: Day(in238Days), emoji: "☀️")
+        farFuture.items = [farEvent]
+        farFuture.primaryID = farEvent.id
+        precondition(statusBarTitle(data: farFuture, today: today) == "☀️ 238 дней")
         data.primaryID = todayItem.id
-        precondition(activeCountdowns(in: data, today: today).map(\.id) == [todayItem.id, futureItem.id])
-        let selectedRow = CountdownRowPresentation(item: todayItem, today: today, primaryID: data.primaryID)
-        precondition(selectedRow.isPrimary)
+        precondition(statusBarTitle(data: data, today: today) == "☀️ Сегодня")
+        precondition(!statusBarTitle(data: data, today: today).contains(todayItem.title))
+        precondition(statusBarTitle(data: CountdownData(), today: today) == "◷ Countdown")
+        var expiredOnly = CountdownData()
+        expiredOnly.items = [expiredItem]
+        expiredOnly.primaryID = expiredItem.id
+        precondition(activeCountdowns(in: expiredOnly, today: today).isEmpty)
+        precondition(statusBarTitle(data: expiredOnly, today: today) == "◷ Countdown")
+
+        // Renaming does not reorder equal dates.
+        let equalA = Countdown(title: "Zulu", date: Day(twoDaysDate), emoji: "🎉")
+        let equalB = Countdown(title: "Alpha", date: Day(twoDaysDate), emoji: "🎂")
+        data.items = [equalA, equalB]
+        data.primaryID = nil
+        precondition(activeCountdowns(in: data, today: today).map(\.id) == [equalA.id, equalB.id])
+        data.items[0].title = "Aardvark"
+        precondition(activeCountdowns(in: data, today: today).map(\.id) == [equalA.id, equalB.id])
 
         let fileURL = directory.appendingPathComponent("countdowns.json")
         let repository = CountdownRepository(fileURL: fileURL)
         let didSave = try await repository.save(data, revision: 1)
         let loaded = try await repository.load()
         precondition(didSave)
-        precondition(loaded.primaryID == todayItem.id)
+        precondition(loaded == data)
 
-        print("PASS UI state: active filtering, note and Today presentation, complete editor validation, primary reordering and persistence")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order and menu-bar presentation")
+    }
+
+    private static func invalidDraft() -> Subtask {
+        var draft = try! Subtask(text: "Temporary")
+        draft.text = "   "
+        return draft
     }
 }

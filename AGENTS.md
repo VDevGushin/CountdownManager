@@ -21,7 +21,17 @@ For the longer workflow and definition of done, see `AI_WORKFLOW.md`.
 
 - Production data is stored at `~/Library/Application Support/CountdownManager/countdowns.json`.
 - Never delete, replace, or rewrite that file as part of a diagnostic check.
-- Do not add countdown titles, notes, or emoji to diagnostics. They are user content.
+- Do not add event titles, notes, user emoji, or subtask text to diagnostics. They are private user content.
+
+## Permanent product invariants
+
+- Countdown Manager is about waiting for future events, not managing a todo backlog. The user-facing entity is always called `Событие`; internal `Countdown` names do not need a cosmetic rename.
+- There are no notifications, overdue state, archive, automatic date moves, or preservation of unfinished work after an event date. An event remains active through its calendar date and disappears after that day ends, even when subtasks remain unfinished.
+- An event may have at most five subtasks. Subtask text is at most 50 characters; a subtask has only text and completed state, with no date, priority, reminder, nesting, or other task-management metadata.
+- Completing every subtask does not complete, move, or remove the event early. The event date always controls its lifecycle.
+- The menu bar shows only the primary event's one emoji and `N дней` / `Сегодня`, or `◷ Countdown` when empty. Never add event details or checklist progress there.
+- Preserve all existing user data and legacy JSON compatibility. A missing `subtasks` field means an empty list; invalid stored subtask data must fail safely without silently rewriting the file.
+- Checklist disclosure is UI state stored separately from `countdowns.json` and must persist per event across popup openings and app restarts.
 
 ## Diagnose a freeze before guessing
 
