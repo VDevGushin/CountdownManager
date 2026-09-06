@@ -29,11 +29,13 @@ For the longer workflow and definition of done, see `AI_WORKFLOW.md`.
 - There are no notifications, overdue state, archive, automatic date moves, or preservation of unfinished work after an event date. An event remains active through its calendar date and disappears after that day ends, even when subtasks remain unfinished.
 - An event may have at most five subtasks. Subtask text is at most 50 characters; a subtask has only text and completed state, with no date, priority, reminder, nesting, or other task-management metadata.
 - A new subtask created in the event editor is always active. The editor may change subtask text or remove it, but completion is changed only from the event card; editing text must preserve the existing completion state.
-- Event-editor focus is field-specific: opening starts in the title, a newly added subtask is focused and scrolled into view by its stable ID, and the system emoji button must select the emoji field for replacement without changing title, note, or subtask text.
+- Event-editor focus is field-specific: opening starts in the title, and a newly added subtask is focused and scrolled into view by its stable ID. Emoji is selected with the compact local picker and presets, replacing only the emoji without changing title, note, or subtask text.
 - Completing every subtask does not complete, move, or remove the event early. The event date always controls its lifecycle.
 - The menu bar shows only the primary event's one emoji and `N дней` / `Сегодня`, or `◷ Countdown` when empty. Never add event details or checklist progress there.
 - Preserve all existing user data and legacy JSON compatibility. A missing `subtasks` field means an empty list; invalid stored subtask data must fail safely without silently rewriting the file.
 - Checklist disclosure is UI state stored separately from `countdowns.json` and must persist per event across popup openings and app restarts.
+- Closing the popup ends its transient UI session: a new opening begins at the root list. Unsaved event and quick-subtask drafts, the emoji picker, and a pending destructive confirmation must not be restored or autosaved.
+- Deleting an event requires explicit destructive confirmation; closing the popup cancels that confirmation.
 
 ## Diagnose a freeze before guessing
 
@@ -74,6 +76,7 @@ Treat the product manager's phrase “Собираем публичный рел
 
 - Run `swift run CoreChecks` after core changes.
 - Run `swift run UIChecks` after user-interface changes.
+- Use `./verify.sh fast`, `./verify.sh ui`, or `./verify.sh full` for the corresponding combined gates. The UI gate builds an isolated signed app and runs the Real UI Smoke, including the repeated collapse/expand regression with several events; it never touches production data.
 - Keep all production JSON reads and writes inside `CountdownRepository`; never move them back onto `Store`'s main actor.
 - When adding an asynchronous mutation, update the in-memory snapshot before awaiting persistence and preserve revision ordering.
 - Build the macOS executable after UI or diagnostics changes.

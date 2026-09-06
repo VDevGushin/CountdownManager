@@ -140,15 +140,20 @@ enum UIChecks {
         let originalTitle = existingDraft.title
         let originalNote = existingDraft.note
         let originalSubtasks = existingDraft.subtasks
-        precondition(existingDraft.emojiPickerTarget() == .emoji)
+        precondition(EventEmojiCatalog.presets == ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"])
+        precondition(EventEmojiCatalog.all.count == 48)
+        precondition(EventEmojiCatalog.all.allSatisfy(CountdownData.isEmoji))
         precondition(existingDraft.title == originalTitle)
         precondition(existingDraft.note == originalNote)
         precondition(existingDraft.subtasks == originalSubtasks)
-        precondition(existingDraft.replaceEmoji(with: "🏖️") == .emoji)
+        precondition(existingDraft.replaceEmoji(with: "🏖️"))
         precondition(existingDraft.emoji == "🏖️")
         precondition(existingDraft.title == originalTitle)
         precondition(existingDraft.note == originalNote)
         precondition(existingDraft.subtasks == originalSubtasks)
+        precondition(!existingDraft.replaceEmoji(with: "🎉😎"))
+        precondition(existingDraft.emoji == "🏖️")
+        precondition(EditorLayout.focusRingInset >= 3)
 
         // Deterministic quick-operation state transitions used by card controls.
         var quickData = CountdownData()
@@ -194,6 +199,40 @@ enum UIChecks {
         precondition(firstDisclosure.isExpanded(eventID: todayItem.id))
         restoredDisclosure.remove(eventID: todayItem.id)
         precondition(firstDisclosure.isExpanded(eventID: todayItem.id))
+
+        // Per-event disclosure objects keep stable identity without coupling event states.
+        firstDisclosure.setExpanded(false, eventID: todayItem.id)
+        let disclosureCache = await MainActor.run {
+            SubtaskDisclosureCache(persistence: firstDisclosure)
+        }
+        let cachedToday = await MainActor.run { disclosureCache.state(for: todayItem.id) }
+        let cachedTodayAgain = await MainActor.run { disclosureCache.state(for: todayItem.id) }
+        let cachedFuture = await MainActor.run { disclosureCache.state(for: futureItem.id) }
+        precondition(cachedToday === cachedTodayAgain)
+        precondition(cachedToday !== cachedFuture)
+        let cachedValuesAreIndependent = await MainActor.run {
+            !cachedToday.isExpanded && cachedFuture.isExpanded
+        }
+        let initialCachedIDsAreCorrect = await MainActor.run {
+            disclosureCache.cachedEventIDs == Set([todayItem.id, futureItem.id])
+        }
+        precondition(cachedValuesAreIndependent)
+        precondition(initialCachedIDsAreCorrect)
+
+        // Removing an event clears both the cached object and its persisted value.
+        await MainActor.run { disclosureCache.remove(eventID: todayItem.id) }
+        let removedCachedID = await MainActor.run {
+            disclosureCache.cachedEventIDs == Set([futureItem.id])
+        }
+        precondition(removedCachedID)
+        let restartedCache = await MainActor.run {
+            SubtaskDisclosureCache(persistence: SubtaskDisclosurePersistence(defaults: defaults))
+        }
+        let restartedValuesAreExpanded = await MainActor.run {
+            restartedCache.state(for: todayItem.id).isExpanded
+                && restartedCache.state(for: futureItem.id).isExpanded
+        }
+        precondition(restartedValuesAreExpanded)
 
         // Menu bar contains only the primary emoji and day count / Today.
         precondition(statusBarTitle(data: data, today: today) == "🚀 1 день")

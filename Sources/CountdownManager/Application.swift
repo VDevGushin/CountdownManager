@@ -13,17 +13,28 @@ public enum CountdownManagerApplication {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem!
     private var popover: NSPopover!
     private var store: Store!
     private var subscription: AnyCancellable?
+    private var uiSmokeRuntime: UISmokeRuntime?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let uiSmokeConfiguration: UISmokeConfiguration?
+        do {
+            uiSmokeConfiguration = try UISmokeConfiguration.load()
+        } catch {
+            fputs("UISmoke refused to start: \(error.localizedDescription)\n", stderr)
+            Darwin.exit(64)
+        }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         DiagnosticLog.shared.record("app.launch version=\(version) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
-        store = Store()
+        store = Store(
+            fileURL: uiSmokeConfiguration?.dataURL,
+            disclosureDefaults: uiSmokeConfiguration?.defaults ?? .standard
+        )
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
@@ -31,13 +42,27 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
             button.setAccessibilityLabel("Countdown Manager")
         }
         popover = NSPopover()
+        popover.delegate = self
         popover.behavior = .transient
         popover.contentSize = NSSize(width: 390, height: 540)
-        popover.contentViewController = NSHostingController(rootView: ManagerView(store: store))
+        resetTransientSession()
         subscription = store.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateTitle() }
         }
         updateTitle()
+        if let uiSmokeConfiguration {
+            uiSmokeRuntime = UISmokeRuntime(
+                configuration: uiSmokeConfiguration,
+                store: store,
+                window: { [weak self] in self?.popover.contentViewController?.view.window },
+                closePopover: { [weak self] in self?.closePopover() },
+                openPopover: { [weak self] in self?.showPopover() }
+            )
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.showPopover()
+                self?.uiSmokeRuntime?.start()
+            }
+        }
     }
 
     private func updateTitle() {
@@ -48,15 +73,37 @@ private final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func togglePopover() {
         if popover.isShown {
             DiagnosticLog.shared.record("popover.close")
-            popover.performClose(nil)
+            closePopover()
             return
         }
         DiagnosticLog.shared.record("popover.open")
         store.refresh()
+        showPopover()
+    }
+
+    private func showPopover() {
+        guard !popover.isShown else { return }
         guard let button = statusItem.button else { return }
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+    }
+
+    private func closePopover() {
+        guard popover.isShown else { return }
+        popover.close()
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        DiagnosticLog.shared.record("popover.closed session=reset")
+        resetTransientSession()
+    }
+
+    private func resetTransientSession() {
+        if UISmokeConfiguration.wasRequested {
+            UISmokeControlRegistry.shared.reset()
+        }
+        popover.contentViewController = NSHostingController(rootView: ManagerView(store: store))
     }
 
     func applicationWillTerminate(_ notification: Notification) {

@@ -10,6 +10,23 @@ package enum EventUIStrings {
     package static let emptyMessage = "Добавь событие и выбери дату — приложение покажет, сколько дней до него осталось."
 }
 
+package enum EventEmojiCatalog {
+    package static let presets = ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"]
+    package static let all = [
+        "😀", "😎", "🥳", "😍", "🤩", "😊", "🤗", "🫶",
+        "☀️", "🌙", "⭐️", "🌈", "❄️", "🌸", "🍂", "🔥",
+        "✈️", "🚆", "🚗", "🚢", "🏖️", "🏕️", "🏔️", "🏠",
+        "🎉", "🎂", "🎄", "🎁", "🎓", "💍", "👶", "❤️",
+        "🚀", "💼", "📚", "🎵", "🎬", "⚽️", "🏆", "🎯",
+        "🍕", "☕️", "🍷", "🌍", "📅", "⏳", "💡", "✅"
+    ]
+}
+
+package enum EditorLayout {
+    /// Space reserved between focusable controls and the clipping ScrollView viewport.
+    package static let focusRingInset: CGFloat = 4
+}
+
 package struct CountdownRowPresentation: Equatable {
     package let note: String?
     package let dateLabel: String
@@ -92,7 +109,7 @@ package func editorCanSave(
 
 package enum EditorFocusTarget: Hashable {
     case title
-    case emoji
+    case note
     case subtask(UUID)
 }
 
@@ -118,14 +135,11 @@ package struct EventEditorDraft: Equatable {
         return .subtask(subtask.id)
     }
 
-    package func emojiPickerTarget() -> EditorFocusTarget {
-        .emoji
-    }
-
     @discardableResult
-    package mutating func replaceEmoji(with symbol: String) -> EditorFocusTarget {
+    package mutating func replaceEmoji(with symbol: String) -> Bool {
+        guard EventEmojiCatalog.all.contains(symbol), CountdownData.isEmoji(symbol) else { return false }
         emoji = symbol
-        return .emoji
+        return true
     }
 
     package func countdown(id: UUID, date: Day) -> Countdown {

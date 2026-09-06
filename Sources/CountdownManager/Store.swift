@@ -4,16 +4,61 @@ import CountdownCore
 import ServiceManagement
 
 @MainActor
+package final class SubtaskDisclosureState: ObservableObject {
+    @Published package private(set) var isExpanded: Bool
+
+    private let eventID: UUID
+    private let persistence: SubtaskDisclosurePersistence
+
+    package init(eventID: UUID, persistence: SubtaskDisclosurePersistence) {
+        self.eventID = eventID
+        self.persistence = persistence
+        isExpanded = persistence.isExpanded(eventID: eventID)
+    }
+
+    package func setExpanded(_ newValue: Bool) {
+        guard newValue != isExpanded else { return }
+        DiagnosticLog.shared.record("subtask.disclosure begin id=\(eventID.uuidString) expanded=\(newValue)")
+        persistence.setExpanded(newValue, eventID: eventID)
+        isExpanded = newValue
+        DiagnosticLog.shared.record("subtask.disclosure success id=\(eventID.uuidString) expanded=\(newValue)")
+    }
+}
+
+@MainActor
+package final class SubtaskDisclosureCache {
+    private let persistence: SubtaskDisclosurePersistence
+    private var states: [UUID: SubtaskDisclosureState] = [:]
+
+    package init(persistence: SubtaskDisclosurePersistence) {
+        self.persistence = persistence
+    }
+
+    package func state(for eventID: UUID) -> SubtaskDisclosureState {
+        if let state = states[eventID] { return state }
+        let state = SubtaskDisclosureState(eventID: eventID, persistence: persistence)
+        states[eventID] = state
+        return state
+    }
+
+    package func remove(eventID: UUID) {
+        persistence.remove(eventID: eventID)
+        states.removeValue(forKey: eventID)
+    }
+
+    package var cachedEventIDs: Set<UUID> { Set(states.keys) }
+}
+
+@MainActor
 final class Store: ObservableObject {
     @Published private(set) var data = CountdownData()
     @Published private(set) var today = Day(Date())
     @Published private(set) var isLoading = true
     @Published var error: String?
     @Published private(set) var loginStatus = SMAppService.mainApp.status
-    @Published private(set) var disclosureRevision = 0
     private let fileURL: URL
     private let repository: CountdownRepository
-    private let disclosurePersistence: SubtaskDisclosurePersistence
+    private let disclosureCache: SubtaskDisclosureCache
     private var readFailed = false
     private var revision = 0
     private var subscriptions = Set<AnyCancellable>()
@@ -24,7 +69,9 @@ final class Store: ObservableObject {
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
         self.fileURL = resolvedURL
         repository = CountdownRepository(fileURL: resolvedURL)
-        disclosurePersistence = SubtaskDisclosurePersistence(defaults: disclosureDefaults)
+        disclosureCache = SubtaskDisclosureCache(
+            persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults)
+        )
         Task { await load() }
         rescheduleMidnightTimer()
         Timer.publish(every: 30, on: .main, in: .common).autoconnect()
@@ -59,14 +106,15 @@ final class Store: ObservableObject {
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
 
     func subtasksAreExpanded(for eventID: UUID) -> Bool {
-        _ = disclosureRevision
-        return disclosurePersistence.isExpanded(eventID: eventID)
+        disclosureState(for: eventID).isExpanded
+    }
+
+    func disclosureState(for eventID: UUID) -> SubtaskDisclosureState {
+        disclosureCache.state(for: eventID)
     }
 
     func setSubtasksExpanded(_ isExpanded: Bool, for eventID: UUID) {
-        disclosurePersistence.setExpanded(isExpanded, eventID: eventID)
-        disclosureRevision += 1
-        DiagnosticLog.shared.record("subtask.disclosure id=\(eventID.uuidString) expanded=\(isExpanded)")
+        disclosureState(for: eventID).setExpanded(isExpanded)
     }
 
     func refresh() {
@@ -76,8 +124,13 @@ final class Store: ObservableObject {
             var updated = data
             updated.normalize(today: today)
             if updated != data {
+                let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
                 DiagnosticLog.shared.record("data.normalize removed=\(data.items.count - updated.items.count)")
-                stagePersistence(updated, reason: "normalize")
+                stagePersistence(
+                    updated,
+                    reason: "normalize",
+                    disclosureCleanup: removedEventIDs
+                )
             }
         }
         let currentLoginStatus = SMAppService.mainApp.status
@@ -93,18 +146,25 @@ final class Store: ObservableObject {
         if let midnightTimer { RunLoop.main.add(midnightTimer, forMode: .common) }
     }
 
-    private func stagePersistence(_ updated: CountdownData, reason: String) {
+    private func stagePersistence(
+        _ updated: CountdownData,
+        reason: String,
+        disclosureCleanup: Set<UUID> = []
+    ) {
         let previous = data
         revision += 1
         let writeRevision = revision
         data = updated
         Task { [weak self] in
-            _ = await self?.finishPersistence(
+            let didSave = await self?.finishPersistence(
                 updated,
                 previous: previous,
                 revision: writeRevision,
                 reason: reason
             )
+            if didSave == true {
+                disclosureCleanup.forEach { self?.disclosureCache.remove(eventID: $0) }
+            }
         }
     }
 
@@ -159,7 +219,11 @@ final class Store: ObservableObject {
             self.error = error.localizedDescription
             return false
         }
-        return await commit(updated, reason: "countdown.save")
+        let didSave = await commit(updated, reason: "countdown.save")
+        if didSave, countdown.subtasks.isEmpty {
+            disclosureCache.remove(eventID: countdown.id)
+        }
+        return didSave
     }
 
     func addSubtask(to eventID: UUID, text: String) async -> Bool {
@@ -207,8 +271,7 @@ final class Store: ObservableObject {
         let remaining = updated.items.first(where: { $0.id == eventID })?.subtasks.count ?? 0
         let didSave = await commit(updated, reason: "subtask.delete")
         if didSave, remaining == 0 {
-            disclosurePersistence.remove(eventID: eventID)
-            disclosureRevision += 1
+            disclosureCache.remove(eventID: eventID)
         }
         return didSave
     }
@@ -242,8 +305,7 @@ final class Store: ObservableObject {
         var updated = data
         updated.delete(id, today: Day(Date()))
         if await commit(updated, reason: "countdown.delete") {
-            disclosurePersistence.remove(eventID: id)
-            disclosureRevision += 1
+            disclosureCache.remove(eventID: id)
         }
     }
 

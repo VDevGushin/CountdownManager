@@ -7,7 +7,12 @@ final class DiagnosticLog: @unchecked Sendable {
     static let shared = DiagnosticLog()
 
     static var directoryURL: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        if UISmokeConfiguration.wasRequested,
+           let testHome = ProcessInfo.processInfo.environment["COUNTDOWN_MANAGER_TEST_HOME"] {
+            return URL(fileURLWithPath: testHome, isDirectory: true)
+                .appendingPathComponent("Application Support/CountdownManager/Logs", isDirectory: true)
+        }
+        return FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("CountdownManager/Logs", isDirectory: true)
     }
 
