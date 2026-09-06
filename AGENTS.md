@@ -48,6 +48,8 @@ Start with the last 200 lines. Look for the last UI breadcrumb, `ui.stall detect
 
 Keep diagnostic events short and structured. Any new action that can block the UI or mutate stored data should log its start and result.
 
+- Do not add SwiftUI `Menu` controls inside the popup, event rows, subtask rows, or footer. On the current macOS they can enter the documented `AppKitPopUpAdaptor` / `PlatformItemList` accessibility rebuild runaway after a popup session reset. Use a local action popover instead, and extend the editor teardown/root-scroll smoke if its lifecycle changes.
+
 ## Mandatory pre-commit self-review
 
 Every commit must pass a deliberate self-review before it is created.

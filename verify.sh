@@ -88,6 +88,10 @@ run_ui_checks() {
     run_smoke full-ui-smoke --ui-smoke
     echo "Verification: collapse/freeze regression"
     run_smoke collapse-regression --ui-smoke-collapse-regression
+    for run in 1 2 3; do
+        echo "Verification: editor teardown/root-scroll regression (${run}/3)"
+        run_smoke "editor-scroll-regression-$run" --ui-smoke-editor-scroll-regression
+    done
     echo "PASS: release build and Real UI Smoke"
 }
 

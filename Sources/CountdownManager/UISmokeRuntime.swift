@@ -1,10 +1,12 @@
 import AppKit
 import CountdownCore
+import Darwin
 import Foundation
 
 struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
+    static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
     static let markerName = ".countdown-ui-smoke-environment"
 
     let homeURL: URL
@@ -15,10 +17,15 @@ struct UISmokeConfiguration {
     static var wasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(launchArgument)
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
+            || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
     }
 
     static var collapseRegressionWasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
+    }
+
+    static var editorScrollRegressionWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
     }
 
     static func load() throws -> UISmokeConfiguration? {
@@ -96,6 +103,8 @@ final class UISmokeRuntime {
             do {
                 if UISmokeConfiguration.collapseRegressionWasRequested {
                     try await runCollapseRegression()
+                } else if UISmokeConfiguration.editorScrollRegressionWasRequested {
+                    try await runEditorScrollRegression()
                 } else {
                     try await run()
                 }
@@ -164,6 +173,90 @@ final class UISmokeRuntime {
             return saved.items.count == 7
         }
         pass("regression fixture persisted in isolated profile")
+    }
+
+    private func runEditorScrollRegression() async throws {
+        try await waitFor("empty root popup") {
+            self.window() != nil && self.controls.entries["root.popup"] != nil
+                && self.controls.entries["event.add"] != nil && !self.store.isLoading
+        }
+        try press("event.add")
+        try await waitForElement("editor.new")
+        try await waitForFirstResponder("editor.title")
+        try insertText("Editor Scroll Fixture")
+        for text in ["Fixture one", "Fixture two"] {
+            let previous = Set(controls.ids(withPrefix: "editor.subtask."))
+            try press("editor.subtask.add")
+            try await waitFor("fixture subtask") {
+                Set(self.controls.ids(withPrefix: "editor.subtask.")).subtracting(previous).count == 1
+            }
+            let id = try requireValue(
+                Set(controls.ids(withPrefix: "editor.subtask.")).subtracting(previous).first,
+                "fixture subtask identifier"
+            )
+            try await waitForFirstResponder(id)
+            try insertText(text)
+            try await waitForValue(id, equals: text)
+        }
+        try press("editor.save")
+        try await waitFor("saved editor-scroll fixture") { self.store.active.count == 1 }
+        let eventID = try requireValue(store.active.first?.id, "editor-scroll event ID")
+
+        var interactionEventID = eventID
+        for number in 1...6 {
+            let subtasks = number == 6 ? [try Subtask(text: "Scrollable interaction")] : []
+            let event = Countdown(
+                title: "Editor Scroll List \(number)",
+                date: Day(store.tomorrow),
+                emoji: "📅",
+                subtasks: subtasks
+            )
+            let didSave = await store.save(event, primary: false)
+            try require(didSave, "editor-scroll fixture \(number) save failed")
+            if number == 6 { interactionEventID = event.id }
+        }
+        try await waitFor("scrollable root list") {
+            self.store.active.count == 7 && self.rootListScrollView() != nil
+        }
+        let expectedCount = store.active.count
+        let editedEventTitle = try requireValue(
+            store.active.first(where: { $0.id == interactionEventID })?.title,
+            "scrollable editor event title"
+        )
+        let memoryBaseline = physicalFootprint()
+
+        for attempt in 1...3 {
+            try press("event.add")
+            try await waitForElement("editor.new")
+            try await waitForFirstResponder("editor.title")
+            try insertText("Unsaved new \(attempt)")
+            try press("editor.cancel")
+            try await waitForElement("event.list")
+            try await dismissAndReopen()
+            try await exerciseResponsiveRoot(eventID: interactionEventID, baselineFootprint: memoryBaseline)
+            try require(store.active.count == expectedCount, "new draft changed root data")
+        }
+        pass("new editor cancel, popup reset, real root scroll and interaction remain responsive")
+
+        for attempt in 1...3 {
+            try await scrollRootList()
+            try await pressEventAction("edit", eventID: interactionEventID)
+            try await waitForElement("editor.edit")
+            try await focusAndReplace("editor.title", with: "Unsaved edit \(attempt)")
+            try await dismissAndReopen()
+            try require(store.active.first(where: { $0.id == interactionEventID })?.title == editedEventTitle, "edit draft persisted")
+            try await exerciseResponsiveRoot(eventID: interactionEventID, baselineFootprint: memoryBaseline)
+            try require(store.active.count == expectedCount, "edit draft changed root data")
+        }
+        pass("existing editor dismissal, popup reset, real root scroll and interaction remain responsive")
+
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(
+            persisted.items.first(where: { $0.id == interactionEventID })?.title == editedEventTitle,
+            "unsaved editor text reached JSON"
+        )
+        try requireNoUIStall()
+        pass("unsaved data is absent from JSON, watchdog is clean and footprint stays bounded")
     }
 
     private func verifyDisclosureCycles(eventID: UUID, count: Int) async throws {
@@ -326,7 +419,7 @@ final class UISmokeRuntime {
         try await waitForValue(disclosureID, equals: "expanded")
         pass("checklist collapse and expand")
 
-        try press("event.action.edit.\(eventID.uuidString)")
+        try await pressEventAction("edit", eventID: eventID)
         try await waitForElement("editor.edit")
         try require(controls.ids(withPrefix: "subtask.toggle.").isEmpty, "edit event exposed completion checkbox")
         try await focusAndReplace("editor.subtask.\(firstSubtaskID.uuidString)", with: "Completed edited")
@@ -341,7 +434,7 @@ final class UISmokeRuntime {
         }
         pass("completion state preserved through text edit")
 
-        try press("event.action.edit.\(eventID.uuidString)")
+        try await pressEventAction("edit", eventID: eventID)
         try await waitForElement("editor.edit")
         try await focusAndReplace("editor.title", with: "Cancelled title")
         try press("editor.cancel")
@@ -349,7 +442,7 @@ final class UISmokeRuntime {
         try require(store.active.first?.title == originalTitle, "Cancel changed event")
         pass("Cancel returns to root without saving")
 
-        try press("event.action.edit.\(eventID.uuidString)")
+        try await pressEventAction("edit", eventID: eventID)
         try await waitForElement("editor.edit")
         try await focusAndReplace("editor.title", with: "Dismissed title")
         try await dismissAndReopen()
@@ -368,7 +461,7 @@ final class UISmokeRuntime {
         try require(store.active.first?.subtasks.count == originalCount, "quick add survived popup dismissal")
         pass("popup close cancels quick subtask add")
 
-        try press("subtask.action.edit.\(secondSubtaskID.uuidString)")
+        try await pressSubtaskAction("edit", subtaskID: secondSubtaskID)
         try await waitForElement("quick-subtask.editor")
         try await focusAndReplace("quick-subtask.field", with: "Unsaved quick edit")
         try await dismissAndReopen()
@@ -376,20 +469,20 @@ final class UISmokeRuntime {
         try require(activeText == "Active edited", "quick edit survived popup dismissal")
         pass("popup close cancels quick subtask edit")
 
-        try press("event.action.delete.\(eventID.uuidString)")
+        try await pressEventAction("delete", eventID: eventID)
         try await waitForElement("event.delete.confirm")
         try await dismissAndReopen()
         try require(store.active.first?.id == eventID, "pending deletion removed event")
         pass("popup close cancels pending deletion")
 
-        try press("event.action.delete.\(eventID.uuidString)")
+        try await pressEventAction("delete", eventID: eventID)
         try await waitForElement("event.delete.cancel")
         try press("event.delete.cancel")
         try await waitFor("delete cancellation") { self.controls.entries["event.delete.cancel"] == nil }
         try require(store.active.first?.id == eventID, "delete Cancel removed event")
         pass("delete cancellation preserves event")
 
-        try press("event.action.delete.\(eventID.uuidString)")
+        try await pressEventAction("delete", eventID: eventID)
         try await waitForElement("event.delete.confirm")
         try press("event.delete.confirm")
         try await waitFor("explicit deletion") { self.store.active.isEmpty && self.controls.entries["event.add"] != nil }
@@ -419,6 +512,89 @@ final class UISmokeRuntime {
                 && self.controls.entries["quick-subtask.editor"] == nil
                 && self.controls.entries["event.delete.confirm"] == nil
         }
+    }
+
+    private func pressEventAction(_ action: String, eventID: UUID) async throws {
+        let triggerID = "event.actions.\(eventID.uuidString)"
+        let actionID = "event.action.\(action).\(eventID.uuidString)"
+        try await waitForElement(triggerID)
+        try press(triggerID)
+        try await waitForElement(actionID)
+        try press(actionID)
+    }
+
+    private func pressSubtaskAction(_ action: String, subtaskID: UUID) async throws {
+        let triggerID = "subtask.actions.\(subtaskID.uuidString)"
+        let actionID = "subtask.action.\(action).\(subtaskID.uuidString)"
+        try await waitForElement(triggerID)
+        try press(triggerID)
+        try await waitForElement(actionID)
+        try press(actionID)
+    }
+
+    private func exerciseResponsiveRoot(eventID: UUID, baselineFootprint: UInt64?) async throws {
+        try await scrollRootList()
+        let disclosureID = "subtasks.disclosure.\(eventID.uuidString)"
+        try await waitForElement(disclosureID)
+        try press(disclosureID)
+        try await waitForValue(disclosureID, equals: "collapsed")
+        try press(disclosureID)
+        try await waitForValue(disclosureID, equals: "expanded")
+        try requireNoUIStall()
+        if let baselineFootprint, let currentFootprint = physicalFootprint() {
+            let allowance = UInt64(512 * 1024 * 1024)
+            let ceiling = max(baselineFootprint + allowance, baselineFootprint * 5)
+            try require(
+                currentFootprint <= ceiling,
+                "physical footprint grew from \(baselineFootprint) to \(currentFootprint) during root interaction"
+            )
+        }
+    }
+
+    private func scrollRootList() async throws {
+        guard let scrollView = rootListScrollView() else {
+            throw Failure("root event list is not scrollable")
+        }
+        let clipView = scrollView.contentView
+        let visible = clipView.documentVisibleRect
+        let maximumY = max(0, (scrollView.documentView?.bounds.height ?? 0) - visible.height)
+        let targetY = min(maximumY, max(visible.origin.y + visible.height / 2, 1))
+        guard targetY > visible.origin.y else {
+            throw Failure("root event list did not expose a scroll range")
+        }
+        clipView.scroll(to: CGPoint(x: visible.origin.x, y: targetY))
+        scrollView.reflectScrolledClipView(clipView)
+        try await waitFor("real root list scroll") {
+            guard let current = self.rootListScrollView()?.contentView.documentVisibleRect else { return false }
+            return current.origin.y > visible.origin.y
+        }
+    }
+
+    private func rootListScrollView() -> NSScrollView? {
+        guard let contentView = window()?.contentView else { return nil }
+        return allSubviews(of: contentView)
+            .compactMap { $0 as? NSScrollView }
+            .first {
+                guard let documentView = $0.documentView else { return false }
+                return documentView.bounds.height > $0.contentView.bounds.height
+            }
+    }
+
+    private func requireNoUIStall() throws {
+        DiagnosticLog.shared.flush()
+        let log = (try? String(contentsOf: DiagnosticLog.fileURL, encoding: .utf8)) ?? ""
+        try require(!log.contains("ui.stall detected"), "watchdog observed a UI stall")
+    }
+
+    private func physicalFootprint() -> UInt64? {
+        var info = task_vm_info_data_t()
+        var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? info.phys_footprint : nil
     }
 
     private func focusAndReplace(_ id: String, with text: String) async throws {

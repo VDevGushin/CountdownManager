@@ -9,12 +9,22 @@ private struct QuickSubtaskEditorTarget: Identifiable {
     var id: String { "\(eventID.uuidString)-\(subtask?.id.uuidString ?? "new")" }
 }
 
+private struct PressScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .animation(.easeOut(duration: 0.08), value: configuration.isPressed)
+    }
+}
+
 struct ManagerView: View {
     @ObservedObject var store: Store
     @State private var editing: Countdown?
     @State private var showingEditor = false
     @State private var pendingDeletion: Countdown?
     @State private var quickSubtaskEditor: QuickSubtaskEditorTarget?
+    @State private var eventActionsID: UUID?
+    @State private var showingApplicationActions = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,7 +54,7 @@ struct ManagerView: View {
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(spacing: 8) {
+                        VStack(spacing: 8) {
                             ForEach(store.active) { item in row(item) }
                         }
                         .padding(12)
@@ -67,8 +77,6 @@ struct ManagerView: View {
                 self.editing = nil
             }
         }
-        .onAppear { synchronizeSmokeEventActions() }
-        .onChange(of: store.data) { _ in synchronizeSmokeEventActions() }
         .sheet(item: $quickSubtaskEditor) { target in
             QuickSubtaskEditorView(store: store, target: target) {
                 quickSubtaskEditor = nil
@@ -159,25 +167,30 @@ struct ManagerView: View {
                         .foregroundStyle(presentation.isPrimary ? Color.accentColor : .secondary)
                         .scaleEffect(presentation.isPrimary ? 1.12 : 1)
                         .animation(.spring(response: 0.28, dampingFraction: 0.7), value: presentation.isPrimary)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(PressScaleButtonStyle())
                 .help(presentation.isPrimary ? "Основное событие" : "Сделать основным событием")
                 .accessibilityLabel("Сделать основным событием: \(item.title)")
-                Menu {
-                    Button("Добавить подзадачу") {
-                        openQuickSubtaskEditor(eventID: item.id, subtask: nil)
-                    }
-                    .disabled(item.subtasks.count >= Subtask.maximumCount)
-                    .accessibilityIdentifier("event.action.add-subtask.\(item.id.uuidString)")
-                    Divider()
-                    Button("Редактировать событие") { edit(item) }
-                    .accessibilityIdentifier("event.action.edit.\(item.id.uuidString)")
-                    Button("Удалить событие", role: .destructive) { requestDeletion(item) }
-                        .accessibilityIdentifier("event.action.delete.\(item.id.uuidString)")
-                } label: { Image(systemName: "ellipsis") }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 22)
-                .accessibilityLabel("Действия события: \(item.title)")
+                Button { eventActionsID = item.id } label: {
+                    Image(systemName: "ellipsis")
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PressScaleButtonStyle())
+                .accessibilityLabel("Действия события")
                 .accessibilityIdentifier("event.actions.\(item.id.uuidString)")
+                .uiSmokeControl(
+                    id: "event.actions.\(item.id.uuidString)",
+                    action: { eventActionsID = item.id }
+                )
+                .popover(isPresented: Binding(
+                    get: { eventActionsID == item.id },
+                    set: { if !$0 { eventActionsID = nil } }
+                ), arrowEdge: .trailing) {
+                    eventActions(eventID: item.id)
+                }
             }
 
             if presentation.completionLabel != nil {
@@ -212,13 +225,11 @@ struct ManagerView: View {
             HStack {
                 Text("Хранится на этом Mac").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Menu("Приложение") {
-                    Button("Открыть папку диагностики…") { store.openDiagnostics() }
-                    Divider()
-                    Button("Перезапустить") { store.restart() }
-                    Divider()
-                    Button("Выйти из Countdown Manager") { NSApp.terminate(nil) }
-                }.fixedSize()
+                Button("Приложение") { showingApplicationActions.toggle() }
+                    .fixedSize()
+                    .popover(isPresented: $showingApplicationActions, arrowEdge: .bottom) {
+                        applicationActions
+                    }
             }
         }.padding(14)
     }
@@ -263,38 +274,67 @@ struct ManagerView: View {
         pendingDeletion = nil
     }
 
-    private func synchronizeSmokeEventActions() {
-        guard UISmokeConfiguration.wasRequested else { return }
-        let registry = UISmokeControlRegistry.shared
-        let prefixes = ["event.action.add-subtask.", "event.action.edit.", "event.action.delete."]
-        let currentIDs = Set(store.active.map(\.id.uuidString))
-        for prefix in prefixes {
-            for id in registry.ids(withPrefix: prefix) where !currentIDs.contains(String(id.dropFirst(prefix.count))) {
-                registry.remove(id: id)
+    private func eventActions(eventID: UUID) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Button("Добавить подзадачу") {
+                eventActionsID = nil
+                openQuickSubtaskEditor(eventID: eventID, subtask: nil)
             }
-        }
-        for item in store.active {
-            let eventID = item.id
-            registry.register(
+            .disabled((store.active.first(where: { $0.id == eventID })?.subtasks.count ?? Subtask.maximumCount) >= Subtask.maximumCount)
+            .accessibilityIdentifier("event.action.add-subtask.\(eventID.uuidString)")
+            .uiSmokeControl(
                 id: "event.action.add-subtask.\(eventID.uuidString)",
-                action: { openQuickSubtaskEditor(eventID: eventID, subtask: nil) },
-                value: nil,
-                isEnabled: item.subtasks.count < Subtask.maximumCount
+                action: {
+                    eventActionsID = nil
+                    openQuickSubtaskEditor(eventID: eventID, subtask: nil)
+                }
             )
-            registry.register(
+            Divider()
+            Button("Редактировать событие") {
+                eventActionsID = nil
+                editCurrent(eventID)
+            }
+            .accessibilityIdentifier("event.action.edit.\(eventID.uuidString)")
+            .uiSmokeControl(
                 id: "event.action.edit.\(eventID.uuidString)",
-                action: { editCurrent(eventID) },
-                value: nil,
-                isEnabled: true
+                action: {
+                    eventActionsID = nil
+                    editCurrent(eventID)
+                }
             )
-            registry.register(
+            Button("Удалить событие", role: .destructive) {
+                eventActionsID = nil
+                requestCurrentDeletion(eventID)
+            }
+            .accessibilityIdentifier("event.action.delete.\(eventID.uuidString)")
+            .uiSmokeControl(
                 id: "event.action.delete.\(eventID.uuidString)",
-                action: { requestCurrentDeletion(eventID) },
-                value: nil,
-                isEnabled: true
+                action: {
+                    eventActionsID = nil
+                    requestCurrentDeletion(eventID)
+                }
             )
         }
+        .padding(10)
     }
+
+    private var applicationActions: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Button("Открыть папку диагностики…") {
+                showingApplicationActions = false
+                store.openDiagnostics()
+            }
+            Divider()
+            Button("Перезапустить") {
+                showingApplicationActions = false
+                store.restart()
+            }
+            Divider()
+            Button("Выйти из Countdown Manager") { NSApp.terminate(nil) }
+        }
+        .padding(10)
+    }
+
 }
 
 private struct SubtaskChecklistView: View {
@@ -305,6 +345,7 @@ private struct SubtaskChecklistView: View {
 
     @ObservedObject private var disclosureState: SubtaskDisclosureState
     @State private var hoveredSubtaskID: UUID?
+    @State private var subtaskActionsID: UUID?
 
     init(
         store: Store,
@@ -351,7 +392,7 @@ private struct SubtaskChecklistView: View {
                         Button("+ Добавить") {
                             openQuickSubtaskEditor(item.id, nil)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(PressScaleButtonStyle())
                         .font(.caption)
                         .foregroundStyle(Color.accentColor)
                         .padding(.leading, 24)
@@ -366,6 +407,7 @@ private struct SubtaskChecklistView: View {
                 .accessibilityIdentifier("subtasks.list")
             }
         }
+        .animation(.easeInOut(duration: 0.16), value: item.subtasks.map(\.isCompleted))
         .animation(.easeInOut(duration: 0.18), value: isExpanded)
     }
 
@@ -402,29 +444,29 @@ private struct SubtaskChecklistView: View {
                     .help(subtask.text)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Menu {
-                    Button("Редактировать") {
-                        openQuickSubtaskEditor(item.id, subtask)
-                    }
-                    .accessibilityIdentifier("subtask.action.edit.\(subtask.id.uuidString)")
-                    Button("Удалить", role: .destructive) {
-                        Task { await store.deleteSubtask(eventID: item.id, subtaskID: subtask.id) }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis").font(.caption)
+                Button { subtaskActionsID = subtask.id } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.caption)
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
                 }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .frame(width: 20)
+                .buttonStyle(PressScaleButtonStyle())
                 .opacity(hoveredSubtaskID == subtask.id ? 1 : 0.25)
-                .accessibilityLabel("Действия подзадачи: \(subtask.text)")
+                .accessibilityLabel("Действия подзадачи")
+                .accessibilityIdentifier("subtask.actions.\(subtask.id.uuidString)")
+                .uiSmokeControl(
+                    id: "subtask.actions.\(subtask.id.uuidString)",
+                    action: { subtaskActionsID = subtask.id }
+                )
+                .popover(isPresented: Binding(
+                    get: { subtaskActionsID == subtask.id },
+                    set: { if !$0 { subtaskActionsID = nil } }
+                ), arrowEdge: .trailing) {
+                    subtaskActions(subtaskID: subtask.id)
+                }
             }
             .onHover { hovering in hoveredSubtaskID = hovering ? subtask.id : nil }
             .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
-            .uiSmokeControl(
-                id: "subtask.action.edit.\(subtask.id.uuidString)",
-                action: { openCurrentSubtaskEditor(subtask.id) }
-            )
         }
     }
 
@@ -437,6 +479,28 @@ private struct SubtaskChecklistView: View {
             .first(where: { $0.id == item.id })?
             .subtasks.first(where: { $0.id == subtaskID }) else { return }
         openQuickSubtaskEditor(item.id, subtask)
+    }
+
+    private func subtaskActions(subtaskID: UUID) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Button("Редактировать") {
+                subtaskActionsID = nil
+                openCurrentSubtaskEditor(subtaskID)
+            }
+            .accessibilityIdentifier("subtask.action.edit.\(subtaskID.uuidString)")
+            .uiSmokeControl(
+                id: "subtask.action.edit.\(subtaskID.uuidString)",
+                action: {
+                    subtaskActionsID = nil
+                    openCurrentSubtaskEditor(subtaskID)
+                }
+            )
+            Button("Удалить", role: .destructive) {
+                subtaskActionsID = nil
+                Task { await store.deleteSubtask(eventID: item.id, subtaskID: subtaskID) }
+            }
+        }
+        .padding(10)
     }
 }
 
@@ -637,8 +701,10 @@ struct EditorView: View {
                                     Button(symbol) {
                                         chooseEmoji(symbol)
                                     }
-                                    .buttonStyle(.borderless)
+                                    .buttonStyle(PressScaleButtonStyle())
                                     .font(.system(size: 23))
+                                    .frame(width: 34, height: 34)
+                                    .contentShape(Rectangle())
                                     .accessibilityLabel("Выбрать \(symbol)")
                                     .accessibilityIdentifier("editor.emoji.preset.\(emojiIdentifier(symbol))")
                                     .uiSmokeControl(
@@ -750,8 +816,12 @@ struct EditorView: View {
                         .frame(width: 34, alignment: .trailing)
                     Button(role: .destructive) {
                         draft.subtasks.removeAll { $0.id == subtask.id }
-                    } label: { Image(systemName: "trash") }
-                    .buttonStyle(.borderless)
+                    } label: {
+                        Image(systemName: "trash")
+                            .frame(width: 28, height: 28)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressScaleButtonStyle())
                     .help("Удалить подзадачу")
                     .accessibilityLabel("Удалить подзадачу")
                 }
@@ -759,7 +829,7 @@ struct EditorView: View {
             }
             if draft.subtasks.count < Subtask.maximumCount {
                 Button("+ Добавить") { addSubtask(scrollProxy: scrollProxy) }
-                .buttonStyle(.plain)
+                .buttonStyle(PressScaleButtonStyle())
                 .foregroundStyle(Color.accentColor)
                 .accessibilityLabel("Добавить подзадачу")
                 .accessibilityIdentifier("editor.subtask.add")
@@ -777,7 +847,7 @@ struct EditorView: View {
                 Button(symbol) {
                     chooseEmoji(symbol)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressScaleButtonStyle())
                 .font(.system(size: 22))
                 .frame(width: 34, height: 32)
                 .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
