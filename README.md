@@ -101,11 +101,12 @@ open "Countdown Manager.app"
 ./verify.sh fast  # CoreChecks + UIChecks
 ./verify.sh ui    # release build + Real UI Smoke
 ./verify.sh full  # оба набора
+./run-xcui-tests.sh  # настоящий macOS XCUITest, требуется полный Xcode
 ```
 
 `CoreChecks` покрывает валидацию событий и подзадач, редактирование события `Сегодня`, жизненный цикл, стабильный порядок, legacy/new JSON round-trip и revision ordering. `UIChecks` использует тот же presentation/state-слой, что и SwiftUI, и детерминированно проверяет пользовательские строки, карточку, дату и отсчёт, чек-лист, collapse-state, быстрые операции, empty state и строку меню. `Real UI Smoke` запускает собранное приложение в изолированном профиле: проверяет lifecycle popup, focus, локальный emoji picker, сохранение и отмену, а также многократный collapse/expand при одном и нескольких событиях.
 
-На машине разработки установлен только Apple Command Line Tools без полного Xcode. Поэтому системный XCUITest здесь недоступен: `UIChecks` не запускает accessibility-дерево и не заменяет ручную визуальную проверку.
+XCUITest-набор использует минимальный `CountdownManager.xcodeproj`, собирает отдельную тестовую копию приложения и запускается из CLI без ручного открытия Xcode. Каждый тест работает с собственным временным Application Support-профилем и fixture-данными; production `countdowns.json`, UserDefaults и журналы не используются.
 
 ## Управление проектом через ИИ
 

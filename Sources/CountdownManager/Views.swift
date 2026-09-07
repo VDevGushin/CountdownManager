@@ -209,6 +209,7 @@ struct ManagerView: View {
                 .fill(presentation.isPrimary ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.045))
         )
         .animation(.easeInOut(duration: 0.2), value: presentation.isPrimary)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("event.card.\(item.id.uuidString)")
         .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.title })
     }
@@ -412,6 +413,7 @@ private struct SubtaskChecklistView: View {
                         )
                     }
                 }
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("subtasks.list")
             }
         }
@@ -474,6 +476,7 @@ private struct SubtaskChecklistView: View {
                 }
             }
             .onHover { hovering in hoveredSubtaskID = hovering ? subtask.id : nil }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
         }
     }
@@ -564,6 +567,7 @@ private struct QuickSubtaskEditorView: View {
         }
         .padding(20)
         .frame(width: 340)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("quick-subtask.editor")
         .uiSmokeControl(id: "quick-subtask.editor")
         .onAppear { focus() }
@@ -756,6 +760,7 @@ struct EditorView: View {
             .padding(.top, 12)
         }
         .padding(20)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(item == nil ? "editor.new" : "editor.edit")
         .uiSmokeControl(id: item == nil ? "editor.new" : "editor.edit")
         .onAppear {

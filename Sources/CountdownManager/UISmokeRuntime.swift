@@ -8,6 +8,8 @@ struct UISmokeConfiguration {
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
     static let markerName = ".countdown-ui-smoke-environment"
+    static let xcuiTestLaunchArgument = "--xcui-testing"
+    static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
 
     let homeURL: URL
     let resultURL: URL
@@ -20,6 +22,14 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
     }
 
+    static var xcuiTestWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(xcuiTestLaunchArgument)
+    }
+
+    static var isolatedTestEnvironmentWasRequested: Bool {
+        wasRequested || xcuiTestWasRequested
+    }
+
     static var collapseRegressionWasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
     }
@@ -29,14 +39,15 @@ struct UISmokeConfiguration {
     }
 
     static func load() throws -> UISmokeConfiguration? {
-        guard wasRequested else { return nil }
+        guard isolatedTestEnvironmentWasRequested else { return nil }
         let environment = ProcessInfo.processInfo.environment
         guard let rawHome = environment["COUNTDOWN_MANAGER_TEST_HOME"], !rawHome.isEmpty else {
             throw Failure("COUNTDOWN_MANAGER_TEST_HOME is required")
         }
         let homeURL = URL(fileURLWithPath: rawHome, isDirectory: true)
             .standardizedFileURL.resolvingSymlinksInPath()
-        guard FileManager.default.fileExists(atPath: homeURL.appendingPathComponent(markerName).path) else {
+        let requiredMarker = xcuiTestWasRequested ? xcuiTestMarkerName : markerName
+        guard FileManager.default.fileExists(atPath: homeURL.appendingPathComponent(requiredMarker).path) else {
             throw Failure("test-home marker is missing")
         }
         if let accountHome = environment["HOME"] {

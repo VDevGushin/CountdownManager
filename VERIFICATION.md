@@ -1,3 +1,30 @@
+# Проверка 7 сентября 2026 — status-item lifecycle для quick-subtask sheet
+
+- XCUITest baseline воспроизвёл product bug: настоящий click по menu-bar status-item не доходил до обычного action, пока New/Edit Subtask был открыт как модальный macOS sheet. После закрытия первый системный reopen accessory-приложения мог также дать двойной toggle.
+- На время quick-subtask sheet приложение устанавливает локальный и системный monitor только для mouse-down. Он сравнивает координату с frame собственного status-item, закрывает parent popup и оставляет существующий teardown сбросить transient session. После закрытия monitor остаётся только до следующего status-item click, чтобы открыть чистый root даже при предварительной активации accessory-приложения, затем удаляется. Текст и другие пользовательские события не читаются и не журналируются.
+- Добавлены два настоящих XCUITest regression без внутренних hooks: New Subtask и Edit Subtask вводят несохранённый текст, нажимают доступный `StatusItem`, проверяют закрытие всего popup, следующим настоящим click открывают root без sheet, затем через Event Editor подтверждают отсутствие нового текста и сохранность исходной подзадачи.
+- Полный XCUITest-набор после фикса — 9/9. Существующие New/Edit Event, save/delete и checklist-сценарии не изменены и прошли. Arbitrary outside-click по-прежнему manual-only; workaround для него не добавлялся. Старый Real UI Smoke не удалён и не сокращён.
+- До и после self-review выполнены два полных XCUITest-прогона 9/9 без retries и падений; post-review прогон занял 149 секунд. Оба `./verify.sh full` зелёные; финальный результат: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 28/28; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3. Flaky-тестов не выявлено.
+
+# Проверка 7 сентября 2026 — macOS XCUITest baseline
+
+- Добавлен минимальный `CountdownManager.xcodeproj` с macOS app target, статическими target-модулями существующего кода и `CountdownManagerXCUITests` на XCTest/XCUIAutomation. Swift Package, `CoreChecks`, `UIChecks` и Real UI Smoke сохранены без миграции или сокращения.
+- Введён test-only запуск `--xcui-testing`. Он принимается только вместе с `COUNTDOWN_MANAGER_TEST_HOME` и marker-файлом `.countdown-xcui-test-environment`; без обеих частей приложение отказывается стартовать в тестовом режиме. Данные, диагностические журналы и disclosure UserDefaults направляются в уникальный временный профиль, который тест удаляет после завершения.
+- CLI runner: `./run-xcui-tests.sh`. Он создаёт отдельный DerivedData под `/private/tmp`, выполняет `xcodebuild test` для локального macOS и очищает сборочный каталог.
+- XCUITest реально покрывает launch/clean termination, root popup, New Event → Cancel, Edit Event → Cancel, Save event, New Subtask → Cancel/Save, Edit Subtask → Cancel/Save, checklist collapse/expand, delete confirmation Cancel/Confirm и status-item lifecycle для обычного event editor и quick-subtask sheet.
+- Status-item доступен XCUIAutomation как `StatusItem` с accessibility label `Countdown Manager`. Настоящий click закрывает popup как без sheet, так и при New/Edit Subtask; следующий click открывает чистый root без sheet/draft.
+- Настоящий arbitrary outside-click остаётся недоступен: Finder не публикует окно в этой XCUI-сессии, а координатная система accessory-app не предоставляет конечный application frame. Большой workaround и изменение production architecture не добавлялись. Outside-click для New/Edit Subtask остаётся manual acceptance case.
+- До lifecycle-фикса два полных baseline-прогона прошли 7/7 без retries и падений; после фикса набор расширен до 9 тестов.
+- Real UI Smoke пока следует сохранить целиком: он надёжно проверяет внутренние AppKit prerequisites, focus/geometry и проблемные teardown/freeze-пути, которые XCUIAutomation не видит либо не может воспроизвести. Возможную миграцию дублирующихся happy-path сценариев стоит рассматривать отдельно после acceptance и серии стабильных CI-прогонов XCUITest.
+
+| Слой | Что проверяет |
+| --- | --- |
+| CoreChecks | Модель, валидация, календарные правила, CRUD, JSON/legacy compatibility, repository и revision ordering. |
+| UIChecks | Детерминированные presentation/state-переходы редакторов, событий, подзадач, disclosure и menu-bar title без запуска AppKit UI. |
+| Real UI Smoke | Реальный AppKit/SwiftUI popup через внутренний driver: focus, emoji, save/cancel, teardown/root-scroll и повторный collapse/freeze regression. |
+| XCUITest | Внешние пользовательские clicks, ввод, scroll, sheets/dialogs, сохранение/удаление и доступный status-item через XCUIAutomation. |
+| Manual-only | Arbitrary outside-click для New/Edit Subtask; доступная XCUIAutomation-сессия не предоставляет внешнюю координатную surface. |
+
 # Проверка 7 сентября 2026 — status item во время quick-subtask sheet
 
 - При открытом New/Edit Subtask click вне popup закрывает всю transient session; это уже покрыто close/reopen smoke. Отдельно добавлена regression через настоящий action `NSStatusItem.button.performClick`: открытый quick sheet → status item закрывает popup → повторный status-item открывает чистый root без sheet и без изменения данных.
@@ -89,4 +116,4 @@
 - Добавлен постоянный диагностический журнал с ротацией и сторож главного потока. Проверены создание журнала, записи `app.launch` и `data.load success`, а также пункт меню открытия папки диагностики. В журнал не записываются названия событий и emoji.
 - Intel и macOS 13–25 на этом компьютере не проверялись.
 
-Проверки запускаются через `swift run CoreChecks` и `swift run UIChecks`: XCTest/XCUITest требуют отсутствующий здесь полный Xcode, поэтому проверки используют независимые исполняемые targets без внешних библиотек.
+Независимые Swift Package targets по-прежнему запускаются через `swift run CoreChecks` и `swift run UIChecks` без Xcode-проекта.

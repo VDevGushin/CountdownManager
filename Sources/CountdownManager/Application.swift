@@ -20,7 +20,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
     private var subscription: AnyCancellable?
     private var uiSmokeRuntime: UISmokeRuntime?
     private var sheetEndObserver: NSObjectProtocol?
+    private var statusItemMouseMonitor: Any?
+    private var globalStatusItemMouseMonitor: Any?
     private var isAwaitingQuickSubtaskSheetEnd = false
+    private var shouldDeferNextStatusItemReopen = false
     private var quickSubtaskSheetRestorationRevision = 0
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -62,7 +65,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
             DispatchQueue.main.async { self?.updateTitle() }
         }
         updateTitle()
-        if let uiSmokeConfiguration {
+        if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
             uiSmokeRuntime = UISmokeRuntime(
                 configuration: uiSmokeConfiguration,
                 store: store,
@@ -79,6 +82,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
                 self?.showPopover()
                 self?.uiSmokeRuntime?.start()
             }
+        } else if uiSmokeConfiguration != nil, UISmokeConfiguration.xcuiTestWasRequested {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.showPopover()
+            }
         }
     }
 
@@ -93,9 +100,83 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
             closePopover()
             return
         }
+        shouldDeferNextStatusItemReopen = false
+        stopQuickSubtaskSheetMonitoring()
         DiagnosticLog.shared.record("popover.open")
         store.refresh()
         showPopover()
+    }
+
+    private func handleStatusItemMouseDown(_ event: NSEvent) -> NSEvent? {
+        guard let button = statusItem.button,
+              event.window === button.window,
+              button.bounds.contains(button.convert(event.locationInWindow, from: nil)) else {
+            return event
+        }
+        if isAwaitingQuickSubtaskSheetEnd, popover.isShown {
+            closeQuickSubtaskPopoverFromStatusItem()
+            return nil
+        }
+        if shouldDeferNextStatusItemReopen, !popover.isShown {
+            completeDeferredStatusItemReopen()
+            return nil
+        }
+        return event
+    }
+
+    private func handleGlobalStatusItemMouseDown(at screenPoint: NSPoint) {
+        guard isPointInsideStatusItem(screenPoint) else { return }
+        if isAwaitingQuickSubtaskSheetEnd, popover.isShown {
+            closeQuickSubtaskPopoverFromStatusItem()
+        } else if shouldDeferNextStatusItemReopen, !popover.isShown {
+            completeDeferredStatusItemReopen()
+        }
+    }
+
+    private func closeQuickSubtaskPopoverFromStatusItem() {
+        shouldDeferNextStatusItemReopen = true
+        DiagnosticLog.shared.record("popover.close source=status-item sheet=quick-subtask")
+        closePopover()
+    }
+
+    private func completeDeferredStatusItemReopen() {
+        shouldDeferNextStatusItemReopen = false
+        stopQuickSubtaskSheetMonitoring()
+        DiagnosticLog.shared.record("popover.open source=status-item after=quick-subtask")
+        store.refresh()
+        DispatchQueue.main.async { [weak self] in
+            self?.showPopover()
+        }
+    }
+
+    private func isPointInsideStatusItem(_ screenPoint: NSPoint) -> Bool {
+        guard let button = statusItem.button, let window = button.window else { return false }
+        return window.convertToScreen(button.convert(button.bounds, to: nil)).contains(screenPoint)
+    }
+
+    private func beginQuickSubtaskSheetPresentation() {
+        isAwaitingQuickSubtaskSheetEnd = true
+        guard statusItemMouseMonitor == nil, globalStatusItemMouseMonitor == nil else { return }
+        statusItemMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+            self?.handleStatusItemMouseDown(event) ?? event
+        }
+        globalStatusItemMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
+            let mouseLocation = NSEvent.mouseLocation
+            Task { @MainActor [weak self] in
+                self?.handleGlobalStatusItemMouseDown(at: mouseLocation)
+            }
+        }
+    }
+
+    private func stopQuickSubtaskSheetMonitoring() {
+        if let statusItemMouseMonitor {
+            NSEvent.removeMonitor(statusItemMouseMonitor)
+            self.statusItemMouseMonitor = nil
+        }
+        if let globalStatusItemMouseMonitor {
+            NSEvent.removeMonitor(globalStatusItemMouseMonitor)
+            self.globalStatusItemMouseMonitor = nil
+        }
     }
 
     private func showPopover() {
@@ -117,6 +198,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
     func popoverDidClose(_ notification: Notification) {
         DiagnosticLog.shared.record("popover.closed session=reset")
         isAwaitingQuickSubtaskSheetEnd = false
+        if !shouldDeferNextStatusItemReopen {
+            stopQuickSubtaskSheetMonitoring()
+        }
         resetTransientSession()
     }
 
@@ -131,7 +215,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
                     self?.restoreTransientPopoverInteraction()
                 },
                 quickSubtaskWillPresent: { [weak self] in
-                    self?.isAwaitingQuickSubtaskSheetEnd = true
+                    self?.beginQuickSubtaskSheetPresentation()
                 }
             )
         )
@@ -141,6 +225,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         guard isAwaitingQuickSubtaskSheetEnd,
               parentWindow === popover.contentViewController?.view.window else { return }
         isAwaitingQuickSubtaskSheetEnd = false
+        stopQuickSubtaskSheetMonitoring()
         restoreTransientPopoverInteraction { [weak self] in
             self?.quickSubtaskSheetRestorationRevision += 1
         }
@@ -167,12 +252,22 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        stopQuickSubtaskSheetMonitoring()
+        if let sheetEndObserver {
+            NotificationCenter.default.removeObserver(sheetEndObserver)
+            self.sheetEndObserver = nil
+        }
         MainThreadWatchdog.shared.stop()
         DiagnosticLog.shared.record("app.terminate")
         DiagnosticLog.shared.flush()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if shouldDeferNextStatusItemReopen {
+            if isPointInsideStatusItem(NSEvent.mouseLocation) { return false }
+            shouldDeferNextStatusItemReopen = false
+            stopQuickSubtaskSheetMonitoring()
+        }
         if !popover.isShown { togglePopover() }
         return true
     }
