@@ -1,3 +1,10 @@
+# Проверка 7 сентября 2026 — lifecycle после закрытия transient editor
+
+- Manual acceptance на установленной `6b0043d` выявил, что после Cancel у inline event editor или SwiftUI quick-subtask sheet main popover мог остаться без обычного transient outside-click поведения. Причина — teardown не возвращал parent `NSPopover` в его root interaction state: после inline editor сохранялся прежний first responder, а после sheet не было явного restoration parent window.
+- После завершения event editor или фактического dismiss quick-subtask sheet popup асинхронно возвращает `.transient` behavior, делает root window key и переводит first responder в root content. Root UI не пересоздаётся; `Menu`, lazy-layout и freeze-fix path не менялись. Тот же путь используется, если редактируемое событие исчезает во время editor.
+- Real UI Smoke дополнен четырьмя Cancel-regression: New Event, Edit Event, New Subtask и Edit Subtask. Для каждого подтверждаются root state, отсутствие `NSApp.modalWindow`/attached sheet, `.transient` behavior и root first responder. Доступный UI-driver не может надёжно направить click в чужое окно, поэтому сам final outside-click остаётся короткой manual acceptance, а его AppKit prerequisites покрыты автоматически.
+- Итоговый full gate после self-review: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 27/27; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3.
+
 # Проверка 6 сентября 2026 — freeze после teardown editor / root scroll
 
 - Новый live sample установленной `4e6c2af` сравнен с предыдущим collapse freeze. В обоих случаях main thread находится в SwiftUI transaction / AttributeGraph, но новый sample локализует источник точнее: `AppKitPopUpAdaptor.PlatformView.updateNSView` → `PlatformItemList.Item.update` → accessibility resolution для SF Symbol. В момент sample production process имел 3.4 GB physical footprint; отдельный read-only `vmmap` показал 8.0 GB `MALLOC_SMALL`, 82 млн allocations и 7.8 GB swap. Это runaway Menu update, а не persistence или data save.

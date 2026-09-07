@@ -19,6 +19,7 @@ private struct PressScaleButtonStyle: ButtonStyle {
 
 struct ManagerView: View {
     @ObservedObject var store: Store
+    let transientDidDismiss: () -> Void
     @State private var editing: Countdown?
     @State private var showingEditor = false
     @State private var pendingDeletion: Countdown?
@@ -29,7 +30,7 @@ struct ManagerView: View {
     var body: some View {
         VStack(spacing: 0) {
             if showingEditor {
-                EditorView(store: store, item: editing) { showingEditor = false; editing = nil }
+                EditorView(store: store, item: editing, done: finishEditor)
             } else {
                 header
                 Divider()
@@ -73,11 +74,10 @@ struct ManagerView: View {
         .uiSmokeControl(id: "root.popup")
         .onChange(of: store.active.map(\.id)) { activeIDs in
             if let editing, !activeIDs.contains(editing.id) {
-                showingEditor = false
-                self.editing = nil
+                finishEditor()
             }
         }
-        .sheet(item: $quickSubtaskEditor) { target in
+        .sheet(item: $quickSubtaskEditor, onDismiss: transientDidDismiss) { target in
             QuickSubtaskEditorView(store: store, target: target) {
                 quickSubtaskEditor = nil
             }
@@ -232,6 +232,12 @@ struct ManagerView: View {
                     }
             }
         }.padding(14)
+    }
+
+    private func finishEditor() {
+        showingEditor = false
+        editing = nil
+        transientDidDismiss()
     }
 
     private func add() {

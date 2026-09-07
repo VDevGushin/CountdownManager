@@ -80,6 +80,7 @@ final class UISmokeRuntime {
     private let window: () -> NSWindow?
     private let closePopover: () -> Void
     private let openPopover: () -> Void
+    private let isTransientPopoverReady: () -> Bool
     private let controls = UISmokeControlRegistry.shared
     private var passed: [String] = []
     private var responderToRegistryOffsets: [ObjectIdentifier: CGPoint] = [:]
@@ -89,13 +90,15 @@ final class UISmokeRuntime {
         store: Store,
         window: @escaping () -> NSWindow?,
         closePopover: @escaping () -> Void,
-        openPopover: @escaping () -> Void
+        openPopover: @escaping () -> Void,
+        isTransientPopoverReady: @escaping () -> Bool
     ) {
         self.configuration = configuration
         self.store = store
         self.window = window
         self.closePopover = closePopover
         self.openPopover = openPopover
+        self.isTransientPopoverReady = isTransientPopoverReady
     }
 
     func start() {
@@ -294,6 +297,13 @@ final class UISmokeRuntime {
 
         try press("event.add")
         try await waitForElement("editor.new")
+        try press("editor.cancel")
+        try await waitForElement("event.add")
+        try await waitForTransientPopoverReady()
+        pass("new event Cancel restores transient popover interaction")
+
+        try press("event.add")
+        try await waitForElement("editor.new")
         try await waitForFirstResponder("editor.title")
         try insertText("Unsaved Smoke Draft")
         try await waitForValue("editor.title", equals: "Unsaved Smoke Draft")
@@ -439,8 +449,9 @@ final class UISmokeRuntime {
         try await focusAndReplace("editor.title", with: "Cancelled title")
         try press("editor.cancel")
         try await waitForElement("event.card.\(eventID.uuidString)")
+        try await waitForTransientPopoverReady()
         try require(store.active.first?.title == originalTitle, "Cancel changed event")
-        pass("Cancel returns to root without saving")
+        pass("edit event Cancel restores transient popover interaction")
 
         try await pressEventAction("edit", eventID: eventID)
         try await waitForElement("editor.edit")
@@ -452,6 +463,14 @@ final class UISmokeRuntime {
         let originalCount = try requireValue(store.active.first?.subtasks.count, "subtask count")
         try press("event.quick-subtask.add.\(eventID.uuidString)")
         try await waitForElement("quick-subtask.editor")
+        try press("quick-subtask.cancel")
+        try await waitFor("quick subtask Cancel root") { self.controls.entries["quick-subtask.editor"] == nil }
+        try await waitForTransientPopoverReady()
+        try require(store.active.first?.subtasks.count == originalCount, "quick subtask Cancel changed data")
+        pass("new subtask Cancel restores transient popover interaction")
+
+        try press("event.quick-subtask.add.\(eventID.uuidString)")
+        try await waitForElement("quick-subtask.editor")
         try await waitForFirstResponder("quick-subtask.field")
         try await verifyQuickSubtaskFocusGeometry()
         pass("quick subtask focus-ring geometry")
@@ -460,6 +479,17 @@ final class UISmokeRuntime {
         try await dismissAndReopen()
         try require(store.active.first?.subtasks.count == originalCount, "quick add survived popup dismissal")
         pass("popup close cancels quick subtask add")
+
+        try await pressSubtaskAction("edit", subtaskID: secondSubtaskID)
+        try await waitForElement("quick-subtask.editor")
+        try press("quick-subtask.cancel")
+        try await waitFor("quick subtask edit Cancel root") { self.controls.entries["quick-subtask.editor"] == nil }
+        try await waitForTransientPopoverReady()
+        try require(
+            store.active.first?.subtasks.first(where: { $0.id == secondSubtaskID })?.text == "Active edited",
+            "quick subtask edit Cancel changed data"
+        )
+        pass("edit subtask Cancel restores transient popover interaction")
 
         try await pressSubtaskAction("edit", subtaskID: secondSubtaskID)
         try await waitForElement("quick-subtask.editor")
@@ -511,6 +541,12 @@ final class UISmokeRuntime {
                 && self.controls.entries["editor.edit"] == nil
                 && self.controls.entries["quick-subtask.editor"] == nil
                 && self.controls.entries["event.delete.confirm"] == nil
+        }
+    }
+
+    private func waitForTransientPopoverReady() async throws {
+        try await waitFor("transient popover teardown") {
+            self.isTransientPopoverReady()
         }
     }
 

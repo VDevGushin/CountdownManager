@@ -56,7 +56,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
                 store: store,
                 window: { [weak self] in self?.popover.contentViewController?.view.window },
                 closePopover: { [weak self] in self?.closePopover() },
-                openPopover: { [weak self] in self?.showPopover() }
+                openPopover: { [weak self] in self?.showPopover() },
+                isTransientPopoverReady: { [weak self] in self?.isTransientPopoverReady() ?? false }
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPopover()
@@ -103,7 +104,30 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         if UISmokeConfiguration.wasRequested {
             UISmokeControlRegistry.shared.reset()
         }
-        popover.contentViewController = NSHostingController(rootView: ManagerView(store: store))
+        popover.contentViewController = NSHostingController(
+            rootView: ManagerView(store: store) { [weak self] in
+                self?.restoreTransientPopoverInteraction()
+            }
+        )
+    }
+
+    private func restoreTransientPopoverInteraction() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.popover.isShown,
+                  let window = self.popover.contentViewController?.view.window else { return }
+            self.popover.behavior = .transient
+            window.makeKey()
+            window.makeFirstResponder(window.contentView)
+        }
+    }
+
+    private func isTransientPopoverReady() -> Bool {
+        guard popover.isShown,
+              popover.behavior == .transient,
+              NSApp.modalWindow == nil,
+              let window = popover.contentViewController?.view.window,
+              window.attachedSheet == nil else { return false }
+        return window.firstResponder === window.contentView
     }
 
     func applicationWillTerminate(_ notification: Notification) {
