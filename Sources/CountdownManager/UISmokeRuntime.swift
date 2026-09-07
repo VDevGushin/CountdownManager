@@ -80,6 +80,7 @@ final class UISmokeRuntime {
     private let window: () -> NSWindow?
     private let closePopover: () -> Void
     private let openPopover: () -> Void
+    private let pressStatusItem: () -> Void
     private let isTransientPopoverReady: () -> Bool
     private let quickSubtaskSheetRestorationRevision: () -> Int
     private let controls = UISmokeControlRegistry.shared
@@ -92,6 +93,7 @@ final class UISmokeRuntime {
         window: @escaping () -> NSWindow?,
         closePopover: @escaping () -> Void,
         openPopover: @escaping () -> Void,
+        pressStatusItem: @escaping () -> Void,
         isTransientPopoverReady: @escaping () -> Bool,
         quickSubtaskSheetRestorationRevision: @escaping () -> Int
     ) {
@@ -100,6 +102,7 @@ final class UISmokeRuntime {
         self.window = window
         self.closePopover = closePopover
         self.openPopover = openPopover
+        self.pressStatusItem = pressStatusItem
         self.isTransientPopoverReady = isTransientPopoverReady
         self.quickSubtaskSheetRestorationRevision = quickSubtaskSheetRestorationRevision
     }
@@ -483,6 +486,20 @@ final class UISmokeRuntime {
         try await dismissAndReopen()
         try require(store.active.first?.subtasks.count == originalCount, "quick add survived popup dismissal")
         pass("popup close cancels quick subtask add")
+
+        try press("event.quick-subtask.add.\(eventID.uuidString)")
+        try await waitForElement("quick-subtask.editor")
+        pressStatusItem()
+        try await waitFor("status item closes quick subtask popup") { self.window() == nil }
+        pressStatusItem()
+        try await waitFor("status item reopens root after quick subtask") {
+            self.window() != nil
+                && self.controls.entries["event.list"] != nil
+                && self.controls.entries["quick-subtask.editor"] == nil
+        }
+        try await waitForTransientPopoverReady()
+        try require(store.active.first?.subtasks.count == originalCount, "status item close changed quick subtask data")
+        pass("status item closes and reopens clean root around quick subtask sheet")
 
         let editSubtaskSheetRevision = quickSubtaskSheetRestorationRevision()
         try await pressSubtaskAction("edit", subtaskID: secondSubtaskID)

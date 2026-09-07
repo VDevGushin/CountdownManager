@@ -1,3 +1,9 @@
+# Проверка 7 сентября 2026 — status item во время quick-subtask sheet
+
+- При открытом New/Edit Subtask click вне popup закрывает всю transient session; это уже покрыто close/reopen smoke. Отдельно добавлена regression через настоящий action `NSStatusItem.button.performClick`: открытый quick sheet → status item закрывает popup → повторный status-item открывает чистый root без sheet и без изменения данных.
+- Первый прогон regression показал, что после повторного открытия `showPopover()` оставлял first responder на `_NSPopoverWindow`. Путь открытия теперь явно возвращает responder в root content после `makeKey`, поэтому popup снова имеет normal transient root state. Quick-sheet teardown, event-editor path и freeze fixes не менялись.
+- UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 28/28; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3.
+
 # Проверка 7 сентября 2026 — quick-subtask sheet teardown
 
 - Manual acceptance после `51c5552` подтвердил event-editor restoration, но выявил отдельный путь SwiftUI quick-subtask sheet: его `onDismiss` мог наступить до окончательного AppKit teardown, после чего parent popover снова терял normal transient outside-click behavior.

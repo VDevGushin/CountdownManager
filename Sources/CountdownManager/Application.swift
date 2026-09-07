@@ -69,6 +69,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
                 window: { [weak self] in self?.popover.contentViewController?.view.window },
                 closePopover: { [weak self] in self?.closePopover() },
                 openPopover: { [weak self] in self?.showPopover() },
+                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
                 isTransientPopoverReady: { [weak self] in self?.isTransientPopoverReady() ?? false },
                 quickSubtaskSheetRestorationRevision: { [weak self] in
                     self?.quickSubtaskSheetRestorationRevision ?? 0
@@ -102,7 +103,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         guard let button = statusItem.button else { return }
         NSApp.activate(ignoringOtherApps: true)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        popover.contentViewController?.view.window?.makeKey()
+        if let window = popover.contentViewController?.view.window {
+            window.makeKey()
+            window.makeFirstResponder(window.contentView)
+        }
     }
 
     private func closePopover() {
