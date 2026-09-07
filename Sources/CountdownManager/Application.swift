@@ -19,6 +19,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
     private var store: Store!
     private var subscription: AnyCancellable?
     private var uiSmokeRuntime: UISmokeRuntime?
+    private var sheetEndObserver: NSObjectProtocol?
+    private var isAwaitingQuickSubtaskSheetEnd = false
+    private var quickSubtaskSheetRestorationRevision = 0
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let uiSmokeConfiguration: UISmokeConfiguration?
@@ -45,6 +48,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         popover.delegate = self
         popover.behavior = .transient
         popover.contentSize = NSSize(width: 390, height: 540)
+        sheetEndObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didEndSheetNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor [weak self] in
+                self?.quickSubtaskSheetDidEnd(parentWindow: notification.object as? NSWindow)
+            }
+        }
         resetTransientSession()
         subscription = store.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateTitle() }
@@ -57,7 +69,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
                 window: { [weak self] in self?.popover.contentViewController?.view.window },
                 closePopover: { [weak self] in self?.closePopover() },
                 openPopover: { [weak self] in self?.showPopover() },
-                isTransientPopoverReady: { [weak self] in self?.isTransientPopoverReady() ?? false }
+                isTransientPopoverReady: { [weak self] in self?.isTransientPopoverReady() ?? false },
+                quickSubtaskSheetRestorationRevision: { [weak self] in
+                    self?.quickSubtaskSheetRestorationRevision ?? 0
+                }
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPopover()
@@ -97,6 +112,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
 
     func popoverDidClose(_ notification: Notification) {
         DiagnosticLog.shared.record("popover.closed session=reset")
+        isAwaitingQuickSubtaskSheetEnd = false
         resetTransientSession()
     }
 
@@ -105,19 +121,35 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
             UISmokeControlRegistry.shared.reset()
         }
         popover.contentViewController = NSHostingController(
-            rootView: ManagerView(store: store) { [weak self] in
-                self?.restoreTransientPopoverInteraction()
-            }
+            rootView: ManagerView(
+                store: store,
+                transientDidDismiss: { [weak self] in
+                    self?.restoreTransientPopoverInteraction()
+                },
+                quickSubtaskWillPresent: { [weak self] in
+                    self?.isAwaitingQuickSubtaskSheetEnd = true
+                }
+            )
         )
     }
 
-    private func restoreTransientPopoverInteraction() {
+    private func quickSubtaskSheetDidEnd(parentWindow: NSWindow?) {
+        guard isAwaitingQuickSubtaskSheetEnd,
+              parentWindow === popover.contentViewController?.view.window else { return }
+        isAwaitingQuickSubtaskSheetEnd = false
+        restoreTransientPopoverInteraction { [weak self] in
+            self?.quickSubtaskSheetRestorationRevision += 1
+        }
+    }
+
+    private func restoreTransientPopoverInteraction(completion: (() -> Void)? = nil) {
         DispatchQueue.main.async { [weak self] in
             guard let self, self.popover.isShown,
                   let window = self.popover.contentViewController?.view.window else { return }
             self.popover.behavior = .transient
             window.makeKey()
             window.makeFirstResponder(window.contentView)
+            completion?()
         }
     }
 

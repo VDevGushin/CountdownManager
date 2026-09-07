@@ -1,3 +1,10 @@
+# Проверка 7 сентября 2026 — quick-subtask sheet teardown
+
+- Manual acceptance после `51c5552` подтвердил event-editor restoration, но выявил отдельный путь SwiftUI quick-subtask sheet: его `onDismiss` мог наступить до окончательного AppKit teardown, после чего parent popover снова терял normal transient outside-click behavior.
+- Quick-subtask path больше не восстанавливает parent из раннего SwiftUI callback. Он отмечает presentation, ждёт `NSWindow.didEndSheetNotification` именно от root window popover и только затем возвращает `.transient`, делает parent key и переводит first responder в root content. Перед restoration sheet уже detached; event-editor path, freeze fixes, action popovers и root-scroll не менялись.
+- Smoke требует отдельную revision фактического `didEndSheet` для New Subtask → Cancel и Edit Subtask → Cancel, после чего проверяет root parent state. Сам click в чужое окно остаётся manual acceptance, так как UI-driver не публикует чужую surface для надёжного outside-click.
+- После self-review: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 27/27; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3. Один первый independent UI run дал timeout в существующем collapse scenario; код и timeout не менялись, повторный полный run прошёл полностью зелёным.
+
 # Проверка 7 сентября 2026 — lifecycle после закрытия transient editor
 
 - Manual acceptance на установленной `6b0043d` выявил, что после Cancel у inline event editor или SwiftUI quick-subtask sheet main popover мог остаться без обычного transient outside-click поведения. Причина — teardown не возвращал parent `NSPopover` в его root interaction state: после inline editor сохранялся прежний first responder, а после sheet не было явного restoration parent window.

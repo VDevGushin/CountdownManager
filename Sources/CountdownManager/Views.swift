@@ -20,6 +20,7 @@ private struct PressScaleButtonStyle: ButtonStyle {
 struct ManagerView: View {
     @ObservedObject var store: Store
     let transientDidDismiss: () -> Void
+    let quickSubtaskWillPresent: () -> Void
     @State private var editing: Countdown?
     @State private var showingEditor = false
     @State private var pendingDeletion: Countdown?
@@ -77,7 +78,7 @@ struct ManagerView: View {
                 finishEditor()
             }
         }
-        .sheet(item: $quickSubtaskEditor, onDismiss: transientDidDismiss) { target in
+        .sheet(item: $quickSubtaskEditor) { target in
             QuickSubtaskEditorView(store: store, target: target) {
                 quickSubtaskEditor = nil
             }
@@ -258,6 +259,7 @@ struct ManagerView: View {
     }
 
     private func openQuickSubtaskEditor(eventID: UUID, subtask: Subtask?) {
+        quickSubtaskWillPresent()
         quickSubtaskEditor = QuickSubtaskEditorTarget(eventID: eventID, subtask: subtask)
     }
 
