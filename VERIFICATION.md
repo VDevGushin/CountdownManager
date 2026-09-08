@@ -8,13 +8,52 @@ Canonical test philosophy, cost policy, user-data safety and checkpoint communic
 
 ## Current verification layers
 
-| Layer | What it currently proves |
-| --- | --- |
-| CoreChecks | Domain model, validation, calendar rules, persistence contracts, JSON compatibility and deterministic core behaviour |
-| UIChecks | Presentation/state behaviour without launching the real AppKit UI |
-| Real UI Smoke | Real SwiftUI/AppKit popup behaviour, lifecycle, focus, geometry and regression paths that require actual UI infrastructure |
-| XCUITest | External user interactions through macOS accessibility/UI automation, including real clicks, input, sheets and status-item behaviour |
-| Manual verification | Visual quality or platform interactions that available automation cannot reliably exercise |
+Verification level describes the evidence, not the test target or command name. A higher level is required only when a lower level cannot faithfully exercise the user contract.
+
+| Level | What it proves | Current mechanisms |
+| --- | --- | --- |
+| A. Internal verification | Unit and regression behaviour through internal APIs, smoke controls, test hooks or programmatic lifecycle calls | CoreChecks, UIChecks and internal paths in Real UI Smoke |
+| B. Platform integration verification | Behaviour of the real SwiftUI/AppKit runtime, including application activation, responder, window, popover and sheet lifecycle | Real UI Smoke and targeted integration experiments |
+| C. Installed black-box acceptance | A current real application bundle responds correctly to real user interactions without replacing the action under test with a hook | XCUITest or another worker-operated external interaction driver |
+
+Level C is not a universal UI-automation gate. CoreChecks/UIChecks remain sufficient for model, data and pure-logic changes when their correctness does not depend on external platform interaction.
+
+## Installed black-box trigger
+
+Installed black-box acceptance is required for a user-visible defect or feature whose correctness depends on AppKit event routing, outside click, activation/deactivation, key-window state, first responder/focus, `NSPopover`, `NSMenu`, sheet/window relationships, drag/drop, keyboard or mouse routing, system lifecycle behaviour, or any other case where an internal call is not equivalent to the user action.
+
+Classify the contract by the interaction that can fail, not by the implementation method. For example:
+
+- `outside click closes popup` must exercise a real outside click; calling `closePopover()` is internal regression evidence, not acceptance;
+- `status item click opens popup` must exercise the status item; calling `showPopover()` alone is not black-box acceptance.
+
+Internal hooks remain valid for focused regression tests, but cannot replace the external interaction that is the subject of the defect.
+
+## Bundle provenance
+
+Before installed black-box acceptance, the worker must record evidence that the tested `.app` was built from the current source state. Evidence must identify the source state, build/install step and exact bundle path used by acceptance; a stale or different bundle invalidates the result.
+
+When the owner workflow or runbook uses `/Applications/Countdown Manager.app`, user-facing acceptance must run against a current installed copy there. Acceptance against only a temporary bundle under `/private/tmp` does not prove that installed workflow. Installing or replacing the `/Applications` copy still requires the explicit permission defined in `COUNTDOWN_MANAGER.md`; without that permission or another required environment capability, report the missing evidence as a blocker rather than treating temporary-bundle evidence as equivalent.
+
+## Completion and READY contract
+
+For a change that triggers installed black-box acceptance, the completion report must contain:
+
+```text
+IMPLEMENTATION: pass
+INTERNAL REGRESSION: pass
+INSTALLED BLACK-BOX ACCEPTANCE: pass
+INDEPENDENT REVIEW: pass
+READY: yes
+```
+
+Platform Integration (Level B) may be additional required evidence when the change risk calls for it, but it never satisfies or replaces Level C after the installed black-box trigger has fired.
+
+`READY: yes` is allowed only when all four results are `pass`. Any required result that is `fail`, `unknown`, `not run` or `unavailable` means `READY: no`.
+
+Product Owner manual testing is not part of the normal Definition of Done. The worker and independent reviewer must obtain the required evidence with the available harness/environment. If they cannot, finish with `READY: no` and `BLOCKED: <the exact evidence that could not be obtained>`. Owner acceptance may be additional, but the task must not conclude with “tests pass; now the owner must verify manually” as the route to readiness.
+
+Independent review starts after implementation changes are complete, as required by the existing workflow. It is a distinct gate: the reviewer evaluates both implementation correctness and whether the evidence faithfully tests the real user contract. The concrete review procedure is in `.agents/skills/project-review/SKILL.md`.
 
 ## Commands
 
@@ -69,9 +108,9 @@ Typical starting points:
 | --- | --- |
 | Pure domain or persistence logic | relevant CoreChecks |
 | Presentation/state behaviour | relevant CoreChecks / UIChecks |
-| Popup, focus, responder, teardown or SwiftUI/AppKit lifecycle | relevant lower-level checks + Real UI Smoke |
-| Real external click/input/sheet/status-item interaction | XCUITest when it adds evidence not available below |
-| Visual judgement or automation boundary | targeted manual acceptance |
+| Popup, focus, responder, teardown or SwiftUI/AppKit lifecycle without an external-interaction contract | relevant lower-level checks + platform integration evidence |
+| User-visible lifecycle or routing contract listed in the installed black-box trigger | relevant lower-level checks + installed black-box acceptance |
+| Visual judgement that is not a lifecycle/interaction correctness gate | targeted observation; optional owner acceptance |
 
 This table is operational guidance, not a second test policy.
 
@@ -79,7 +118,7 @@ This table is operational guidance, not a second test policy.
 
 The current XCUITest baseline can exercise the app's accessible status item and normal application UI interactions.
 
-A truly arbitrary click in another application/window remains manual-only unless available macOS UI automation exposes a reliable external surface for that scenario.
+A truly arbitrary click in another application/window may remain outside current automation unless available macOS UI automation exposes a reliable external surface for that scenario. When that click is required acceptance evidence, inability of the worker environment to perform it is a blocker; it is not a deferred owner QA gate.
 
 Do not build a production workaround only to make that automation gap disappear.
 

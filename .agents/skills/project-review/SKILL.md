@@ -56,6 +56,17 @@ Do not recommend duplicate coverage unless different layers protect against mate
 
 Do not run expensive UI or XCUITest suites merely because they exist. Run checks only when they provide evidence needed by the review.
 
+## Independent completion review
+
+When acting as the independent reviewer for completed implementation changes, review two distinct aspects:
+
+1. architecture and code correctness;
+2. adequacy of verification evidence against the actual user contract, using the ladder, trigger and bundle-provenance rules in `VERIFICATION.md`.
+
+Reject `READY` when a test substitutes an implementation hook for the user action under test, exercises a stale or different bundle, verifies a lifecycle defect only with internal smoke, omits required installed black-box evidence, or omits separately required platform integration evidence. The implementer's own internal test cannot by itself conclusively establish user-visible lifecycle behaviour.
+
+Report the independent-review result using the applicable READY contract in `VERIFICATION.md`; do not transfer a missing gate to Product Owner manual testing.
+
 ## Findings
 
 Classify findings as:
@@ -76,7 +87,7 @@ Distinguish FACT, HYPOTHESIS and VERIFIED according to `COUNTDOWN_MANAGER.md`.
 
 ## Completion
 
-Finish with:
+Finish a standalone project review with:
 
 STATUS: READY / NOT READY / NEEDS OWNER DECISION
 
@@ -88,5 +99,7 @@ Then provide:
 - what was not verified.
 
 STOP.
+
+For an independent completion review, instead finish with the applicable independent-review and READY fields required by `VERIFICATION.md`, then stop.
 
 Do not implement findings until the Product Owner explicitly approves a change set.

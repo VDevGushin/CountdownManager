@@ -122,7 +122,7 @@ Product freeze снимается только явной командой Produ
 
 Использовать progressive disclosure, не перечитывать большие неизменившиеся материалы без причины, не запускать дорогие UI/XCUITest suites без релевантного риска и не повторять полный verification после каждого мелкого изменения.
 
-Просить Product Owner о ручной проверке только там, где действительно требуется человеческое visual/UX judgement или недоступная автоматизации platform interaction.
+Product Owner может дополнительно выполнять ручную проверку там, где требуется человеческое visual/UX judgement, но она не является штатным QA gate или условием Definition of Done. Если обязательное platform/black-box evidence недоступно harness/environment, сообщать `READY: no` и точный blocker по `VERIFICATION.md`, а не переносить обязательную проверку на Product Owner.
 
 ## 13. Scope control
 

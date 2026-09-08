@@ -80,6 +80,8 @@ State:
 
 Do not build extra workaround layers around an unverified hypothesis.
 
+Classify that minimum verification against the ladder and installed black-box trigger in `VERIFICATION.md`. When the user-visible contract depends on an external macOS interaction, the acceptance must exercise that interaction against a provenance-verified bundle; a programmatic lifecycle call or test hook may supplement it but cannot substitute for it.
+
 ## Completion
 
 Research is complete when the architecture can be chosen from sufficient evidence or when the remaining uncertainty is explicitly identified and a minimal spike is recommended.
