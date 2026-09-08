@@ -110,8 +110,16 @@ XCUITest-набор использует минимальный `CountdownManage
 
 ## Управление проектом через ИИ
 
-Владелец управляет продуктом и описывает задачи обычным языком, а ИИ отвечает за архитектуру, код, тесты, ревью, документацию и сборку. Правила находятся в [`AGENTS.md`](AGENTS.md), подробный процесс — в [`AI_WORKFLOW.md`](AI_WORKFLOW.md).
+Репозиторий использует небольшой agent harness для сопровождения проекта.
 
-Команда владельца **«Собираем публичный релиз для пользователей»** разрешает повысить patch-версию, пройти полный test/review gate, собрать ZIP-архив, создать GitHub Release и проверить опубликованный файл. Установка новой версии в `/Applications` остаётся отдельным действием.
+- [`AGENTS.md`](AGENTS.md) — короткий bootstrap и router для AI-агента.
+- [`COUNTDOWN_MANAGER.md`](COUNTDOWN_MANAGER.md) — канонические роль, engineering policy, authority и правила работы.
+- [`VERIFICATION.md`](VERIFICATION.md) — актуальная стратегия проверки.
+- [`.agents/skills/`](.agents/skills/) — процедуры для повторяемых классов инженерных задач.
+- [`docs/decisions/`](docs/decisions/) — устойчивые архитектурные решения.
+
+Владелец определяет продуктовый результат и ограничения. AI-агент отвечает за техническое решение и обязан возражать против неоправданно сложной, ненативной или рискованной реализации.
+
+Commit, push, изменение истории `main`, установка приложения, публикация release и операции с реальными пользовательскими данными регулируются authority policy в `COUNTDOWN_MANAGER.md`.
 
 Нативные API: [NSStatusBar](https://developer.apple.com/documentation/appkit/nsstatusbar), [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice/mainapp).

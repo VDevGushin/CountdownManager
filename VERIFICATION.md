@@ -1,119 +1,154 @@
-# Проверка 7 сентября 2026 — status-item lifecycle для quick-subtask sheet
+# Countdown Manager — Verification Strategy
 
-- XCUITest baseline воспроизвёл product bug: настоящий click по menu-bar status-item не доходил до обычного action, пока New/Edit Subtask был открыт как модальный macOS sheet. После закрытия первый системный reopen accessory-приложения мог также дать двойной toggle.
-- На время quick-subtask sheet приложение устанавливает локальный и системный monitor только для mouse-down. Он сравнивает координату с frame собственного status-item, закрывает parent popup и оставляет существующий teardown сбросить transient session. После закрытия monitor остаётся только до следующего status-item click, чтобы открыть чистый root даже при предварительной активации accessory-приложения, затем удаляется. Текст и другие пользовательские события не читаются и не журналируются.
-- Добавлены два настоящих XCUITest regression без внутренних hooks: New Subtask и Edit Subtask вводят несохранённый текст, нажимают доступный `StatusItem`, проверяют закрытие всего popup, следующим настоящим click открывают root без sheet, затем через Event Editor подтверждают отсутствие нового текста и сохранность исходной подзадачи.
-- Полный XCUITest-набор после фикса — 9/9. Существующие New/Edit Event, save/delete и checklist-сценарии не изменены и прошли. Arbitrary outside-click по-прежнему manual-only; workaround для него не добавлялся. Старый Real UI Smoke не удалён и не сокращён.
-- До и после self-review выполнены два полных XCUITest-прогона 9/9 без retries и падений; post-review прогон занял 149 секунд. Оба `./verify.sh full` зелёные; финальный результат: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 28/28; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3. Flaky-тестов не выявлено.
+## Purpose
 
-# Проверка 7 сентября 2026 — macOS XCUITest baseline
+Verification exists to provide justified confidence with the lowest reasonable complexity, runtime and maintenance cost.
 
-- Добавлен минимальный `CountdownManager.xcodeproj` с macOS app target, статическими target-модулями существующего кода и `CountdownManagerXCUITests` на XCTest/XCUIAutomation. Swift Package, `CoreChecks`, `UIChecks` и Real UI Smoke сохранены без миграции или сокращения.
-- Введён test-only запуск `--xcui-testing`. Он принимается только вместе с `COUNTDOWN_MANAGER_TEST_HOME` и marker-файлом `.countdown-xcui-test-environment`; без обеих частей приложение отказывается стартовать в тестовом режиме. Данные, диагностические журналы и disclosure UserDefaults направляются в уникальный временный профиль, который тест удаляет после завершения.
-- CLI runner: `./run-xcui-tests.sh`. Он создаёт отдельный DerivedData под `/private/tmp`, выполняет `xcodebuild test` для локального macOS и очищает сборочный каталог.
-- XCUITest реально покрывает launch/clean termination, root popup, New Event → Cancel, Edit Event → Cancel, Save event, New Subtask → Cancel/Save, Edit Subtask → Cancel/Save, checklist collapse/expand, delete confirmation Cancel/Confirm и status-item lifecycle для обычного event editor и quick-subtask sheet.
-- Status-item доступен XCUIAutomation как `StatusItem` с accessibility label `Countdown Manager`. Настоящий click закрывает popup как без sheet, так и при New/Edit Subtask; следующий click открывает чистый root без sheet/draft.
-- Настоящий arbitrary outside-click остаётся недоступен: Finder не публикует окно в этой XCUI-сессии, а координатная система accessory-app не предоставляет конечный application frame. Большой workaround и изменение production architecture не добавлялись. Outside-click для New/Edit Subtask остаётся manual acceptance case.
-- До lifecycle-фикса два полных baseline-прогона прошли 7/7 без retries и падений; после фикса набор расширен до 9 тестов.
-- Real UI Smoke пока следует сохранить целиком: он надёжно проверяет внутренние AppKit prerequisites, focus/geometry и проблемные teardown/freeze-пути, которые XCUIAutomation не видит либо не может воспроизвести. Возможную миграцию дублирующихся happy-path сценариев стоит рассматривать отдельно после acceptance и серии стабильных CI-прогонов XCUITest.
+Test count and coverage percentage are not goals.
 
-| Слой | Что проверяет |
+Canonical test philosophy is defined in `COUNTDOWN_MANAGER.md`.
+
+## Verification layers
+
+| Layer | Purpose |
 | --- | --- |
-| CoreChecks | Модель, валидация, календарные правила, CRUD, JSON/legacy compatibility, repository и revision ordering. |
-| UIChecks | Детерминированные presentation/state-переходы редакторов, событий, подзадач, disclosure и menu-bar title без запуска AppKit UI. |
-| Real UI Smoke | Реальный AppKit/SwiftUI popup через внутренний driver: focus, emoji, save/cancel, teardown/root-scroll и повторный collapse/freeze regression. |
-| XCUITest | Внешние пользовательские clicks, ввод, scroll, sheets/dialogs, сохранение/удаление и доступный status-item через XCUIAutomation. |
-| Manual-only | Arbitrary outside-click для New/Edit Subtask; доступная XCUIAutomation-сессия не предоставляет внешнюю координатную surface. |
+| CoreChecks | Domain model, validation, calendar rules, persistence contracts and deterministic core behaviour |
+| UIChecks | Presentation/state behaviour without launching the real AppKit UI |
+| Real UI Smoke | Real SwiftUI/AppKit popup, lifecycle, focus, geometry and regressions that require actual UI infrastructure |
+| XCUITest | External user interactions that must be verified through macOS accessibility/UI automation |
+| Manual verification | Visual quality or platform interactions that cannot be reliably automated |
 
-# Проверка 7 сентября 2026 — status item во время quick-subtask sheet
+## Commands
 
-- При открытом New/Edit Subtask click вне popup закрывает всю transient session; это уже покрыто close/reopen smoke. Отдельно добавлена regression через настоящий action `NSStatusItem.button.performClick`: открытый quick sheet → status item закрывает popup → повторный status-item открывает чистый root без sheet и без изменения данных.
-- Первый прогон regression показал, что после повторного открытия `showPopover()` оставлял first responder на `_NSPopoverWindow`. Путь открытия теперь явно возвращает responder в root content после `makeKey`, поэтому popup снова имеет normal transient root state. Quick-sheet teardown, event-editor path и freeze fixes не менялись.
-- UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 28/28; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3.
+### Fast
 
-# Проверка 7 сентября 2026 — quick-subtask sheet teardown
+```sh
+./verify.sh fast
+```
 
-- Manual acceptance после `51c5552` подтвердил event-editor restoration, но выявил отдельный путь SwiftUI quick-subtask sheet: его `onDismiss` мог наступить до окончательного AppKit teardown, после чего parent popover снова терял normal transient outside-click behavior.
-- Quick-subtask path больше не восстанавливает parent из раннего SwiftUI callback. Он отмечает presentation, ждёт `NSWindow.didEndSheetNotification` именно от root window popover и только затем возвращает `.transient`, делает parent key и переводит first responder в root content. Перед restoration sheet уже detached; event-editor path, freeze fixes, action popovers и root-scroll не менялись.
-- Smoke требует отдельную revision фактического `didEndSheet` для New Subtask → Cancel и Edit Subtask → Cancel, после чего проверяет root parent state. Сам click в чужое окно остаётся manual acceptance, так как UI-driver не публикует чужую surface для надёжного outside-click.
-- После self-review: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 27/27; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3. Один первый independent UI run дал timeout в существующем collapse scenario; код и timeout не менялись, повторный полный run прошёл полностью зелёным.
+Runs:
 
-# Проверка 7 сентября 2026 — lifecycle после закрытия transient editor
+- CoreChecks
+- UIChecks
 
-- Manual acceptance на установленной `6b0043d` выявил, что после Cancel у inline event editor или SwiftUI quick-subtask sheet main popover мог остаться без обычного transient outside-click поведения. Причина — teardown не возвращал parent `NSPopover` в его root interaction state: после inline editor сохранялся прежний first responder, а после sheet не было явного restoration parent window.
-- После завершения event editor или фактического dismiss quick-subtask sheet popup асинхронно возвращает `.transient` behavior, делает root window key и переводит first responder в root content. Root UI не пересоздаётся; `Menu`, lazy-layout и freeze-fix path не менялись. Тот же путь используется, если редактируемое событие исчезает во время editor.
-- Real UI Smoke дополнен четырьмя Cancel-regression: New Event, Edit Event, New Subtask и Edit Subtask. Для каждого подтверждаются root state, отсутствие `NSApp.modalWindow`/attached sheet, `.transient` behavior и root first responder. Доступный UI-driver не может надёжно направить click в чужое окно, поэтому сам final outside-click остаётся короткой manual acceptance, а его AppKit prerequisites покрыты автоматически.
-- Итоговый full gate после self-review: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; Real UI Smoke — 27/27; collapse/freeze regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3.
+Use for changes whose contracts are reliably covered below the real UI layer.
 
-# Проверка 6 сентября 2026 — freeze после teardown editor / root scroll
+### Real UI
 
-- Новый live sample установленной `4e6c2af` сравнен с предыдущим collapse freeze. В обоих случаях main thread находится в SwiftUI transaction / AttributeGraph, но новый sample локализует источник точнее: `AppKitPopUpAdaptor.PlatformView.updateNSView` → `PlatformItemList.Item.update` → accessibility resolution для SF Symbol. В момент sample production process имел 3.4 GB physical footprint; отдельный read-only `vmmap` показал 8.0 GB `MALLOC_SMALL`, 82 млн allocations и 7.8 GB swap. Это runaway Menu update, а не persistence или data save.
-- Последовательность `editor.cancel` → `popover.closed session=reset` → `popover.open` → `ui.stall` подтверждает общий триггер teardown/rebuild root list, не только Edit Event и не disclosure. Все SwiftUI `Menu` удалены из event rows, subtask rows и footer; они заменены локальными action popover с состоянием, привязанным к UUID. Root-view recreation не менялся и не используется как обход. Focus/yield задачи inspected: они локальны editor и не встречаются в live stack.
-- Existing Real UI Smoke теперь открывает реальные action popover перед edit/quick-edit/delete. Добавлен отдельный editor teardown/root-scroll smoke: новая форма с Cancel и существующая форма с popup dismissal; после каждого варианта выполняются AppKit scroll действительно scrollable root list и interaction с видимой карточкой. Проверяются отсутствие unsaved JSON, чистый watchdog и physical-footprint ceiling `max(baseline + 512 MiB, baseline × 5)`.
-- Focused regression выполнен тремя независимыми изолированными процессами: в каждом New-cancel/root-reset и Edit-dismissal/root-reset прошли по три раза. Все девять process-run дали `PASS: 3/3`, без `ui.stall` и без memory runaway. Полный post-review gate: CoreChecks — PASS; UIChecks — PASS; release build/codesign — PASS; full smoke — 24/24; collapse regression — 3/3; editor teardown/root-scroll regression — 3 × 3/3. Production `countdowns.json` не читался и не изменялся тестами.
+```sh
+./verify.sh ui
+```
 
-# Проверка 6 сентября 2026 — Automated UI Verification + Remaining UI Polish
+Builds an isolated signed application and runs the current Real UI Smoke suite.
 
-- Freeze при collapse/expand диагностирован как широкая SwiftUI invalidation: глобальный `@Published` revision заставлял весь `ManagerView` и список карточек заново вычисляться при каждом изменении disclosure. Состояние disclosure перенесено в стабильный `ObservableObject` на конкретное событие; запись в `UserDefaults` и публикация теперь затрагивают только соответствующий checklist. Очистка cache/persisted disclosure происходит только после успешного удаления события или последней подзадачи. Production JSON не менялся.
-- Добавлен Real UI Smoke для реально собранного, подписанного ad-hoc `.app`, но только при явном test launch argument и маркерном временном environment. Он изолирует `countdowns.json`, diagnostics и `UserDefaults`; запуск без `COUNTDOWN_MANAGER_TEST_HOME` или с пересечением production Application Support отвергается. В normal product flow test controls отсутствуют.
-- `./verify.sh fast` запускает CoreChecks и UIChecks; `./verify.sh ui` собирает временный release `.app` и выполняет Real UI Smoke; `./verify.sh full` объединяет оба gate. Full smoke покрывает popup lifecycle/root reset, title и последовательный subtask focus, пятую строку и geometry-inset, local emoji picker/presets/cancellation, явное Save, active/completed lifecycle, Cancel, отмену new/edit/quick/delete transient state, explicit delete и privacy diagnostics. Отдельный smoke создаёт событие с подзадачами, выполняет несколько collapse/expand без закрытия popup, затем повторяет это при семи событиях и проверяет persistence fixture.
-- System Character Viewer выведен из product flow: emoji — только одно выбранное значение из local picker или presets, не свободное text field. Закрытие popup создаёт новый root session и отменяет drafts, picker и pending destructive confirmation. Focus ring получил компактный общий inset; smoke проверяет geometry, но не заявляется как pixel-perfect проверка синей системной обводки.
-- После self-review выполнен `git diff --check` и полный post-review gate через совместимый macOS 15.4 SDK: `CoreChecks` — PASS; `UIChecks` — PASS; release build и codesign — PASS; Real UI Smoke — 24/24; collapse/freeze regression — 3/3. Один ранний запуск из sandbox завершился в системном LaunchServices `_RegisterApplication` до кода приложения; запуск того же gate в обычной графической сессии стабильно зелёный. Retry-loop не добавлялся.
-- Manual visual gap: текущий UI-driver не публикует `LSUIElement` menu-bar popup как accessibility surface, поэтому пиксельная оценка focus ring, local picker и layout должна быть коротко выполнена владельцем на установленной сборке. Это единственная оставшаяся ручная приёмка; функциональные сценарии не дублируются вручную.
+Use when a change affects real SwiftUI/AppKit behaviour such as popup lifecycle, responder/focus behaviour or other platform-sensitive UI interactions.
 
-# Проверка 6 сентября 2026 — UI polish редактора события
+### Combined
 
-- `CoreChecks` выполнен после реализации и повторно после исправлений через совместимый macOS 15.4 SDK; все pre-review прогоны успешны. Базовые правила модели, Today, lifecycle, legacy/new JSON и revision ordering остались зелёными.
-- `UIChecks` расширен проверками реального state-слоя редактора: новая подзадача создаётся active и остаётся active в собранном для сохранения `Countdown`; последовательные добавления возвращают focus-target последнего стабильного UUID; редактирование active/completed текста сохраняет оба completion-state; preset и подготовка системного picker меняют/выбирают только emoji, не затрагивая title, note и subtasks. Все pre-review прогоны успешны.
-- Release-сборка `Countdown Manager.app` через `build.sh` выполнена после каждого изменения с `SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk` и build/cache под `/private/tmp`; сборки успешны, версия приложения не изменялась.
-- Ручная UI-проверка выполнена до финального self-review на собранном приложении с отдельным `CFFIXED_USER_HOME` и тестовым `countdowns.json`; production-файл не читался и не изменялся. Проверены initial focus заголовка, ввод в новую подзадачу без дополнительного клика, последовательный focus новых строк, autoscroll пятой строки до видимой нижней границы, отсутствие интерактивных completion-checkbox в editor, исчезновение `+ Добавить` на 5/5, сохранение новой подзадачи как active, переключение completion в карточке и сохранение completed после изменения текста в editor, включая событие `Сегодня`.
-- Для emoji вручную проверено, что preset заменяет только emoji при неизменных title/note/subtasks; системная кнопка после focus в title, note и subtask каждый раз переводит AppKit selection на текущее содержимое emoji field; закрытие без выбора не очищает прежний emoji. Сам выбор отдельного символа кликом внутри системного Character Viewer не удалось надёжно автоматизировать доступным UI-driver: системное окно не публикуется в его accessibility surface. Поэтому E–H покрыты реальным first-responder/selection smoke плюс deterministic state-проверками, но не заявляются как полноценный end-to-end Character Viewer test.
-- Первый ручной цикл обнаружил ненадёжный initial focus новой формы: popup сбрасывал синхронный focus на контейнер. Focus перенесён на следующий проход main actor и повторная ручная проверка подтвердила поле `Название`. Self-review затем обнаружил, что пассивный кружок active/new строки визуально напоминал checkbox; он удалён, а индикатор оставлен только у completed. По отдельному разрешению владельца повторный ручной прогон после этой последней визуальной правки не выполнялся; CoreChecks, UIChecks и release build обновлённого кода прошли. Всего потребовалось четыре полных fix → verify цикла; лимит пяти не превышен.
-- `README.md` уточнён только в противоречивом месте: checkbox выполнения доступен в карточке, а не в редакторе. `AGENTS.md` получил постоянные правила UI; `AI_WORKFLOW.md`, версия 1.2.2 и release-инфраструктура не изменялись.
-- Полный staged diff просмотрен повторно после исправления: проверены product scope, focus identity/timing, scroll visibility, сохранение completion, валидация и persistence path, concurrency, privacy, accessibility, legacy compatibility и macOS 13+. Actionable findings не осталось. `git diff --cached --check` успешен; post-review CoreChecks, UIChecks и release build успешны.
+```sh
+./verify.sh full
+```
 
-# Проверка 6 сентября 2026 — события и подзадачи
+Runs the fast and Real UI gates.
 
-- `CoreChecks` выполнен до self-review и повторно после него через совместимый macOS 15.4 SDK; оба прогона успешны. Проверены 0/1/5 подзадач, запрет шестой, 50/51 символ, trim и пустой текст, completion/uncompletion, стабильный исходный порядок и presentation-группировка, отсутствие досрочного завершения при 5/5, правила создания и редактирования события `Сегодня`, перенос только в будущее, автоудаление независимо от незавершённых подзадач, замена основного и стабильный порядок событий одной даты после смены title.
-- Legacy JSON без `subtasks` декодирован с `subtasks = []`, сохранён через временный `CountdownRepository`, повторно прочитан и сопоставлен со всеми прежними полями и `primaryID`. Новый JSON с active/completed подзадачами прошёл round-trip. Некорректные empty/51+/6-item данные отклоняются; временный пользовательский файл после ошибки чтения остался побайтно неизменным, а repository отказался создавать новый файл с невалидной моделью.
-- `UIChecks` выполнен до self-review и повторно после него; оба прогона успешны. Deterministic presentation/state-покрытие проверяет терминологию `Событие`, empty state, человеческую дату, `N дней`/`Сегодня`, отсутствие `0/0`, `▸ 2/5`/`▾ 2/5`, active/completed-группы, быстрые add/edit/delete/toggle, лимит 5, исчезновение disclosure после последней подзадачи, отдельное восстановление collapse-state, редактор `Сегодня`, стабильную сортировку и состояния menu bar `☀️ 238 дней`, `☀️ 1 день`, `☀️ Сегодня`, `◷ Countdown`.
-- Release-сборка после self-review успешна через `build.sh` с `SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk` и scratch/cache под `/private/tmp`. Локальный `Countdown Manager.app` собран и ad-hoc подпись успешно проверена `codesign --verify --deep --strict`.
-- Дополнительно весь пакет собран в release-конфигурации с `-warnings-as-errors`; предупреждений и ошибок нет.
-- Ручная UI-проверка выполнена на локальной сборке в изолированных временных Application Support-профилях, без чтения или изменения production `countdowns.json`. Визуально и через accessibility tree проверены карточки с заметкой/датой/`Сегодня`, отсутствие блока у события без подзадач, `1/3` и `2/5`, active/completed-разделение и зачёркивание, однострочное сокращение с полным Help, checkbox с перемещением вниз, collapse/expand и восстановление collapse-state после перезапуска, быстрые add/edit, раскрытие после первой подзадачи, disabled add при пяти, редактор и успешное сохранение события `Сегодня`, форма нового события и empty state.
-- Тестовый diagnostic log проверен поиском пользовательских названий и текстов подзадач: совпадений нет; технические begin/success, UUID, revision и count присутствуют.
-- Полный XCUITest недоступен без полного Xcode. Ручное нажатие destructive удаления и системное визуальное чтение самой строки menu bar не выполнялись; delete/disclosure disappearance и все menu-bar presentation states покрыты deterministic state-проверками. Это не заявляется как полное end-to-end покрытие.
-- Staged diff просмотрен целиком: проверены границы задачи, correctness, edge cases, rollback и revision ordering, отсутствие файловых операций на main actor, privacy диагностики, accessibility labels/help, legacy compatibility и API macOS 13+. Actionable дефектов после self-review не осталось; добавлены недостающие assertions для быстрых операций `Сегодня`, uncompletion, auto-empty, даты и `238 дней`.
-- `git diff --cached --check` выполнен успешно. После self-review те же CoreChecks и UIChecks повторно прошли. Потребовался один полный цикл implementation/fix → verify; отдельный повторный прогон был обязательным post-review gate. Первоначальный запуск стандартным SDK не считается продуктовым циклом: он упёрся в известное несовпадение compiler/SDK, после чего применён документированный fallback.
-- После отдельного разрешения владельца коммит `ebecb2b` отправлен в `origin/main`; публичный GitHub Release не создавался и версия 1.2.2 не повышалась.
-- Проверенная сборка установлена в `/Applications/Countdown Manager.app`. Предыдущая копия сохранена как `/Applications/Countdown Manager.backup-before-subtasks.app`; SHA-256 установленного executable совпал с проверенным артефактом, подпись валидна. Установленная копия запущена на существующих данных: журнал содержит новые `app.launch`, `data.load success items=5` и `popover.open`, без `ui.stall`.
+`full` does not automatically include XCUITest.
 
-## История проверки 5 сентября 2026
+### XCUITest
 
-- README перестроен для новых пользователей: установка из GitHub Releases, обход первого предупреждения Gatekeeper, базовое использование, локальное хранение данных и сборка из исходников.
-- Зафиксирована команда владельца для полного цикла публичного GitHub Release; установка в `/Applications` остаётся отдельным действием.
-- Добавлен обязательный gate для каждой задачи: unit/UI-проверки до ревью, полный self-review, затем повторный прогон тех же проверок и только после него commit/push.
-- После пяти неуспешных циклов gate работа останавливается без commit/push и эскалируется менеджеру продукта с диагностикой и вариантами решения.
-- Unit-набор расширен проверками границы заметки в 280 символов, очистки пустой заметки, JSON round-trip и полного перехода события через состояние `Сегодня` с заменой основного.
-- Добавлен изолированный UI state-набор на том же слое представления, который использует SwiftUI: заметка, подпись «Сегодня», проверка формы, смена основного, перестановка списка и сохранение. Производственный `countdowns.json` не используется.
-- Полный XCUITest и покадровая оценка анимации недоступны без полного Xcode; это не заявляется как end-to-end покрытие.
-- Первый совместный прогон обновлённых CoreChecks, UIChecks и release-сборки с предупреждениями как ошибками завершён успешно. Нестабильный offscreen-рендер AppKit исключён после подтверждённого системным crash report сбоя при завершении процесса; проверки поведения не удалены, а перенесены в общий со SwiftUI слой представления.
-- Версия 1.2.2: добавлены совместимые с macOS 13 анимации перемещения основного события, состояния звезды и подсветки карточки.
-- Release 1.2.2 собран, подписан, установлен в `/Applications` и запущен на текущих сохранённых данных; загрузка успешна, интерфейс отображает пять актуальных событий.
-- Версия 1.2.1: событие сохраняется в активном списке в свою дату и отображается как `Сегодня`; удаление и замена основного выполняются следующей ночью. Добавлены проверки обоих переходов.
-- Release 1.2.1 собран, подписан, установлен в `/Applications` и запущен; шесть существующих событий успешно загружены без изменения данных.
-- Версия 1.2.0: добавлена необязательная заметка до 280 символов, её отображение в карточке и редактирование. Проверена обратная совместимость с JSON версии 1.1 без поля `note`.
-- Release 1.2.0 собран, подписан, установлен в `/Applications` и запущен на шести существующих событиях. Визуально проверены компоновка формы, ввод заметки, счётчик символов и доступность кнопки сохранения; тестовая форма отменена без записи данных.
-- Версия 1.1.1: файловые операции вынесены с главного потока в последовательное хранилище; добавлены ревизии записей, проверка дат из JSON, подтверждение удаления и синхронный сброс финальных строк журнала.
-- CoreChecks дополнены проверкой некорректных календарных дат, round-trip файлового хранилища и защитой от устаревшей ревизии.
-- Release 1.1.1 собран, подписан, установлен в `/Applications` чистой копией и повторно запущен. Проверены загрузка всех шести реальных событий, появление и отмена подтверждения удаления, неизменность числа записей и наличие `app.terminate` после штатного выхода.
-- Версия 1.1.0 собрана, подписана ad-hoc, установлена в `/Applications` и запущена на реальных сохранённых данных.
-- Release-сборка успешна: Swift 6.3.3, macOS 26.6.2, Apple Silicon.
-- Проверка структуры `.app` и ad-hoc подписи успешна.
-- Приложение запущено, интерфейс визуально проверен.
-- В интерфейсе проверены создание, редактирование, перезапуск с восстановлением данных и удаление. Тестовый счётчик удалён.
-- CoreChecks: все проверки прошли — запрет сегодняшних/прошлых дат, пустого названия и неверного emoji; CRUD; основной счётчик и его замена при наступлении даты; JSON; DST; смена года; високосный день; русские склонения.
-- Автозапуск реализован через SMAppService, по умолчанию выключен. Фактический вход в macOS не проверялся.
-- Добавлен постоянный диагностический журнал с ротацией и сторож главного потока. Проверены создание журнала, записи `app.launch` и `data.load success`, а также пункт меню открытия папки диагностики. В журнал не записываются названия событий и emoji.
-- Intel и macOS 13–25 на этом компьютере не проверялись.
+```sh
+./run-xcui-tests.sh
+```
 
-Независимые Swift Package targets по-прежнему запускаются через `swift run CoreChecks` и `swift run UIChecks` без Xcode-проекта.
+Runs the external macOS XCUITest suite through `xcodebuild`.
+
+Use when the risk requires verification of actual user-level clicks, input, sheets, status-item behaviour or accessibility-driven interaction.
+
+Do not run XCUITest automatically for unrelated changes.
+
+## Selecting verification
+
+Protect a contract at the cheapest reliable level.
+
+Prefer:
+
+1. Core/unit/state verification;
+2. UI state verification;
+3. Real UI Smoke;
+4. XCUITest;
+5. manual verification.
+
+Do not duplicate the same contract across layers automatically.
+
+Multiple layers are justified only when they detect materially different classes of failure.
+
+A regression should normally be protected at the lowest layer capable of reproducing the relevant failure.
+
+Platform lifecycle regressions may legitimately require Real UI Smoke or XCUITest.
+
+## User-data isolation
+
+Automated verification must not mutate production user data.
+
+Production data lives at:
+
+`~/Library/Application Support/CountdownManager/countdowns.json`
+
+UI and XCUITest environments must use isolated temporary profiles.
+
+Never weaken isolation for convenience.
+
+## Verification scope
+
+Do not run the largest available suite simply because implementation occurred.
+
+Choose checks from the risk introduced by the change.
+
+Examples:
+
+- pure domain change → CoreChecks and relevant focused checks;
+- presentation/state change → CoreChecks/UIChecks as relevant;
+- popup/focus/AppKit lifecycle → relevant lower-level checks plus Real UI Smoke;
+- external macOS interaction → XCUITest when it provides additional confidence;
+- visual judgement → targeted manual acceptance.
+
+## Failures
+
+A failed check is evidence.
+
+Investigate whether it indicates:
+
+- product regression;
+- test defect;
+- obsolete assertion;
+- flaky infrastructure;
+- unsupported environment.
+
+Do not weaken a valid product contract merely to make a suite green.
+
+Do not preserve an obsolete or redundant test merely because it already exists.
+
+## Reporting
+
+At checkpoint report:
+
+STATUS: READY / NOT READY / NEEDS OWNER DECISION
+
+Verified:
+
+- what was actually checked.
+
+Not verified:
+
+- relevant checks intentionally or practically not performed.
+
+Known risks:
+
+- remaining uncertainty.
+
+Do not claim a broader level of verification than was actually performed.
+
+## History
+
+This document describes the current verification strategy.
+
+Historical verification runs and completed investigations belong in Git history or temporary investigation plans, not in this permanent policy document.

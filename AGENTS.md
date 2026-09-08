@@ -1,87 +1,75 @@
-# Countdown Manager: notes for future maintenance
+# Countdown Manager — Agent Bootstrap
 
-This is a native macOS menu-bar app. Read `README.md` and `VERIFICATION.md` before changing behavior.
+Countdown Manager uses a repository-level agent harness.
 
-## Working agreement
+## Start here
 
-The user is the product manager; the agent is the software engineer responsible for implementation.
+Before doing project work, read:
 
-- The user describes the desired outcome, priorities, and product constraints. Do not require the user to write code or translate goals into technical tasks.
-- Own the technical work end to end: inspect the existing behavior, choose a proportionate design, implement it, add or update tests, update documentation, build, and verify the result.
-- Make routine engineering decisions autonomously. Ask the user only when a product choice is genuinely ambiguous, an action needs new authority, or alternatives have materially different user-visible consequences.
-- Preserve backward compatibility and existing countdown data unless the user explicitly approves a migration or reset.
-- For bug reports, diagnose first and record evidence. Fix the cause rather than hiding the symptom.
-- A change is not complete when it merely compiles. Run the relevant checks, exercise the affected UI when possible, and report what was actually verified.
-- Do not publish, deploy, replace the installed app, or create releases unless the user's request includes that outcome.
-- Keep communication in plain Russian unless the user asks otherwise. Lead with outcomes and product impact; keep implementation details available but compact.
+- `COUNTDOWN_MANAGER.md`
 
-For the longer workflow and definition of done, see `AI_WORKFLOW.md`.
+It is the canonical source for agent role, engineering policy, authority, product freeze, evidence, review behaviour, testing philosophy, user-data safety and context discipline.
 
-## Preserve user data
+Do not duplicate or reinterpret those rules here.
 
-- Production data is stored at `~/Library/Application Support/CountdownManager/countdowns.json`.
-- Never delete, replace, or rewrite that file as part of a diagnostic check.
-- Do not add event titles, notes, user emoji, or subtask text to diagnostics. They are private user content.
+## Load context progressively
 
-## Permanent product invariants
+Understand the task before loading repository context.
 
-- Countdown Manager is about waiting for future events, not managing a todo backlog. The user-facing entity is always called `Событие`; internal `Countdown` names do not need a cosmetic rename.
-- There are no notifications, overdue state, archive, automatic date moves, or preservation of unfinished work after an event date. An event remains active through its calendar date and disappears after that day ends, even when subtasks remain unfinished.
-- An event may have at most five subtasks. Subtask text is at most 50 characters; a subtask has only text and completed state, with no date, priority, reminder, nesting, or other task-management metadata.
-- A new subtask created in the event editor is always active. The editor may change subtask text or remove it, but completion is changed only from the event card; editing text must preserve the existing completion state.
-- Event-editor focus is field-specific: opening starts in the title, and a newly added subtask is focused and scrolled into view by its stable ID. Emoji is selected with the compact local picker and presets, replacing only the emoji without changing title, note, or subtask text.
-- Completing every subtask does not complete, move, or remove the event early. The event date always controls its lifecycle.
-- The menu bar shows only the primary event's one emoji and `N дней` / `Сегодня`, or `◷ Countdown` when empty. Never add event details or checklist progress there.
-- Preserve all existing user data and legacy JSON compatibility. A missing `subtasks` field means an empty list; invalid stored subtask data must fail safely without silently rewriting the file.
-- Checklist disclosure is UI state stored separately from `countdowns.json` and must persist per event across popup openings and app restarts.
-- Closing the popup ends its transient UI session: a new opening begins at the root list. Unsaved event and quick-subtask drafts, the emoji picker, and a pending destructive confirmation must not be restored or autosaved.
-- Deleting an event requires explicit destructive confirmation; closing the popup cancels that confirmation.
+Then load only what the task requires.
 
-## Diagnose a freeze before guessing
+Do not automatically read:
 
-The app writes a rotating diagnostic journal to:
+- the entire repository;
+- every skill;
+- all documentation;
+- historical investigation material;
+- all tests.
 
-- `~/Library/Application Support/CountdownManager/Logs/countdown.log`
-- `~/Library/Application Support/CountdownManager/Logs/countdown.previous.log`
+More context is not automatically better context.
 
-Start with the last 200 lines. Look for the last UI breadcrumb, `ui.stall detected`, a missing matching `data.save success`, or a read/write failure. If the process is still stuck, capture a short `sample` of `CountdownManager` before terminating it. Unified macOS logs can then supply AppKit and system context around the same timestamp.
+## Skills
 
-Keep diagnostic events short and structured. Any new action that can block the UI or mutate stored data should log its start and result.
+If the task matches a repository skill, read that skill before executing the task.
 
-- Do not add SwiftUI `Menu` controls inside the popup, event rows, subtask rows, or footer. On the current macOS they can enter the documented `AppKitPopUpAdaptor` / `PlatformItemList` accessibility rebuild runaway after a popup session reset. Use a local action popover instead, and extend the editor teardown/root-scroll smoke if its lifecycle changes.
+Available repository procedures live under:
 
-## Mandatory pre-commit self-review
+`/.agents/skills/`
 
-Every commit must pass a deliberate self-review before it is created.
+Load only the relevant skill.
 
-- Inspect `git status` and the complete staged diff. Confirm that the commit contains only the intended change and no user data, secrets, build products, or unrelated edits.
-- Review the staged code for correctness, edge cases, error handling, concurrency and persistence ordering, backward compatibility, privacy, accessibility, and the macOS 13+ deployment target where applicable.
-- Run `git diff --cached --check` plus the relevant automated checks, build, and UI verification for the staged change.
-- Fix every actionable finding, stage the correction, and repeat the review. Commit only when no actionable findings remain.
-- Report what was reviewed and tested. Never describe a change as reviewed or verified when a relevant check was skipped; state any remaining verification gap explicitly.
+If no skill applies, work directly under `COUNTDOWN_MANAGER.md`.
 
-## Tests, review, and push gate
+## Reviews
 
-- A completed behavior change must include or update unit tests for its logic and UI tests for its user-visible states and interactions where those can be automated reliably.
-- Run the relevant unit and UI suites after implementation. Then perform the complete pre-commit self-review, fix its findings, and run the same suites again against the reviewed code.
-- Do not commit or push while either test pass is failing. Do not weaken or delete a valid test merely to make the gate pass.
-- A push is still an external publishing action and requires the user's request. When requested, push only reviewed commits whose post-review test pass is green.
-- If platform tooling prevents a relevant UI interaction from being automated, add the closest deterministic UI smoke or state test, document the missing end-to-end check, and verify it manually when possible. Never label smoke coverage as full end-to-end coverage.
-- Allow at most five complete fix-and-verify cycles for the same task. If the test/review gate is still not green after the fifth cycle, stop without committing or pushing and escalate to the product manager with the concrete blocker, evidence, and viable options.
-- The product manager may explicitly authorize additional iterations. Stabilizing the test infrastructure to establish its first reliable green baseline may continue for as many iterations as needed, but must not weaken product behavior or remove valid assertions.
+`project-review` and `harness-review` are READ-ONLY by default.
 
-## Public release command
+A review produces findings and a recommended change set, then stops before implementation unless the Product Owner separately approves changes.
 
-Treat the product manager's phrase “Собираем публичный релиз для пользователей” as explicit authorization to prepare and publish a GitHub Release. Unless a version is supplied, increment the patch version. Run the complete test/review gate, build and verify the app, package `Countdown Manager.app` as a ZIP archive, create the GitHub Release, attach the archive, and verify the published asset. This command does not authorize replacing the user's copy in `/Applications` unless that is requested separately.
+## Implementation tasks
 
-## Verification
+An explicit implementation request such as “fix this bug” permits file changes within the agreed task scope.
 
-- Run `swift run CoreChecks` after core changes.
-- Run `swift run UIChecks` after user-interface changes.
-- Use `./verify.sh fast`, `./verify.sh ui`, or `./verify.sh full` for the corresponding combined gates. The UI gate builds an isolated signed app and runs the Real UI Smoke, including the repeated collapse/expand regression with several events; it never touches production data.
-- Keep all production JSON reads and writes inside `CountdownRepository`; never move them back onto `Store`'s main actor.
-- When adding an asynchronous mutation, update the in-memory snapshot before awaiting persistence and preserve revision ordering.
-- Build the macOS executable after UI or diagnostics changes.
-- On the current development machine the newest Command Line Tools compiler may not match the default SDK. A verified fallback is `SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk` with module caches and the scratch build placed under `/private/tmp`.
-- Do not replace the copy in `/Applications` until the build and core checks pass.
-- After deployment, launch the installed copy and verify that the UI responds and `countdown.log` contains `app.launch` and `data.load success`.
+Do not fix unrelated findings “while here”.
+
+Commit, push, main-history changes, installation, release and destructive/data operations remain subject to the authority rules in `COUNTDOWN_MANAGER.md`.
+
+## Platform-sensitive work
+
+When architecture depends on macOS-specific SwiftUI/AppKit behaviour, use the `macos-platform-research` procedure as required by `COUNTDOWN_MANAGER.md`.
+
+Do not guess platform behaviour when the implementation depends on it.
+
+## Durable context
+
+The repository is the system of record for durable product and engineering decisions.
+
+Temporary investigation and execution detail should not become permanent context unless it represents a durable decision.
+
+## Conflicts
+
+`COUNTDOWN_MANAGER.md` is the canonical repository policy.
+
+A skill must not override it.
+
+If repository instructions conflict, stop and surface the conflict rather than silently choosing one.
