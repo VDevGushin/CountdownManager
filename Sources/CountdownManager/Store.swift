@@ -50,25 +50,34 @@ package final class SubtaskDisclosureCache {
 }
 
 @MainActor
-final class Store: ObservableObject {
-    @Published private(set) var data = CountdownData()
+package final class Store: ObservableObject {
+    @Published package private(set) var data = CountdownData()
     @Published private(set) var today = Day(Date())
-    @Published private(set) var isLoading = true
+    @Published package private(set) var isLoading = true
     @Published var error: String?
     @Published private(set) var loginStatus = SMAppService.mainApp.status
     private let fileURL: URL
     private let repository: CountdownRepository
+    private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
     private let disclosureCache: SubtaskDisclosureCache
     private var readFailed = false
     private var revision = 0
+    private var durableRevision = 0
+    private var durableData = CountdownData()
+    private var inFlightPersistenceRevisions: Set<Int> = []
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
 
-    init(fileURL: URL? = nil, disclosureDefaults: UserDefaults = .standard) {
+    package init(
+        fileURL: URL? = nil,
+        disclosureDefaults: UserDefaults = .standard,
+        persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil
+    ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
         self.fileURL = resolvedURL
         repository = CountdownRepository(fileURL: resolvedURL)
+        self.persistenceSaveOverride = persistenceSaveOverride
         disclosureCache = SubtaskDisclosureCache(
             persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults)
         )
@@ -86,7 +95,9 @@ final class Store: ObservableObject {
 
     private func load() async {
         do {
-            data = try await repository.load()
+            let loaded = try await repository.load()
+            data = loaded
+            durableData = loaded
             isLoading = false
             DiagnosticLog.shared.record("data.load success items=\(data.items.count)")
             refresh()
@@ -151,14 +162,13 @@ final class Store: ObservableObject {
         reason: String,
         disclosureCleanup: Set<UUID> = []
     ) {
-        let previous = data
         revision += 1
         let writeRevision = revision
+        inFlightPersistenceRevisions.insert(writeRevision)
         data = updated
         Task { [weak self] in
             let didSave = await self?.finishPersistence(
                 updated,
-                previous: previous,
                 revision: writeRevision,
                 reason: reason
             )
@@ -174,13 +184,12 @@ final class Store: ObservableObject {
             return false
         }
         if updated == data { return true }
-        let previous = data
         revision += 1
         let writeRevision = revision
+        inFlightPersistenceRevisions.insert(writeRevision)
         data = updated
         return await finishPersistence(
             updated,
-            previous: previous,
             revision: writeRevision,
             reason: reason
         )
@@ -188,12 +197,21 @@ final class Store: ObservableObject {
 
     private func finishPersistence(
         _ updated: CountdownData,
-        previous: CountdownData,
         revision writeRevision: Int,
         reason: String
     ) async -> Bool {
         do {
-            let didWrite = try await repository.save(updated, revision: writeRevision)
+            let didWrite: Bool
+            if let persistenceSaveOverride {
+                didWrite = try await persistenceSaveOverride(updated, writeRevision)
+            } else {
+                didWrite = try await repository.save(updated, revision: writeRevision)
+            }
+            if didWrite, writeRevision >= durableRevision {
+                durableRevision = writeRevision
+                durableData = updated
+            }
+            finishPersistenceRevision(writeRevision)
             DiagnosticLog.shared.record(
                 didWrite
                     ? "data.save success reason=\(reason) revision=\(writeRevision) items=\(updated.items.count) primary=\(updated.primaryID?.uuidString ?? "none")"
@@ -201,14 +219,21 @@ final class Store: ObservableObject {
             )
             return true
         } catch {
-            if revision == writeRevision { data = previous }
+            finishPersistenceRevision(writeRevision)
             DiagnosticLog.shared.record("data.save failure error=\(error.localizedDescription)")
             self.error = "Не удалось сохранить изменения: \(error.localizedDescription)"
             return false
         }
     }
 
-    func save(_ countdown: Countdown, primary: Bool) async -> Bool {
+    private func finishPersistenceRevision(_ writeRevision: Int) {
+        inFlightPersistenceRevisions.remove(writeRevision)
+        if inFlightPersistenceRevisions.isEmpty {
+            data = durableData
+        }
+    }
+
+    package func save(_ countdown: Countdown, primary: Bool) async -> Bool {
         DiagnosticLog.shared.record("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
         let currentDay = Day(Date())
         if currentDay != today { today = currentDay }
