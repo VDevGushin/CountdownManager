@@ -24,6 +24,17 @@ Root UI recreation is not a default workaround for lifecycle problems.
 
 Unsaved transient state must not survive popup closure.
 
+## Evidence trail
+
+The detailed live samples, verification counts and intermediate investigation notes remain available in Git history. Key commits:
+
+- `6b0043d55f2b7003117830105ee8d42f4b5f3a68` — `Fix editor teardown scroll freeze regression`; records the `AppKitPopUpAdaptor` / `PlatformItemList` runaway evidence, removes SwiftUI `Menu` from affected action paths and adds the editor teardown/root-scroll regression.
+- `51c5552c2f3a0d6a583d9caf853033b09b67decf` — `Restore transient popover behavior after editor dismissal`; restores `.transient` interaction, key-window state and root first responder after editor dismissal.
+- `e85233490d384d2501213dcfa487d76e53f93d7b` — `Restore popover after quick subtask sheet dismissal`; handles the AppKit sheet-end lifecycle before restoring the parent popover.
+- `50f72b792384f89127bfb2402f13fbd041f403b7` — `Restore root responder when reopening popover`; captures the subsequent root-responder correction after reopen.
+
+These references are evidence for this decision, not a requirement to preserve the old implementation unchanged. Re-check platform behaviour when the decision is revisited.
+
 ## Engineering rule
 
 When changing popup, sheet, responder, menu or teardown behaviour:

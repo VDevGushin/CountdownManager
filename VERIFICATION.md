@@ -2,25 +2,23 @@
 
 ## Purpose
 
-Verification exists to provide justified confidence with the lowest reasonable complexity, runtime and maintenance cost.
+This document is the operational map of the project's current verification layers and commands.
 
-Test count and coverage percentage are not goals.
+Canonical test philosophy, cost policy, user-data safety and checkpoint communication live in `COUNTDOWN_MANAGER.md` sections 11, 12, 16 and 20.
 
-Canonical test philosophy is defined in `COUNTDOWN_MANAGER.md`.
+## Current verification layers
 
-## Verification layers
-
-| Layer | Purpose |
+| Layer | What it currently proves |
 | --- | --- |
-| CoreChecks | Domain model, validation, calendar rules, persistence contracts and deterministic core behaviour |
+| CoreChecks | Domain model, validation, calendar rules, persistence contracts, JSON compatibility and deterministic core behaviour |
 | UIChecks | Presentation/state behaviour without launching the real AppKit UI |
-| Real UI Smoke | Real SwiftUI/AppKit popup, lifecycle, focus, geometry and regressions that require actual UI infrastructure |
-| XCUITest | External user interactions that must be verified through macOS accessibility/UI automation |
-| Manual verification | Visual quality or platform interactions that cannot be reliably automated |
+| Real UI Smoke | Real SwiftUI/AppKit popup behaviour, lifecycle, focus, geometry and regression paths that require actual UI infrastructure |
+| XCUITest | External user interactions through macOS accessibility/UI automation, including real clicks, input, sheets and status-item behaviour |
+| Manual verification | Visual quality or platform interactions that available automation cannot reliably exercise |
 
 ## Commands
 
-### Fast
+### Fast gate
 
 ```sh
 ./verify.sh fast
@@ -31,27 +29,25 @@ Runs:
 - CoreChecks
 - UIChecks
 
-Use for changes whose contracts are reliably covered below the real UI layer.
-
-### Real UI
+### Real UI gate
 
 ```sh
 ./verify.sh ui
 ```
 
-Builds an isolated signed application and runs the current Real UI Smoke suite.
+Builds an isolated ad-hoc signed application and runs the current Real UI Smoke suite.
 
-Use when a change affects real SwiftUI/AppKit behaviour such as popup lifecycle, responder/focus behaviour or other platform-sensitive UI interactions.
+The runner uses a temporary verification root under `/private/tmp` and an explicit UI-smoke environment marker.
 
-### Combined
+### Combined gate
 
 ```sh
 ./verify.sh full
 ```
 
-Runs the fast and Real UI gates.
+Runs the fast gate and Real UI gate.
 
-`full` does not automatically include XCUITest.
+`full` does not include XCUITest.
 
 ### XCUITest
 
@@ -59,96 +55,65 @@ Runs the fast and Real UI gates.
 ./run-xcui-tests.sh
 ```
 
-Runs the external macOS XCUITest suite through `xcodebuild`.
+Runs the macOS XCUITest suite through `xcodebuild` with temporary DerivedData.
 
-Use when the risk requires verification of actual user-level clicks, input, sheets, status-item behaviour or accessibility-driven interaction.
+The XCUITest environment uses isolated test data/profile plumbing implemented by the test target; production countdown data must not be used as its fixture.
 
-Do not run XCUITest automatically for unrelated changes.
+## Operational selection map
 
-## Selecting verification
+The final verification scope is chosen from the risk of the change under `COUNTDOWN_MANAGER.md`.
 
-Protect a contract at the cheapest reliable level.
+Typical starting points:
 
-Prefer:
+| Change / risk | Typical verification |
+| --- | --- |
+| Pure domain or persistence logic | relevant CoreChecks |
+| Presentation/state behaviour | relevant CoreChecks / UIChecks |
+| Popup, focus, responder, teardown or SwiftUI/AppKit lifecycle | relevant lower-level checks + Real UI Smoke |
+| Real external click/input/sheet/status-item interaction | XCUITest when it adds evidence not available below |
+| Visual judgement or automation boundary | targeted manual acceptance |
 
-1. Core/unit/state verification;
-2. UI state verification;
-3. Real UI Smoke;
-4. XCUITest;
-5. manual verification.
+This table is operational guidance, not a second test policy.
 
-Do not duplicate the same contract across layers automatically.
+## Current automation boundary
 
-Multiple layers are justified only when they detect materially different classes of failure.
+The current XCUITest baseline can exercise the app's accessible status item and normal application UI interactions.
 
-A regression should normally be protected at the lowest layer capable of reproducing the relevant failure.
+A truly arbitrary click in another application/window remains manual-only unless available macOS UI automation exposes a reliable external surface for that scenario.
 
-Platform lifecycle regressions may legitimately require Real UI Smoke or XCUITest.
+Do not build a production workaround only to make that automation gap disappear.
 
-## User-data isolation
+## Test isolation
 
-Automated verification must not mutate production user data.
+Production-data rules are canonical in `COUNTDOWN_MANAGER.md`.
 
-Production data lives at:
+Operationally:
 
-`~/Library/Application Support/CountdownManager/countdowns.json`
+- Real UI Smoke must run only with its isolated temporary test home and marker;
+- XCUITest must run with isolated fixture storage;
+- production `~/Library/Application Support/CountdownManager/countdowns.json` must not be a mutation-test fixture;
+- a verification run that cannot prove isolation must not mutate data.
 
-UI and XCUITest environments must use isolated temporary profiles.
+## Environment notes
 
-Never weaken isolation for convenience.
+The current `verify.sh` can use the known Command Line Tools SDK fallback when it is present:
 
-## Verification scope
+`/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk`
 
-Do not run the largest available suite simply because implementation occurred.
+Build scratch space and module caches are placed under the temporary verification root.
 
-Choose checks from the risk introduced by the change.
+The standalone XCUITest runner requires a working `xcodebuild` environment and the `CountdownManager.xcodeproj` test scheme.
 
-Examples:
+## Failures and gaps
 
-- pure domain change → CoreChecks and relevant focused checks;
-- presentation/state change → CoreChecks/UIChecks as relevant;
-- popup/focus/AppKit lifecycle → relevant lower-level checks plus Real UI Smoke;
-- external macOS interaction → XCUITest when it provides additional confidence;
-- visual judgement → targeted manual acceptance.
+A failing or unavailable check is evidence about either the product, the test or the environment; classify it before changing production code or test assertions.
 
-## Failures
+Test review categories and removal/merging rules are defined in `COUNTDOWN_MANAGER.md` and the `project-review` skill.
 
-A failed check is evidence.
-
-Investigate whether it indicates:
-
-- product regression;
-- test defect;
-- obsolete assertion;
-- flaky infrastructure;
-- unsupported environment.
-
-Do not weaken a valid product contract merely to make a suite green.
-
-Do not preserve an obsolete or redundant test merely because it already exists.
-
-## Reporting
-
-At checkpoint report:
-
-STATUS: READY / NOT READY / NEEDS OWNER DECISION
-
-Verified:
-
-- what was actually checked.
-
-Not verified:
-
-- relevant checks intentionally or practically not performed.
-
-Known risks:
-
-- remaining uncertainty.
-
-Do not claim a broader level of verification than was actually performed.
+For checkpoint reporting, use the canonical format in `COUNTDOWN_MANAGER.md` section 20 and state exactly what was and was not verified.
 
 ## History
 
-This document describes the current verification strategy.
+This file describes the current verification system.
 
-Historical verification runs and completed investigations belong in Git history or temporary investigation plans, not in this permanent policy document.
+Completed run logs, old assertion counts and one-off investigation detail belong in Git history or temporary investigation plans. Durable technical conclusions belong in `docs/decisions/`.
