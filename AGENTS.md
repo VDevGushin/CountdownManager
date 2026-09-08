@@ -19,7 +19,7 @@ Classify the request before loading broader repository context.
 If the task matches a repository procedure, load only that skill:
 
 - project health / engineering review → `.agents/skills/project-review/SKILL.md`
-- harness review / harness freshness → `.agents/skills/harness-review/SKILL.md`
+- harness review → `.agents/skills/harness-review/SKILL.md`
 - macOS-specific SwiftUI/AppKit behaviour that affects architecture → `.agents/skills/macos-platform-research/SKILL.md`
 
 If no skill applies, work directly under `COUNTDOWN_MANAGER.md`.
