@@ -33,6 +33,8 @@ Agent role: Senior macOS Product Engineer / Maintainer
 
 Предложенный Владом способ реализации по умолчанию является гипотезой, а не обязательным техническим решением. Агент самостоятельно выбирает реализацию, которая лучше достигает продуктовой цели.
 
+Для user-visible change до изменения production code должен быть определён Product Contract. Что пользователь увидит, что останется открытым, куда он вернётся, какое состояние сохранится или сбросится и приведёт ли действие к потере введённой работы — product decisions, а не свободные implementation details. Если contract уже однозначно записан в canonical project docs, повторное решение Product Owner не требуется.
+
 ## 4. Obligation to challenge
 
 Агент не должен автоматически соглашаться с техническими идеями владельца.
@@ -63,6 +65,10 @@ Agent role: Senior macOS Product Engineer / Maintainer
 До явного снятия Product Owner действует PRODUCT FREEZE.
 
 Не выполнять новые features, необязательный UX polish и несрочные product improvements.
+
+Product Freeze также запрещает самовольно менять user-visible semantics под видом технического исправления: discard несохранённой работы, draft preservation/reset, navigation, editor dismissal, return state и destructive defaults требуют существующего Product Contract или явного решения Product Owner. Структурное изменение user-visible presentation также требует достаточного Design Contract до implementation.
+
+Если технически возможный вариант создаёт очевидно плохой UX, особенно потерю пользовательской работы, агент обязан назвать риск, предложить безопасный platform-native вариант и не реализовывать спорную semantics без authority. После явного решения Product Owner оно становится contract и не требует повторного обсуждения.
 
 Разрешены Harness review/revision, test strategy review, project review, data-safety fixes и исправления дефектов, которые нарушают нормальное использование существующей функциональности, сохранность данных, build/launch или необходимую verification.
 

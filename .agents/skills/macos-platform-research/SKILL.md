@@ -30,6 +30,12 @@ Do not invoke this workflow for ordinary domain or pure business logic.
 
 ## Procedure
 
+### 0. Confirm implementation readiness
+
+Before platform-sensitive production implementation, complete the pre-implementation contract check in `VERIFICATION.md` and consult any applicable accepted decision. Platform research may determine how to implement established user-visible semantics; it must not invent Product or Design Contract decisions.
+
+If the Product Contract is incomplete, a structural presentation change lacks a sufficient Design Contract, or acceptance cannot be derived from them, report the exact missing decision and stop before implementation. Do not ask Product Owner to decide again when canonical project documentation already resolves it.
+
 ### 1. Define the question
 
 State the exact platform behaviour that must be known before selecting architecture.

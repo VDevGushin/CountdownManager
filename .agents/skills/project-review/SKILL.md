@@ -61,9 +61,11 @@ Do not run expensive UI or XCUITest suites merely because they exist. Run checks
 When acting as the independent reviewer for completed implementation changes, review two distinct aspects:
 
 1. architecture and code correctness;
-2. adequacy of verification evidence against the actual user contract, using the ladder, trigger and bundle-provenance rules in `VERIFICATION.md`.
+2. contract authority and adequacy of verification evidence, using the pre-implementation gate, ladder, trigger and bundle-provenance rules in `VERIFICATION.md`.
 
-Reject `READY` when a test substitutes an implementation hook for the user action under test, exercises a stale or different bundle, verifies a lifecycle defect only with internal smoke, omits required installed black-box evidence, or omits separately required platform integration evidence. The implementer's own internal test cannot by itself conclusively establish user-visible lifecycle behaviour.
+For a user-visible change, verify that the Product Contract was established before implementation, no new user-facing semantics were invented without authority, implementation conforms to any required Design Contract, and acceptance was derived from the original contract.
+
+Reject `READY` when a technically correct implementation changes user-visible semantics without authority, violates the Design Contract, or uses acceptance that does not represent the established Product Contract. Also reject when a test substitutes an implementation hook for the user action under test, exercises a stale or different bundle, verifies a lifecycle defect only with internal smoke, omits required installed black-box evidence, or omits separately required platform integration evidence. The implementer's own internal test cannot by itself conclusively establish user-visible lifecycle behaviour.
 
 Report the independent-review result using the applicable READY contract in `VERIFICATION.md`; do not transfer a missing gate to Product Owner manual testing.
 

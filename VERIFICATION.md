@@ -6,6 +6,45 @@ This document is the operational map of the project's current verification layer
 
 Canonical test philosophy, cost policy, user-data safety and checkpoint communication live in `COUNTDOWN_MANAGER.md` sections 11, 12, 16 and 20.
 
+## Pre-implementation contract check
+
+Before changing production code for a relevant user-visible change, confirm that implementation will execute an established contract rather than define it.
+
+The Product Contract must determine, where relevant:
+
+- `USER ACTION`;
+- `EXPECTED RESULT`;
+- `STATE THAT MUST SURVIVE`;
+- `STATE THAT MUST RESET`;
+- `EXPLICIT USER DATA LOSS`;
+- `NAVIGATION/RETURN BEHAVIOR`;
+- `UNRESOLVED OWNER DECISIONS`.
+
+A literal template is not required when canonical product or decision documentation already answers these questions unambiguously. If a required product decision is missing, do not start implementation; report `READY TO IMPLEMENT: no` and `OWNER DECISION REQUIRED: <the exact question>`.
+
+When the change structurally alters user-visible UI or presentation, the Design Contract must also define the relevant presentation model, visual hierarchy, existing visual language, transition/animation expectations, layout stability, accessibility and Reduce Motion behaviour, and what Product Freeze forbids changing. An architecture label such as `inline` is not by itself a sufficient presentation specification. Missing required design decisions mean `READY TO IMPLEMENT: no`.
+
+Record the cheap readiness gate proportionately:
+
+```text
+PRODUCT CONTRACT COMPLETE: yes/no
+DESIGN CONTRACT COMPLETE: yes/no/not-applicable
+APPLE/PLATFORM CONTRACT SUFFICIENT: yes/no/not-applicable
+ACCEPTANCE DERIVABLE FROM CONTRACT: yes/no
+UNRESOLVED OWNER DECISIONS: none/<list>
+READY TO IMPLEMENT: yes/no
+```
+
+`READY TO IMPLEMENT: yes` requires every applicable contract/platform/acceptance field to be `yes` and `UNRESOLVED OWNER DECISIONS: none`. Otherwise it is `no` and production implementation must not begin.
+
+The Apple/platform field applies when implementation depends on uncertain platform behaviour and is resolved through `.agents/skills/macos-platform-research/SKILL.md`. This planning gate is not independent review; the independent completion reviewer still starts only after implementation changes are complete. Keep the check lightweight or not applicable for pure model, data, logic and internal changes that do not alter user-visible behaviour.
+
+For a user-visible change, derive required acceptance scenarios from the Product and Design Contracts before implementation:
+
+`Product Contract → acceptance scenarios → implementation → verification`
+
+Do not implement first and then define a convenient acceptance test around the resulting implementation.
+
 ## Current verification layers
 
 Verification level describes the evidence, not the test target or command name. A higher level is required only when a lower level cannot faithfully exercise the user contract.
