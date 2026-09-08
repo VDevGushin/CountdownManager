@@ -20,6 +20,16 @@ In-memory state changes and asynchronous persistence must preserve revision orde
 
 Existing stored data and legacy JSON compatibility must be preserved unless the Product Owner explicitly approves a migration.
 
+## Trade-offs
+
+Keeping a single repository boundary and revision ordering adds coordination code compared with direct view/model writes, but it makes persistence ordering explicit and protects newer state from delayed asynchronous writes.
+
+Legacy JSON compatibility constrains schema evolution and can require compatibility code, but avoids silently breaking existing user data.
+
+Isolated test profiles add some test plumbing and runtime overhead, but remove the unacceptable risk of mutation tests touching production countdowns.
+
+Privacy-safe diagnostics intentionally expose less user content, which can make some investigations less convenient; this is an accepted trade-off for not leaking event titles, notes, emoji or subtask text into logs.
+
 ## Test isolation
 
 Automated mutation tests must use isolated test storage.

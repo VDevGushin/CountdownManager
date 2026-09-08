@@ -24,6 +24,14 @@ Root UI recreation is not a default workaround for lifecycle problems.
 
 Unsaved transient state must not survive popup closure.
 
+## Trade-offs
+
+This decision intentionally gives up some convenience of stock SwiftUI `Menu` behaviour and requires more explicit AppKit-aware lifecycle handling in affected action paths.
+
+Local action popovers and explicit responder restoration add a small amount of custom code and platform coupling, but provide deterministic control over teardown and avoid a failure mode that previously caused severe UI stalls and memory runaway.
+
+The guardrail can become stale as SwiftUI/AppKit evolves, so it must not be treated as permanent folklore: platform evidence should be re-checked when the decision's revisit conditions are met.
+
 ## Evidence trail
 
 The detailed live samples, verification counts and intermediate investigation notes remain available in Git history. Key commits:
