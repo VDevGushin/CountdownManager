@@ -88,6 +88,18 @@ When the technical direction materially depends on uncertain SwiftUI, AppKit, or
 
 Do not invoke platform research for ordinary domain or data logic.
 
+## Code quality
+
+Follow current Swift, SwiftUI, AppKit, and macOS platform conventions.
+
+Prefer standard platform APIs and controls over custom lifecycle, interaction, or state-restoration machinery.
+
+Keep types and views focused on one coherent responsibility. When code accumulates unrelated UI, state ownership, platform integration, diagnostics, or verification responsibilities, split it along those boundaries.
+
+Prefer composable SwiftUI views when the split represents a real UI or state responsibility.
+
+Do not introduce abstractions solely to reduce file size or line count.
+
 ## Verification
 
 Choose verification according to the changed behaviour and failure mode using `docs/VERIFICATION.md`.
