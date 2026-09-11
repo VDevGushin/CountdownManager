@@ -1,6 +1,10 @@
 # Popup Lifecycle Architecture
 
-Status: ACCEPTED
+Status: SUPERSEDED
+
+Superseded on 2026-09-11 by [Long-lived window shell](window-shell.md).
+
+The decision below is retained solely as historical context. Its transient-container requirement, popup-specific semantics and presentation guardrails no longer govern the target shell. Current product behaviour is defined in `../PRODUCT.md`; implementation migration is pending.
 
 ## Context
 
@@ -16,7 +20,7 @@ Popup visibility, SwiftUI view lifetime, sheets, first responder, application ac
 
 Previous Countdown Manager regressions showed that changes in this area can produce severe lifecycle failures, including repeated SwiftUI/AppKit control rebuilding and UI stalls.
 
-## Decision
+## Historical decision (no longer active)
 
 ### Primary container
 

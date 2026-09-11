@@ -10,6 +10,24 @@ Countdown Manager is not a task manager, calendar replacement, reminder system, 
 
 The application does not require an account or internet connection.
 
+## Primary interface
+
+Accepted product contract for the next shell migration; production implementation is still pending.
+
+The menu-bar entry opens one ordinary, long-lived application window. The application remains a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening the window.
+
+- Clicking the status item shows and activates the existing window if hidden or not key; clicking it while the window is key hides it.
+- Closing the window, including the standard close command, hides the interface without quitting the application.
+- Clicking outside or switching applications does not automatically hide the window.
+- Hide/show preserves list browsing position, the current internal screen, an open editor and its unsaved input during the application session.
+- Quit ends the session. A subsequent launch may reset transient navigation, focus and unsaved drafts. Hiding is never Save, Cancel or Discard.
+
+There is one event editor inside the primary window. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
+
+The editor contains the existing event fields and an embedded emoji choice. Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
+
+Use a standard titled window and ordinary controls, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Avoid popup-specific motion and forced focus transitions; respect system accessibility and Reduce Motion settings. This migration does not authorize decorative redesign or new features.
+
 ## Events
 
 An event contains:
@@ -154,35 +172,27 @@ When no events exist, the menu bar displays:
 
 ## Empty state
 
-When no events exist, the popup displays an empty state and provides an action to create a new event.
+When no events exist, the main window displays an empty state and provides an action to create a new event.
 
 ## Editing and explicit actions
 
 ### Save
 
-Save commits the current editor changes to application data.
+Save explicitly commits the current editor changes through the existing data-safety boundary. A successful Save ends the editing session and returns to the list. A failed Save keeps the editor and draft available and reports the error.
 
 ### Cancel
 
-Cancel explicitly abandons the current unsaved editing action.
-
-Cancel and ordinary popup dismissal are different user actions.
+Cancel explicitly abandons the current unsaved editing action and returns to the list. It does not close the window. Save and Cancel retain the list's browsing context; actual data changes may affect event order according to the ordering rules above.
 
 ### Delete
 
-Deleting an event is an explicit destructive action and uses confirmation before removal.
+Deleting an event is an explicit destructive action and requires confirmation before removal. Cancelling confirmation preserves the editor and draft. Successful deletion ends editing of that event and returns to the list; a failed deletion retains the working context and reports the error.
 
-### Ordinary popup dismissal
+### Session continuity
 
-The application's main interface is presented from the macOS menu bar as a transient popup.
+Closing or hiding the window does not commit or discard input, dismiss the editor or reset navigation. No transient UI-state persistence is required across application restarts. The separately defined durable checklist-collapse preference is unaffected.
 
-Ordinary transient dismissal, such as the popup becoming hidden through normal menu-bar interaction, is not Save, Cancel, or Discard.
-
-Ordinary dismissal does not commit unsaved editor input to durable event data.
-
-Closing and reopening the primary popup during the same application session must not reset the user's list browsing position solely because the popup became hidden.
-
-The exact lifecycle of an active event editor or quick-subtask editor across ordinary popup dismissal is not defined here yet. If a change depends on that behaviour, resolve that specific product decision rather than inferring it from current teardown code or existing tests.
+If an event expires while its draft is open, expiry still applies to stored data. Keep the draft visible with an explanation that the event is no longer available; disable saving it as that event. Do not silently discard the input or recreate an expired event. Cancel remains available.
 
 ## Launch at login
 

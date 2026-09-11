@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document is a compact map of the current Countdown Manager implementation.
+This document maps the current Countdown Manager implementation and explicitly identifies the accepted shell target that has not yet been implemented.
 
 It describes where responsibilities live and how the major runtime pieces connect.
 
@@ -80,7 +80,34 @@ Owns the executable entry point.
 
 `App.swift` delegates application startup to `CountdownManagerApplication.run()`.
 
-## Runtime overview
+## Shell migration status
+
+Accepted target: one long-lived ordinary `NSWindow` with one `NSHostingController`, owned for the application session. See [the accepted shell decision](decisions/window-shell.md).
+
+Production still uses `NSStatusItem + transient NSPopover` with root reconstruction and sheet/responder handling. The current-runtime descriptions below are implementation evidence only; they do not override the accepted window contract in `PRODUCT.md`. Migration is not implemented or runtime-verified by this documentation change.
+
+### Accepted target ownership
+
+```text
+NSApplication / AppDelegate
+├── NSStatusItem
+├── Store → CountdownData / CountdownRepository → countdowns.json
+└── NSWindow (one strong reference, session lifetime)
+    └── NSHostingController (one instance, stable root)
+        └── ManagerView
+            ├── retained list hierarchy
+            └── one internal editing session and its draft
+```
+
+Create the window and hosting hierarchy once, eagerly or on first use. Hide through `orderOut`; show and activate the same window through ordinary AppKit window APIs. Keep `isReleasedWhenClosed = false` and route the close command through the same hide path. Do not assign a new hosting controller/root on hide, close, reopen or ordinary store updates.
+
+SwiftUI view-value recomputation is normal and is not root reconstruction. Keep the list structurally alive while the editor is active; retaining only the hosting controller does not preserve a list removed by a conditional branch. A draft belongs to an explicit editing session, not to window visibility. Save success or Cancel ends that session; hiding does not.
+
+Normal window activation is shell responsibility. There is no responder teardown/restoration machine, mouse monitor, popup introspection, persisted scroll offset, draft restoration or per-OS shell abstraction. Existing domain, persistence, disclosure preferences, date refresh, login integration and privacy-safe diagnostics retain their responsibilities.
+
+The bounded implementation work is specified in [the production migration scope](plans/window-shell-migration.md).
+
+## Current runtime overview (before migration)
 
 ```text
 NSApplication
@@ -202,7 +229,7 @@ Contains deterministic UI-facing transformations and state that do not require S
 - editor draft representation;
 - disclosure preference persistence.
 
-## SwiftUI views
+## Current SwiftUI views (before migration)
 
 File: `Sources/CountdownManager/Views.swift`
 
@@ -218,7 +245,7 @@ The SwiftUI layer owns transient presentation state such as:
 
 User mutations are routed through `Store`.
 
-## AppKit application shell
+## Current AppKit application shell (before migration)
 
 File: `Sources/CountdownManager/Application.swift`
 
@@ -240,11 +267,9 @@ The popover content is hosted through `NSHostingController` with `ManagerView` a
 
 In the current implementation, `popoverDidClose` resets the transient session and assigns a new hosting controller. This is current implementation behaviour, not a product requirement.
 
-User-visible popup semantics are defined by `docs/PRODUCT.md`.
+User-visible target window semantics are defined by `docs/PRODUCT.md`; current popup behaviour is pending replacement.
 
-Platform-specific lifecycle rationale is documented in:
-
-`docs/decisions/popup-lifecycle.md`
+The accepted shell rationale is documented in `docs/decisions/window-shell.md`. The superseded `docs/decisions/popup-lifecycle.md` retains historical evidence only.
 
 ## Diagnostics
 
