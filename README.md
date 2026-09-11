@@ -108,94 +108,40 @@ open "Countdown Manager.app"
 
 XCUITest-набор использует минимальный `CountdownManager.xcodeproj`, собирает отдельную тестовую копию приложения и запускается из CLI без ручного открытия Xcode. Каждый тест работает с собственным временным Application Support-профилем и fixture-данными; production `countdowns.json`, UserDefaults и журналы не используются.
 
+Подробная карта verification surfaces и правила выбора достаточного evidence находятся в [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
+
 ## Управление проектом через ИИ
 
-Репозиторий использует небольшой agent harness для сопровождения проекта.
+Репозиторий содержит небольшой agent harness для сопровождения Countdown Manager.
 
-### Шпаргалка владельца
+Для обычной работы владельцу не нужно писать техническое ТЗ или выбирать Swift, SwiftUI или AppKit API. Достаточно описать проблему, желаемый пользовательский результат и важные ограничения.
 
-Если через неделю непонятно, с чего начать, достаточно одной из трёх команд:
-
-```text
-Проведи harness-review. Ничего не исправляй.
-```
-
-Проверяет сам Harness: bootstrap, policy, skills, authority, duplication, cost и freshness. Обычно запускается после заметных изменений Harness/runtime/tooling или по прямому желанию перепроверить агентную систему.
+Примеры:
 
 ```text
-Проведи project-review. Ничего не исправляй.
+Исправь баг: после закрытия и повторного открытия popup список возвращается наверх.
 ```
-
-Проверяет сам Countdown Manager: архитектуру, код, lifecycle, persistence, tests, technical debt и документацию. Review по умолчанию READ-ONLY: агент сначала показывает findings и останавливается.
 
 ```text
-Исправь баг: <что происходит и какой результат нужен>.
+Проведи engineering review проекта. Ничего не меняй.
 ```
-
-Для обычной работы не нужно писать техническое ТЗ. Опиши проблему, желаемый пользовательский результат и важные ограничения. Техническое решение, выбор Swift/SwiftUI/AppKit API и минимально достаточная verification — ответственность агента. Если предложенный владельцем технический способ плохой, агент обязан возразить и предложить более надёжную альтернативу.
-
-### Что делать после review
-
-Review ничего автоматически не исправляет. После findings можно явно выбрать scope, например:
 
 ```text
-Исправь findings 1 и 3 из project-review. Остальное не трогай.
+Проверь agent harness на лишнюю сложность, дублирование и устаревшие правила. Ничего не меняй.
 ```
 
-Такая implementation-задача разрешает менять файлы только внутри согласованного scope. Commit, изменение `main` и другие действия с отдельным authority gate всё равно требуют отдельного разрешения.
+Обычный bug fix не требует отдельного специального workflow. Агент сам выбирает технический путь и достаточный уровень verification в пределах правил репозитория.
 
-### PRODUCT FREEZE
+Основные agent-инструкции находятся в [`AGENTS.md`](AGENTS.md).
 
-Пока действует PRODUCT FREEZE, не добавляются новые features, необязательный UX polish и несрочные product improvements. Разрешены review, работа над Harness/test strategy, data-safety fixes и исправления дефектов существующей функциональности.
+Канонические repository knowledge surfaces:
 
-Freeze снимается только точной явной командой владельца:
+- [`docs/PRODUCT.md`](docs/PRODUCT.md) — текущее пользовательское поведение и product invariants;
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — карта текущей реализации и ownership;
+- [`docs/VERIFICATION.md`](docs/VERIFICATION.md) — verification surfaces и выбор evidence;
+- [`docs/decisions/`](docs/decisions/) — принятые durable technical decisions;
+- [`.agents/skills/macos-platform-research/SKILL.md`](.agents/skills/macos-platform-research/SKILL.md) — специализированное исследование неопределённого macOS/SwiftUI/AppKit поведения.
 
-```text
-Снимаем product freeze
-```
-
-### Что агент может делать без отдельного разрешения
-
-Агент может читать и анализировать репозиторий, выполнять безопасную read-only диагностику и запускать изолированные проверки, которые не затрагивают production data.
-
-Явная implementation-задача разрешает изменения файлов только в её scope.
-
-### Что всегда требует отдельного разрешения
-
-Отдельное явное разрешение требуется для:
-
-- commit;
-- push;
-- создания commit непосредственно в `main`, merge/rebase/cherry-pick в `main` или иного изменения history/ref `main`;
-- установки или замены приложения в `/Applications`;
-- release/publication;
-- migration/reset реальных пользовательских данных;
-- destructive operations.
-
-Разрешение на один уровень не означает разрешение на следующий.
-
-### Главное правило владельца
-
-Не нужно становиться Swift-разработчиком или придумывать архитектуру за агента.
-
-Достаточно ответить на три вопроса:
-
-1. Что сейчас не устраивает?
-2. Какой результат нужен пользователю?
-3. Какие есть ограничения или приоритеты?
-
-Дальше агент обязан сам исследовать проблему, отличать FACT/HYPOTHESIS/VERIFIED, выбрать технический путь, не раздувать scope и не тратить дорогие проверки без пропорциональной пользы.
-
-### Где что лежит
-
-- [`AGENTS.md`](AGENTS.md) — короткий bootstrap и router для AI-агента.
-- [`COUNTDOWN_MANAGER.md`](COUNTDOWN_MANAGER.md) — канонические роль, engineering policy, authority и правила работы.
-- [`VERIFICATION.md`](VERIFICATION.md) — актуальная стратегия проверки.
-- [`.agents/skills/`](.agents/skills/) — процедуры для повторяемых классов инженерных задач.
-- [`docs/decisions/`](docs/decisions/) — устойчивые архитектурные решения.
-
-Владелец определяет продуктовый результат и ограничения. AI-агент отвечает за техническое решение и обязан возражать против неоправданно сложной, ненативной или рискованной реализации.
-
-Commit, push, изменение истории `main`, установка приложения, публикация release и операции с реальными пользовательскими данными регулируются authority policy в `COUNTDOWN_MANAGER.md`.
+PRODUCT FREEZE, scope, user-data protection и authority boundaries определены только в `AGENTS.md`, чтобы README не становился второй копией agent policy.
 
 Нативные API: [NSStatusBar](https://developer.apple.com/documentation/appkit/nsstatusbar), [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice/mainapp).

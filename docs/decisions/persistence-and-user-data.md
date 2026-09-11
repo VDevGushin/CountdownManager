@@ -1,53 +1,68 @@
-# Persistence and user-data boundary
+# Persistence and User Data
 
 Status: ACCEPTED
 
 ## Context
 
-Countdown Manager stores real user countdowns locally.
+Countdown Manager stores durable user-created event data locally.
 
-Loss, corruption or accidental mutation of that data has higher cost than failed UI polish or slower implementation.
+Persistence operations may overlap with continued UI interaction, so an older asynchronous write must not overwrite newer accepted state.
 
-Persistence must also remain compatible with legacy stored JSON.
+The application also needs to preserve compatible existing user data across normal upgrades.
 
 ## Decision
 
-`CountdownRepository` is the production persistence boundary for countdown data.
+`CountdownRepository` is the production filesystem boundary for countdown event data.
 
-Production filesystem work must not be moved onto the main UI actor.
+The repository is isolated from the main UI actor and serializes production reads and writes.
 
-In-memory state changes and asynchronous persistence must preserve revision ordering so that delayed writes cannot overwrite newer state.
+Application state coordination and filesystem serialization remain separate responsibilities:
 
-Existing stored data and legacy JSON compatibility must be preserved unless the Product Owner explicitly approves a migration.
+- `Store` coordinates application-state revisions and durable snapshots;
+- `CountdownRepository` performs serialized file I/O and rejects a write whose revision is older than one already accepted by the repository.
+
+Countdown persistence uses atomic file replacement.
+
+Existing compatible stored data remains readable unless an explicit product migration changes that contract.
+
+A load failure caused by invalid or corrupted production data must not silently overwrite the original file as part of recovery.
+
+## Rationale
+
+Keeping persistence behind one repository boundary makes filesystem ownership explicit and prevents views or unrelated application code from writing production event data directly.
+
+Revision ordering protects newer user state from delayed asynchronous writes.
+
+Keeping application-state coordination separate from filesystem serialization allows the UI to continue operating asynchronously without moving filesystem work onto the main actor.
+
+Backward-compatible decoding protects existing local user data during schema evolution.
 
 ## Trade-offs
 
-Keeping a single repository boundary and revision ordering adds coordination code compared with direct view/model writes, but it makes persistence ordering explicit and protects newer state from delayed asynchronous writes.
+Revision coordination introduces more state than direct synchronous writes.
 
-Legacy JSON compatibility constrains schema evolution and can require compatibility code, but avoids silently breaking existing user data.
+Backward compatibility may require additional decoding logic when the stored model evolves.
 
-Isolated test profiles add some test plumbing and runtime overhead, but remove the unacceptable risk of mutation tests touching production countdowns.
+These costs are accepted because silent loss or replacement of user-created data has substantially higher impact.
 
-Privacy-safe diagnostics intentionally expose less user content, which can make some investigations less convenient; this is an accepted trade-off for not leaking event titles, notes, emoji or subtask text into logs.
+## Related documentation
 
-## Test isolation
+User-visible persistence and privacy guarantees:
 
-Automated mutation tests must use isolated test storage.
+`docs/PRODUCT.md`
 
-Production:
+Current implementation map:
 
-`~/Library/Application Support/CountdownManager/countdowns.json`
+`docs/ARCHITECTURE.md`
 
-must never be used as a destructive or mutation-test fixture.
+Test isolation and persistence verification:
 
-Invalid production JSON must fail safely and must not be silently rewritten merely to recover from an error.
-
-## Diagnostics
-
-Diagnostics must not contain private event titles, notes, user emoji or subtask text.
-
-Technical identifiers, operation type, revision and result may be logged when useful.
+`docs/VERIFICATION.md`
 
 ## Revisit
 
-Revisit this decision only if the persistence architecture itself changes or an explicit data migration is approved.
+Revisit this decision when:
+
+- the persistence backend changes;
+- the revision-coordination model changes materially;
+- the durable data model requires an intentional incompatible migration.

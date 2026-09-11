@@ -1,112 +1,102 @@
-# Popup lifecycle and transient UI
+# Popup Lifecycle Architecture
 
 Status: ACCEPTED
 
 ## Context
 
-Countdown Manager is a menu-bar application whose primary UI runs inside a transient AppKit/SwiftUI popup.
+Countdown Manager is a menu-bar application whose primary interface crosses the SwiftUI/AppKit boundary.
 
-Several regressions demonstrated that popup teardown, sheets, responder restoration and SwiftUI/AppKit control rebuilding can interact in non-obvious ways.
+The application currently uses:
 
-In particular, a previous freeze investigation showed runaway SwiftUI/AppKit menu rebuilding around `AppKitPopUpAdaptor` / `PlatformItemList` during popup-session reconstruction.
+- an `NSStatusItem`;
+- a transient `NSPopover`;
+- SwiftUI content hosted through `NSHostingController`.
+
+Popup visibility, SwiftUI view lifetime, sheets, first responder, application activation, and AppKit event routing can interact in ways that are not obvious from SwiftUI state alone.
+
+Previous Countdown Manager regressions showed that changes in this area can produce severe lifecycle failures, including repeated SwiftUI/AppKit control rebuilding and UI stalls.
 
 ## Decision
 
-Treat popup lifecycle as platform-sensitive architecture.
+### Primary container
 
-### Container
+The primary Countdown Manager interface remains hosted in a transient `NSPopover`.
 
-The status-item UI remains a transient `NSPopover`.
+Changing the primary container is an architectural change and should be supported by a concrete product or platform reason.
 
-Do not use document-modal SwiftUI `.sheet` presentation over the transient popover for the main editor or quick-subtask editor flows.
+### Visibility and UI state lifetime
 
-Do not introduce SwiftUI `Menu` controls into the popup/event/subtask action paths without new platform evidence showing that the previous failure mode is no longer relevant.
+Transient popup visibility and user working-state lifetime are separate concerns.
 
-Current action UI uses local action popovers where required.
+Closing the transient popup must not implicitly define the lifetime of editing or navigation state when the product requires that state to survive ordinary dismissal.
 
-### Editor presentation
+The user-visible semantics are defined in `docs/PRODUCT.md`.
 
-The main editor and quick-subtask editor live inside the existing popover. `Inline` means an internal screen or state of that popover, not the technical insertion of a large form between list rows.
+The implementation may use a stable hosting hierarchy or another mechanism that satisfies those semantics.
 
-Preserve the application's existing visual language. Transitions must feel native and deliberate, avoid unnecessary flicker or layout jumps, and respect Reduce Motion when animation is used.
+A specific state-preservation technique is not made permanent by this decision.
 
-Under Product Freeze, do not introduce an independent redesign, decorative pattern, colour or feature while implementing this lifecycle change.
+### SwiftUI/AppKit boundary
 
-### Ordinary popover dismissal
+Changes involving:
 
-An outside click is ordinary hiding of the transient popup, not `Cancel` or `Discard`.
+- popover lifecycle;
+- sheets;
+- first responder;
+- application activation;
+- status-item routing;
+- menu presentation;
+- teardown and reconstruction
 
-Across ordinary close and reopen, preserve the user's working context through the existing UI hierarchy:
+must be treated as platform-sensitive when their behaviour is not already established.
 
-- scroll position;
-- an open editor;
-- an unsaved editor draft;
-- quick-subtask draft and state.
+Use `.agents/skills/macos-platform-research/SKILL.md` when a technical choice materially depends on uncertain platform behaviour.
 
-Do not add manual persistence of pixel scroll offset or separate draft persistence/restoration solely for close and reopen unless platform evidence proves it necessary.
+### Known SwiftUI Menu regression
 
-### Root hierarchy
+Countdown Manager previously experienced a severe reconstruction failure involving SwiftUI menu infrastructure around `AppKitPopUpAdaptor` / `PlatformItemList`.
 
-Ordinary popup closure must not destroy or recreate the root `NSHostingController` or `ManagerView` merely for teardown. Preserve natural SwiftUI state continuity.
+Do not reintroduce SwiftUI `Menu` into the previously affected popup action paths without current evidence that the old failure mode is no longer relevant.
 
-### Explicit actions
+This is a guardrail against a demonstrated regression, not a permanent claim that SwiftUI `Menu` is generally unsuitable for macOS.
 
-`Save`, `Cancel` and `Discard` retain their existing explicit semantics. An outside click alone must not lose user input.
+### Presentation mechanisms
 
-### Outside-click mechanism
+This decision does not permanently require or forbid SwiftUI `.sheet`, local popovers, event monitors, or other individual presentation mechanisms.
 
-The first and preferred mechanism is native `NSPopover(.transient)` behaviour after the incorrect modal presentation has been removed.
+Choose them according to:
 
-Do not add an `NSEvent` monitor, mouse hook, forced-close workaround, separate panel/window or app-deactivation workaround in advance.
+- current product behaviour;
+- current platform evidence;
+- the smallest mechanism that reliably satisfies the interaction.
 
-If native `.transient` behaviour is proven by real interaction not to satisfy this Product Contract after the architecture is corrected, establish the specific AppKit lifecycle cause, consult Apple documentation and choose the smallest platform-native lifecycle mechanism. Use an event monitor only after more native mechanisms are proven insufficient.
+Historical workarounds must not be retained solely because they once existed.
 
-### Acceptance consequences
+## Evidence
 
-Installed black-box acceptance under `VERIFICATION.md` must exercise:
+Historical commits relevant to this decision include:
 
-- a basic outside click;
-- an outside click with the main editor focused;
-- an outside click with the quick-subtask editor focused.
+- `6b0043d55f2b7003117830105ee8d42f4b5f3a68` — records the `AppKitPopUpAdaptor` / `PlatformItemList` reconstruction failure and related mitigation;
+- `51c5552c2f3a0d6a583d9caf853033b09b67decf` — responder and transient-popover restoration;
+- `e85233490d384d2501213dcfa487d76e53f93d7b` — sheet-end lifecycle handling;
+- `50f72b792384f89127bfb2402f13fbd041f403b7` — responder restoration after reopen.
 
-Product Owner manual QA is not a required READY gate.
+These commits explain historical risk.
 
-## Trade-offs
+They do not require preservation of the implementation that existed in those commits.
 
-This decision intentionally gives up some convenience of stock SwiftUI `Menu` behaviour and requires more explicit AppKit-aware lifecycle handling in affected action paths.
+## Verification
 
-Local action popovers and explicit responder restoration add a small amount of custom code and platform coupling, but provide deterministic control over teardown and avoid a failure mode that previously caused severe UI stalls and memory runaway.
+Verification requirements are determined by the failure mode.
 
-The guardrail can become stale as SwiftUI/AppKit evolves, so it must not be treated as permanent folklore: platform evidence should be re-checked when the decision's revisit conditions are met.
+See `docs/VERIFICATION.md`.
 
-## Evidence trail
-
-The detailed live samples, verification counts and intermediate investigation notes remain available in Git history. Key commits:
-
-- `6b0043d55f2b7003117830105ee8d42f4b5f3a68` — `Fix editor teardown scroll freeze regression`; records the `AppKitPopUpAdaptor` / `PlatformItemList` runaway evidence, removes SwiftUI `Menu` from affected action paths and adds the editor teardown/root-scroll regression.
-- `51c5552c2f3a0d6a583d9caf853033b09b67decf` — `Restore transient popover behavior after editor dismissal`; restores `.transient` interaction, key-window state and root first responder after editor dismissal.
-- `e85233490d384d2501213dcfa487d76e53f93d7b` — `Restore popover after quick subtask sheet dismissal`; handles the AppKit sheet-end lifecycle before restoring the parent popover.
-- `50f72b792384f89127bfb2402f13fbd041f403b7` — `Restore root responder when reopening popover`; captures the subsequent root-responder correction after reopen.
-
-These references are evidence for this decision, not a requirement to preserve the old implementation unchanged. Re-check platform behaviour when the decision is revisited.
-
-## Engineering rule
-
-When changing popup, sheet, responder, menu or teardown behaviour:
-
-1. use this decision for the established Product and Design Contracts and complete the pre-implementation check in `VERIFICATION.md`;
-2. derive acceptance scenarios from those contracts before implementation;
-3. use `macos-platform-research` and inspect existing lifecycle evidence;
-4. identify any uncertain platform contract;
-5. prefer a minimal spike if that platform contract is unclear;
-6. verify at every layer required by `VERIFICATION.md`.
-
-Do not add workaround layers before the root platform behaviour is understood.
+When the contract depends on an actual external interaction, evidence must exercise that interaction rather than only invoke its resulting internal method.
 
 ## Revisit
 
-Re-evaluate this decision after:
+Revisit this decision when:
 
-- a major SwiftUI/AppKit/macOS migration;
-- material changes to popup architecture;
-- authoritative evidence that the underlying platform behaviour changed.
+- the primary popup architecture changes;
+- a major macOS or SwiftUI/AppKit change materially affects the relevant lifecycle behaviour;
+- authoritative or reproduced evidence shows that the known menu reconstruction failure is no longer relevant.

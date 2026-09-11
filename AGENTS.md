@@ -1,60 +1,97 @@
-# Countdown Manager — Agent Bootstrap
+# Countdown Manager
 
-Countdown Manager uses a repository-level agent harness.
+Countdown Manager is a native macOS menu-bar application.
 
-## Start here
+Keep repository context small and task-specific. Do not read every document, decision, skill, or test by default.
 
-Before doing project work, read:
+## Repository knowledge
 
-- `COUNTDOWN_MANAGER.md`
+Use the repository as the source of truth.
 
-It is the canonical source for agent role, engineering policy, authority, product freeze, evidence, review behaviour, test philosophy, user-data safety and context discipline.
+- User-visible product behaviour and invariants: `docs/PRODUCT.md`
+- Current implementation structure and ownership: `docs/ARCHITECTURE.md`
+- Verification commands, test surfaces, and evidence selection: `docs/VERIFICATION.md`
+- Durable non-obvious technical decisions and rationale: `docs/decisions/`
 
-Do not duplicate or reinterpret those rules here.
+Read only the sources relevant to the current task.
 
-## Route the task
+## Source-of-truth precedence
 
-Classify the request before loading broader repository context.
+For user-visible behaviour, `docs/PRODUCT.md` is authoritative.
 
-If the task matches a repository procedure, load only that skill:
+Accepted decisions define technical constraints and rationale within their scope but must not silently redefine product behaviour.
 
-- project health / engineering review → `.agents/skills/project-review/SKILL.md`
-- harness review → `.agents/skills/harness-review/SKILL.md`
-- macOS-specific SwiftUI/AppKit behaviour that affects architecture → `.agents/skills/macos-platform-research/SKILL.md`
+`docs/ARCHITECTURE.md` describes the current implementation; it is not a product contract.
 
-If no skill applies, work directly under `COUNTDOWN_MANAGER.md`.
+Tests and current code are implementation evidence. If they conflict with current product truth or an accepted decision, surface the conflict instead of treating existing behaviour as automatically correct.
 
-All permissions, approval boundaries and review semantics are canonical in `COUNTDOWN_MANAGER.md`; do not restate them here.
+## Product Freeze
 
-## Load context progressively
+PRODUCT FREEZE is active until the Product Owner explicitly lifts it.
 
-Understand the task before loading repository context.
+While active:
 
-Then read only what the task requires.
+- do not add new features;
+- do not perform optional product or UX improvements;
+- do not silently change established user-visible semantics;
+- bug fixes are allowed;
+- data-safety work is allowed;
+- verification work is allowed;
+- harness maintenance is allowed.
 
-Do not automatically read:
+## Scope
 
-- the entire repository;
-- every skill;
-- all documentation;
-- historical investigation material;
-- all tests.
+Work only within the requested scope.
 
-More context is not automatically better context.
+Report materially relevant unrelated findings, but do not fix them unless they are explicitly added to scope.
 
-## Repository map
+## Product decisions
 
-Use these sources only when relevant:
+The Product Owner defines the desired user outcome, constraints, priorities, and genuinely unresolved product trade-offs.
 
-- `README.md` — current product behaviour and user/developer documentation;
-- `VERIFICATION.md` — current verification layers, commands and operational boundaries;
-- `docs/decisions/` — durable architectural decisions and their evidence;
-- temporary plans/investigations — execution context, not permanent policy.
+The agent owns technical investigation and implementation.
 
-## Conflicts
+Do not ask the Product Owner to choose implementation details such as Swift, SwiftUI, AppKit APIs, architecture, or test type.
 
-`COUNTDOWN_MANAGER.md` is the canonical repository policy.
+Do not invent new product semantics when the repository already defines them.
 
-A skill or supporting document must not override it.
+If a task exposes a genuinely unresolved product decision that materially changes user behaviour, surface that specific decision.
 
-If repository instructions conflict, stop and surface the conflict rather than silently choosing one.
+## User data
+
+Never use production Countdown Manager data as a mutation or destructive test fixture.
+
+Do not migrate, reset, delete, or intentionally rewrite production user data without explicit Product Owner approval.
+
+## Authority
+
+An explicit implementation request authorizes repository file changes required for that scope.
+
+Separate explicit approval is required for:
+
+- commit;
+- push;
+- direct modification of `main` history or ref;
+- merge, rebase, or cherry-pick into `main`;
+- installing or replacing the application in `/Applications`;
+- release or publication;
+- production user-data migration or reset;
+- destructive operations outside normal scoped implementation.
+
+Approval for one action does not imply approval for another.
+
+## macOS platform uncertainty
+
+When the technical direction materially depends on uncertain SwiftUI, AppKit, or macOS behaviour, use:
+
+`.agents/skills/macos-platform-research/SKILL.md`
+
+Do not invoke platform research for ordinary domain or data logic.
+
+## Verification
+
+Choose verification according to the changed behaviour and failure mode using `docs/VERIFICATION.md`.
+
+Use the cheapest reliable evidence that actually exercises the relevant contract.
+
+Do not continue expanding verification after sufficient evidence is obtained unless a check fails, the implementation changes, or a new material risk appears.

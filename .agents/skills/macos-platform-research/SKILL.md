@@ -1,93 +1,244 @@
 ---
 name: macos-platform-research
-description: Evidence-first procedure for macOS-specific SwiftUI/AppKit behaviour when implementation architecture depends on platform behaviour.
+description: Research uncertain macOS, SwiftUI, or AppKit behaviour when that uncertainty materially affects a technical decision in Countdown Manager.
 ---
 
 # macOS Platform Research
 
 ## Purpose
 
-Reduce architectural guessing for platform-sensitive macOS behaviour.
+Use this skill when a technical decision materially depends on behaviour of macOS, AppKit, SwiftUI, or their interaction and that behaviour is not already established with sufficient confidence.
 
-Use this procedure only when the technical decision materially depends on SwiftUI/AppKit/macOS behaviour.
+The goal is to answer the smallest platform question needed to make the engineering decision.
 
-## Typical triggers
+This skill is not a general research phase for every macOS change.
 
-Examples include:
+## Use this skill when
 
-- NSPopover;
-- NSWindow;
-- sheets and modal behaviour;
-- focus and responder chain;
-- keyboard interaction;
-- menu-bar lifecycle;
-- accessibility;
+Typical triggers include uncertainty about:
+
+- `NSPopover`;
+- `NSWindow`;
+- sheets or modal presentation;
+- focus and first responder;
+- application activation;
+- status-item interaction;
+- mouse or keyboard routing;
+- SwiftUI/AppKit interoperability;
+- accessibility behaviour;
 - drag and drop;
 - system services;
-- SwiftUI/AppKit interoperability.
+- lifecycle during hide, reopen, wake, activation, or termination.
 
-Do not invoke this workflow for ordinary domain or pure business logic.
+Use it only when the uncertainty can materially change architecture, implementation mechanism, correctness, user-visible behaviour, or required verification.
 
-## Procedure
+## Do not use this skill when
 
-### 0. Confirm implementation readiness
+Do not invoke platform research for:
 
-Before platform-sensitive production implementation, complete the pre-implementation contract check in `VERIFICATION.md` and consult any applicable accepted decision. Platform research may determine how to implement established user-visible semantics; it must not invent Product or Design Contract decisions.
+- pure domain logic;
+- validation;
+- JSON encoding or decoding;
+- ordinary persistence logic;
+- deterministic presentation transformations;
+- code that already has a clear established platform contract;
+- questions answerable directly from the existing repository implementation and accepted decisions.
 
-If the Product Contract is incomplete, a structural presentation change lacks a sufficient Design Contract, or acceptance cannot be derived from them, report the exact missing decision and stop before implementation. Do not ask Product Owner to decide again when canonical project documentation already resolves it.
+Do not research macOS APIs merely because the application is a macOS application.
 
-### 1. Define the question
+## Inputs
 
-State the exact platform behaviour that must be known before selecting architecture.
+Start with the current task.
 
-Separate observed behaviour from assumptions.
+Load only the repository context needed to understand the platform question.
 
-### 2. Gather evidence
+Relevant sources may include:
+
+- `docs/PRODUCT.md`;
+- `docs/ARCHITECTURE.md`;
+- a directly relevant accepted decision;
+- the affected implementation;
+- relevant verification code.
+
+Do not load unrelated application code or every historical decision.
+
+## Step 1 — Define the platform question
+
+State the uncertainty precisely.
+
+Good:
+
+> Does a transient `NSPopover` preserve its hosted SwiftUI hierarchy when it closes normally, or is our code explicitly replacing that hierarchy?
+
+Good:
+
+> Can the current XCUITest environment perform the outside interaction required to prove transient dismissal?
+
+Bad:
+
+> Research popovers.
+
+Bad:
+
+> Figure out how SwiftUI works.
+
+The question should be narrow enough that answering it changes a concrete technical decision.
+
+## Step 2 — Separate known facts from assumptions
+
+Before external research, identify what is already known from the repository or direct observation.
+
+Use simple categories when useful:
+
+**Known**
+- directly visible in current code;
+- directly documented by an authoritative source;
+- directly reproduced.
+
+**Assumption**
+- plausible but not yet established.
+
+Do not create a large evidence taxonomy.
+
+The important distinction is whether the technical decision currently rests on evidence or assumption.
+
+## Step 3 — Gather authoritative evidence
 
 Prefer evidence in this order:
 
-1. Apple documentation, HIG and release notes;
-2. observed behaviour on supported macOS;
-3. Countdown Manager source and diagnostics;
-4. official Swift/toolchain documentation;
-5. stable industry practice;
-6. community sources as supplementary evidence.
+1. current Apple documentation;
+2. Apple Human Interface Guidelines where user interaction semantics are relevant;
+3. Apple release notes or framework documentation;
+4. direct observation on the supported macOS runtime;
+5. existing Countdown Manager implementation, diagnostics, and accepted decisions;
+6. official Swift documentation when relevant;
+7. high-quality secondary sources only when primary evidence is insufficient.
 
-Community evidence does not override official platform evidence.
+Prefer current documentation when framework behaviour may have changed across macOS or SwiftUI releases.
 
-### 3. Assess certainty
+A community workaround is not proof of platform behaviour.
 
-Classify relevant statements as:
+## Step 4 — Check repository history only when it matters
 
-- FACT
-- HYPOTHESIS
-- VERIFIED
-- OPEN ISSUE
+Historical Countdown Manager evidence may be useful when:
 
-Do not present an inferred platform behaviour as established fact.
+- the same failure mode occurred before;
+- an existing architectural restriction refers to a past platform issue;
+- a current decision cannot be understood from its recorded rationale;
+- regression history materially changes the risk of an implementation choice.
 
-### 4. Spike when necessary
+Do not reconstruct project history by default.
 
-If documentation and existing evidence do not resolve a lifecycle-sensitive question, prefer the smallest experiment capable of answering it.
+Git history is supporting evidence, not permanent architecture authority by itself.
 
-The spike must test the uncertain platform contract, not build a production workaround.
+## Step 5 — Use a minimal experiment when documentation is insufficient
 
-If this procedure is being used inside a READ-ONLY review, do not create the spike. Recommend it and stop for approval.
+If the material platform question remains unresolved, prefer a small experiment that isolates that question.
 
-### 5. Recommend architecture
+A good experiment:
 
-State:
+- changes one relevant variable;
+- exercises the actual platform mechanism;
+- has an observable result;
+- avoids building production architecture around the hypothesis.
 
-- what the evidence supports;
-- remaining uncertainty;
-- recommended implementation;
-- rejected alternatives and why;
-- minimum verification needed after implementation.
+Examples:
 
-Do not build extra workaround layers around an unverified hypothesis.
+- minimal transient-popover lifecycle reproduction;
+- responder-state inspection before and after sheet dismissal;
+- focused XCUITest proving whether a specific external interaction is accessible;
+- small SwiftUI/AppKit host reconstruction experiment.
 
-Classify that minimum verification against the ladder and installed black-box trigger in `VERIFICATION.md`. When the user-visible contract depends on an external macOS interaction, the acceptance must exercise that interaction against a provenance-verified bundle; a programmatic lifecycle call or test hook may supplement it but cannot substitute for it.
+Do not build a workaround and call it a spike.
 
-## Completion
+The experiment should answer the question, not become the solution automatically.
 
-Research is complete when the architecture can be chosen from sufficient evidence or when the remaining uncertainty is explicitly identified and a minimal spike is recommended.
+## Read-only contexts
+
+If this skill is being used during a task that is explicitly read-only:
+
+- do not modify repository files;
+- do not create an experimental implementation in the repository;
+- describe the smallest experiment that would resolve the uncertainty;
+- stop at the point where execution would require write authority.
+
+External documentation research and safe read-only inspection remain allowed.
+
+## Step 6 — Reach a technical conclusion
+
+When sufficient evidence exists, state:
+
+### Question
+
+The exact platform question investigated.
+
+### Evidence
+
+Only the evidence that materially supports the conclusion.
+
+### Conclusion
+
+What the platform evidence supports.
+
+### Engineering consequence
+
+How that evidence affects the current technical decision.
+
+### Remaining uncertainty
+
+Anything still unknown that could materially alter the decision.
+
+If no material uncertainty remains, say so.
+
+## Step 7 — Identify verification implications
+
+Use `docs/VERIFICATION.md` to identify the lowest verification surface that can actually exercise the changed failure mode.
+
+Examples:
+
+A deterministic state transition:
+
+→ internal verification may be sufficient.
+
+A real SwiftUI/AppKit reconstruction issue:
+
+→ Real UI Smoke may be required.
+
+An outside click, status-item click, keyboard route, or other external interaction that is itself the contract:
+
+→ external UI automation must exercise that interaction when available.
+
+Do not substitute an internal method call for an external interaction and describe them as equivalent evidence.
+
+## Stop condition
+
+Platform research is complete when one of the following is true:
+
+1. sufficient evidence supports a technical direction; or
+2. the remaining uncertainty is precisely identified and a minimal experiment required to resolve it is known.
+
+Do not continue collecting sources after the decision-relevant uncertainty has been resolved.
+
+## Output
+
+Keep the result concise.
+
+Preferred shape:
+
+### Platform question
+...
+
+### Evidence
+- ...
+
+### Conclusion
+...
+
+### Engineering consequence
+...
+
+### Verification implication
+...
+
+### Remaining uncertainty
+None / ...
