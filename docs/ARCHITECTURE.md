@@ -192,7 +192,7 @@ File: `Sources/CountdownManager/Presentation.swift`
 Contains deterministic UI-facing transformations and state that do not require SwiftUI view construction, including:
 
 - user-facing strings;
-- emoji catalog;
+- compact emoji presets;
 - row presentation values;
 - human-readable dates;
 - active-event ordering for presentation;
@@ -207,7 +207,7 @@ File: `Sources/CountdownManager/Views.swift`
 
 `ManagerView` is the stable root inside the retained hosting controller. It owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
 
-Emoji selection is embedded in the editor. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or action/emoji popovers remain.
+Emoji selection stays in the editor through a plain current-value display and compact presets. A nonvisual text-input receiver shares the draft binding; `Ещё…` focuses and selects that receiver before opening the standard AppKit Character Viewer, so system insertion replaces the current value without exposing a text field or creating an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
 
 ## AppKit application shell
 

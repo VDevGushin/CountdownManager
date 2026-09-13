@@ -283,15 +283,15 @@ final class UISmokeRuntime {
             try await waitForValue(field, equals: text)
         }
         try require(controls.entries["editor.subtask.add"] == nil, "sixth subtask must not be available")
-        try await press("editor.emoji.option.1f60e")
-        try await waitForValue("editor.emoji", equals: "😎")
+        try await press("editor.emoji.preset.1f680")
+        try await waitForValue("editor.emoji", equals: "🚀")
         try await hideAndShow()
         try require(controls.value("editor.title") == "Window smoke event", "draft lost on close")
         try require(!FileManager.default.fileExists(atPath: configuration.dataURL.path), "unsaved draft wrote JSON")
         try await press("editor.save")
         try await waitFor("save") { self.store.active.count == 1 && self.controls.entries["editor.new"] == nil }
         let item = try requireValue(store.active.first, "saved event")
-        try require(item.subtasks.count == 5 && item.emoji == "😎" && item.note == "Private synthetic note", "editor fields not saved")
+        try require(item.subtasks.count == 5 && item.emoji == "🚀" && item.note == "Private synthetic note", "editor fields not saved")
         try require(store.data.primaryID == item.id, "first event must be primary")
         pass("single editor persists note, emoji and five subtasks only on Save")
         let task = item.subtasks[0]

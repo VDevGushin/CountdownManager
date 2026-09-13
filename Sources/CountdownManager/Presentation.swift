@@ -12,14 +12,6 @@ package enum EventUIStrings {
 
 package enum EventEmojiCatalog {
     package static let presets = ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"]
-    package static let all = [
-        "😀", "😎", "🥳", "😍", "🤩", "😊", "🤗", "🫶",
-        "☀️", "🌙", "⭐️", "🌈", "❄️", "🌸", "🍂", "🔥",
-        "✈️", "🚆", "🚗", "🚢", "🏖️", "🏕️", "🏔️", "🏠",
-        "🎉", "🎂", "🎄", "🎁", "🎓", "💍", "👶", "❤️",
-        "🚀", "💼", "📚", "🎵", "🎬", "⚽️", "🏆", "🎯",
-        "🍕", "☕️", "🍷", "🌍", "📅", "⏳", "💡", "✅"
-    ]
 }
 
 package enum EditorLayout {
@@ -114,6 +106,7 @@ package func editorCanSave(
 package enum EditorFocusTarget: Hashable {
     case title
     case note
+    case emoji
     case subtask(UUID)
 }
 
@@ -141,7 +134,7 @@ package struct EventEditorDraft: Equatable {
 
     @discardableResult
     package mutating func replaceEmoji(with symbol: String) -> Bool {
-        guard EventEmojiCatalog.all.contains(symbol), CountdownData.isEmoji(symbol) else { return false }
+        guard CountdownData.isEmoji(symbol) else { return false }
         emoji = symbol
         return true
     }

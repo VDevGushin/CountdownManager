@@ -108,6 +108,7 @@ When a change touches these contracts, manually verify only the relevant scenari
 5. switching Spaces hides the old panel without losing the current editor/draft, and returning does not show it again, including an immediate return during a rapid transition;
 6. clicking the status item from another Space keeps the user on that Space and opens the panel below that Space's status item;
 7. the panel has no arrow, title bar or traffic-light controls and cannot be dragged as a standalone window.
+8. `Ещё…` opens the standard macOS Character Viewer without showing a text field or caret; choosing one emoji replaces the current value, keeps the draft and does not create an application-owned popover.
 
 Do not require this checklist for unrelated changes.
 

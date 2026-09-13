@@ -141,8 +141,7 @@ enum UIChecks {
         let originalNote = existingDraft.note
         let originalSubtasks = existingDraft.subtasks
         precondition(EventEmojiCatalog.presets == ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️"])
-        precondition(EventEmojiCatalog.all.count == 48)
-        precondition(EventEmojiCatalog.all.allSatisfy(CountdownData.isEmoji))
+        precondition(EventEmojiCatalog.presets.allSatisfy(CountdownData.isEmoji))
         precondition(existingDraft.title == originalTitle)
         precondition(existingDraft.note == originalNote)
         precondition(existingDraft.subtasks == originalSubtasks)
@@ -151,8 +150,10 @@ enum UIChecks {
         precondition(existingDraft.title == originalTitle)
         precondition(existingDraft.note == originalNote)
         precondition(existingDraft.subtasks == originalSubtasks)
+        precondition(existingDraft.replaceEmoji(with: "👨‍👩‍👧‍👦"))
+        precondition(existingDraft.emoji == "👨‍👩‍👧‍👦")
         precondition(!existingDraft.replaceEmoji(with: "🎉😎"))
-        precondition(existingDraft.emoji == "🏖️")
+        precondition(existingDraft.emoji == "👨‍👩‍👧‍👦")
         precondition(EditorLayout.focusRingInset >= 3)
 
         // Deterministic quick-operation state transitions used by card controls.

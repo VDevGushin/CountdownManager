@@ -357,11 +357,7 @@ struct EditorView: View {
                             Text(dateHelp)
                                 .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
                         }
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Emoji · \(draft.emoji)")
-                                .uiSmokeControl(id: "editor.emoji", value: { draft.emoji })
-                            emojiPicker
-                        }
+                        emojiControls
                         editorSubtasks(scrollProxy: proxy)
                         VStack(alignment: .leading, spacing: 5) {
                             Toggle("Основное — показывать в строке меню", isOn: $primary)
@@ -519,31 +515,65 @@ struct EditorView: View {
         }
     }
 
-    private var emojiPicker: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.fixed(34), spacing: 4), count: 8), spacing: 4) {
-            ForEach(EventEmojiCatalog.all, id: \.self) { symbol in
-                Button(symbol) {
-                    chooseEmoji(symbol)
+    private var emojiControls: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Emoji").font(.caption).foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                Text(draft.emoji)
+                    .font(.system(size: 26))
+                    .frame(width: 36, height: 32)
+                    .accessibilityLabel("Emoji события")
+                    .accessibilityIdentifier("editor.emoji")
+                    .uiSmokeControl(
+                        id: "editor.emoji",
+                        action: { focus(.emoji, id: "editor.emoji") },
+                        value: { draft.emoji }
+                    )
+                    .background {
+                        TextField("", text: $draft.emoji)
+                            .textFieldStyle(.plain)
+                            .frame(width: 1, height: 1)
+                            .opacity(0)
+                            .focused($focusedField, equals: .emoji)
+                            .accessibilityHidden(true)
+                    }
+                Button("Ещё…", action: openCharacterPalette)
+                    .accessibilityLabel("Открыть системный выбор emoji")
+                    .accessibilityIdentifier("editor.emoji.more")
+            }
+            HStack(spacing: 7) {
+                ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
+                    Button(symbol) {
+                        chooseEmoji(symbol)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 22))
+                    .frame(width: 34, height: 32)
+                    .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .accessibilityLabel("Выбрать \(symbol)")
+                    .accessibilityIdentifier("editor.emoji.preset.\(emojiIdentifier(symbol))")
+                    .uiSmokeControl(
+                        id: "editor.emoji.preset.\(emojiIdentifier(symbol))",
+                        action: { chooseEmoji(symbol) }
+                    )
                 }
-                .buttonStyle(.plain)
-                .font(.system(size: 22))
-                .frame(width: 34, height: 32)
-                .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .accessibilityLabel("Выбрать \(symbol)")
-                .accessibilityIdentifier("editor.emoji.option.\(emojiIdentifier(symbol))")
-                .uiSmokeControl(
-                    id: "editor.emoji.option.\(emojiIdentifier(symbol))",
-                    action: { chooseEmoji(symbol) }
-                )
             }
         }
-        .padding(10)
-        .accessibilityIdentifier("editor.emoji.picker")
     }
 
     private func chooseEmoji(_ symbol: String) {
         _ = draft.replaceEmoji(with: symbol)
+    }
+
+    private func openCharacterPalette() {
+        focusedField = .emoji
+        Task { @MainActor in
+            await Task.yield()
+            guard focusedField == .emoji else { return }
+            (NSApp.keyWindow?.firstResponder as? NSTextView)?.selectAll(nil)
+            NSApp.orderFrontCharacterPalette(nil)
+        }
     }
 
     private func addSubtask(scrollProxy: ScrollViewProxy) {
