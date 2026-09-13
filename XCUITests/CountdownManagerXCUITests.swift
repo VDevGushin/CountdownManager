@@ -75,19 +75,18 @@ final class CountdownManagerXCUITests: XCTestCase {
     func testLongListPositionSurvivesEditorCancel() throws {
         var items = try persistedItems()
         for number in 1...35 {
-            items.append(["id": UUID().uuidString, "title": "Scroll fixture \(number)",
+            items.append(["id": scrollFixtureID(number), "title": "Scroll fixture \(number)",
                           "date": ["year": 2099, "month": 12, "day": 31], "emoji": "📅", "subtasks": []])
         }
         try writeItems(items)
         app.launch()
         let list = app.scrollViews["event.list"]
         XCTAssertTrue(list.waitForExistence(timeout: 3))
-        list.swipeUp()
-        list.swipeUp()
-        let visible = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "event.edit."))
-            .allElementsBoundByIndex.first { $0.isHittable && list.frame.contains($0.frame) }
-        let anchor = try XCTUnwrap(visible, "No fully visible scrolled row")
-        XCTAssertNotEqual(anchor.identifier, "event.edit.\(eventID)")
+        let anchor = app.buttons["event.edit.\(scrollFixtureID(35))"]
+        for _ in 0..<12 where !anchor.isHittable {
+            list.swipeUp()
+        }
+        XCTAssertTrue(anchor.isHittable, "Known scroll fixture did not become hittable")
         let frame = anchor.frame
         anchor.click()
         XCTAssertTrue(app.textFields["editor.title"].waitForExistence(timeout: 3))
@@ -95,6 +94,10 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.buttons["editor.cancel"].click()
         XCTAssertTrue(list.waitForExistence(timeout: 3))
         XCTAssertEqual(anchor.frame.minY, frame.minY, accuracy: 1)
+    }
+
+    private func scrollFixtureID(_ number: Int) -> String {
+        String(format: "90000000-0000-0000-0000-%012d", number)
     }
 
     func testSubtaskEditCancelSaveAndCompletion() throws {
