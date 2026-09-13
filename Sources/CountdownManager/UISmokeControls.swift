@@ -108,10 +108,10 @@ private struct UISmokeControlModifier: ViewModifier {
                     )
                 }
             )
-            .onAppear { register() }
+            .onAppear { register(enabled: isEnabled) }
             .onDisappear { UISmokeControlRegistry.shared.remove(id: id, owner: owner) }
-            .onChange(of: isEnabled) { _ in register() }
-            .onChange(of: currentValue) { _ in register() }
+            .onChange(of: isEnabled) { enabled in register(enabled: enabled) }
+            .onChange(of: currentValue) { _ in register(enabled: isEnabled) }
             .onPreferenceChange(UISmokeFramePreference.self) { frames in
                 if let frame = frames[id] {
                     UISmokeControlRegistry.shared.updateFrame(frame, id: id)
@@ -119,12 +119,12 @@ private struct UISmokeControlModifier: ViewModifier {
             }
     }
 
-    private func register() {
+    private func register(enabled: Bool) {
         UISmokeControlRegistry.shared.register(
             id: id,
             action: action,
             value: value,
-            isEnabled: isEnabled,
+            isEnabled: enabled,
             owner: owner
         )
     }

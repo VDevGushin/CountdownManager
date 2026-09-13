@@ -13,18 +13,23 @@ public enum CountdownManagerApplication {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+private final class CountdownUtilityWindow: NSWindow {
+    // AppKit's default for a borderless window is false. This retained utility
+    // window must still accept normal SwiftUI controls and text input.
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
+@MainActor
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem!
-    private var popover: NSPopover!
+    private var window: NSWindow!
+    private var hostingController: NSHostingController<ManagerView>!
     private var store: Store!
     private var subscription: AnyCancellable?
     private var uiSmokeRuntime: UISmokeRuntime?
-    private var sheetEndObserver: NSObjectProtocol?
-    private var statusItemMouseMonitor: Any?
-    private var globalStatusItemMouseMonitor: Any?
-    private var isAwaitingQuickSubtaskSheetEnd = false
-    private var shouldDeferNextStatusItemReopen = false
-    private var quickSubtaskSheetRestorationRevision = 0
+    private var activeSpaceObserver: NSObjectProtocol?
+    private var isPresentingWindow = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let uiSmokeConfiguration: UISmokeConfiguration?
@@ -44,23 +49,44 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
-            button.action = #selector(togglePopover)
+            button.action = #selector(toggleWindow)
             button.setAccessibilityLabel("Countdown Manager")
         }
-        popover = NSPopover()
-        popover.delegate = self
-        popover.behavior = .transient
-        popover.contentSize = NSSize(width: 390, height: 540)
-        sheetEndObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didEndSheetNotification,
+        hostingController = NSHostingController(rootView: ManagerView(store: store))
+        window = CountdownUtilityWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 390, height: 540),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Countdown Manager"
+        window.collectionBehavior.insert([.moveToActiveSpace, .fullScreenNone])
+        window.identifier = NSUserInterfaceItemIdentifier("main.window")
+        window.isReleasedWhenClosed = false
+        window.isMovableByWindowBackground = true
+        // Visibility is owned by application and Space lifecycle callbacks.
+        // Native automatic hiding here can race the status item's explicit Show.
+        window.hidesOnDeactivate = false
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.delegate = self
+        window.contentViewController = hostingController
+        hostingController.view.wantsLayer = true
+        hostingController.view.layer?.cornerRadius = 12
+        hostingController.view.layer?.masksToBounds = true
+        window.center()
+        recordShellLifecycle("launch-ready")
+        activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
             queue: .main
-        ) { [weak self] notification in
+        ) { [weak self] _ in
             Task { @MainActor [weak self] in
-                self?.quickSubtaskSheetDidEnd(parentWindow: notification.object as? NSWindow)
+                self?.activeSpaceDidChange()
             }
         }
-        resetTransientSession()
+        installApplicationMenu()
         subscription = store.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateTitle() }
         }
@@ -69,22 +95,17 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
             uiSmokeRuntime = UISmokeRuntime(
                 configuration: uiSmokeConfiguration,
                 store: store,
-                window: { [weak self] in self?.popover.contentViewController?.view.window },
-                closePopover: { [weak self] in self?.closePopover() },
-                openPopover: { [weak self] in self?.showPopover() },
-                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
-                isTransientPopoverReady: { [weak self] in self?.isTransientPopoverReady() ?? false },
-                quickSubtaskSheetRestorationRevision: { [weak self] in
-                    self?.quickSubtaskSheetRestorationRevision ?? 0
-                }
+                window: { [weak self] in self?.window },
+                showWindow: { [weak self] in self?.showWindow() },
+                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) }
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.showPopover()
+                self?.showWindow()
                 self?.uiSmokeRuntime?.start()
             }
         } else if uiSmokeConfiguration != nil, UISmokeConfiguration.xcuiTestWasRequested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.showPopover()
+                self?.showWindow()
             }
         }
     }
@@ -94,181 +115,142 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDeleg
         statusItem.button?.toolTip = store.primary == nil ? "Добавить событие" : store.statusTitle
     }
 
-    @objc private func togglePopover() {
-        if popover.isShown {
-            DiagnosticLog.shared.record("popover.close")
-            closePopover()
-            return
+    @objc private func toggleWindow() {
+        let intent = window.isVisible ? "hide" : "show"
+        recordShellLifecycle("status-action intent=\(intent)")
+        if window.isVisible {
+            hideWindow(source: "status-action")
+        } else {
+            showWindow()
         }
-        shouldDeferNextStatusItemReopen = false
-        stopQuickSubtaskSheetMonitoring()
-        DiagnosticLog.shared.record("popover.open")
+    }
+
+    private func showWindow() {
+        recordShellLifecycle("show-begin")
         store.refresh()
-        showPopover()
-    }
-
-    private func handleStatusItemMouseDown(_ event: NSEvent) -> NSEvent? {
-        guard let button = statusItem.button,
-              event.window === button.window,
-              button.bounds.contains(button.convert(event.locationInWindow, from: nil)) else {
-            return event
+        // If the retained window is still visible on another Space, hide it
+        // before application activation. Otherwise activation can switch to the
+        // window's old Space before moveToActiveSpace gets a chance to apply.
+        if window.isVisible && !window.isOnActiveSpace {
+            recordShellLifecycle("order-out source=pre-show-active-space")
+            window.orderOut(nil)
         }
-        if isAwaitingQuickSubtaskSheetEnd, popover.isShown {
-            closeQuickSubtaskPopoverFromStatusItem()
-            return nil
-        }
-        if shouldDeferNextStatusItemReopen, !popover.isShown {
-            completeDeferredStatusItemReopen()
-            return nil
-        }
-        return event
-    }
-
-    private func handleGlobalStatusItemMouseDown(at screenPoint: NSPoint) {
-        guard isPointInsideStatusItem(screenPoint) else { return }
-        if isAwaitingQuickSubtaskSheetEnd, popover.isShown {
-            closeQuickSubtaskPopoverFromStatusItem()
-        } else if shouldDeferNextStatusItemReopen, !popover.isShown {
-            completeDeferredStatusItemReopen()
-        }
-    }
-
-    private func closeQuickSubtaskPopoverFromStatusItem() {
-        shouldDeferNextStatusItemReopen = true
-        DiagnosticLog.shared.record("popover.close source=status-item sheet=quick-subtask")
-        closePopover()
-    }
-
-    private func completeDeferredStatusItemReopen() {
-        shouldDeferNextStatusItemReopen = false
-        stopQuickSubtaskSheetMonitoring()
-        DiagnosticLog.shared.record("popover.open source=status-item after=quick-subtask")
-        store.refresh()
-        DispatchQueue.main.async { [weak self] in
-            self?.showPopover()
-        }
-    }
-
-    private func isPointInsideStatusItem(_ screenPoint: NSPoint) -> Bool {
-        guard let button = statusItem.button, let window = button.window else { return false }
-        return window.convertToScreen(button.convert(button.bounds, to: nil)).contains(screenPoint)
-    }
-
-    private func beginQuickSubtaskSheetPresentation() {
-        isAwaitingQuickSubtaskSheetEnd = true
-        guard statusItemMouseMonitor == nil, globalStatusItemMouseMonitor == nil else { return }
-        statusItemMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
-            self?.handleStatusItemMouseDown(event) ?? event
-        }
-        globalStatusItemMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] _ in
-            let mouseLocation = NSEvent.mouseLocation
-            Task { @MainActor [weak self] in
-                self?.handleGlobalStatusItemMouseDown(at: mouseLocation)
-            }
-        }
-    }
-
-    private func stopQuickSubtaskSheetMonitoring() {
-        if let statusItemMouseMonitor {
-            NSEvent.removeMonitor(statusItemMouseMonitor)
-            self.statusItemMouseMonitor = nil
-        }
-        if let globalStatusItemMouseMonitor {
-            NSEvent.removeMonitor(globalStatusItemMouseMonitor)
-            self.globalStatusItemMouseMonitor = nil
-        }
-    }
-
-    private func showPopover() {
-        guard !popover.isShown else { return }
-        guard let button = statusItem.button else { return }
+        isPresentingWindow = true
         NSApp.activate(ignoringOtherApps: true)
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        if let window = popover.contentViewController?.view.window {
-            window.makeKey()
-            window.makeFirstResponder(window.contentView)
-        }
+        recordShellLifecycle("show-after-activate")
+        window.makeKeyAndOrderFront(nil)
+        recordShellLifecycle("show-after-order-front")
+        completeWindowPresentationIfReady()
     }
 
-    private func closePopover() {
-        guard popover.isShown else { return }
-        popover.close()
+    private func hideWindow(source: String) {
+        isPresentingWindow = false
+        recordShellLifecycle("order-out source=\(source)")
+        window.orderOut(nil)
     }
 
-    func popoverDidClose(_ notification: Notification) {
-        DiagnosticLog.shared.record("popover.closed session=reset")
-        isAwaitingQuickSubtaskSheetEnd = false
-        if !shouldDeferNextStatusItemReopen {
-            stopQuickSubtaskSheetMonitoring()
-        }
-        resetTransientSession()
+    @objc private func hideWindowFromCommand() {
+        hideWindow(source: "command-w")
     }
 
-    private func resetTransientSession() {
-        if UISmokeConfiguration.wasRequested {
-            UISmokeControlRegistry.shared.reset()
-        }
-        popover.contentViewController = NSHostingController(
-            rootView: ManagerView(
-                store: store,
-                transientDidDismiss: { [weak self] in
-                    self?.restoreTransientPopoverInteraction()
-                },
-                quickSubtaskWillPresent: { [weak self] in
-                    self?.beginQuickSubtaskSheetPresentation()
-                }
-            )
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        hideWindow(source: "window-close")
+        return false
+    }
+
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        recordShellLifecycle("occlusion-change")
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        recordShellLifecycle("window-did-become-key")
+        completeWindowPresentationIfReady()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        recordShellLifecycle("application-did-become-active")
+        completeWindowPresentationIfReady()
+    }
+
+    func applicationDidResignActive(_ notification: Notification) {
+        recordShellLifecycle("application-did-resign-active")
+        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
+              !isPresentingWindow,
+              window.isVisible else { return }
+        hideWindow(source: "application-deactivation")
+    }
+
+    private func activeSpaceDidChange() {
+        recordShellLifecycle("active-space-did-change")
+        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
+              !isPresentingWindow,
+              window.isVisible else { return }
+        hideWindow(source: "active-space-change")
+    }
+
+    private func completeWindowPresentationIfReady() {
+        guard isPresentingWindow,
+              NSApp.isActive,
+              window.isVisible,
+              window.isKeyWindow else { return }
+        isPresentingWindow = false
+        recordShellLifecycle("show-presentation-ended")
+    }
+
+    private func recordShellLifecycle(_ event: String) {
+        let occlusion = window?.occlusionState.rawValue ?? 0
+        DiagnosticLog.shared.record(
+            "shell.lifecycle event=\(event) appActive=\(NSApp.isActive) "
+                + "visible=\(window?.isVisible ?? false) key=\(window?.isKeyWindow ?? false) "
+                + "onActiveSpace=\(window?.isOnActiveSpace ?? false) "
+                + "occlusion=\(occlusion) presenting=\(isPresentingWindow)"
         )
     }
 
-    private func quickSubtaskSheetDidEnd(parentWindow: NSWindow?) {
-        guard isAwaitingQuickSubtaskSheetEnd,
-              parentWindow === popover.contentViewController?.view.window else { return }
-        isAwaitingQuickSubtaskSheetEnd = false
-        stopQuickSubtaskSheetMonitoring()
-        restoreTransientPopoverInteraction { [weak self] in
-            self?.quickSubtaskSheetRestorationRevision += 1
+    // Standard responder-chain commands keep native text editing and Cmd-W available
+    // in an accessory application without an automatically generated main menu.
+    private func installApplicationMenu() {
+        let menu = NSMenu()
+        let appMenu = NSMenu()
+        appMenu.addItem(withTitle: "Выйти из Countdown Manager", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let appItem = NSMenuItem()
+        appItem.submenu = appMenu
+        menu.addItem(appItem)
+        let editMenu = NSMenu(title: "Правка")
+        for (title, action, key) in [
+            ("Отменить", Selector(("undo:")), "z"),
+            ("Вырезать", #selector(NSText.cut(_:)), "x"),
+            ("Копировать", #selector(NSText.copy(_:)), "c"),
+            ("Вставить", #selector(NSText.paste(_:)), "v"),
+            ("Выбрать всё", #selector(NSText.selectAll(_:)), "a")
+        ] {
+            editMenu.addItem(withTitle: title, action: action, keyEquivalent: key)
         }
-    }
-
-    private func restoreTransientPopoverInteraction(completion: (() -> Void)? = nil) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self, self.popover.isShown,
-                  let window = self.popover.contentViewController?.view.window else { return }
-            self.popover.behavior = .transient
-            window.makeKey()
-            window.makeFirstResponder(window.contentView)
-            completion?()
-        }
-    }
-
-    private func isTransientPopoverReady() -> Bool {
-        guard popover.isShown,
-              popover.behavior == .transient,
-              NSApp.modalWindow == nil,
-              let window = popover.contentViewController?.view.window,
-              window.attachedSheet == nil else { return false }
-        return window.firstResponder === window.contentView
+        let editItem = NSMenuItem()
+        editItem.submenu = editMenu
+        menu.addItem(editItem)
+        let windowMenu = NSMenu(title: "Окно")
+        let closeItem = NSMenuItem(
+            title: "Закрыть",
+            action: #selector(hideWindowFromCommand),
+            keyEquivalent: "w"
+        )
+        closeItem.target = self
+        windowMenu.addItem(closeItem)
+        let windowItem = NSMenuItem()
+        windowItem.submenu = windowMenu
+        menu.addItem(windowItem)
+        NSApp.mainMenu = menu
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        stopQuickSubtaskSheetMonitoring()
-        if let sheetEndObserver {
-            NotificationCenter.default.removeObserver(sheetEndObserver)
-            self.sheetEndObserver = nil
+        if let activeSpaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
+            self.activeSpaceObserver = nil
         }
         MainThreadWatchdog.shared.stop()
         DiagnosticLog.shared.record("app.terminate")
         DiagnosticLog.shared.flush()
     }
 
-    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if shouldDeferNextStatusItemReopen {
-            if isPointInsideStatusItem(NSEvent.mouseLocation) { return false }
-            shouldDeferNextStatusItemReopen = false
-            stopQuickSubtaskSheetMonitoring()
-        }
-        if !popover.isShown { togglePopover() }
-        return true
-    }
 }

@@ -272,7 +272,31 @@ enum UIChecks {
             in: directory.appendingPathComponent("overlapping-failures", isDirectory: true)
         )
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes")
+        try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
+
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data")
+    }
+
+    @MainActor
+    private static func testEditingCannotRecreateMissingEvent(in directory: URL) async throws {
+        let fileURL = directory.appendingPathComponent("countdowns.json")
+        let suiteName = "CountdownManagerMissingEdit.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = Store(fileURL: fileURL, disclosureDefaults: defaults)
+        while store.isLoading { await Task.yield() }
+        let missing = Countdown(title: "Stale draft", date: futureDay(2, from: Day(Date())), emoji: "📅")
+        let rejected = await store.save(missing, primary: true, requireExisting: true)
+        precondition(!rejected && store.data.items.isEmpty)
+        precondition(!FileManager.default.fileExists(atPath: fileURL.path))
+        let created = await store.save(missing, primary: true)
+        precondition(created)
+        var edited = missing
+        edited.title = "Existing edit"
+        let updated = await store.save(edited, primary: true, requireExisting: true)
+        precondition(updated && store.data.items.first?.title == edited.title)
+        let disk = try await CountdownRepository(fileURL: fileURL).load()
+        precondition(disk == store.data)
     }
 
     @MainActor

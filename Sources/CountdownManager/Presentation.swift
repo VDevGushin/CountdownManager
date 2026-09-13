@@ -25,6 +25,10 @@ package enum EventEmojiCatalog {
 package enum EditorLayout {
     /// Space reserved between focusable controls and the clipping ScrollView viewport.
     package static let focusRingInset: CGFloat = 4
+    /// Keeps editor controls clear of the overlay scroll indicator.
+    package static let scrollIndicatorClearance: CGFloat = 10
+    /// Separates the scrolling form from persistent editor actions.
+    package static let actionAreaSpacing: CGFloat = 16
 }
 
 package struct CountdownRowPresentation: Equatable {

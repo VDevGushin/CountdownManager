@@ -233,11 +233,16 @@ package final class Store: ObservableObject {
         }
     }
 
-    package func save(_ countdown: Countdown, primary: Bool) async -> Bool {
+    package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {
         DiagnosticLog.shared.record("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
         let currentDay = Day(Date())
         if currentDay != today { today = currentDay }
         var updated = data
+        // Check at the mutation boundary: an editor task may run after expiry/removal.
+        if requireExisting && !updated.items.contains(where: { $0.id == countdown.id && $0.date >= today }) {
+            error = "Событие больше недоступно. Черновик не сохранён."
+            return false
+        }
         do { try updated.save(countdown, primary: primary, today: today) }
         catch {
             DiagnosticLog.shared.record("countdown.save rejected id=\(countdown.id.uuidString) error=\(error.localizedDescription)")
@@ -325,13 +330,14 @@ package final class Store: ObservableObject {
         _ = await commit(updated, reason: "countdown.primary")
     }
 
-    func delete(_ id: UUID) async {
+    @discardableResult
+    func delete(_ id: UUID) async -> Bool {
         DiagnosticLog.shared.record("countdown.delete id=\(id.uuidString)")
         var updated = data
         updated.delete(id, today: Day(Date()))
-        if await commit(updated, reason: "countdown.delete") {
-            disclosureCache.remove(eventID: id)
-        }
+        let didDelete = await commit(updated, reason: "countdown.delete")
+        if didDelete { disclosureCache.remove(eventID: id) }
+        return didDelete
     }
 
     func setLogin(_ enabled: Bool) {
@@ -345,19 +351,6 @@ package final class Store: ObservableObject {
         }
         loginStatus = SMAppService.mainApp.status
         DiagnosticLog.shared.record("login-item.status value=\(loginStatus.rawValue)")
-    }
-
-    func restart() {
-        DiagnosticLog.shared.record("app.restart requested")
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        // Positional arguments preserve spaces and shell metacharacters in the app path.
-        process.arguments = ["-c", "while kill -0 \"$1\" 2>/dev/null; do sleep 0.2; done; /usr/bin/open -n \"$2\"", "restart", String(ProcessInfo.processInfo.processIdentifier), Bundle.main.bundlePath]
-        do { try process.run(); NSApp.terminate(nil) }
-        catch {
-            DiagnosticLog.shared.record("app.restart failure error=\(error.localizedDescription)")
-            self.error = "Не удалось перезапустить приложение: \(error.localizedDescription)"
-        }
     }
 
     func openDiagnostics() {

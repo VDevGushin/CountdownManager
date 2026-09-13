@@ -64,7 +64,7 @@ Current coverage includes behaviour such as:
 
 Use CoreChecks when the changed contract can be proven entirely at the domain or repository level.
 
-CoreChecks cannot prove SwiftUI rendering, AppKit lifecycle, real focus/responder behaviour, popover interaction, event routing, or accessibility-driven external interaction.
+CoreChecks cannot prove SwiftUI rendering, AppKit lifecycle, real focus/responder behaviour, window interaction, event routing, or accessibility-driven external interaction.
 
 ## UIChecks
 
@@ -91,7 +91,7 @@ Current coverage includes behaviour such as:
 - editor draft behaviour;
 - emoji selection behaviour;
 - subtask grouping and progress;
-- quick-subtask state transitions;
+- subtask domain state transitions;
 - disclosure-state persistence;
 - overlapping persistence outcomes.
 
@@ -128,11 +128,13 @@ Real UI Smoke is appropriate for behaviour that depends on the actual running Sw
 
 - view construction;
 - responder state;
-- popover runtime behaviour;
+- window runtime behaviour;
 - editor lifecycle;
 - repeated collapse/expand behaviour;
-- regressions involving real application reconstruction;
+- window/root identity and session-continuity regressions;
 - main-thread stall detection.
+
+For window presentation, smoke may observe actual runtime state such as the effective style mask, standard-window-button objects, key eligibility, visibility, key status and `isOnActiveSpace`. Merely asserting that requested configuration properties were assigned is not evidence that the user-visible chrome or cross-Space interaction is correct.
 
 ### Boundary
 
@@ -141,6 +143,55 @@ An action invoked through the internal control registry is not equivalent to eve
 For example, directly invoking an internal close action can demonstrate runtime behaviour after closure but does not automatically prove that a real external click produces the correct close path.
 
 Use external UI automation when the interaction itself is the contract being tested.
+
+## Window-shell evidence classes
+
+Window-shell changes require three clearly separated evidence classes.
+
+### Deterministic UI/session harness
+
+Real UI Smoke may isolate or suppress system lifecycle events. It proves retained window/hosting/root identity, scroll continuity, editor/draft continuity and Save/Cancel semantics. It is not evidence for production visibility, activation, deactivation, occlusion or Spaces behaviour.
+
+### Production-shell XCU diagnostic
+
+Run:
+
+```sh
+./verify.sh shell
+```
+
+This launches the Xcode-built application without `--xcui-testing`, so production activation, deactivation, Space, occlusion diagnostics and status-item lifecycle remain enabled. `HOME` and `CFFIXED_USER_HOME` point to a temporary test home for data isolation; they do not alter window lifecycle.
+
+The current driver is diagnostic only. Its Finder-anchored coordinate click does not reliably deliver `status-action`, while a normal XCU status-item click activates Countdown Manager before delivering the click and changes the lifecycle under test. Therefore neither a pass nor a failure from this command is authoritative evidence for status-item activation or production window visibility.
+
+The diagnostic attempts this sequence in ten fresh application processes:
+
+1. fresh launch starts with the primary window hidden;
+2. a status-item click makes the primary root visible and hittable;
+3. Command-W makes the primary root absent through a supported product action;
+4. a second status-item click makes it visible and hittable again in the same process.
+
+Both status-item show operations use the existing external click attempt. One failed process makes the diagnostic command return failure. A failure reports the production lifecycle trace for status action, application activation, show, occlusion changes and `orderOut`. This may help distinguish action-delivery failure from later lifecycle behaviour, but it must not block the migration or be reported as behavioural proof.
+
+For changes that also affect session continuity, separately run the deterministic editor/draft continuity scenario. Do not infer production visibility from that scenario.
+
+### Manual system acceptance
+
+Manual release acceptance is currently the authoritative shell evidence. It must cover:
+
+1. fresh launch → status-item click → primary window opens;
+2. hide through a supported product action → status-item click → the same window/session reopens;
+3. main/list state → switch to another application → window hides;
+4. editor with an unsaved draft → switch applications → window hides, then the same editor/draft survives reopening and input continues;
+5. main/list state on Space A → Space B → return to Space A → the old window is hidden;
+6. the same Space transition with an open editor and unsaved draft → the old window is hidden and the session survives;
+7. status-item click on Space B → the user stays on Space B and the same retained window appears there.
+
+These scenarios remain manual until a driver observably performs the real user interaction without changing the activation lifecycle itself. Configuration properties, callback registration and internal lifecycle calls are diagnostic evidence only.
+
+### Shell acceptance condition
+
+A build touching window lifecycle, status-item show/hide, activation/deactivation, occlusion, Spaces or window presentation cannot be accepted until its observable shell behaviour is proven. With the current driver limitations, that proof is manual. `./verify.sh shell` is neither a prerequisite for manual acceptance nor an acceptance result.
 
 ## XCUITest
 
@@ -160,22 +211,23 @@ Each XCUITest uses an isolated test home and fixture data rather than normal pro
 
 XCUITest interacts with the running application through macOS accessibility/UI automation.
 
-Use it when the changed behaviour depends on real externally delivered application interaction that an internal function call would bypass.
+Use it when the changed behaviour depends on an externally delivered application interaction and the driver can perform that interaction without changing the contract under test.
 
-Examples include:
+Reliable examples in the current suite include:
 
-- clicking the menu-bar status item;
 - keyboard entry and focus transitions;
 - real button interaction;
-- externally closing or reopening application UI where the actual event path matters.
+- Command-W hiding after the app is already active.
 
 ### Boundary
 
-The current suite can interact with Countdown Manager's accessible status item and application UI.
+The current suite has two explicit modes. Ordinary tests pass `--xcui-testing`, which allows deterministic application-control testing while suppressing production system visibility triggers. The production-shell diagnostic omits that argument, but its status-item driver is not reliable enough to support a production visibility gate.
 
 It does not automatically prove every possible system-wide interaction.
 
 A contract involving an arbitrary outside click or another external system surface requires evidence that actually performs that interaction.
+
+The current driver does not reliably automate application switching, switching macOS Spaces, returning to the original Space, or clicking the status item from the destination Space without changing activation itself. Those contracts remain manual acceptance requirements. Likewise, the absence of title-bar chrome in a release bundle requires visual inspection when automation cannot observe the rendered frame reliably.
 
 Do not substitute an internal lifecycle call and describe it as equivalent external evidence.
 
@@ -202,9 +254,17 @@ Use this when the relevant contracts are covered by deterministic domain, persis
 
 Builds the current Swift package application in release mode, creates an isolated temporary application bundle, signs it ad hoc, and runs the current Real UI Smoke scenarios.
 
-The current script includes the general smoke scenario, collapse/freeze regression, and repeated editor teardown/root-scroll regression runs.
+The current script includes the general smoke scenario, collapse regression, and repeated window/editor/list continuity runs.
 
 Use this when the real SwiftUI/AppKit runtime is relevant.
+
+### Production-shell diagnostic
+
+```sh
+./verify.sh shell
+```
+
+Builds the release configuration through Xcode and runs the existing ten-process production-shell diagnostic. Its exit status reports whether that diagnostic completed its attempted sequence; it does not accept or reject the product and is not a prerequisite for manual acceptance.
 
 ### Combined
 
@@ -242,7 +302,7 @@ Deterministic presentation or application state, such as menu-bar formatting, ro
 
 → UIChecks
 
-Real SwiftUI/AppKit runtime behaviour, such as responder restoration, view reconstruction, application integration, or lifecycle regressions:
+Real SwiftUI/AppKit runtime behaviour, such as window/hosting identity, application integration, or session-continuity regressions:
 
 → Real UI Smoke
 
@@ -260,7 +320,7 @@ Production event data normally lives at:
 
 `~/Library/Application Support/CountdownManager/countdowns.json`
 
-Real UI Smoke and XCUITest use explicit isolated test environments.
+Real UI Smoke and XCUITest use explicit isolated test environments. The production-shell XCU test isolates its user home without passing the lifecycle-altering `--xcui-testing` argument.
 
 A verification path that cannot establish safe isolation must not perform mutations against user data.
 

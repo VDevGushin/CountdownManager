@@ -12,21 +12,21 @@ The application does not require an account or internet connection.
 
 ## Primary interface
 
-Accepted product contract for the next shell migration; production implementation is still pending.
+Accepted product contract for the window shell.
 
-The menu-bar entry opens one ordinary, long-lived application window. The application remains a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening the window.
+The menu-bar entry opens one long-lived utility window without a visible title bar or traffic-light controls. The application remains a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening the window.
 
-- Clicking the status item shows and activates the existing window if hidden or not key; clicking it while the window is key hides it.
+- Clicking the status item shows and activates the existing window on the current active macOS Space if hidden; clicking it while visible hides it.
 - Closing the window, including the standard close command, hides the interface without quitting the application.
-- Clicking outside or switching applications does not automatically hide the window.
+- The primary window is a temporary menu-bar utility surface. When the user leaves that surface, including switching to another application or Space, it automatically hides.
 - Hide/show preserves list browsing position, the current internal screen, an open editor and its unsaved input during the application session.
-- Quit ends the session. A subsequent launch may reset transient navigation, focus and unsaved drafts. Hiding is never Save, Cancel or Discard.
+- Automatic hiding, the close command and the status-item toggle never mean Save, Cancel or Discard. Quit ends the session; a subsequent launch may reset transient navigation, focus and unsaved drafts.
 
 There is one event editor inside the primary window. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
 
 The editor contains the existing event fields and an embedded emoji choice. Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
 
-Use a standard titled window and ordinary controls, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Avoid popup-specific motion and forced focus transitions; respect system accessibility and Reduce Motion settings. This migration does not authorize decorative redesign or new features.
+Use ordinary controls inside the utility window, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid popup-specific motion and forced focus transitions, and respect system accessibility and Reduce Motion settings. This migration does not authorize decorative redesign or new features.
 
 ## Events
 
@@ -190,7 +190,7 @@ Deleting an event is an explicit destructive action and requires confirmation be
 
 ### Session continuity
 
-Closing or hiding the window does not commit or discard input, dismiss the editor or reset navigation. No transient UI-state persistence is required across application restarts. The separately defined durable checklist-collapse preference is unaffected.
+Closing, toggling or automatically hiding the window does not commit or discard input, dismiss the editor or reset navigation. Reopening through the status item presents the same in-memory window, root, list position and editing session on the current Space. No transient UI-state persistence is required across application restarts. The separately defined durable checklist-collapse preference is unaffected.
 
 If an event expires while its draft is open, expiry still applies to stored data. Keep the draft visible with an explanation that the event is no longer available; disable saving it as that event. Do not silently discard the input or recreate an expired event. Cancel remains available.
 
