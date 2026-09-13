@@ -15,6 +15,8 @@ Use the repository as the source of truth.
 
 Read only the sources relevant to the current task.
 
+Before completing a change, check whether any repository source of truth has changed. Update only the document whose contract actually changed. Do not modify documentation merely for formal consistency.
+
 ## Source-of-truth precedence
 
 For user-visible behaviour, `docs/PRODUCT.md` is authoritative.
