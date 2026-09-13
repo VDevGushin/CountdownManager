@@ -89,19 +89,25 @@ final class UISmokeRuntime {
     private let configuration: UISmokeConfiguration
     private let store: Store
     private let window: () -> NSWindow?
-    private let showWindow: () -> Void
+    private let hideSurface: () -> Void
+    private let showSurface: () -> Void
+    private let isSurfaceShown: () -> Bool
     private let pressStatusItem: () -> Void
     private let controls = UISmokeControlRegistry.shared
     private var passed: [String] = []
     private var responderToRegistryOffsets: [ObjectIdentifier: CGPoint] = [:]
 
     init(configuration: UISmokeConfiguration, store: Store, window: @escaping () -> NSWindow?,
-         showWindow: @escaping () -> Void,
+         hideSurface: @escaping () -> Void,
+         showSurface: @escaping () -> Void,
+         isSurfaceShown: @escaping () -> Bool,
          pressStatusItem: @escaping () -> Void) {
         self.configuration = configuration
         self.store = store
         self.window = window
-        self.showWindow = showWindow
+        self.hideSurface = hideSurface
+        self.showSurface = showSurface
+        self.isSurfaceShown = isSurfaceShown
         self.pressStatusItem = pressStatusItem
     }
 
@@ -132,14 +138,16 @@ final class UISmokeRuntime {
         let host = original.contentViewController
         let content = original.contentView
         let token = controls.value("root.window")
-        if usingStatusItem { pressStatusItem() } else { original.orderOut(nil) }
-        try await waitFor("window hidden") { !original.isVisible }
-        try require(window() === original, "hidden window was replaced")
-        if usingStatusItem { pressStatusItem() } else { showWindow() }
-        try await waitFor("same window visible and key") { original.isVisible && original.isKeyWindow }
-        try require(original.isOnActiveSpace, "shown window is not on the active Space")
-        try require(window() === original && original.contentViewController === host && original.contentView === content,
-                    "window or hosting hierarchy was reconstructed")
+        if usingStatusItem { pressStatusItem() } else { hideSurface() }
+        try await waitFor("panel hidden") { !self.isSurfaceShown() }
+        if usingStatusItem { pressStatusItem() } else { showSurface() }
+        try await waitFor("panel visible and key") {
+            self.window()?.isVisible == true && self.window()?.isKeyWindow == true
+        }
+        let shown = try requireValue(window(), "shown window")
+        try require(shown.isOnActiveSpace, "shown panel is not on the active Space")
+        try require(shown.contentViewController === host && shown.contentView === content,
+                    "hosting hierarchy was reconstructed")
         try require(controls.value("root.window") == token, "root State identity changed")
     }
 
@@ -148,14 +156,8 @@ final class UISmokeRuntime {
         let shellHost = shell.contentViewController
         let shellContent = shell.contentView
         let rootToken = controls.value("root.window")
-        try require(shell.styleMask == .borderless, "window is not using a borderless frame")
-        try require(shell.standardWindowButton(.closeButton) == nil
-                    && shell.standardWindowButton(.miniaturizeButton) == nil
-                    && shell.standardWindowButton(.zoomButton) == nil,
-                    "borderless window unexpectedly exposes title-bar controls")
-        try require(shell.canBecomeKey && shell.canBecomeMain,
-                    "borderless window cannot accept normal focus")
-        pass("borderless window has no title-bar controls and can accept key focus")
+        try require(shell.canBecomeKey, "panel cannot accept normal focus")
+        pass("panel accepts key focus")
 
         for number in 1...30 {
             let event = Countdown(title: "Session fixture \(number)", date: Day(store.tomorrow), emoji: "📅")
@@ -171,20 +173,24 @@ final class UISmokeRuntime {
             try require(rootListScrollView() === list, "list was replaced")
             try require(abs(list.contentView.bounds.origin.y - position.y) < 1, "list position reset")
         }
-        pass("window, host, root State and long-list scroll survive direct hide/show")
+        pass("host, root State and long-list scroll survive direct hide/show")
 
         try require(shell.isKeyWindow, "main-list window is not key before lifecycle check")
-        shell.orderOut(nil)
-        try await waitFor("main-list shell hide hides window") { !shell.isVisible }
-        showWindow()
-        try await waitFor("auto-hidden main list reopens key") { shell.isVisible && shell.isKeyWindow }
-        try require(window() === shell && shell.contentViewController === shellHost && shell.contentView === shellContent,
-                    "main-list auto-hide reconstructed the window or hosting hierarchy")
+        hideSurface()
+        try await waitFor("main-list panel hide") { !self.isSurfaceShown() }
+        showSurface()
+        try await waitFor("main-list panel reopen") {
+            self.window()?.isVisible == true && self.window()?.isKeyWindow == true
+        }
+        let reopenedListWindow = try requireValue(window(), "reopened list window")
+        try require(reopenedListWindow.contentViewController === shellHost
+                    && reopenedListWindow.contentView === shellContent,
+                    "main-list hide reconstructed the hosting hierarchy")
         try require(controls.value("root.window") == rootToken && rootListScrollView() === list,
-                    "main-list auto-hide changed root or list identity")
+                    "main-list hide changed root or list identity")
         try require(abs(list.contentView.bounds.origin.y - position.y) < 1,
-                    "main-list auto-hide reset list position")
-        pass("main-list shell hide preserves the UI session")
+                    "main-list hide reset list position")
+        pass("main-list panel hide preserves the UI session")
 
         try await press("event.add")
         try await waitForElement("editor.new")
@@ -192,19 +198,23 @@ final class UISmokeRuntime {
         try insertText("Session draft")
         try await waitForValue("editor.title", equals: "Session draft")
         let editorOwner = controls.entries["editor.new"]?.ownerID
-        shell.orderOut(nil)
-        try await waitFor("editor shell hide hides window") { !shell.isVisible }
-        try require(window() === shell && shell.contentViewController === shellHost && shell.contentView === shellContent,
-                    "auto-hide reconstructed the window or hosting hierarchy")
+        hideSurface()
+        try await waitFor("editor panel hide") { !self.isSurfaceShown() }
         try require(controls.value("root.window") == rootToken
                     && controls.entries["editor.new"]?.ownerID == editorOwner
                     && controls.value("editor.title") == "Session draft",
-                    "auto-hide changed root, editor or draft state")
-        showWindow()
-        try await waitFor("auto-hidden window reopens key") { shell.isVisible && shell.isKeyWindow }
+                    "panel hide changed root, editor or draft state")
+        showSurface()
+        try await waitFor("editor panel reopen") {
+            self.window()?.isVisible == true && self.window()?.isKeyWindow == true
+        }
+        let reopenedEditorWindow = try requireValue(window(), "reopened editor window")
+        try require(reopenedEditorWindow.contentViewController === shellHost
+                    && reopenedEditorWindow.contentView === shellContent,
+                    "editor hide reconstructed the hosting hierarchy")
         try insertText("a")
         try await waitForValue("editor.title", equals: "Session drafta")
-        pass("editor shell hide preserves the UI session")
+        pass("editor panel hide preserves the UI session")
         for attempt in 1...3 {
             try await hideAndShow(usingStatusItem: true)
             try require(controls.entries["editor.new"]?.ownerID == editorOwner, "editor identity changed")

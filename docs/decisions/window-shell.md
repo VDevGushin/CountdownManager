@@ -1,7 +1,8 @@
 # Long-lived window shell
 
-Status: ACCEPTED
+Status: SUPERSEDED
 Date: 2026-09-11
+Superseded on 2026-09-13 by [Anchored status-item panel shell](status-item-panel-shell.md) after the standalone window failed the required anchored, non-draggable menu-bar-panel behaviour.
 Implementation: implemented in working tree; final release chrome/Spaces acceptance pending in the migration plan
 Supersedes: [Popup lifecycle architecture](popup-lifecycle.md)
 

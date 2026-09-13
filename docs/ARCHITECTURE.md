@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document maps the current Countdown Manager implementation, including the long-lived window shell.
+This document maps the current Countdown Manager implementation, including the anchored status-item panel shell.
 
 It describes where responsibilities live and how the major runtime pieces connect.
 
@@ -82,7 +82,7 @@ Owns the executable entry point.
 
 ## Shell implementation status
 
-The working implementation uses one long-lived utility-styled `NSWindow` with one `NSHostingController`, owned for the application session. See [the accepted shell decision](decisions/window-shell.md). Runtime verification results and remaining gaps are recorded in [the migration scope](plans/window-shell-migration.md).
+The implementation uses one borderless `NSPanel` anchored to the status item and one long-lived `NSHostingController`, both owned for the application session. See [the accepted shell decision](decisions/status-item-panel-shell.md).
 
 ### Ownership
 
@@ -90,24 +90,22 @@ The working implementation uses one long-lived utility-styled `NSWindow` with on
 NSApplication / AppDelegate
 ├── NSStatusItem
 ├── Store → CountdownData / CountdownRepository → countdowns.json
-└── NSWindow (one strong reference, session lifetime)
+└── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── ManagerView
             ├── retained list hierarchy
             └── one internal editing session and its draft
 ```
 
-Create the window and hosting hierarchy once, eagerly or on first use. Hide through `orderOut`; show and activate the same window through ordinary AppKit window APIs. Keep `isReleasedWhenClosed = false` and route the close command through the same hide path. Do not assign a new hosting controller/root on hide, close, reopen or ordinary store updates.
+Create the panel and hosting hierarchy once. On every explicit show, calculate the panel origin from the current status-item button's screen rectangle, then activate and order that same panel front. Hide it with `orderOut` and route the close command through the same path. Do not assign a new hosting controller/root on hide, close, reopen or ordinary store updates.
 
 SwiftUI view-value recomputation is normal and is not root reconstruction. Keep the list structurally alive while the editor is active; retaining only the hosting controller does not preserve a list removed by a conditional branch. A draft belongs to an explicit editing session, not to window visibility. Save success or Cancel ends that session; hiding does not.
 
-Normal window activation and visibility are shell responsibilities. The retained `CountdownUtilityWindow` uses the borderless style mask and overrides `canBecomeKey` and `canBecomeMain` so SwiftUI controls keep normal focus and editing. The application delegate hides the retained window on application deactivation, and an `NSWorkspace.activeSpaceDidChangeNotification` observer hides it on a Space change. Both signals live above SwiftUI content and do not depend on list/editor state, key-window state or first responder. Native `hidesOnDeactivate` is disabled because it can hide a window while the status-item Show action is still activating it. It opts into `moveToActiveSpace`; if a visible instance belongs to another Space, the show path orders it out before application activation and then makes the same instance key and front. There is no responder teardown/restoration machine, mouse monitor, popup introspection, persisted scroll offset, draft restoration or per-OS shell abstraction. Existing domain, persistence, disclosure preferences, date refresh, login integration and privacy-safe diagnostics retain their responsibilities.
-
-The bounded implementation work is specified in [the production migration scope](plans/window-shell-migration.md).
+Panel positioning and visibility are shell responsibilities. The borderless panel has no arrow, title bar or traffic-light controls; it is not movable, uses no ordering animation and moves to the active Space only during an explicit show. A synchronous requested-visible flag makes every status-item action resolve immediately: hide only when the panel is visibly presented on the active Space, otherwise show it there. When a requested-visible panel becomes fully occluded during a Space transition, its native occlusion callback clears that request and calls `orderOut`; application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` use the same path as fallbacks. These signals are independent of list/editor state and first responder. Returning to an old Space cannot restore the panel; only a later status-item action can show and reposition it. There is no mouse monitor, responder teardown/restoration machine, persisted scroll offset, draft restoration or per-OS shell abstraction. Existing domain, persistence, disclosure preferences, date refresh, login integration and privacy-safe diagnostics retain their responsibilities.
 
 ## Runtime responsibilities
 
-`AppDelegate` owns the status item, window and hosting controller. `ManagerView` keeps the list mounted and conditionally presents one internal event editor. Hidden list content is disabled, excluded from hit testing and hidden from accessibility.
+`AppDelegate` owns the status item, panel and hosting controller. `ManagerView` keeps the list mounted and conditionally presents one internal event editor. Hidden list content is disabled, excluded from hit testing and hidden from accessibility.
 
 Views route mutations through `Store`. `Store` coordinates domain state and asynchronous persistence; `CountdownData` owns validation/mutations, and `CountdownRepository` owns serialized filesystem access.
 
@@ -207,7 +205,7 @@ Contains deterministic UI-facing transformations and state that do not require S
 
 File: `Sources/CountdownManager/Views.swift`
 
-`ManagerView` is the stable root inside the window. It owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the window does not. An unavailable event retains its draft and cannot be saved as that event.
+`ManagerView` is the stable root inside the retained hosting controller. It owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
 
 Emoji selection is embedded in the editor. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or action/emoji popovers remain.
 
@@ -215,13 +213,13 @@ Emoji selection is embedded in the editor. Subtask text changes use the same edi
 
 File: `Sources/CountdownManager/Application.swift`
 
-`CountdownManagerApplication.run()` configures `NSApplication` as an accessory application. `AppDelegate` creates one status item, one borderless `CountdownUtilityWindow` and one hosting controller at startup. It retains them through the session, starts the Store/diagnostics and supplies isolated test configuration when requested. The window's key/main overrides preserve keyboard focus without adding title-bar chrome.
+`CountdownManagerApplication.run()` configures `NSApplication` as an accessory application. `AppDelegate` creates one status item, one borderless key-capable `NSPanel` and one hosting controller at startup. It retains all three through the session, starts the Store/diagnostics and supplies isolated test configuration when requested.
 
-Status-item actions hide a visible window or activate/show the existing hidden window. Explicit Show remains in progress until AppKit reports the application active and the retained window key, so deactivation and Space callbacks cannot cancel that same presentation. Later application deactivation or active-Space change routes through `orderOut`. A visible instance on another Space is ordered out before application activation; `moveToActiveSpace` then applies when that same instance is made key and front on the active Space. Command-W also routes directly to `orderOut`; release-on-close is disabled. Ordinary startup does not open it. Isolated harnesses suppress the deactivation and Space callbacks while verifying retained identity/state; observable auto-hide remains release manual acceptance.
+Status-item actions toggle the requested visibility state immediately. Show orders out any stale visible instance, positions the panel under the current status item, activates the accessory app and makes the panel key/front. Hide, full occlusion while requested visible, application deactivation, active-Space change and Command-W clear requested visibility and call `orderOut`. Ordinary startup does not open it. Isolated harnesses suppress these automatic lifecycle callbacks while verifying retained panel/hosting/root/list/editor state; observable anchoring, app-switch, Space and real status-item interaction remain release manual acceptance.
 
-A standard AppKit application menu supplies text-editing commands, Quit and the native close command. Application activation callbacks and the native active-Space notification own visibility; occlusion changes are diagnostics rather than behavioural proof. There are no mouse monitors, workspace polling, key/responder-driven visibility hooks, sheet-end observers, deferred reopen flags, forced first-responder assignments or root reconstruction.
+A standard AppKit application menu supplies text-editing commands, Quit and the native close command. The panel's native occlusion callback closes a visually departed panel even when a rapid Space transition is reversed before the workspace posts its completed-change notification. There is no window centering, movement, frame persistence, mouse monitor, workspace polling, key/responder-driven visibility hook, sheet-end observer, forced first-responder assignment or root reconstruction.
 
-Product semantics live in `PRODUCT.md`, accepted rationale in `decisions/window-shell.md`, and the superseded popup decision retains historical evidence only.
+Product semantics live in `PRODUCT.md`; accepted rationale lives in `decisions/status-item-panel-shell.md`. The superseded standalone-window, popover and historical popup decisions retain prior evidence only.
 
 ## Diagnostics
 

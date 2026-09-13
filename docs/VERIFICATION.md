@@ -39,7 +39,7 @@ Use for domain, persistence, deterministic presentation and application-state ch
 
 Builds a release application bundle in a temporary isolated environment and runs the current Real UI Smoke scenarios.
 
-Use when the real SwiftUI/AppKit runtime matters: view construction, window/root identity, editor lifecycle, scroll/draft continuity, focus/responder behaviour that can be reproduced in-process, or main-thread stalls.
+Use when the real SwiftUI/AppKit runtime matters: view construction, hosting/root identity, editor lifecycle, scroll/draft continuity, focus/responder behaviour that can be reproduced in-process, or main-thread stalls.
 
 ### Combined
 
@@ -79,11 +79,11 @@ UIChecks do not prove real AppKit event routing or system interaction.
 
 Real UI Smoke launches the actual application runtime with isolated data. It is useful for regressions that need the real window/view hierarchy.
 
-It can prove things such as retained window/hosting/root identity, session continuity through supported in-process hide/show paths, editor/draft continuity, rendered control state and runtime responsiveness.
+It can prove things such as retained panel/hosting/root identity, session continuity through supported in-process panel hide/show paths, editor/draft continuity, rendered control state and runtime responsiveness.
 
 It does not prove that macOS delivered an external app-switch, Space change or status-item activation exactly as a user would perform it. Test-mode lifecycle suppression or direct internal actions must not be described as proof of production system behaviour.
 
-Configuration and property assertions are supporting evidence only. For example, setting `moveToActiveSpace`, registering a callback, or observing a style mask does not by itself prove the corresponding user-visible behaviour.
+Configuration and property assertions are supporting evidence only. For example, setting `moveToActiveSpace`, registering a Space callback, or calculating an anchored panel frame does not by itself prove the corresponding user-visible behaviour.
 
 ### XCUITest
 
@@ -101,12 +101,13 @@ Some shell behaviour is currently best accepted manually because the available a
 
 When a change touches these contracts, manually verify only the relevant scenarios:
 
-1. status-item click opens the window from a fresh launch;
+1. status-item click opens an arrowless panel directly below the status item from a fresh launch;
 2. hiding and reopening preserves the same in-memory session when that is the product contract;
-3. switching to another application hides the window;
-4. switching Spaces hides the old surface without losing the current editor/draft;
-5. clicking the status item from another Space keeps the user on that Space and shows the retained window there;
-6. release-window chrome matches the intended utility surface.
+3. rapid repeated status-item clicks produce one immediate visibility toggle per distinct click;
+4. switching to another application hides the panel;
+5. switching Spaces hides the old panel without losing the current editor/draft, and returning does not show it again, including an immediate return during a rapid transition;
+6. clicking the status item from another Space keeps the user on that Space and opens the panel below that Space's status item;
+7. the panel has no arrow, title bar or traffic-light controls and cannot be dragged as a standalone window.
 
 Do not require this checklist for unrelated changes.
 

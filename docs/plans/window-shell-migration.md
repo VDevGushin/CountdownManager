@@ -1,6 +1,6 @@
 # Production migration scope — long-lived window shell
 
-Status: IMPLEMENTED IN WORKING TREE; PRODUCTION-SHELL GATE BLOCKED BY EXTERNAL DRIVER; FINAL MANUAL ACCEPTANCE PENDING. Not committed or installed.
+Status: SUPERSEDED 2026-09-13. The implemented standalone window failed product acceptance and was ultimately replaced by the anchored status-item panel shell. This file preserves the migration record; its target and pending gates are no longer current.
 Decision: [window-shell.md](../decisions/window-shell.md)
 Product contract: [PRODUCT.md](../PRODUCT.md)
 

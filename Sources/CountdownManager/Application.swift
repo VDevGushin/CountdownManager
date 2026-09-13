@@ -13,23 +13,20 @@ public enum CountdownManagerApplication {
 }
 
 @MainActor
-private final class CountdownUtilityWindow: NSWindow {
-    // AppKit's default for a borderless window is false. This retained utility
-    // window must still accept normal SwiftUI controls and text input.
+private final class CountdownStatusPanel: NSPanel {
     override var canBecomeKey: Bool { true }
-    override var canBecomeMain: Bool { true }
 }
 
 @MainActor
 private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem!
-    private var window: NSWindow!
+    private var panel: CountdownStatusPanel!
     private var hostingController: NSHostingController<ManagerView>!
     private var store: Store!
     private var subscription: AnyCancellable?
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
-    private var isPresentingWindow = false
+    private var isPanelRequestedVisible = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let uiSmokeConfiguration: UISmokeConfiguration?
@@ -49,40 +46,42 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
-            button.action = #selector(toggleWindow)
+            button.action = #selector(togglePanel)
             button.setAccessibilityLabel("Countdown Manager")
         }
         hostingController = NSHostingController(rootView: ManagerView(store: store))
-        window = CountdownUtilityWindow(
+        panel = CountdownStatusPanel(
             contentRect: NSRect(x: 0, y: 0, width: 390, height: 540),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
-        window.title = "Countdown Manager"
-        window.collectionBehavior.insert([.moveToActiveSpace, .fullScreenNone])
-        window.identifier = NSUserInterfaceItemIdentifier("main.window")
-        window.isReleasedWhenClosed = false
-        window.isMovableByWindowBackground = true
-        // Visibility is owned by application and Space lifecycle callbacks.
-        // Native automatic hiding here can race the status item's explicit Show.
-        window.hidesOnDeactivate = false
-        window.isOpaque = false
-        window.backgroundColor = .clear
-        window.hasShadow = true
-        window.delegate = self
-        window.contentViewController = hostingController
+        panel.title = "Countdown Manager"
+        panel.identifier = NSUserInterfaceItemIdentifier("main.panel")
+        panel.isReleasedWhenClosed = false
+        panel.isFloatingPanel = true
+        panel.becomesKeyOnlyIfNeeded = false
+        panel.hidesOnDeactivate = false
+        panel.isMovable = false
+        panel.isMovableByWindowBackground = false
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.level = .popUpMenu
+        panel.animationBehavior = .none
+        panel.collectionBehavior = [.moveToActiveSpace, .transient, .ignoresCycle, .fullScreenNone]
+        panel.delegate = self
+        panel.contentViewController = hostingController
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.cornerRadius = 12
         hostingController.view.layer?.masksToBounds = true
-        window.center()
         recordShellLifecycle("launch-ready")
         activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            Task { @MainActor [weak self] in
+            MainActor.assumeIsolated {
                 self?.activeSpaceDidChange()
             }
         }
@@ -95,17 +94,19 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             uiSmokeRuntime = UISmokeRuntime(
                 configuration: uiSmokeConfiguration,
                 store: store,
-                window: { [weak self] in self?.window },
-                showWindow: { [weak self] in self?.showWindow() },
+                window: { [weak self] in self?.panel },
+                hideSurface: { [weak self] in self?.hidePanel(source: "ui-smoke") },
+                showSurface: { [weak self] in self?.showPanel() },
+                isSurfaceShown: { [weak self] in self?.panel.isVisible == true },
                 pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) }
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.showWindow()
+                self?.showPanel()
                 self?.uiSmokeRuntime?.start()
             }
         } else if uiSmokeConfiguration != nil, UISmokeConfiguration.xcuiTestWasRequested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.showWindow()
+                self?.showPanel()
             }
         }
     }
@@ -115,95 +116,95 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         statusItem.button?.toolTip = store.primary == nil ? "Добавить событие" : store.statusTitle
     }
 
-    @objc private func toggleWindow() {
-        let intent = window.isVisible ? "hide" : "show"
+    @objc private func togglePanel() {
+        let isPresentedHere = isPanelRequestedVisible && panel.isVisible && panel.isOnActiveSpace
+        let intent = isPresentedHere ? "hide" : "show"
         recordShellLifecycle("status-action intent=\(intent)")
-        if window.isVisible {
-            hideWindow(source: "status-action")
+        if isPresentedHere {
+            hidePanel(source: "status-action")
         } else {
-            showWindow()
+            showPanel()
         }
     }
 
-    private func showWindow() {
+    private func showPanel() {
+        guard let button = statusItem.button,
+              !(isPanelRequestedVisible && panel.isVisible && panel.isOnActiveSpace) else { return }
+        isPanelRequestedVisible = false
+        if panel.isVisible {
+            panel.orderOut(nil)
+        }
+        guard positionPanel(relativeTo: button) else { return }
+        isPanelRequestedVisible = true
         recordShellLifecycle("show-begin")
         store.refresh()
-        // If the retained window is still visible on another Space, hide it
-        // before application activation. Otherwise activation can switch to the
-        // window's old Space before moveToActiveSpace gets a chance to apply.
-        if window.isVisible && !window.isOnActiveSpace {
-            recordShellLifecycle("order-out source=pre-show-active-space")
-            window.orderOut(nil)
-        }
-        isPresentingWindow = true
         NSApp.activate(ignoringOtherApps: true)
         recordShellLifecycle("show-after-activate")
-        window.makeKeyAndOrderFront(nil)
-        recordShellLifecycle("show-after-order-front")
-        completeWindowPresentationIfReady()
+        panel.makeKeyAndOrderFront(nil)
+        recordShellLifecycle("show-after-panel")
     }
 
-    private func hideWindow(source: String) {
-        isPresentingWindow = false
-        recordShellLifecycle("order-out source=\(source)")
-        window.orderOut(nil)
+    private func positionPanel(relativeTo button: NSStatusBarButton) -> Bool {
+        guard let buttonWindow = button.window,
+              let screen = buttonWindow.screen else { return false }
+        let anchorInWindow = button.convert(button.bounds, to: nil)
+        let anchor = buttonWindow.convertToScreen(anchorInWindow)
+        let visibleFrame = screen.visibleFrame
+        let panelSize = panel.frame.size
+        let margin: CGFloat = 8
+        let gap: CGFloat = 4
+        let minimumX = visibleFrame.minX + margin
+        let maximumX = visibleFrame.maxX - panelSize.width - margin
+        let x = min(max(anchor.midX - panelSize.width / 2, minimumX), maximumX)
+        let top = min(anchor.minY - gap, visibleFrame.maxY)
+        let y = max(visibleFrame.minY + margin, top - panelSize.height)
+        panel.setFrameOrigin(NSPoint(x: x, y: y))
+        return true
     }
 
-    @objc private func hideWindowFromCommand() {
-        hideWindow(source: "command-w")
+    private func hidePanel(source: String) {
+        guard isPanelRequestedVisible || panel.isVisible else { return }
+        isPanelRequestedVisible = false
+        recordShellLifecycle("hide source=\(source)")
+        panel.orderOut(nil)
+    }
+
+    @objc private func hidePanelFromCommand() {
+        hidePanel(source: "command-w")
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        hideWindow(source: "window-close")
+        hidePanel(source: "window-close")
         return false
     }
 
     func windowDidChangeOcclusionState(_ notification: Notification) {
-        recordShellLifecycle("occlusion-change")
-    }
-
-    func windowDidBecomeKey(_ notification: Notification) {
-        recordShellLifecycle("window-did-become-key")
-        completeWindowPresentationIfReady()
-    }
-
-    func applicationDidBecomeActive(_ notification: Notification) {
-        recordShellLifecycle("application-did-become-active")
-        completeWindowPresentationIfReady()
+        recordShellLifecycle("panel-occlusion-did-change")
+        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
+              isPanelRequestedVisible,
+              !panel.occlusionState.contains(.visible) else { return }
+        hidePanel(source: "panel-occluded")
     }
 
     func applicationDidResignActive(_ notification: Notification) {
         recordShellLifecycle("application-did-resign-active")
-        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
-              !isPresentingWindow,
-              window.isVisible else { return }
-        hideWindow(source: "application-deactivation")
+        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
+        hidePanel(source: "application-deactivation")
     }
 
     private func activeSpaceDidChange() {
         recordShellLifecycle("active-space-did-change")
-        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
-              !isPresentingWindow,
-              window.isVisible else { return }
-        hideWindow(source: "active-space-change")
-    }
-
-    private func completeWindowPresentationIfReady() {
-        guard isPresentingWindow,
-              NSApp.isActive,
-              window.isVisible,
-              window.isKeyWindow else { return }
-        isPresentingWindow = false
-        recordShellLifecycle("show-presentation-ended")
+        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
+        hidePanel(source: "active-space-change")
     }
 
     private func recordShellLifecycle(_ event: String) {
-        let occlusion = window?.occlusionState.rawValue ?? 0
+        let occlusion = panel?.occlusionState.rawValue ?? 0
         DiagnosticLog.shared.record(
             "shell.lifecycle event=\(event) appActive=\(NSApp.isActive) "
-                + "visible=\(window?.isVisible ?? false) key=\(window?.isKeyWindow ?? false) "
-                + "onActiveSpace=\(window?.isOnActiveSpace ?? false) "
-                + "occlusion=\(occlusion) presenting=\(isPresentingWindow)"
+                + "visible=\(panel?.isVisible ?? false) key=\(panel?.isKeyWindow ?? false) "
+                + "onActiveSpace=\(panel?.isOnActiveSpace ?? false) "
+                + "occlusion=\(occlusion) requested=\(isPanelRequestedVisible)"
         )
     }
 
@@ -232,7 +233,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let windowMenu = NSMenu(title: "Окно")
         let closeItem = NSMenuItem(
             title: "Закрыть",
-            action: #selector(hideWindowFromCommand),
+            action: #selector(hidePanelFromCommand),
             keyEquivalent: "w"
         )
         closeItem.target = self

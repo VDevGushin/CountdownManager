@@ -2,7 +2,7 @@
 
 Status: SUPERSEDED
 
-Superseded on 2026-09-11 by [Long-lived window shell](window-shell.md).
+Superseded on 2026-09-11 by [Long-lived window shell](window-shell.md); the current shell is defined by [Anchored status-item panel shell](status-item-panel-shell.md).
 
 The decision below is retained solely as historical context. Its transient-container requirement, popup-specific semantics and presentation guardrails no longer govern the target shell. Current product behaviour is defined in `../PRODUCT.md`; implementation migration is pending.
 
