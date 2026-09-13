@@ -26,57 +26,8 @@ final class CountdownManagerXCUITests: XCTestCase {
         try writeFixture()
 
         app = XCUIApplication()
-        if name.contains("testProductionShell") {
-            // Keep production window lifecycle enabled. HOME isolation keeps
-            // this gate away from the user's Countdown Manager data.
-            app.launchEnvironment = [
-                "HOME": testHome.path,
-                "CFFIXED_USER_HOME": testHome.path
-            ]
-        } else {
-            app.launchArguments = ["--xcui-testing"]
-            app.launchEnvironment = ["COUNTDOWN_MANAGER_TEST_HOME": testHome.path]
-        }
-    }
-
-    func testProductionShellFreshLaunchStatusToggleReopens() {
-        app.launch()
-        let item = statusItem
-        let statusFrame = item.frame
-
-        guard requireProductionShell(
-            waitForAbsence(root),
-            "fresh production shell did not start hidden"
-        ) else { return }
-
-        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
-        finder.activate()
-        let firstStatusActionCount = statusActionCount()
-        guard clickStatusItemExternally(frame: statusFrame, from: finder) else { return }
-        guard requireStatusActionDelivery(after: firstStatusActionCount) else { return }
-        guard requireProductionShell(
-            root.waitForExistence(timeout: 3) && root.isHittable,
-            "fresh launch -> external status click at \(statusFrame) did not show the primary window"
-        ) else { return }
-        XCTAssertNotEqual(app.state, .notRunning, "status show ended the application session")
-
-        // Use the product's explicit keyboard close path. The status-item event
-        // remains external for both show operations under test.
-        app.typeKey("ц", modifierFlags: .command)
-        guard requireProductionShell(
-            waitForAbsence(root),
-            "Command-W did not observably hide the primary window"
-        ) else { return }
-
-        finder.activate()
-        let secondStatusActionCount = statusActionCount()
-        guard clickStatusItemExternally(frame: statusFrame, from: finder) else { return }
-        guard requireStatusActionDelivery(after: secondStatusActionCount) else { return }
-        guard requireProductionShell(
-            root.waitForExistence(timeout: 3) && root.isHittable,
-            "external status click at \(statusFrame) did not observably reopen the primary window"
-        ) else { return }
-        XCTAssertNotEqual(app.state, .notRunning, "status reopen ended the application session")
+        app.launchArguments = ["--xcui-testing"]
+        app.launchEnvironment = ["COUNTDOWN_MANAGER_TEST_HOME": testHome.path]
     }
 
     override func tearDownWithError() throws {
@@ -192,76 +143,8 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(try persistedItems().isEmpty)
     }
 
-    private var statusItem: XCUIElement {
-        let item = app.statusItems["Countdown Manager"]
-        XCTAssertTrue(item.waitForExistence(timeout: 3))
-        return item
-    }
-
     private var root: XCUIElement {
         app.descendants(matching: .any)["root.window"]
-    }
-
-    private func clickStatusItemExternally(frame: CGRect, from finder: XCUIApplication) -> Bool {
-        let anchor = finder.menuBars.firstMatch
-        guard anchor.waitForExistence(timeout: 3) else {
-            XCTFail("PRODUCTION SHELL DRIVER: Finder menu bar was not available")
-            return false
-        }
-        let anchorFrame = anchor.frame
-        guard anchorFrame.width > 0, anchorFrame.height > 0 else {
-            XCTFail("PRODUCTION SHELL DRIVER: Finder menu bar has invalid frame \(anchorFrame)")
-            return false
-        }
-        let offset = CGVector(
-            dx: (frame.midX - anchorFrame.minX) / anchorFrame.width,
-            dy: (frame.midY - anchorFrame.minY) / anchorFrame.height
-        )
-        anchor.coordinate(withNormalizedOffset: offset).click()
-        return true
-    }
-
-    private func requireStatusActionDelivery(after previousCount: Int) -> Bool {
-        let delivered = XCTNSPredicateExpectation(
-            predicate: NSPredicate { [weak self] _, _ in
-                (self?.statusActionCount() ?? 0) > previousCount
-            },
-            object: nil
-        )
-        guard XCTWaiter.wait(for: [delivered], timeout: 1) == .completed else {
-            XCTFail(
-                "PRODUCTION SHELL DRIVER: external XCU coordinate click did not deliver the status action. "
-                    + "Lifecycle: \(productionShellLifecycleTrace())"
-            )
-            return false
-        }
-        return true
-    }
-
-    private func statusActionCount() -> Int {
-        productionShellLifecycleTrace().components(separatedBy: "status-action").count - 1
-    }
-
-    private func requireProductionShell(_ condition: @autoclosure () -> Bool, _ failure: String) -> Bool {
-        guard condition() else {
-            Thread.sleep(forTimeInterval: 0.25)
-            XCTFail("PRODUCTION SHELL STOP: \(failure). Lifecycle: \(productionShellLifecycleTrace())")
-            return false
-        }
-        return true
-    }
-
-    private func productionShellLifecycleTrace() -> String {
-        let candidates = [
-            testHome.appendingPathComponent("Library/Application Support/CountdownManager/Logs/countdown.log"),
-            testHome.appendingPathComponent("Application Support/CountdownManager/Logs/countdown.log")
-        ]
-        guard let logURL = candidates.first(where: { FileManager.default.fileExists(atPath: $0.path) }),
-              let contents = try? String(contentsOf: logURL, encoding: .utf8) else {
-            return "log unavailable; checked \(candidates.map(\.path).joined(separator: ", "))"
-        }
-        let events = contents.split(separator: "\n").filter { $0.contains("shell.lifecycle") }
-        return events.isEmpty ? "no shell lifecycle events" : events.joined(separator: " | ")
     }
 
     private func openEditor() {

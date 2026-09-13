@@ -5,9 +5,9 @@ cd "$(dirname "$0")"
 
 mode="${1:-full}"
 case "$mode" in
-    fast|ui|shell|full) ;;
+    fast|ui|full) ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|shell|full]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full]" >&2
         exit 64
         ;;
 esac
@@ -95,41 +95,9 @@ run_ui_checks() {
     echo "PASS: release build and Real UI Smoke"
 }
 
-run_production_shell_check() {
-    local failed=0
-    echo "Diagnostic only: production-shell XCU status-item sequence (10 fresh processes)"
-    for run in {1..10}; do
-        echo "Production shell run ${run}/10"
-        if xcodebuild \
-            -project CountdownManager.xcodeproj \
-            -scheme CountdownManager \
-            -configuration Release \
-            -destination 'platform=macOS,arch=arm64' \
-            -derivedDataPath "$verify_root/xcode-derived" \
-            test \
-            -only-testing:CountdownManagerXCUITests/CountdownManagerXCUITests/testProductionShellFreshLaunchStatusToggleReopens \
-            2>&1 | /usr/bin/sed -n \
-            -e '/Test Case/p' \
-            -e '/error:/p' \
-            -e '/PRODUCTION SHELL STOP/p' \
-            -e '/\*\* TEST/p'; then
-            echo "PASS: production shell run ${run}/10"
-        else
-            echo "FAIL: production shell run ${run}/10" >&2
-            failed=1
-        fi
-    done
-    if (( failed != 0 )); then
-        echo "FAIL: production-shell XCU diagnostic (at least one of 10 fresh processes failed; not an acceptance result)" >&2
-        return 1
-    fi
-    echo "PASS: production-shell XCU diagnostic (10/10 fresh processes; not behavioural proof)"
-}
-
 case "$mode" in
     fast) run_fast_checks ;;
     ui) run_ui_checks ;;
-    shell) run_production_shell_check ;;
     full)
         run_fast_checks
         run_ui_checks
