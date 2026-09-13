@@ -285,15 +285,21 @@ struct EditorView: View {
     @State private var confirmingDeletion = false
     @State private var showingMoreEmoji = false
     @FocusState private var focusedField: EditorFocusTarget?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private static let extendedEmoji = [
-        "😀", "😄", "😊", "😍", "🥳", "😎", "🤩", "😂",
-        "🥰", "🤗", "💙", "💚", "💜", "🧡", "💛", "🤍",
-        "💕", "💫", "✨", "⭐️", "🔥", "🌈", "❄️", "🌸",
-        "🌻", "🍀", "🌊", "🌙", "🎁", "🎃", "🏆", "🎓",
-        "📚", "💡", "🎵", "🎮", "⚽️", "🏀", "🚗", "🚲",
-        "🏠", "🏕️", "🏔️", "🦄", "🐶", "🐱", "🍕", "☕️"
+    private static let emojiRows = [
+        ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️", "🌟", "🎁", "🏆", "🎓", "🎈", "🎊", "🎆", "🎇", "🪩", "🎯", "💎", "👑", "💍", "🍼", "🏡", "🗓️"],
+        ["😀", "😄", "😁", "😊", "😍", "🥳", "😎", "🤩", "😂", "🥰", "🤗", "😇", "🙂", "😉", "😋", "🤓", "🫠", "🥹", "😴", "🤠", "🥸", "🤯", "😱", "😭"],
+        ["💙", "💚", "💜", "🧡", "💛", "🤍", "🩷", "🩵", "🩶", "🖤", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "👍", "👏", "🙌", "🤝", "✌️", "🤞"],
+        ["🌈", "❄️", "🌸", "🌻", "🍀", "🌊", "🌙", "🔥", "✨", "⭐️", "🌺", "🌷", "🌹", "🌼", "🌿", "🌴", "🌵", "🍁", "🍂", "🌧️", "⛈️", "🌤️", "🌅", "🌌"],
+        ["⚽️", "🏀", "🏈", "⚾️", "🎾", "🏐", "🏓", "🏸", "🥊", "⛳️", "🎮", "🎵", "🎸", "🎤", "🎬", "📚", "💡", "🚗", "🚲", "🚂", "🚢", "🚁", "🏕️", "🏔️"],
+        ["🐶", "🐱", "🦄", "🐼", "🦊", "🐻", "🐨", "🐯", "🦁", "🐸", "🐵", "🦋", "🐝", "🍕", "🍔", "🍣", "🍩", "🍪", "🍓", "🍉", "☕️", "🍷", "🥂", "🍰"]
     ]
+
+    private static let emojiCellWidth: CGFloat = 34
+    private static let emojiCellHeight: CGFloat = 32
+    private static let emojiSpacing: CGFloat = 7
+    private static let emojiExpandedHeight: CGFloat = emojiCellHeight * 6 + emojiSpacing * 5
 
     init(store: Store, item: Countdown?, done: @escaping () -> Void) {
         self.store = store; self.item = item; self.done = done
@@ -546,23 +552,44 @@ struct EditorView: View {
                         value: { showingMoreEmoji ? "expanded" : "collapsed" }
                     )
             }
-            HStack(spacing: 7) {
-                ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
-                    emojiButton(symbol, identifierPrefix: "editor.emoji.preset")
-                }
-            }
-            if showingMoreEmoji {
-                LazyVGrid(
-                    columns: Array(repeating: GridItem(.fixed(34), spacing: 7), count: 8),
-                    spacing: 7
-                ) {
-                    ForEach(Self.extendedEmoji, id: \.self) { symbol in
-                        emojiButton(symbol, identifierPrefix: "editor.emoji.option")
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: Self.emojiSpacing) {
+                    ForEach(0..<(showingMoreEmoji ? Self.emojiRows[0].count : EventEmojiCatalog.presets.count), id: \.self) { column in
+                        VStack(spacing: Self.emojiSpacing) {
+                            let top = Self.emojiRows[0][column]
+                            emojiButton(
+                                top,
+                                identifierPrefix: column < EventEmojiCatalog.presets.count
+                                    ? "editor.emoji.preset"
+                                    : "editor.emoji.option"
+                            )
+
+                            if showingMoreEmoji {
+                                VStack(spacing: Self.emojiSpacing) {
+                                    ForEach(1..<Self.emojiRows.count, id: \.self) { row in
+                                        emojiButton(
+                                            Self.emojiRows[row][column],
+                                            identifierPrefix: "editor.emoji.option"
+                                        )
+                                    }
+                                }
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                            }
+                        }
                     }
                 }
-                .accessibilityIdentifier("editor.emoji.expanded")
-                .uiSmokeControl(id: "editor.emoji.expanded")
+                .frame(
+                    height: showingMoreEmoji ? Self.emojiExpandedHeight : Self.emojiCellHeight,
+                    alignment: .top
+                )
             }
+            .frame(height: showingMoreEmoji ? Self.emojiExpandedHeight : Self.emojiCellHeight)
+            .accessibilityIdentifier(showingMoreEmoji ? "editor.emoji.expanded" : "editor.emoji.quick")
+            .uiSmokeControl(
+                id: showingMoreEmoji ? "editor.emoji.expanded" : "editor.emoji.quick",
+                value: { showingMoreEmoji ? "6x24" : "1x8" }
+            )
         }
     }
 
@@ -572,7 +599,7 @@ struct EditorView: View {
         }
         .buttonStyle(.plain)
         .font(.system(size: 22))
-        .frame(width: 34, height: 32)
+        .frame(width: Self.emojiCellWidth, height: Self.emojiCellHeight)
         .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .accessibilityLabel("Выбрать \(symbol)")
@@ -584,13 +611,17 @@ struct EditorView: View {
     }
 
     private func chooseEmoji(_ symbol: String) {
-        if draft.replaceEmoji(with: symbol) {
+        guard CountdownData.isEmoji(symbol) else { return }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+            _ = draft.replaceEmoji(with: symbol)
             showingMoreEmoji = false
         }
     }
 
     private func toggleMoreEmoji() {
-        showingMoreEmoji.toggle()
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+            showingMoreEmoji.toggle()
+        }
     }
 
     private func addSubtask(scrollProxy: ScrollViewProxy) {
