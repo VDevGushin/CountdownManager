@@ -288,20 +288,21 @@ struct EditorView: View {
     @FocusState private var focusedField: EditorFocusTarget?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private static let emojiPageTitles = ["Общие", "Дети", "Работа", "Транспорт", "Праздники"]
     private static let emojiRows = [
-        ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️", "🌟", "🎁", "🏆", "🎓", "🎈", "🎊", "🎆", "🎇", "🪩", "🎯", "💎", "👑", "💍", "🍼", "🏡", "🗓️"],
-        ["😀", "😄", "😁", "😊", "😍", "🥳", "😎", "🤩", "😂", "🥰", "🤗", "😇", "🙂", "😉", "😋", "🤓", "🫠", "🥹", "😴", "🤠", "🥸", "🤯", "😱", "😭"],
-        ["💙", "💚", "💜", "🧡", "💛", "🤍", "🩷", "🩵", "🩶", "🖤", "💕", "💞", "💓", "💗", "💖", "💘", "💝", "💟", "👍", "👏", "🙌", "🤝", "✌️", "🤞"],
-        ["🌈", "❄️", "🌸", "🌻", "🍀", "🌊", "🌙", "🔥", "✨", "⭐️", "🌺", "🌷", "🌹", "🌼", "🌿", "🌴", "🌵", "🍁", "🍂", "🌧️", "⛈️", "🌤️", "🌅", "🌌"],
-        ["⚽️", "🏀", "🏈", "⚾️", "🎾", "🏐", "🏓", "🏸", "🥊", "⛳️", "🎮", "🎵", "🎸", "🎤", "🎬", "📚", "💡", "🚗", "🚲", "🚂", "🚢", "🚁", "🏕️", "🏔️"],
-        ["🐶", "🐱", "🦄", "🐼", "🦊", "🐻", "🐨", "🐯", "🦁", "🐸", "🐵", "🦋", "🐝", "🍕", "🍔", "🍣", "🍩", "🍪", "🍓", "🍉", "☕️", "🍷", "🥂", "🍰"]
+        ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️", "👶", "🍼", "🧸", "🎈", "🎁", "🎂", "🎉", "🥳", "💼", "💻", "🖥️", "⌨️", "🖱️", "📱", "📞", "📧", "✈️", "🚗", "🚕", "🚌", "🚎", "🏎️", "🚓", "🚑", "🎉", "🎊", "🎈", "🎂", "🎁", "🎄", "🎃", "🎆"],
+        ["😀", "😄", "😊", "😍", "🥳", "😎", "🤩", "😂", "🎒", "📚", "✏️", "🖍️", "🎨", "🧩", "🧱", "🎓", "📊", "📈", "📉", "💰", "💳", "🧾", "💵", "🏦", "🚲", "🛴", "🏍️", "🚂", "🚆", "🚇", "🚁", "🚢", "🎇", "🪩", "🥳", "🎶", "🎵", "🎤", "🎸", "🥁"],
+        ["💙", "💚", "💜", "🧡", "💛", "🤍", "👍", "🙌", "🐶", "🐱", "🐰", "🐼", "🦄", "🐸", "🐵", "🦋", "📅", "🗓️", "⏰", "⏳", "✅", "☑️", "📌", "📍", "🛳️", "⛵️", "🚤", "🚀", "🛸", "🚠", "🚡", "🚜", "🏆", "🥇", "🥈", "🥉", "⚽️", "🏀", "🎾", "🎯"],
+        ["🌈", "❄️", "🌸", "🌻", "🍀", "🌊", "🌙", "🔥", "🎮", "🪁", "🛹", "🚲", "🛴", "🎯", "🎲", "🎳", "📝", "📄", "📁", "📂", "📎", "✂️", "🔗", "🔒", "🗺️", "🧭", "🧳", "🎒", "🛂", "🛃", "🛬", "🛫", "🍰", "🧁", "🍩", "🍪", "🍕", "🍔", "🍿", "🥂"],
+        ["🏠", "📅", "⏰", "⭐️", "✨", "🎁", "☕️", "📌", "🍎", "🍓", "🍉", "🍕", "🍔", "🍦", "🍪", "🍰", "🎯", "💡", "🤝", "🏆", "🥇", "🚀", "⚙️", "🧠", "🏨", "🏕️", "🏔️", "🏖️", "🌆", "🌉", "🗼", "🗽", "❤️", "💖", "💕", "💝", "🌹", "🌸", "🌟", "✨"],
+        ["⚽️", "🎮", "🎵", "📚", "💡", "🍕", "🐶", "🐱", "🌈", "⭐️", "✨", "☀️", "🌸", "🌻", "🎵", "🎬", "👔", "👩‍💼", "👨‍💼", "🏢", "🏭", "🛠️", "🔧", "📦", "⛽️", "🅿️", "🚦", "🚧", "🛣️", "🛤️", "⚓️", "🚏", "🏖️", "🌴", "☀️", "🌅", "🎬", "🎮", "🎲", "🃏"]
     ]
 
     private static let emojiColumnsPerPage = 8
     private static let emojiCellWidth: CGFloat = 34
     private static let emojiCellHeight: CGFloat = 32
     private static let emojiSpacing: CGFloat = 7
-    private static var emojiPageCount: Int { emojiRows[0].count / emojiColumnsPerPage }
+    private static var emojiPageCount: Int { emojiPageTitles.count }
     private static var emojiPageWidth: CGFloat {
         emojiCellWidth * CGFloat(emojiColumnsPerPage)
             + emojiSpacing * CGFloat(emojiColumnsPerPage - 1)
@@ -603,6 +604,17 @@ struct EditorView: View {
                 value: { "6x8 page \(emojiPage + 1)/\(Self.emojiPageCount)" }
             )
 
+            Text(Self.emojiPageTitles[emojiPage])
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.secondary)
+                .frame(width: Self.emojiPageWidth, alignment: .center)
+                .accessibilityIdentifier("editor.emoji.category")
+                .uiSmokeControl(
+                    id: "editor.emoji.category",
+                    value: { Self.emojiPageTitles[emojiPage] }
+                )
+
             emojiPagination
         }
     }
@@ -637,8 +649,8 @@ struct EditorView: View {
                     .frame(width: 20, height: 20)
             }
             .buttonStyle(.plain)
-            .help("Предыдущая страница emoji")
-            .accessibilityLabel("Предыдущая страница emoji")
+            .help("Предыдущий набор emoji")
+            .accessibilityLabel("Предыдущий набор emoji")
             .accessibilityIdentifier("editor.emoji.page.previous")
             .uiSmokeControl(id: "editor.emoji.page.previous", action: previousEmojiPage)
             .disabled(emojiPage == 0)
@@ -657,8 +669,8 @@ struct EditorView: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(
                         page == emojiPage
-                            ? "Страница \(page + 1) из \(Self.emojiPageCount), текущая"
-                            : "Перейти на страницу \(page + 1) из \(Self.emojiPageCount)"
+                            ? "\(Self.emojiPageTitles[page]), страница \(page + 1) из \(Self.emojiPageCount), текущая"
+                            : "\(Self.emojiPageTitles[page]), перейти на страницу \(page + 1) из \(Self.emojiPageCount)"
                     )
                     .accessibilityIdentifier("editor.emoji.page.dot.\(page + 1)")
                     .uiSmokeControl(
@@ -675,8 +687,8 @@ struct EditorView: View {
                     .frame(width: 20, height: 20)
             }
             .buttonStyle(.plain)
-            .help("Следующая страница emoji")
-            .accessibilityLabel("Следующая страница emoji")
+            .help("Следующий набор emoji")
+            .accessibilityLabel("Следующий набор emoji")
             .accessibilityIdentifier("editor.emoji.page.next")
             .uiSmokeControl(id: "editor.emoji.page.next", action: nextEmojiPage)
             .disabled(emojiPage == Self.emojiPageCount - 1)
