@@ -81,6 +81,7 @@ run_ui_checks() {
     mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
     cp "$bin_path/CountdownManager" "$app_path/Contents/MacOS/CountdownManager"
     cp Resources/Info.plist "$app_path/Contents/Info.plist"
+    cp Resources/AppIcon.icns "$app_path/Contents/Resources/AppIcon.icns"
     /usr/bin/codesign --force --sign - "$app_path"
     /usr/bin/codesign --verify --deep --strict "$app_path"
     app_executable="$app_path/Contents/MacOS/CountdownManager"

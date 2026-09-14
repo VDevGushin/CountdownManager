@@ -20,6 +20,7 @@
 		10000000000000000000000C /* libCountdownCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* libCountdownCore.a */; };
 		10000000000000000000000D /* libCountdownCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* libCountdownCore.a */; };
 		10000000000000000000000E /* libCountdownManagerUI.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* libCountdownManagerUI.a */; };
+		10000000000000000000000F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* AppIcon.icns */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -45,6 +46,7 @@
 		20000000000000000000000E /* libCountdownManagerUI.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCountdownManagerUI.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		20000000000000000000000F /* Countdown Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Countdown Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000010 /* CountdownManagerXCUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountdownManagerXCUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		200000000000000000000011 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Resources/AppIcon.icns; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,19 +63,23 @@
 		600000000000000000000004 /* CountdownCore */ = {isa = PBXGroup; children = (200000000000000000000001, 200000000000000000000002,); name = CountdownCore; sourceTree = "<group>"; };
 		600000000000000000000005 /* CountdownManager */ = {isa = PBXGroup; children = (200000000000000000000003, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009,); name = CountdownManager; sourceTree = "<group>"; };
 		600000000000000000000006 /* XCUITests */ = {isa = PBXGroup; children = (20000000000000000000000C,); name = XCUITests; sourceTree = "<group>"; };
-		600000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (20000000000000000000000B,); name = Resources; sourceTree = "<group>"; };
+		600000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (20000000000000000000000B, 200000000000000000000011,); name = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		300000000000000000000001 /* CountdownCore */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000002; buildPhases = (700000000000000000000001, 500000000000000000000001,); buildRules = (); dependencies = (); name = CountdownCore; productName = CountdownCore; productReference = 20000000000000000000000D; productType = "com.apple.product-type.library.static"; };
 		300000000000000000000002 /* CountdownManagerUI */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000003; buildPhases = (700000000000000000000002, 500000000000000000000002,); buildRules = (); dependencies = (A00000000000000000000001,); name = CountdownManagerUI; productName = CountdownManagerUI; productReference = 20000000000000000000000E; productType = "com.apple.product-type.library.static"; };
-		300000000000000000000003 /* CountdownManager */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000004; buildPhases = (700000000000000000000003, 500000000000000000000003,); buildRules = (); dependencies = (A00000000000000000000002, A00000000000000000000003,); name = CountdownManager; productName = "Countdown Manager"; productReference = 20000000000000000000000F; productType = "com.apple.product-type.application"; };
+		300000000000000000000003 /* CountdownManager */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000004; buildPhases = (700000000000000000000003, 500000000000000000000003, 710000000000000000000001,); buildRules = (); dependencies = (A00000000000000000000002, A00000000000000000000003,); name = CountdownManager; productName = "Countdown Manager"; productReference = 20000000000000000000000F; productType = "com.apple.product-type.application"; };
 		300000000000000000000004 /* CountdownManagerXCUITests */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000005; buildPhases = (700000000000000000000004, 500000000000000000000004,); buildRules = (); dependencies = (A00000000000000000000004,); name = CountdownManagerXCUITests; productName = CountdownManagerXCUITests; productReference = 200000000000000000000010; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		900000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = {300000000000000000000004 = {TestTargetID = 300000000000000000000003; }; }; }; buildConfigurationList = 800000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = ru; hasScannedForEncodings = 0; knownRegions = (ru, Base,); mainGroup = 600000000000000000000001; productRefGroup = 600000000000000000000002; projectDirPath = ""; projectRoot = ""; targets = (300000000000000000000001, 300000000000000000000002, 300000000000000000000003, 300000000000000000000004,); };
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		710000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000F /* AppIcon.icns in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		700000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000001, 100000000000000000000002,); runOnlyForDeploymentPostprocessing = 0; };
