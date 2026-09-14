@@ -565,7 +565,7 @@ struct EditorView: View {
 
             if showingMoreEmoji {
                 expandedEmojiPicker
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .transition(.opacity)
             } else {
                 HStack(spacing: Self.emojiSpacing) {
                     ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
