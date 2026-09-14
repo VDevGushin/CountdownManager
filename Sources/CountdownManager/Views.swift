@@ -284,6 +284,7 @@ struct EditorView: View {
     @State private var isSaving = false
     @State private var confirmingDeletion = false
     @State private var showingMoreEmoji = false
+    @State private var emojiPage = 0
     @FocusState private var focusedField: EditorFocusTarget?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -296,10 +297,19 @@ struct EditorView: View {
         ["🐶", "🐱", "🦄", "🐼", "🦊", "🐻", "🐨", "🐯", "🦁", "🐸", "🐵", "🦋", "🐝", "🍕", "🍔", "🍣", "🍩", "🍪", "🍓", "🍉", "☕️", "🍷", "🥂", "🍰"]
     ]
 
+    private static let emojiColumnsPerPage = 8
     private static let emojiCellWidth: CGFloat = 34
     private static let emojiCellHeight: CGFloat = 32
     private static let emojiSpacing: CGFloat = 7
-    private static let emojiExpandedHeight: CGFloat = emojiCellHeight * 6 + emojiSpacing * 5
+    private static var emojiPageCount: Int { emojiRows[0].count / emojiColumnsPerPage }
+    private static var emojiPageWidth: CGFloat {
+        emojiCellWidth * CGFloat(emojiColumnsPerPage)
+            + emojiSpacing * CGFloat(emojiColumnsPerPage - 1)
+    }
+    private static var emojiExpandedHeight: CGFloat {
+        emojiCellHeight * CGFloat(emojiRows.count)
+            + emojiSpacing * CGFloat(emojiRows.count - 1)
+    }
 
     init(store: Store, item: Countdown?, done: @escaping () -> Void) {
         self.store = store; self.item = item; self.done = done
@@ -553,44 +563,145 @@ struct EditorView: View {
                     )
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: Self.emojiSpacing) {
-                    ForEach(0..<(showingMoreEmoji ? Self.emojiRows[0].count : EventEmojiCatalog.presets.count), id: \.self) { column in
-                        VStack(spacing: Self.emojiSpacing) {
-                            let top = Self.emojiRows[0][column]
-                            emojiButton(
-                                top,
-                                identifierPrefix: column < EventEmojiCatalog.presets.count
-                                    ? "editor.emoji.preset"
-                                    : "editor.emoji.option"
-                            )
-
-                            if showingMoreEmoji {
-                                VStack(spacing: Self.emojiSpacing) {
-                                    ForEach(1..<Self.emojiRows.count, id: \.self) { row in
-                                        emojiButton(
-                                            Self.emojiRows[row][column],
-                                            identifierPrefix: "editor.emoji.option"
-                                        )
-                                    }
-                                }
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                            }
-                        }
+            if showingMoreEmoji {
+                expandedEmojiPicker
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            } else {
+                HStack(spacing: Self.emojiSpacing) {
+                    ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
+                        emojiButton(symbol, identifierPrefix: "editor.emoji.preset")
                     }
                 }
-                .frame(
-                    height: showingMoreEmoji ? Self.emojiExpandedHeight : Self.emojiCellHeight,
-                    alignment: .top
-                )
+                .frame(height: Self.emojiCellHeight, alignment: .top)
+                .accessibilityIdentifier("editor.emoji.quick")
+                .uiSmokeControl(id: "editor.emoji.quick", value: { "1x8" })
+                .transition(.opacity)
             }
-            .frame(height: showingMoreEmoji ? Self.emojiExpandedHeight : Self.emojiCellHeight)
-            .accessibilityIdentifier(showingMoreEmoji ? "editor.emoji.expanded" : "editor.emoji.quick")
-            .uiSmokeControl(
-                id: showingMoreEmoji ? "editor.emoji.expanded" : "editor.emoji.quick",
-                value: { showingMoreEmoji ? "6x24" : "1x8" }
-            )
         }
+    }
+
+    private var expandedEmojiPicker: some View {
+        VStack(spacing: 6) {
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(0..<Self.emojiPageCount, id: \.self) { page in
+                    emojiPageGrid(page)
+                        .frame(width: Self.emojiPageWidth, alignment: .leading)
+                }
+            }
+            .offset(x: -CGFloat(emojiPage) * Self.emojiPageWidth)
+            .frame(
+                width: Self.emojiPageWidth,
+                height: Self.emojiExpandedHeight,
+                alignment: .topLeading
+            )
+            .clipped()
+            .contentShape(Rectangle())
+            .gesture(emojiPageSwipe)
+            .accessibilityIdentifier("editor.emoji.expanded")
+            .uiSmokeControl(
+                id: "editor.emoji.expanded",
+                value: { "6x8 page \(emojiPage + 1)/\(Self.emojiPageCount)" }
+            )
+
+            emojiPagination
+        }
+    }
+
+    private func emojiPageGrid(_ page: Int) -> some View {
+        let startColumn = page * Self.emojiColumnsPerPage
+        let endColumn = startColumn + Self.emojiColumnsPerPage
+
+        return HStack(alignment: .top, spacing: Self.emojiSpacing) {
+            ForEach(startColumn..<endColumn, id: \.self) { column in
+                VStack(spacing: Self.emojiSpacing) {
+                    ForEach(0..<Self.emojiRows.count, id: \.self) { row in
+                        let symbol = Self.emojiRows[row][column]
+                        emojiButton(
+                            symbol,
+                            identifierPrefix: row == 0 && column < EventEmojiCatalog.presets.count
+                                ? "editor.emoji.preset"
+                                : "editor.emoji.option"
+                        )
+                    }
+                }
+            }
+        }
+        .frame(height: Self.emojiExpandedHeight, alignment: .top)
+    }
+
+    private var emojiPagination: some View {
+        HStack(spacing: 8) {
+            Button(action: previousEmojiPage) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .help("Предыдущая страница emoji")
+            .accessibilityLabel("Предыдущая страница emoji")
+            .accessibilityIdentifier("editor.emoji.page.previous")
+            .uiSmokeControl(id: "editor.emoji.page.previous", action: previousEmojiPage)
+            .disabled(emojiPage == 0)
+
+            HStack(spacing: 5) {
+                ForEach(0..<Self.emojiPageCount, id: \.self) { page in
+                    Button {
+                        setEmojiPage(page)
+                    } label: {
+                        Circle()
+                            .fill(page == emojiPage ? Color.primary : Color.secondary.opacity(0.35))
+                            .frame(width: 6, height: 6)
+                            .frame(width: 14, height: 20)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(
+                        page == emojiPage
+                            ? "Страница \(page + 1) из \(Self.emojiPageCount), текущая"
+                            : "Перейти на страницу \(page + 1) из \(Self.emojiPageCount)"
+                    )
+                    .accessibilityIdentifier("editor.emoji.page.dot.\(page + 1)")
+                    .uiSmokeControl(
+                        id: "editor.emoji.page.dot.\(page + 1)",
+                        action: { setEmojiPage(page) },
+                        value: { page == emojiPage ? "selected" : "idle" }
+                    )
+                }
+            }
+
+            Button(action: nextEmojiPage) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .help("Следующая страница emoji")
+            .accessibilityLabel("Следующая страница emoji")
+            .accessibilityIdentifier("editor.emoji.page.next")
+            .uiSmokeControl(id: "editor.emoji.page.next", action: nextEmojiPage)
+            .disabled(emojiPage == Self.emojiPageCount - 1)
+        }
+        .frame(width: Self.emojiPageWidth, alignment: .center)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("editor.emoji.pagination")
+        .uiSmokeControl(
+            id: "editor.emoji.page",
+            value: { "\(emojiPage + 1)/\(Self.emojiPageCount)" }
+        )
+    }
+
+    private var emojiPageSwipe: some Gesture {
+        DragGesture(minimumDistance: 18)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > abs(vertical), abs(horizontal) > 28 else { return }
+                if horizontal < 0 {
+                    nextEmojiPage()
+                } else {
+                    previousEmojiPage()
+                }
+            }
     }
 
     private func emojiButton(_ symbol: String, identifierPrefix: String) -> some View {
@@ -614,14 +725,33 @@ struct EditorView: View {
         guard CountdownData.isEmoji(symbol) else { return }
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
             _ = draft.replaceEmoji(with: symbol)
+            emojiPage = 0
             showingMoreEmoji = false
         }
     }
 
     private func toggleMoreEmoji() {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+            emojiPage = 0
             showingMoreEmoji.toggle()
         }
+    }
+
+    private func setEmojiPage(_ page: Int) {
+        guard showingMoreEmoji else { return }
+        let boundedPage = min(max(page, 0), Self.emojiPageCount - 1)
+        guard boundedPage != emojiPage else { return }
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+            emojiPage = boundedPage
+        }
+    }
+
+    private func previousEmojiPage() {
+        setEmojiPage(emojiPage - 1)
+    }
+
+    private func nextEmojiPage() {
+        setEmojiPage(emojiPage + 1)
     }
 
     private func addSubtask(scrollProxy: ScrollViewProxy) {
