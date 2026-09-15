@@ -35,7 +35,7 @@ Countdown Manager exposes exactly one timer.
 
 The timer has no user-editable name or task text. Its visual identity is simply `⏰`.
 
-When idle, the user may choose `15`, `30`, or `60` minutes, or enter a custom positive whole number of minutes, then start the timer.
+When idle, the user chooses one of five fixed durations: `15`, `30`, `40`, `60`, or `120` minutes, then starts the timer. There is no custom-duration input.
 
 While running:
 

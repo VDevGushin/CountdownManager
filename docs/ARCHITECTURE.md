@@ -199,7 +199,7 @@ It owns:
 - timer menu-bar title/tool-tip values;
 - local notification authorization, scheduling and cancellation.
 
-A persisted deadline in the past represents the finished state until the user deletes the timer. Deleting removes both the local deadline and pending/delivered timer notification state.
+A persisted deadline in the past represents the finished state until the user deletes the timer. A stored future deadline beyond the longest two-hour preset is treated as invalid and cleared rather than converted into overflowing display seconds. Deleting removes both the local deadline and pending/delivered timer notification state.
 
 ## UI preference state
 

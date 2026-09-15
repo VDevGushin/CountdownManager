@@ -4,6 +4,17 @@ import Foundation
 import SwiftUI
 import UserNotifications
 
+package let countdownTimerPresetMinutes = [15, 30, 40, 60, 120]
+package let countdownTimerMaximumMinutes = 120
+
+package func validatedTimerDeadline(timeIntervalSince1970: Double, now: Date) -> Date? {
+    let deadline = Date(timeIntervalSince1970: timeIntervalSince1970)
+    let remaining = deadline.timeIntervalSince(now)
+    guard remaining.isFinite,
+          remaining <= TimeInterval(countdownTimerMaximumMinutes * 60) else { return nil }
+    return deadline
+}
+
 @MainActor
 final class CountdownTimer: ObservableObject {
     enum Phase: Equatable {
@@ -29,11 +40,12 @@ final class CountdownTimer: ObservableObject {
         self.defaults = defaults
         self.notificationCenter = notificationCenter
         now = Date()
-        if let storedDeadline = defaults.object(forKey: Self.deadlineKey) as? Double {
-            deadline = Date(timeIntervalSince1970: storedDeadline)
-        } else {
-            deadline = nil
+        let storedValue = defaults.object(forKey: Self.deadlineKey)
+        let storedDeadline = (storedValue as? Double).flatMap {
+            validatedTimerDeadline(timeIntervalSince1970: $0, now: now)
         }
+        deadline = storedDeadline
+        let discardedInvalidDeadline = storedValue != nil && storedDeadline == nil
 
         ticker = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
@@ -46,6 +58,11 @@ final class CountdownTimer: ObservableObject {
 
         if let deadline, deadline > now {
             scheduleNotification(for: deadline)
+        } else if discardedInvalidDeadline {
+            defaults.removeObject(forKey: Self.deadlineKey)
+            notificationCenter.removePendingNotificationRequests(withIdentifiers: [Self.notificationIdentifier])
+            notificationCenter.removeDeliveredNotifications(withIdentifiers: [Self.notificationIdentifier])
+            DiagnosticLog.shared.record("timer.invalid-deadline-cleared")
         }
     }
 
@@ -53,7 +70,7 @@ final class CountdownTimer: ObservableObject {
         guard let deadline else { return .idle }
         let interval = deadline.timeIntervalSince(now)
         guard interval > 0 else { return .finished }
-        let bounded = min(ceil(interval), Double(Int.max))
+        let bounded = min(ceil(interval), Double(countdownTimerMaximumMinutes * 60))
         return .running(remainingSeconds: Int(bounded))
     }
 
@@ -80,7 +97,7 @@ final class CountdownTimer: ObservableObject {
     }
 
     func start(minutes: Int) {
-        guard minutes > 0, minutes <= Int.max / 60 else { return }
+        guard countdownTimerPresetMinutes.contains(minutes) else { return }
         let startedAt = Date()
         let newDeadline = startedAt.addingTimeInterval(TimeInterval(minutes) * 60)
         now = startedAt
@@ -132,7 +149,7 @@ final class CountdownTimer: ObservableObject {
     }
 }
 
-func countdownTimerLabel(_ totalSeconds: Int) -> String {
+package func countdownTimerLabel(_ totalSeconds: Int) -> String {
     let seconds = max(0, totalSeconds)
     let hours = seconds / 3600
     let minutes = (seconds % 3600) / 60
@@ -160,15 +177,6 @@ struct CountdownManagerRootView: View {
 private struct CountdownTimerStrip: View {
     @ObservedObject var timer: CountdownTimer
     @State private var selectedMinutes = 30
-    @State private var customMinutes = ""
-
-    private var resolvedMinutes: Int? {
-        if selectedMinutes > 0 { return selectedMinutes }
-        guard let value = Int(customMinutes.trimmingCharacters(in: .whitespacesAndNewlines)),
-              value > 0,
-              value <= Int.max / 60 else { return nil }
-        return value
-    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -204,29 +212,19 @@ private struct CountdownTimerStrip: View {
     private var idleControls: some View {
         HStack(spacing: 8) {
             Picker("Время таймера", selection: $selectedMinutes) {
-                Text("15").tag(15)
-                Text("30").tag(30)
-                Text("60").tag(60)
-                Text("Своё").tag(0)
+                ForEach(countdownTimerPresetMinutes, id: \.self) { minutes in
+                    Text("\(minutes)").tag(minutes)
+                }
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .frame(width: 205)
+            .frame(width: 270)
             .accessibilityIdentifier("timer.duration")
 
-            if selectedMinutes == 0 {
-                TextField("мин", text: $customMinutes)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 55)
-                    .accessibilityLabel("Минуты")
-                    .accessibilityIdentifier("timer.custom")
-            } else {
-                Spacer(minLength: 0)
-            }
+            Spacer(minLength: 0)
 
             Button {
-                guard let minutes = resolvedMinutes else { return }
-                timer.start(minutes: minutes)
+                timer.start(minutes: selectedMinutes)
             } label: {
                 Image(systemName: "play.fill")
             }
@@ -234,7 +232,6 @@ private struct CountdownTimerStrip: View {
             .help("Запустить")
             .accessibilityLabel("Запустить таймер")
             .accessibilityIdentifier("timer.start")
-            .disabled(resolvedMinutes == nil)
         }
     }
 
