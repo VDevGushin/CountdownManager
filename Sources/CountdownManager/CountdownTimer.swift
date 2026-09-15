@@ -2,7 +2,6 @@ import AppKit
 import Combine
 import Foundation
 import SwiftUI
-import UserNotifications
 
 package let countdownTimerPresetMinutes = [15, 30, 40, 60, 120]
 package let countdownTimerMaximumMinutes = 120
@@ -15,6 +14,10 @@ package func validatedTimerDeadline(timeIntervalSince1970: Double, now: Date) ->
     return deadline
 }
 
+package func timerCrossedDeadline(previousNow: Date, currentNow: Date, deadline: Date) -> Bool {
+    previousNow < deadline && currentNow >= deadline
+}
+
 @MainActor
 final class CountdownTimer: ObservableObject {
     enum Phase: Equatable {
@@ -24,21 +27,15 @@ final class CountdownTimer: ObservableObject {
     }
 
     private static let deadlineKey = "timer.deadline"
-    private static let notificationIdentifier = "countdown-manager.timer"
-
     @Published private(set) var deadline: Date?
     @Published private(set) var now: Date
 
     private let defaults: UserDefaults
-    private let notificationCenter: UNUserNotificationCenter
     private var ticker: AnyCancellable?
+    private let completionSubject = PassthroughSubject<Void, Never>()
 
-    init(
-        defaults: UserDefaults = .standard,
-        notificationCenter: UNUserNotificationCenter = .current()
-    ) {
+    init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        self.notificationCenter = notificationCenter
         now = Date()
         let storedValue = defaults.object(forKey: Self.deadlineKey)
         let storedDeadline = (storedValue as? Double).flatMap {
@@ -50,20 +47,17 @@ final class CountdownTimer: ObservableObject {
         ticker = Timer.publish(every: 1, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] currentDate in
-                guard let self, let deadline = self.deadline else { return }
-                if currentDate < deadline || self.now < deadline {
-                    self.now = currentDate
-                }
+                self?.refresh(at: currentDate)
             }
 
-        if let deadline, deadline > now {
-            scheduleNotification(for: deadline)
-        } else if discardedInvalidDeadline {
+        if discardedInvalidDeadline {
             defaults.removeObject(forKey: Self.deadlineKey)
-            notificationCenter.removePendingNotificationRequests(withIdentifiers: [Self.notificationIdentifier])
-            notificationCenter.removeDeliveredNotifications(withIdentifiers: [Self.notificationIdentifier])
             DiagnosticLog.shared.record("timer.invalid-deadline-cleared")
         }
+    }
+
+    var completionPublisher: AnyPublisher<Void, Never> {
+        completionSubject.eraseToAnyPublisher()
     }
 
     var phase: Phase {
@@ -103,7 +97,6 @@ final class CountdownTimer: ObservableObject {
         now = startedAt
         deadline = newDeadline
         defaults.set(newDeadline.timeIntervalSince1970, forKey: Self.deadlineKey)
-        scheduleNotification(for: newDeadline)
         DiagnosticLog.shared.record("timer.start minutes=\(minutes)")
     }
 
@@ -111,40 +104,18 @@ final class CountdownTimer: ObservableObject {
         deadline = nil
         now = Date()
         defaults.removeObject(forKey: Self.deadlineKey)
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: [Self.notificationIdentifier])
-        notificationCenter.removeDeliveredNotifications(withIdentifiers: [Self.notificationIdentifier])
         DiagnosticLog.shared.record("timer.delete")
     }
 
-    private func scheduleNotification(for deadline: Date) {
-        notificationCenter.removePendingNotificationRequests(withIdentifiers: [Self.notificationIdentifier])
-        notificationCenter.removeDeliveredNotifications(withIdentifiers: [Self.notificationIdentifier])
-
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let granted = try await notificationCenter.requestAuthorization(options: [.alert, .sound])
-                guard granted, self.deadline == deadline else { return }
-                let interval = deadline.timeIntervalSinceNow
-                guard interval > 0 else { return }
-
-                let content = UNMutableNotificationContent()
-                content.title = "⏰ Время вышло"
-                content.sound = .default
-                let trigger = UNTimeIntervalNotificationTrigger(
-                    timeInterval: max(1, interval),
-                    repeats: false
-                )
-                let request = UNNotificationRequest(
-                    identifier: Self.notificationIdentifier,
-                    content: content,
-                    trigger: trigger
-                )
-                try await notificationCenter.add(request)
-                DiagnosticLog.shared.record("timer.notification scheduled")
-            } catch {
-                DiagnosticLog.shared.record("timer.notification failure error=\(error.localizedDescription)")
-            }
+    private func refresh(at currentDate: Date) {
+        guard let deadline else { return }
+        let previousNow = now
+        if currentDate < deadline || previousNow < deadline {
+            now = currentDate
+        }
+        if timerCrossedDeadline(previousNow: previousNow, currentNow: currentDate, deadline: deadline) {
+            DiagnosticLog.shared.record("timer.finished")
+            completionSubject.send()
         }
     }
 }

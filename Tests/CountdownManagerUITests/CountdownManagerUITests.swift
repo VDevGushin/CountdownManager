@@ -47,6 +47,10 @@ enum UIChecks {
         precondition(validatedTimerDeadline(timeIntervalSince1970: timerNow.addingTimeInterval(7_200).timeIntervalSince1970, now: timerNow) != nil)
         precondition(validatedTimerDeadline(timeIntervalSince1970: timerNow.addingTimeInterval(7_201).timeIntervalSince1970, now: timerNow) == nil)
         precondition(validatedTimerDeadline(timeIntervalSince1970: .infinity, now: timerNow) == nil)
+        let timerDeadline = timerNow.addingTimeInterval(10)
+        precondition(!timerCrossedDeadline(previousNow: timerNow, currentNow: timerDeadline.addingTimeInterval(-0.1), deadline: timerDeadline))
+        precondition(timerCrossedDeadline(previousNow: timerNow, currentNow: timerDeadline, deadline: timerDeadline))
+        precondition(!timerCrossedDeadline(previousNow: timerDeadline, currentNow: timerDeadline.addingTimeInterval(1), deadline: timerDeadline))
 
         // Primary first, then stable date order; expired events are absent.
         precondition(activeCountdowns(in: data, today: today).map(\.id) == [futureItem.id, todayItem.id])

@@ -44,11 +44,13 @@ While running:
 - the duration cannot be edited or extended;
 - the only timer action is Delete.
 
-Deleting the timer clears it immediately and cancels its timer notification.
+Deleting the timer clears it immediately and dismisses any visible completion alert.
 
 The timer uses an absolute deadline rather than decrementing persisted seconds. Closing or hiding the panel, quitting and relaunching the app, system sleep, and ordinary clock ticking do not reset the timer. Time elapsed while the app is not visible still counts.
 
-When the deadline is reached, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. Countdown Manager requests macOS notification permission and schedules one local notification with the title `⏰ Время вышло`. If notification permission is unavailable or denied, the timer still reaches its finished state inside the application.
+When the deadline is reached while Countdown Manager is running, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. The application also plays a sound and presents its own non-activating completion alert above other windows for several seconds. This alert does not depend on macOS notification permission.
+
+Countdown Manager does not schedule a system notification. If the application is not running when the deadline passes, relaunching it restores the finished state without replaying the sound or completion alert.
 
 The timer is separate from events and subtasks. It does not create an event, a subtask, an archive item, or any other durable task record.
 

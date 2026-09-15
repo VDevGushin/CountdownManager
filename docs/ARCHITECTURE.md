@@ -56,7 +56,7 @@ Key responsibilities:
 
 - AppKit application and menu-bar integration;
 - application state and persistence coordination;
-- the single timer, its local preference state, ticking and notification scheduling;
+- the single timer, its local preference state, ticking and completion presentation;
 - deterministic presentation logic;
 - SwiftUI views and transient view state;
 - UI preference state;
@@ -67,6 +67,7 @@ Key files:
 
 - `Application.swift`
 - `CountdownTimer.swift`
+- `TimerCompletionAlert.swift`
 - `Store.swift`
 - `Presentation.swift`
 - `Views.swift`
@@ -187,9 +188,12 @@ Launch at login is integrated through `SMAppService.mainApp`.
 
 ## Timer state
 
-File: `Sources/CountdownManager/CountdownTimer.swift`
+Files:
 
-`CountdownTimer` is a separate `@MainActor` `ObservableObject` because its duration/deadline semantics do not belong to the civil-day event model.
+- `Sources/CountdownManager/CountdownTimer.swift`
+- `Sources/CountdownManager/TimerCompletionAlert.swift`
+
+`CountdownTimer` is a separate `@MainActor` `ObservableObject` because its duration/deadline semantics do not belong to the civil-day event model. `TimerCompletionAlertPresenter` owns the short-lived, non-activating AppKit completion alert and sound.
 
 It owns:
 
@@ -197,9 +201,9 @@ It owns:
 - derived idle/running/finished state;
 - one-second presentation refresh while a deadline exists;
 - timer menu-bar title/tool-tip values;
-- local notification authorization, scheduling and cancellation.
+- a one-shot completion event when a running deadline is crossed.
 
-A persisted deadline in the past represents the finished state until the user deletes the timer. A stored future deadline beyond the longest two-hour preset is treated as invalid and cleared rather than converted into overflowing display seconds. Deleting removes both the local deadline and pending/delivered timer notification state.
+A persisted deadline in the past represents the finished state until the user deletes the timer. It does not replay the completion alert on launch. A stored future deadline beyond the longest two-hour preset is treated as invalid and cleared rather than converted into overflowing display seconds. Deleting removes the local deadline and dismisses a visible completion alert.
 
 ## UI preference state
 
@@ -251,7 +255,7 @@ File: `Sources/CountdownManager/Application.swift`
 
 `CountdownManagerApplication.run()` configures `NSApplication` as an accessory application. `AppDelegate` creates one status item, one borderless key-capable `NSPanel`, one `Store`, one `CountdownTimer` and one hosting controller at startup. It retains them through the session, starts diagnostics and supplies isolated test defaults/data when requested.
 
-`AppDelegate` merges Store and timer change notifications to update the status item. A running or finished timer temporarily overrides the normal event status title. It also acts as the notification-center delegate so the timer completion banner/sound may be presented while the accessory app is active.
+`AppDelegate` merges Store and timer change notifications to update the status item. A running or finished timer temporarily overrides the normal event status title. It subscribes to the timer's one-shot completion event so the application-owned alert and sound are presented while the accessory app is active.
 
 Status-item actions toggle the requested visibility state immediately. Show orders out any stale visible instance, positions the panel under the current status item, activates the accessory app and makes the panel key/front. Hide, full occlusion while requested visible, application deactivation, active-Space change and Command-W clear requested visibility and call `orderOut`. Ordinary startup does not open it. Isolated harnesses suppress these automatic lifecycle callbacks while verifying retained panel/hosting/root/list/editor state; observable anchoring, app-switch, Space and real status-item interaction remain release manual acceptance.
 

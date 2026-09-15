@@ -1,7 +1,6 @@
 import AppKit
-import SwiftUI
 import Combine
-import UserNotifications
+import SwiftUI
 
 public enum CountdownManagerApplication {
     @MainActor public static func run() {
@@ -19,13 +18,15 @@ private final class CountdownStatusPanel: NSPanel {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUserNotificationCenterDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
     private var hostingController: NSHostingController<CountdownManagerRootView>!
     private var store: Store!
     private var timer: CountdownTimer!
     private var subscription: AnyCancellable?
+    private var timerCompletionSubscription: AnyCancellable?
+    private let timerCompletionAlert = TimerCompletionAlertPresenter()
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
     private var isPanelRequestedVisible = false
@@ -47,7 +48,6 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             disclosureDefaults: defaults
         )
         timer = CountdownTimer(defaults: defaults)
-        UNUserNotificationCenter.current().delegate = self
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
@@ -97,6 +97,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             .sink { [weak self] _ in
                 DispatchQueue.main.async { self?.updateTitle() }
             }
+        timerCompletionSubscription = timer.completionPublisher
+            .sink { [weak self] in
+                self?.timerCompletionAlert.present()
+            }
         updateTitle()
         if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
             uiSmokeRuntime = UISmokeRuntime(
@@ -124,6 +128,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         statusItem.button?.title = title
         statusItem.button?.toolTip = timer.statusToolTip
             ?? (store.primary == nil ? "Добавить событие" : store.statusTitle)
+        if case .idle = timer.phase {
+            timerCompletionAlert.dismiss()
+        }
     }
 
     @objc private func togglePanel() {
@@ -208,14 +215,6 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         hidePanel(source: "active-space-change")
     }
 
-    nonisolated func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification,
-        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
-    ) {
-        completionHandler([.banner, .sound])
-    }
-
     private func recordShellLifecycle(_ event: String) {
         let occlusion = panel?.occlusionState.rawValue ?? 0
         DiagnosticLog.shared.record(
@@ -263,6 +262,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        timerCompletionAlert.dismiss()
         if let activeSpaceObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
             self.activeSpaceObserver = nil
