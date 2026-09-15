@@ -49,8 +49,13 @@ final class CountdownCoreTests {
         _ = try data.addSubtask(to: event.id, text: "Third", today: today)
         _ = try data.addSubtask(to: event.id, text: "Fourth", today: today)
         _ = try data.addSubtask(to: event.id, text: "Fifth", today: today)
-        XCTAssertEqual(data.items[0].subtasks.count, 5)
-        XCTAssertThrowsError(try data.addSubtask(to: event.id, text: "Sixth", today: today))
+        _ = try data.addSubtask(to: event.id, text: "Sixth", today: today)
+        _ = try data.addSubtask(to: event.id, text: "Seventh", today: today)
+        _ = try data.addSubtask(to: event.id, text: "Eighth", today: today)
+        _ = try data.addSubtask(to: event.id, text: "Ninth", today: today)
+        _ = try data.addSubtask(to: event.id, text: "Tenth", today: today)
+        XCTAssertEqual(data.items[0].subtasks.count, 10)
+        XCTAssertThrowsError(try data.addSubtask(to: event.id, text: "Eleventh", today: today))
 
         let originalIDs = data.items[0].subtasks.map(\.id)
         try data.toggleSubtask(eventID: event.id, subtaskID: firstID, today: today)
@@ -69,7 +74,7 @@ final class CountdownCoreTests {
         XCTAssertEqual(data.items[0].subtasks[1].text, "Edited")
 
         try data.deleteSubtask(eventID: event.id, subtaskID: secondID, today: today)
-        XCTAssertEqual(data.items[0].subtasks.count, 4)
+        XCTAssertEqual(data.items[0].subtasks.count, 9)
     }
 
     func testAllSubtasksCompletedDoesNotFinishEvent() throws {
@@ -221,20 +226,20 @@ final class CountdownCoreTests {
     func testRejectInvalidStoredDatesAndSubtasks() throws {
         let decoder = JSONDecoder()
         for json in [
-            #"{"year":2026,"month":2,"day":31}"#,
-            #"{"year":2026,"month":13,"day":1}"#,
-            #"{"year":0,"month":1,"day":1}"#
+            #"{\"year\":2026,\"month\":2,\"day\":31}"#,
+            #"{\"year\":2026,\"month\":13,\"day\":1}"#,
+            #"{\"year\":0,\"month\":1,\"day\":1}"#
         ] {
             XCTAssertThrowsError(try decoder.decode(Day.self, from: Data(json.utf8)))
         }
 
-        let prefix = #"{"id":"28B1DD31-4671-4BD1-AB0D-3F6232967299","title":"Stored","date":{"year":2027,"month":5,"day":1},"emoji":"☀️","subtasks":"#
-        let empty = #"[{"id":"18B1DD31-4671-4BD1-AB0D-3F6232967299","text":"   ","isCompleted":false}]}"#
+        let prefix = #"{\"id\":\"28B1DD31-4671-4BD1-AB0D-3F6232967299\",\"title\":\"Stored\",\"date\":{\"year\":2027,\"month\":5,\"day\":1},\"emoji\":\"☀️\",\"subtasks\":"#
+        let empty = #"[{\"id\":\"18B1DD31-4671-4BD1-AB0D-3F6232967299\",\"text\":\"   \",\"isCompleted\":false}]}"#
         let tooLong = "[{\"id\":\"18B1DD31-4671-4BD1-AB0D-3F6232967299\",\"text\":\"\(String(repeating: "x", count: 51))\",\"isCompleted\":false}]}"
-        let six = "[" + (1...6).map {
-            #"{"id":"00000000-0000-0000-0000-00000000000\#($0)","text":"Task","isCompleted":false}"#
+        let eleven = "[" + (1...11).map {
+            #"{\"id\":\"00000000-0000-0000-0000-0000000000\#(String(format: "%02d", $0))\",\"text\":\"Task\",\"isCompleted\":false}"#
         }.joined(separator: ",") + "]}"
-        for suffix in [empty, tooLong, six] {
+        for suffix in [empty, tooLong, eleven] {
             XCTAssertThrowsError(try decoder.decode(Countdown.self, from: Data((prefix + suffix).utf8)))
         }
 
@@ -242,7 +247,7 @@ final class CountdownCoreTests {
             title: "Too many",
             date: day(2027, 5, 1),
             emoji: "🎉",
-            subtasks: try (1...6).map { try Subtask(text: "Task \($0)") }
+            subtasks: try (1...11).map { try Subtask(text: "Task \($0)") }
         )
         XCTAssertThrowsError(try decoder.decode(Countdown.self, from: JSONEncoder().encode(tooMany)))
     }
@@ -281,7 +286,7 @@ final class CountdownCoreTests {
             title: "Invalid stored model",
             date: day(2027, 5, 1),
             emoji: "🎉",
-            subtasks: try (1...6).map { try Subtask(text: "Task \($0)") }
+            subtasks: try (1...11).map { try Subtask(text: "Task \($0)") }
         )]
         let invalidBytes = try JSONEncoder().encode(invalidData)
         try invalidBytes.write(to: invalidURL)
@@ -343,6 +348,6 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try checks.testRejectInvalidStoredDatesAndSubtasks()
         try await checks.testLegacyJSONMigrationAndNewModelRoundTrip()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
-        print("PASS unit: event validation, subtasks 0/1/5/6 and 50/51, trim, completion order, Today editing, expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
+        print("PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today editing, expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
     }
 }
