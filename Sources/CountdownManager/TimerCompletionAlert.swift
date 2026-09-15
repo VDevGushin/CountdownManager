@@ -124,7 +124,9 @@ final class TimerCompletionAlertPresenter {
     }
 
     private func playSound() {
-        if let sound = NSSound(named: NSSound.Name("Glass")) {
+        let bundledSound = Bundle.main.url(forResource: "TimerFinished", withExtension: "mp3")
+            .flatMap { NSSound(contentsOf: $0, byReference: true) }
+        if let sound = bundledSound ?? NSSound(named: NSSound.Name("Glass")) {
             self.sound = sound
             sound.stop()
             sound.play()

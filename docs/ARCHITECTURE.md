@@ -193,7 +193,7 @@ Files:
 - `Sources/CountdownManager/CountdownTimer.swift`
 - `Sources/CountdownManager/TimerCompletionAlert.swift`
 
-`CountdownTimer` is a separate `@MainActor` `ObservableObject` because its duration/deadline semantics do not belong to the civil-day event model. `TimerCompletionAlertPresenter` owns the short-lived, non-activating AppKit completion alert and sound.
+`CountdownTimer` is a separate `@MainActor` `ObservableObject` because its duration/deadline semantics do not belong to the civil-day event model. `TimerCompletionAlertPresenter` owns the short-lived, non-activating AppKit completion alert and plays the bundled `Resources/TimerFinished.mp3` sound, with the system `Glass` sound as a fallback.
 
 It owns:
 
