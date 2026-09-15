@@ -27,20 +27,6 @@ Accepted decisions define technical constraints and rationale within their scope
 
 Tests and current code are implementation evidence. If they conflict with current product truth or an accepted decision, surface the conflict instead of treating existing behaviour as automatically correct.
 
-## Product Freeze
-
-PRODUCT FREEZE is active until the Product Owner explicitly lifts it.
-
-While active:
-
-- do not add new features;
-- do not perform optional product or UX improvements;
-- do not silently change established user-visible semantics;
-- bug fixes are allowed;
-- data-safety work is allowed;
-- verification work is allowed;
-- harness maintenance is allowed.
-
 ## Scope
 
 Work only within the requested scope.
