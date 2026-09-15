@@ -3,7 +3,7 @@ import Combine
 import Foundation
 import SwiftUI
 
-package let countdownTimerPresetMinutes = [15, 30, 40, 60, 120]
+package let countdownTimerPresetMinutes = [5, 10, 15, 30, 40, 60, 120]
 package let countdownTimerMaximumMinutes = 120
 
 package func validatedTimerDeadline(timeIntervalSince1970: Double, now: Date) -> Date? {
