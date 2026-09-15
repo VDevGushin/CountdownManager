@@ -4,9 +4,9 @@
 
 Countdown Manager is a native macOS menu-bar application for tracking future events by calendar day.
 
-The product is intentionally small and quiet. The central concept is a future event date and the number of calendar days remaining until that date.
+The product is intentionally small and quiet. The central concept is a future event date and the number of calendar days remaining until that date. The application also provides one lightweight countdown timer for short time-based reminders.
 
-Countdown Manager is not a task manager, calendar replacement, reminder system, or notification product.
+Countdown Manager is not a task manager or calendar replacement. Outside the single timer completion alert, it does not provide event or subtask reminder workflows.
 
 The application does not require an account or internet connection.
 
@@ -21,13 +21,36 @@ The menu-bar entry opens a temporary panel anchored directly below the status it
 - Closing the panel, including through the standard close command, hides the interface without quitting the application.
 - When the user leaves the panel, including switching to another application or Space, it automatically hides. Returning to the original Space does not show it again; only a new status-item click does.
 - Hide/show preserves list browsing position, the current internal screen, an open editor and its unsaved input during the application session.
-- Automatic hiding, the close command and the status-item toggle never mean Save, Cancel or Discard. Quit ends the session; a subsequent launch may reset transient navigation, focus and unsaved drafts.
+- Automatic hiding, the close command and the status-item toggle never mean Save, Cancel or Discard. Quit ends the editing session, while an active timer continues according to its persisted deadline.
 
-There is one event editor inside the primary panel. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, application-owned emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
+The single timer is shown as a compact strip above the event interface. There is one event editor inside the primary panel. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, application-owned emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
 
 The editor contains the existing event fields, a plain display of the current emoji, compact presets and an `Ещё…` action that reveals a larger inline emoji catalog inside the editor. The expanded catalog is organized into five named sets: `Общие`, `Дети`, `Работа`, `Транспорт` and `Праздники`. Each set is a six-row/eight-column page. The current set name is shown above conventional previous/next controls with page dots, so navigation remains visually standard while the page meaning is explicit; horizontal drag/swipe may also change sets. The first set keeps the compact presets as its top row. Choosing an emoji from the expanded catalog replaces the current value and immediately collapses the catalog. The current emoji is not presented as an editable text field. New emoji selections come from the provided catalog; an existing stored valid emoji outside that catalog remains displayable and may be preserved until the user selects another one. Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
 
-Use ordinary controls inside the panel, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings. This shell correction does not authorize decorative redesign or new features.
+Use ordinary controls inside the panel, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
+
+## Timer
+
+Countdown Manager exposes exactly one timer.
+
+The timer has no user-editable name or task text. Its visual identity is simply `⏰`.
+
+When idle, the user may choose `15`, `30`, or `60` minutes, or enter a custom positive whole number of minutes, then start the timer.
+
+While running:
+
+- the interface shows `⏰` and the remaining time;
+- there is no Pause action;
+- the duration cannot be edited or extended;
+- the only timer action is Delete.
+
+Deleting the timer clears it immediately and cancels its timer notification.
+
+The timer uses an absolute deadline rather than decrementing persisted seconds. Closing or hiding the panel, quitting and relaunching the app, system sleep, and ordinary clock ticking do not reset the timer. Time elapsed while the app is not visible still counts.
+
+When the deadline is reached, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. Countdown Manager requests macOS notification permission and schedules one local notification with the title `⏰ Время вышло`. If notification permission is unavailable or denied, the timer still reaches its finished state inside the application.
+
+The timer is separate from events and subtasks. It does not create an event, a subtask, an archive item, or any other durable task record.
 
 ## Events
 
@@ -86,7 +109,7 @@ When at least one event exists, one event is primary.
 The primary event:
 
 - appears first in the event list;
-- is represented in the macOS menu bar.
+- supplies the normal event representation in the macOS menu bar when the timer is idle.
 
 The user may explicitly make another event primary.
 
@@ -151,7 +174,7 @@ It is stored separately from `countdowns.json` and restored across normal applic
 
 ## Menu bar
 
-The menu bar represents only the primary event.
+When the timer is idle, the menu bar represents only the primary event.
 
 Its normal event representation contains:
 
@@ -167,13 +190,15 @@ It does not display:
 - subtask completion controls;
 - subtask progress.
 
-When no events exist, the menu bar displays:
+While the timer is running, its representation temporarily takes precedence and the menu bar displays `⏰` plus the remaining timer value. When the timer is finished but not yet deleted, the menu bar displays `⏰`. Deleting the timer restores the normal primary-event representation.
+
+When no events exist and the timer is idle, the menu bar displays:
 
 `◷ Countdown`
 
 ## Empty state
 
-When no events exist, the main panel displays an empty state and provides an action to create a new event.
+When no events exist, the event area displays an empty state and provides an action to create a new event. The timer remains independently available.
 
 ## Editing and explicit actions
 
@@ -189,9 +214,11 @@ Cancel explicitly abandons the current unsaved editing action and returns to the
 
 Deleting an event is an explicit destructive action and requires confirmation before removal. Cancelling confirmation preserves the editor and draft. Successful deletion ends editing of that event and returns to the list; a failed deletion retains the working context and reports the error.
 
+Timer deletion is a separate lightweight action and does not require event-style confirmation.
+
 ### Session continuity
 
-Closing, toggling or automatically hiding the panel does not commit or discard input, dismiss the editor or reset navigation. Reopening through the status item presents the same in-memory panel, hosting hierarchy, root, list position and editing session on the current Space. No transient UI-state persistence is required across application restarts. The separately defined durable checklist-collapse preference is unaffected.
+Closing, toggling or automatically hiding the panel does not commit or discard input, dismiss the editor or reset navigation. Reopening through the status item presents the same in-memory panel, hosting hierarchy, list position and editing session on the current Space. No transient editor-state persistence is required across application restarts. The separately defined durable checklist-collapse preference and timer deadline are unaffected.
 
 If an event expires while its draft is open, expiry still applies to stored data. Keep the draft visible with an explanation that the event is no longer available; disable saving it as that event. Do not silently discard the input or recreate an expired event. Cancel remains available.
 
@@ -211,6 +238,8 @@ The production event data location is:
 
 `~/Library/Application Support/CountdownManager/countdowns.json`
 
+The single timer deadline is stored separately from event data in local application preferences. Timer ticking does not rewrite `countdowns.json` or perform per-second persistence writes.
+
 Stored data must preserve existing supported event content across normal application restarts and compatible application updates.
 
 Existing compatible data from older supported schema versions must remain readable unless an explicit future migration changes that contract.
@@ -219,7 +248,7 @@ Invalid or corrupted user data must fail safely.
 
 The application must not silently overwrite invalid user data merely to recover from a read failure.
 
-Newer successfully accepted state must not be replaced later by an older delayed persistence operation.
+Newer successfully accepted event state must not be replaced later by an older delayed persistence operation.
 
 The technical persistence design belongs in the relevant architecture decision.
 
@@ -227,7 +256,7 @@ The technical persistence design belongs in the relevant architecture decision.
 
 Countdown Manager does not require cloud storage or an online account for normal product behaviour.
 
-User event content remains local to the Mac.
+User event content and timer state remain local to the Mac.
 
 Diagnostics must not contain private event content such as:
 
@@ -247,6 +276,7 @@ Diagnostics may record technical facts such as:
 - operation type;
 - technical identifiers;
 - revision or ordering information;
+- timer duration or notification scheduling outcome;
 - success or failure;
 - UI-stall detection.
 
@@ -258,13 +288,14 @@ Countdown Manager currently does not provide:
 
 - user accounts;
 - cloud synchronization;
-- notifications;
-- reminders;
+- multiple timers;
+- named timers;
+- timer pause or snooze;
+- event or subtask notifications/reminders;
 - event archives;
 - overdue events;
 - automatic event rollover;
 - independent subtask dates;
-- subtask reminders;
 - subtask priorities;
 - nested subtasks.
 
