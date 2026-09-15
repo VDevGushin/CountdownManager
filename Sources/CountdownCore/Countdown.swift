@@ -71,7 +71,7 @@ public struct Day: Codable, Equatable, Comparable {
 }
 
 public struct Subtask: Identifiable, Codable, Equatable {
-    public static let maximumCount = 5
+    public static let maximumCount = 10
     public static let maximumTextLength = 50
 
     public let id: UUID
@@ -179,7 +179,7 @@ public enum CountdownError: LocalizedError {
         case .subtaskNotFound: return "Подзадача больше недоступна."
         case .subtaskText: return "Введите текст подзадачи."
         case .subtaskLength: return "Подзадача должна быть не длиннее 50 символов."
-        case .subtaskCount: return "У события может быть не больше пяти подзадач."
+        case .subtaskCount: return "У события может быть не больше десяти подзадач."
         }
     }
 }
