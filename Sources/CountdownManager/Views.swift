@@ -91,12 +91,16 @@ struct ManagerView: View {
                         Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                             .accessibilityIdentifier("event.note")
                     }
-                    Text(presentation.dateAndRemainingLabel)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundStyle(presentation.isToday ? Color.accentColor : Color.primary)
-                        .monospacedDigit()
-                        .lineLimit(1)
-                        .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
+                    ViewThatFits(in: .horizontal) {
+                        Text(presentation.dateAndRemainingLabel)
+                            .lineLimit(1)
+                        Text("\(presentation.dateLabel)\n\(presentation.remainingLabel)")
+                            .lineLimit(2)
+                    }
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(presentation.isToday ? Color.accentColor : Color.primary)
+                    .monospacedDigit()
+                    .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
                 }
                 Spacer(minLength: 4)
                 Button { Task { await store.makePrimary(item.id) } } label: {
