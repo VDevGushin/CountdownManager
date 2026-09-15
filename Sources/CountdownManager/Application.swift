@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Combine
+import UserNotifications
 
 public enum CountdownManagerApplication {
     @MainActor public static func run() {
@@ -18,11 +19,12 @@ private final class CountdownStatusPanel: NSPanel {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUserNotificationCenterDelegate {
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
-    private var hostingController: NSHostingController<ManagerView>!
+    private var hostingController: NSHostingController<CountdownManagerRootView>!
     private var store: Store!
+    private var timer: CountdownTimer!
     private var subscription: AnyCancellable?
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
@@ -39,19 +41,24 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         DiagnosticLog.shared.record("app.launch version=\(version) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
+        let defaults = uiSmokeConfiguration?.defaults ?? .standard
         store = Store(
             fileURL: uiSmokeConfiguration?.dataURL,
-            disclosureDefaults: uiSmokeConfiguration?.defaults ?? .standard
+            disclosureDefaults: defaults
         )
+        timer = CountdownTimer(defaults: defaults)
+        UNUserNotificationCenter.current().delegate = self
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
             button.action = #selector(togglePanel)
             button.setAccessibilityLabel("Countdown Manager")
         }
-        hostingController = NSHostingController(rootView: ManagerView(store: store))
+        hostingController = NSHostingController(
+            rootView: CountdownManagerRootView(timer: timer, store: store)
+        )
         panel = CountdownStatusPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 390, height: 540),
+            contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -86,9 +93,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             }
         }
         installApplicationMenu()
-        subscription = store.objectWillChange.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateTitle() }
-        }
+        subscription = Publishers.Merge(store.objectWillChange, timer.objectWillChange)
+            .sink { [weak self] _ in
+                DispatchQueue.main.async { self?.updateTitle() }
+            }
         updateTitle()
         if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
             uiSmokeRuntime = UISmokeRuntime(
@@ -112,8 +120,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func updateTitle() {
-        statusItem.button?.title = store.statusTitle
-        statusItem.button?.toolTip = store.primary == nil ? "Добавить событие" : store.statusTitle
+        let title = timer.statusTitle ?? store.statusTitle
+        statusItem.button?.title = title
+        statusItem.button?.toolTip = timer.statusToolTip
+            ?? (store.primary == nil ? "Добавить событие" : store.statusTitle)
     }
 
     @objc private func togglePanel() {
@@ -196,6 +206,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         recordShellLifecycle("active-space-did-change")
         guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
         hidePanel(source: "active-space-change")
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
     }
 
     private func recordShellLifecycle(_ event: String) {
