@@ -74,15 +74,18 @@ final class CountdownManagerXCUITests: XCTestCase {
 
     func testLongListPositionSurvivesEditorCancel() throws {
         var items = try persistedItems()
-        for number in 1...35 {
+        // A Debug-config XCU launch materializes the whole non-lazy list in the
+        // accessibility tree; a long-but-modest fixture keeps that affordable.
+        let lastScrollFixture = 18
+        for number in 1...lastScrollFixture {
             items.append(["id": scrollFixtureID(number), "title": "Scroll fixture \(number)",
                           "date": ["year": 2099, "month": 12, "day": 31], "emoji": "📅", "subtasks": []])
         }
         try writeItems(items)
         app.launch()
         let list = app.scrollViews["event.list"]
-        XCTAssertTrue(list.waitForExistence(timeout: 3))
-        let anchor = app.buttons["event.edit.\(scrollFixtureID(35))"]
+        XCTAssertTrue(list.waitForExistence(timeout: 15))
+        let anchor = app.buttons["event.edit.\(scrollFixtureID(lastScrollFixture))"]
         for _ in 0..<12 where !anchor.isHittable {
             list.swipeUp()
         }
