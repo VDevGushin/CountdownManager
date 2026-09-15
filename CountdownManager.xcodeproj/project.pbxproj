@@ -21,6 +21,9 @@
 		10000000000000000000000D /* libCountdownCore.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000D /* libCountdownCore.a */; };
 		10000000000000000000000E /* libCountdownManagerUI.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 20000000000000000000000E /* libCountdownManagerUI.a */; };
 		10000000000000000000000F /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* AppIcon.icns */; };
+		100000000000000000000010 /* CountdownTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* CountdownTimer.swift */; };
+		100000000000000000000011 /* TimerCompletionAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* TimerCompletionAlert.swift */; };
+		100000000000000000000012 /* TimerFinished.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* TimerFinished.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -47,6 +50,9 @@
 		20000000000000000000000F /* Countdown Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Countdown Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000010 /* CountdownManagerXCUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountdownManagerXCUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		200000000000000000000011 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Resources/AppIcon.icns; sourceTree = SOURCE_ROOT; };
+		200000000000000000000012 /* CountdownTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownManager/CountdownTimer.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000013 /* TimerCompletionAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownManager/TimerCompletionAlert.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000014 /* TimerFinished.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Resources/TimerFinished.mp3; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,9 +67,9 @@
 		600000000000000000000002 /* Products */ = {isa = PBXGroup; children = (20000000000000000000000D, 20000000000000000000000E, 20000000000000000000000F, 200000000000000000000010,); name = Products; sourceTree = "<group>"; };
 		600000000000000000000003 /* Sources */ = {isa = PBXGroup; children = (600000000000000000000004 /* CountdownCore */, 600000000000000000000005 /* CountdownManager */, 20000000000000000000000A /* App.swift */,); name = Sources; sourceTree = "<group>"; };
 		600000000000000000000004 /* CountdownCore */ = {isa = PBXGroup; children = (200000000000000000000001, 200000000000000000000002,); name = CountdownCore; sourceTree = "<group>"; };
-		600000000000000000000005 /* CountdownManager */ = {isa = PBXGroup; children = (200000000000000000000003, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009,); name = CountdownManager; sourceTree = "<group>"; };
+		600000000000000000000005 /* CountdownManager */ = {isa = PBXGroup; children = (200000000000000000000003, 200000000000000000000012, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000013, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009,); name = CountdownManager; sourceTree = "<group>"; };
 		600000000000000000000006 /* XCUITests */ = {isa = PBXGroup; children = (20000000000000000000000C,); name = XCUITests; sourceTree = "<group>"; };
-		600000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (20000000000000000000000B, 200000000000000000000011,); name = Resources; sourceTree = "<group>"; };
+		600000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (20000000000000000000000B, 200000000000000000000011, 200000000000000000000014,); name = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -78,12 +84,12 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		710000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000F /* AppIcon.icns in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+		710000000000000000000001 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000F /* AppIcon.icns in Resources */, 100000000000000000000012 /* TimerFinished.mp3 in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		700000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000001, 100000000000000000000002,); runOnlyForDeploymentPostprocessing = 0; };
-		700000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000003, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000007, 100000000000000000000008, 100000000000000000000009,); runOnlyForDeploymentPostprocessing = 0; };
+		700000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000003, 100000000000000000000010, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000011, 100000000000000000000007, 100000000000000000000008, 100000000000000000000009,); runOnlyForDeploymentPostprocessing = 0; };
 		700000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000A,); runOnlyForDeploymentPostprocessing = 0; };
 		700000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000B,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
