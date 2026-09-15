@@ -93,7 +93,7 @@ The implementation uses one borderless `NSPanel` anchored to the status item and
 NSApplication / AppDelegate
 ├── NSStatusItem
 ├── Store → CountdownData / CountdownRepository → countdowns.json
-├── CountdownTimer → UserDefaults + UNUserNotificationCenter
+├── CountdownTimer → UserDefaults
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -115,7 +115,7 @@ Panel positioning and visibility are shell responsibilities. The borderless pane
 
 Views route event mutations through `Store`. `Store` coordinates domain state and asynchronous event persistence; `CountdownData` owns validation/mutations, and `CountdownRepository` owns serialized filesystem access.
 
-Timer mutations route through `CountdownTimer`. It stores one absolute deadline in `UserDefaults`, derives remaining time from the current clock, publishes second-level UI updates only while a deadline exists, and schedules/cancels one local notification through `UNUserNotificationCenter`. It never writes timer ticks into event persistence.
+Timer mutations route through `CountdownTimer`. It stores one absolute deadline in `UserDefaults`, derives remaining time from the current clock, publishes second-level UI updates only while a deadline exists, and emits a one-shot completion event when a running deadline is crossed. It never writes timer ticks into event persistence and schedules no system notifications.
 
 ## Domain model
 

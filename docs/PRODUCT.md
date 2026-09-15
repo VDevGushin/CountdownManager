@@ -278,7 +278,7 @@ Diagnostics may record technical facts such as:
 - operation type;
 - technical identifiers;
 - revision or ordering information;
-- timer duration or notification scheduling outcome;
+- timer duration or completion outcome;
 - success or failure;
 - UI-stall detection.
 
