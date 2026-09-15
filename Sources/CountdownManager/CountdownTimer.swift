@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 import SwiftUI
@@ -42,6 +43,10 @@ final class CountdownTimer: ObservableObject {
                     self.now = currentDate
                 }
             }
+
+        if let deadline, deadline > now {
+            scheduleNotification(for: deadline)
+        }
     }
 
     var phase: Phase {
