@@ -48,7 +48,7 @@ Deleting the timer clears it immediately and dismisses any visible completion al
 
 The timer uses an absolute deadline rather than decrementing persisted seconds. Closing or hiding the panel, quitting and relaunching the app, system sleep, and ordinary clock ticking do not reset the timer. Time elapsed while the app is not visible still counts.
 
-When the deadline is reached while Countdown Manager is running, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. The application also plays its bundled completion sound and presents its own non-activating completion alert above other windows for several seconds. This alert does not depend on macOS notification permission.
+When the deadline is reached while Countdown Manager is running, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. The application also plays its bundled completion sound and presents its own non-activating completion alert above other windows for five seconds. The menu-bar alarm keeps rocking until the user deletes the finished timer; with Reduce Motion enabled, it pulses instead. This alert does not depend on macOS notification permission.
 
 Countdown Manager does not schedule a system notification. If the application is not running when the deadline passes, relaunching it restores the finished state without replaying the sound or completion alert.
 

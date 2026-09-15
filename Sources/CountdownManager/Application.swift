@@ -1,6 +1,28 @@
 import AppKit
 import Combine
+import QuartzCore
 import SwiftUI
+
+package let timerAttentionAnimationKey = "countdown.timer.attention"
+
+package func makeTimerAttentionAnimation(reduceMotion: Bool) -> CAAnimation {
+    if reduceMotion {
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = 1
+        pulse.toValue = 0.45
+        pulse.duration = 0.65
+        pulse.autoreverses = true
+        pulse.repeatCount = .greatestFiniteMagnitude
+        return pulse
+    }
+
+    let shake = CAKeyframeAnimation(keyPath: "transform.rotation.z")
+    shake.values = [0, -0.16, 0.16, -0.12, 0.12, 0]
+    shake.keyTimes = [0, 0.2, 0.4, 0.6, 0.8, 1]
+    shake.duration = 0.72
+    shake.repeatCount = .greatestFiniteMagnitude
+    return shake
+}
 
 public enum CountdownManagerApplication {
     @MainActor public static func run() {
@@ -29,6 +51,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private let timerCompletionAlert = TimerCompletionAlertPresenter()
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
+    private var accessibilityDisplayObserver: NSObjectProtocol?
     private var isPanelRequestedVisible = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -92,6 +115,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 self?.activeSpaceDidChange()
             }
         }
+        accessibilityDisplayObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.restartTimerAttentionAnimation()
+            }
+        }
         installApplicationMenu()
         subscription = Publishers.Merge(store.objectWillChange, timer.objectWillChange)
             .sink { [weak self] _ in
@@ -128,9 +160,35 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         statusItem.button?.title = title
         statusItem.button?.toolTip = timer.statusToolTip
             ?? (store.primary == nil ? "Добавить событие" : store.statusTitle)
+        updateTimerAttentionAnimation()
         if case .idle = timer.phase {
             timerCompletionAlert.dismiss()
         }
+    }
+
+    private func updateTimerAttentionAnimation() {
+        guard let button = statusItem.button else { return }
+        guard case .finished = timer.phase else {
+            if button.layer?.animation(forKey: timerAttentionAnimationKey) != nil {
+                button.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
+                DiagnosticLog.shared.record("timer.attention-animation stopped")
+            }
+            return
+        }
+        button.wantsLayer = true
+        guard let layer = button.layer else { return }
+        guard layer.animation(forKey: timerAttentionAnimationKey) == nil else { return }
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let animation = makeTimerAttentionAnimation(reduceMotion: reduceMotion)
+        layer.add(animation, forKey: timerAttentionAnimationKey)
+        DiagnosticLog.shared.record(
+            "timer.attention-animation started mode=\(reduceMotion ? "pulse" : "shake")"
+        )
+    }
+
+    private func restartTimerAttentionAnimation() {
+        statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
+        updateTimerAttentionAnimation()
     }
 
     @objc private func togglePanel() {
@@ -262,10 +320,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
         timerCompletionAlert.dismiss()
         if let activeSpaceObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
             self.activeSpaceObserver = nil
+        }
+        if let accessibilityDisplayObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(accessibilityDisplayObserver)
+            self.accessibilityDisplayObserver = nil
         }
         MainThreadWatchdog.shared.stop()
         DiagnosticLog.shared.record("app.terminate")

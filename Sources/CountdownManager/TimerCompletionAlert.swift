@@ -1,8 +1,9 @@
 import AppKit
 
+package let timerCompletionAlertDisplayDuration: TimeInterval = 5
+
 @MainActor
 final class TimerCompletionAlertPresenter {
-    private let displayDuration: TimeInterval = 8
     private var panel: NSPanel?
     private var sound: NSSound?
     private var dismissWorkItem: DispatchWorkItem?
@@ -27,7 +28,10 @@ final class TimerCompletionAlertPresenter {
             self?.dismiss()
         }
         dismissWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + displayDuration, execute: workItem)
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + timerCompletionAlertDisplayDuration,
+            execute: workItem
+        )
         DiagnosticLog.shared.record("timer.completion-alert presented")
     }
 

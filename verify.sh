@@ -82,6 +82,7 @@ run_ui_checks() {
     cp "$bin_path/CountdownManager" "$app_path/Contents/MacOS/CountdownManager"
     cp Resources/Info.plist "$app_path/Contents/Info.plist"
     cp Resources/AppIcon.icns "$app_path/Contents/Resources/AppIcon.icns"
+    cp Resources/TimerFinished.mp3 "$app_path/Contents/Resources/TimerFinished.mp3"
     /usr/bin/codesign --force --sign - "$app_path"
     /usr/bin/codesign --verify --deep --strict "$app_path"
     app_executable="$app_path/Contents/MacOS/CountdownManager"

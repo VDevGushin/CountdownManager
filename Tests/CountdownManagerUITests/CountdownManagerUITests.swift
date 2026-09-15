@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import CountdownCore
 import CountdownManagerUI
 
@@ -42,6 +43,13 @@ enum UIChecks {
         // The timer exposes only bounded presets and cannot overflow display seconds.
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
         precondition(countdownTimerMaximumMinutes == 120)
+        precondition(timerCompletionAlertDisplayDuration == 5)
+        let shake = makeTimerAttentionAnimation(reduceMotion: false)
+        precondition(shake is CAKeyframeAnimation)
+        precondition(shake.repeatCount == Float.greatestFiniteMagnitude)
+        let reducedMotionPulse = makeTimerAttentionAnimation(reduceMotion: true)
+        precondition(reducedMotionPulse is CABasicAnimation)
+        precondition(reducedMotionPulse.repeatCount == Float.greatestFiniteMagnitude)
         precondition(countdownTimerLabel(7_200) == "2:00:00")
         let timerNow = Date(timeIntervalSince1970: 1_000_000)
         precondition(validatedTimerDeadline(timeIntervalSince1970: timerNow.addingTimeInterval(7_200).timeIntervalSince1970, now: timerNow) != nil)
