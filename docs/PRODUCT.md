@@ -37,7 +37,7 @@ An event contains:
 - an optional note;
 - a calendar date;
 - one emoji;
-- zero to five subtasks.
+- zero to ten subtasks.
 
 Multiple events may use the same date.
 
@@ -106,7 +106,7 @@ Their order must not change merely because titles or other content change.
 
 ## Subtasks
 
-An event may contain between zero and five subtasks.
+An event may contain between zero and ten subtasks.
 
 A subtask contains:
 
