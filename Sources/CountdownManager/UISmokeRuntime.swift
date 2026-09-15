@@ -271,7 +271,10 @@ final class UISmokeRuntime {
         try await waitForFirstResponder("editor.title")
         try insertText("Window smoke event")
         try await focusAndReplace("editor.note", with: "Private synthetic note")
-        for text in ["Alpha", "Beta", "Gamma", "Delta", "Epsilon"] {
+        for text in [
+            "Alpha", "Beta", "Gamma", "Delta", "Epsilon",
+            "Zeta", "Eta", "Theta", "Iota", "Kappa",
+        ] {
             let before = Set(controls.ids(withPrefix: "editor.subtask."))
             try await press("editor.subtask.add")
             try await waitFor("new subtask") {
@@ -282,7 +285,7 @@ final class UISmokeRuntime {
             try insertText(text)
             try await waitForValue(field, equals: text)
         }
-        try require(controls.entries["editor.subtask.add"] == nil, "sixth subtask must not be available")
+        try require(controls.entries["editor.subtask.add"] == nil, "eleventh subtask must not be available")
         try await press("editor.emoji.preset.1f680")
         try await waitForValue("editor.emoji", equals: "🚀")
         try await hideAndShow()
@@ -291,9 +294,9 @@ final class UISmokeRuntime {
         try await press("editor.save")
         try await waitFor("save") { self.store.active.count == 1 && self.controls.entries["editor.new"] == nil }
         let item = try requireValue(store.active.first, "saved event")
-        try require(item.subtasks.count == 5 && item.emoji == "🚀" && item.note == "Private synthetic note", "editor fields not saved")
+        try require(item.subtasks.count == 10 && item.emoji == "🚀" && item.note == "Private synthetic note", "editor fields not saved")
         try require(store.data.primaryID == item.id, "first event must be primary")
-        pass("single editor persists note, emoji and five subtasks only on Save")
+        pass("single editor persists note, emoji and ten subtasks only on Save")
         let task = item.subtasks[0]
         let toggle = "subtask.toggle.\(task.id.uuidString)"
         try await waitForElement(toggle)
