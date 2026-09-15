@@ -177,13 +177,13 @@ enum UIChecks {
         try quickData.deleteSubtask(eventID: futureItem.id, subtaskID: quickID, today: today)
         quickRow = CountdownRowPresentation(item: quickData.items[0], today: today, primaryID: quickData.primaryID)
         precondition(quickRow.completionLabel == nil) // Last deletion removes the disclosure state.
-        for number in 1...5 {
+        for number in 1...10 {
             _ = try quickData.addSubtask(to: futureItem.id, text: "Task \(number)", today: today)
         }
-        precondition(quickData.items[0].subtasks.count == 5)
+        precondition(quickData.items[0].subtasks.count == 10)
         do {
-            _ = try quickData.addSubtask(to: futureItem.id, text: "Sixth", today: today)
-            fatalError("The sixth quick subtask must be rejected")
+            _ = try quickData.addSubtask(to: futureItem.id, text: "Eleventh", today: today)
+            fatalError("The eleventh quick subtask must be rejected")
         } catch {}
 
         // Collapse state is separate from countdown JSON and survives a new persistence instance.
@@ -275,7 +275,7 @@ enum UIChecks {
 
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data")
     }
 
     @MainActor
