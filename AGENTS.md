@@ -78,11 +78,25 @@ Do not invoke platform research for ordinary domain or data logic.
 
 ## Code quality
 
-Follow current Swift, SwiftUI, AppKit, and macOS platform conventions.
+For implementation and non-trivial code review, use:
 
-Prefer standard platform APIs and controls over custom lifecycle, interaction, or state-restoration machinery.
+`.agents/skills/swift-code-quality/SKILL.md`
 
-Keep types and views focused on one coherent responsibility. When code accumulates unrelated UI, state ownership, platform integration, diagnostics, or verification responsibilities, split it along those boundaries.
+Write code according to current Swift, SwiftUI, AppKit, and macOS best practices. Prefer current first-party platform guidance and documented APIs over folklore, historical workarounds, or custom infrastructure.
+
+When API or platform semantics materially affect correctness, architecture, lifecycle, concurrency, accessibility, or user-visible behaviour, verify the assumption against current Apple or official Swift documentation. Use the macOS platform research skill when that uncertainty requires investigation rather than ordinary reference checking.
+
+Prefer standard platform APIs and controls over custom lifecycle, interaction, state-restoration, or dependency machinery.
+
+Keep types and views focused on one coherent responsibility. Split code along real ownership, state, UI, platform, side-effect, or verification boundaries rather than file size or line count.
+
+Make state ownership and mutation authority clear. A piece of mutable state should have one coherent owner unless synchronization or replication is an explicit part of the design.
+
+Keep side effects at explicit boundaries with a clear owner. Do not scatter persistence, notifications, timers, filesystem access, process interaction, window management, or other effects across unrelated views and models.
+
+Make concurrency requirements explicit in the code. Use actor isolation and `@MainActor` where they are part of the contract; do not rely on incidental call-site behaviour for thread safety.
+
+Do not introduce protocols, dependency containers, factories, wrappers, or other abstractions for hypothetical future flexibility. Add an abstraction when a real boundary, alternate implementation, substitution need, or independently meaningful contract exists now.
 
 Prefer composable SwiftUI views when the split represents a real UI or state responsibility.
 
