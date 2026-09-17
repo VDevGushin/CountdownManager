@@ -50,6 +50,7 @@ enum UIChecks {
         let reducedMotionPulse = makeTimerAttentionAnimation(reduceMotion: true)
         precondition(reducedMotionPulse is CABasicAnimation)
         precondition(reducedMotionPulse.repeatCount == Float.greatestFiniteMagnitude)
+        precondition(makeTimerRunningPulseAnimation().repeatCount == Float.greatestFiniteMagnitude)
         precondition(countdownTimerLabel(7_200) == "2:00:00")
         let timerNow = Date(timeIntervalSince1970: 1_000_000)
         precondition(validatedTimerDeadline(timeIntervalSince1970: timerNow.addingTimeInterval(7_200).timeIntervalSince1970, now: timerNow) != nil)

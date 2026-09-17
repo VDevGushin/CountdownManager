@@ -73,9 +73,9 @@ final class CountdownTimer: ObservableObject {
         case .idle:
             return nil
         case let .running(remainingSeconds):
-            return "⏰ \(countdownTimerLabel(remainingSeconds))"
+            return countdownTimerLabel(remainingSeconds)
         case .finished:
-            return "⏰"
+            return ""
         }
     }
 

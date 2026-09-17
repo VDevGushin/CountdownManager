@@ -4,8 +4,21 @@ import QuartzCore
 import SwiftUI
 
 package let timerAttentionAnimationKey = "countdown.timer.attention"
+package let timerRunningPulseKey = "countdown.timer.running-pulse"
 
-package func makeTimerAttentionAnimation(reduceMotion: Bool) -> CAAnimation {
+private func footRockTransform(angle: CGFloat, size: CGSize, hop: CGFloat) -> CATransform3D {
+    // The status button layer is geometry-flipped (origin top-left, y down):
+    // the visual bottom edge is y == size.height and an upward hop is negative
+    // y. Each tilt pivots on its own bottom corner — the foot the alarm rocks
+    // onto — rather than on a shared midpoint.
+    let pivotX = angle < 0 ? 0 : size.width
+    var transform = CATransform3DTranslate(CATransform3DIdentity, pivotX, size.height, 0)
+    transform = CATransform3DRotate(transform, angle, 0, 0, 1)
+    transform = CATransform3DTranslate(transform, -pivotX, -size.height, 0)
+    return CATransform3DTranslate(transform, 0, -hop, 0)
+}
+
+package func makeTimerAttentionAnimation(reduceMotion: Bool, wiggleSize: CGSize = .zero) -> CAAnimation {
     if reduceMotion {
         let pulse = CABasicAnimation(keyPath: "opacity")
         pulse.fromValue = 1
@@ -16,12 +29,41 @@ package func makeTimerAttentionAnimation(reduceMotion: Bool) -> CAAnimation {
         return pulse
     }
 
-    let shake = CAKeyframeAnimation(keyPath: "transform.rotation.z")
-    shake.values = [0, -0.16, 0.16, -0.12, 0.12, 0]
-    shake.keyTimes = [0, 0.2, 0.4, 0.6, 0.8, 1]
-    shake.duration = 0.72
-    shake.repeatCount = .greatestFiniteMagnitude
-    return shake
+    // Hops from foot to foot like a ringing mechanical alarm clock: corner
+    // pivots with a small lift and a snappy asymmetric rhythm, not a smooth
+    // pendulum sway.
+    let angle: CGFloat = 0.22
+    let hop: CGFloat = 1.5
+    let rock = CAKeyframeAnimation(keyPath: "transform")
+    rock.values = [
+        CATransform3DIdentity,
+        footRockTransform(angle: -angle, size: wiggleSize, hop: hop),
+        CATransform3DIdentity,
+        footRockTransform(angle: angle, size: wiggleSize, hop: hop),
+        CATransform3DIdentity,
+    ]
+    rock.keyTimes = [0, 0.22, 0.5, 0.72, 1]
+    rock.timingFunctions = [
+        CAMediaTimingFunction(name: .easeOut),
+        CAMediaTimingFunction(name: .easeInEaseOut),
+        CAMediaTimingFunction(name: .easeOut),
+        CAMediaTimingFunction(name: .easeInEaseOut),
+    ]
+    rock.duration = 0.5
+    rock.repeatCount = .greatestFiniteMagnitude
+    return rock
+}
+
+package func makeTimerRunningPulseAnimation() -> CABasicAnimation {
+    // A gentle breath of the whole status item; the remaining-time text stays
+    // readable throughout.
+    let pulse = CABasicAnimation(keyPath: "opacity")
+    pulse.fromValue = 1
+    pulse.toValue = 0.78
+    pulse.duration = 1.1
+    pulse.autoreverses = true
+    pulse.repeatCount = .greatestFiniteMagnitude
+    return pulse
 }
 
 public enum CountdownManagerApplication {
@@ -156,9 +198,17 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func updateTitle() {
-        let title = timer.statusTitle ?? store.statusTitle
-        statusItem.button?.title = title
-        statusItem.button?.toolTip = timer.statusToolTip
+        guard let button = statusItem.button else { return }
+        if let timerTitle = timer.statusTitle {
+            button.image = Self.timerStatusIcon
+            button.imagePosition = timerTitle.isEmpty ? .imageOnly : .imageLeft
+            button.title = timerTitle
+        } else {
+            button.image = nil
+            button.imagePosition = .noImage
+            button.title = store.statusTitle
+        }
+        button.toolTip = timer.statusToolTip
             ?? (store.primary == nil ? "Добавить событие" : store.statusTitle)
         updateTimerAttentionAnimation()
         if case .idle = timer.phase {
@@ -166,28 +216,51 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
     }
 
+    private static let timerStatusIcon: NSImage? = {
+        let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .regular)
+        return NSImage(systemSymbolName: "alarm.fill", accessibilityDescription: nil)?
+            .withSymbolConfiguration(configuration)
+    }()
+
     private func updateTimerAttentionAnimation() {
         guard let button = statusItem.button else { return }
-        guard case .finished = timer.phase else {
-            if button.layer?.animation(forKey: timerAttentionAnimationKey) != nil {
-                button.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
-                DiagnosticLog.shared.record("timer.attention-animation stopped")
-            }
-            return
-        }
         button.wantsLayer = true
         guard let layer = button.layer else { return }
-        guard layer.animation(forKey: timerAttentionAnimationKey) == nil else { return }
-        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        let animation = makeTimerAttentionAnimation(reduceMotion: reduceMotion)
-        layer.add(animation, forKey: timerAttentionAnimationKey)
-        DiagnosticLog.shared.record(
-            "timer.attention-animation started mode=\(reduceMotion ? "pulse" : "shake")"
-        )
+
+        switch timer.phase {
+        case .finished:
+            stopStatusAnimation(layer, key: timerRunningPulseKey, stoppedLog: "timer.running-pulse stopped")
+            guard layer.animation(forKey: timerAttentionAnimationKey) == nil else { return }
+            let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            layer.add(
+                makeTimerAttentionAnimation(reduceMotion: reduceMotion, wiggleSize: layer.bounds.size),
+                forKey: timerAttentionAnimationKey
+            )
+            DiagnosticLog.shared.record(
+                "timer.attention-animation started mode=\(reduceMotion ? "pulse" : "rock")"
+            )
+        case .running:
+            stopStatusAnimation(layer, key: timerAttentionAnimationKey, stoppedLog: "timer.attention-animation stopped")
+            guard layer.animation(forKey: timerRunningPulseKey) == nil else { return }
+            layer.add(makeTimerRunningPulseAnimation(), forKey: timerRunningPulseKey)
+            DiagnosticLog.shared.record("timer.running-pulse started")
+        case .idle:
+            stopStatusAnimation(layer, key: timerAttentionAnimationKey, stoppedLog: "timer.attention-animation stopped")
+            stopStatusAnimation(layer, key: timerRunningPulseKey, stoppedLog: "timer.running-pulse stopped")
+        }
+    }
+
+    private func stopStatusAnimation(_ layer: CALayer, key: String, stoppedLog: String) {
+        guard layer.animation(forKey: key) != nil else { return }
+        layer.removeAnimation(forKey: key)
+        DiagnosticLog.shared.record(stoppedLog)
     }
 
     private func restartTimerAttentionAnimation() {
-        statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
+        if let layer = statusItem.button?.layer {
+            layer.removeAnimation(forKey: timerAttentionAnimationKey)
+            layer.removeAnimation(forKey: timerRunningPulseKey)
+        }
         updateTimerAttentionAnimation()
     }
 
@@ -321,6 +394,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     func applicationWillTerminate(_ notification: Notification) {
         statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
+        statusItem.button?.layer?.removeAnimation(forKey: timerRunningPulseKey)
         timerCompletionAlert.dismiss()
         if let activeSpaceObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(activeSpaceObserver)
