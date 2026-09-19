@@ -1,0 +1,41 @@
+{
+  "description": "Countdown Manager Swift edit and completion gates.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/swift_harness.py\" session-start",
+            "timeout": 30,
+            "statusMessage": "Preparing Swift verification state"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/swift_harness.py\" post-tool-use",
+            "timeout": 120,
+            "statusMessage": "Linting changed Swift files"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/swift_harness.py\" stop",
+            "timeout": 1200,
+            "statusMessage": "Running Swift completion gates"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,159 +1,91 @@
-# Countdown Manager — Verification
+# Countdown Manager — Verification Surfaces
 
-## Purpose
+This file is the project-specific map of available verification commands, what they can prove, and where they stop. Product acceptance methodology lives in `.agents/skills/product-qa/SKILL.md`.
 
-Verification should answer one question: does the changed behaviour work without breaking relevant existing behaviour?
-
-Use the cheapest reliable surface that exercises the actual failure mode. Do not run every suite by default, and do not build custom automation for interactions that the driver cannot reproduce faithfully.
-
-Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence, not product truth.
-
-## Verification surfaces
-
-Countdown Manager has four useful verification surfaces:
-
-- `CoreChecks` — domain, validation and persistence behaviour;
-- `UIChecks` — deterministic presentation and application-state behaviour;
-- `Real UI Smoke` — the real SwiftUI/AppKit runtime in an isolated environment;
-- `XCUITest` — external keyboard/button interaction when XCU can deliver the interaction without changing the contract under test.
-
-These are not an escalation ladder. Pick the smallest relevant set.
+Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that contract, not a replacement for it.
 
 ## Commands
 
-### Fast
+| Surface | Command | Cost and scope |
+| --- | --- | --- |
+| SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
+| CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
+| Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
+| Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
+| XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 
-```sh
-./verify.sh fast
-```
+SwiftLint must be available on `PATH`; on macOS install it with `brew install swiftlint`.
 
-Runs `CoreChecks` and `UIChecks`.
+Codex hooks run SwiftLint only on changed Swift files after an edit. Before a Swift task completes, they run full SwiftLint and `./verify.sh fast`. Real UI Smoke and XCUITest remain evidence selected for the actual runtime risk; they are not automatic gates for unrelated Swift work.
 
-Use for domain, persistence, deterministic presentation and application-state changes.
+## CoreChecks
 
-### Real UI
+`CoreChecks` covers behaviour without application UI:
 
-```sh
-./verify.sh ui
-```
+- input validation and limits;
+- date calculations and expiry;
+- event and subtask ordering;
+- JSON backward compatibility;
+- repository behaviour and persistence revision handling.
 
-Builds a release application bundle in a temporary isolated environment and runs the current Real UI Smoke scenarios.
+It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility interaction, or window behaviour.
 
-Use when the real SwiftUI/AppKit runtime matters: view construction, hosting/root identity, editor lifecycle, scroll/draft continuity, focus/responder behaviour that can be reproduced in-process, or main-thread stalls.
+## UIChecks
 
-### Combined
+`UIChecks` covers deterministic presentation and application-state behaviour:
 
-```sh
-./verify.sh full
-```
+- menu-bar and human-readable date formatting;
+- editor validity, drafts, grouping, and disclosure state;
+- presentation state transitions;
+- persistence coordination visible to the UI layer.
 
-Runs `fast` followed by `ui`.
+It does not prove real AppKit event routing, external keyboard delivery, system focus, application switching, or Spaces behaviour.
 
-Use only when both deterministic checks and the real runtime are relevant.
+## Real UI Smoke
 
-### XCUITest
+`./verify.sh ui` builds a release application bundle from the current source tree in a temporary isolated environment. It exercises the real SwiftUI/AppKit hierarchy in process.
 
-```sh
-./run-xcui-tests.sh
-```
+Current capabilities include:
 
-Runs the external macOS UI suite through Xcode in isolated test data.
+- view construction and hosted root identity;
+- panel/editor/list continuity across supported in-process hide/show paths;
+- draft and scroll continuity;
+- rendered control state;
+- focus/responder paths reproducible in process;
+- main-thread stall detection.
 
-Prefer targeted XCU tests while developing. Run the whole suite when the change has broad external-interaction risk or before a release checkpoint.
+Limitations:
 
-## What each surface proves
+- it cannot prove that macOS delivered an external app switch, Space change, or status-item activation as a user would;
+- test-mode lifecycle suppression or direct internal actions are not evidence of production system behaviour;
+- configuration and property assertions support evidence but do not prove the corresponding user-visible interaction.
 
-### CoreChecks
+## XCUITest
 
-Use for behaviour that can be proven without the application UI, including validation, date calculations, expiry, ordering, JSON compatibility, repository behaviour and persistence revision handling.
+`./run-xcui-tests.sh` builds with temporary DerivedData and isolated test data.
 
-CoreChecks do not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility interaction or window behaviour.
+Current reliable capabilities include keyboard entry, normal application buttons, and Command-W after the application is active.
 
-### UIChecks
+Do not treat Finder anchoring, coordinate clicks, repeated timing loops, or custom driver machinery as reliable proof of status-item activation, application switching, or Spaces lifecycle. Those approaches can change the lifecycle under test and remain diagnostic only.
 
-Use for deterministic presentation/state logic such as menu-bar formatting, editor validity, draft behaviour, grouping, disclosure state and persistence coordination.
+## Manual-only macOS acceptance
 
-UIChecks do not prove real AppKit event routing or system interaction.
+The current automation cannot faithfully reproduce these system interactions. Verify only the scenarios relevant to the changed contract:
 
-### Real UI Smoke
+1. A fresh-launch status-item click opens an arrowless panel directly below the status item.
+2. Hiding and reopening preserves the same in-memory session when required by the product contract.
+3. Rapid repeated status-item clicks produce one immediate visibility toggle per distinct click.
+4. Switching to another application hides the panel.
+5. Switching Spaces hides the old panel without losing the editor or draft; returning does not reopen it, including after a rapid return.
+6. Clicking the status item from another Space keeps that Space active and opens below its status item.
+7. The panel has no arrow, title bar, or traffic-light controls and cannot be dragged as a standalone window.
 
-Real UI Smoke launches the actual application runtime with isolated data. It is useful for regressions that need the real window/view hierarchy.
+If a future driver can reproduce one of these interactions without altering it, replace that manual limitation with reliable automation.
 
-It can prove things such as retained panel/hosting/root identity, session continuity through supported in-process panel hide/show paths, editor/draft continuity, rendered control state and runtime responsiveness.
-
-It does not prove that macOS delivered an external app-switch, Space change or status-item activation exactly as a user would perform it. Test-mode lifecycle suppression or direct internal actions must not be described as proof of production system behaviour.
-
-Configuration and property assertions are supporting evidence only. For example, setting `moveToActiveSpace`, registering a Space callback, or calculating an anchored panel frame does not by itself prove the corresponding user-visible behaviour.
-
-### XCUITest
-
-Use XCUITest when the interaction itself is part of the contract and XCU can perform that interaction faithfully.
-
-Current reliable examples include keyboard entry, normal application buttons and Command-W after the application is active.
-
-Do not add Finder anchoring, coordinate-click workarounds, repeated timing loops or custom XCU driver machinery to simulate status-item activation, application switching or Spaces when the automation changes the lifecycle under test or cannot reliably deliver the action.
-
-A flaky or lifecycle-altering driver is diagnostic noise, not a release gate.
-
-## System-level macOS behaviour
-
-Some shell behaviour is currently best accepted manually because the available automation cannot reproduce it without affecting the result.
-
-When a change touches these contracts, manually verify only the relevant scenarios:
-
-1. status-item click opens an arrowless panel directly below the status item from a fresh launch;
-2. hiding and reopening preserves the same in-memory session when that is the product contract;
-3. rapid repeated status-item clicks produce one immediate visibility toggle per distinct click;
-4. switching to another application hides the panel;
-5. switching Spaces hides the old panel without losing the current editor/draft, and returning does not show it again, including an immediate return during a rapid transition;
-6. clicking the status item from another Space keeps the user on that Space and opens the panel below that Space's status item;
-7. the panel has no arrow, title bar or traffic-light controls and cannot be dragged as a standalone window.
-
-Do not require this checklist for unrelated changes.
-
-Manual acceptance should be short and tied to the changed behaviour. If a future automation driver can faithfully reproduce one of these interactions, replace that manual step with the reliable automated check.
-
-## Test isolation
+## Isolation and provenance
 
 Never mutate production Countdown Manager data during tests.
 
-Real UI Smoke and XCUITest must use explicit isolated data/defaults/log locations. If safe isolation cannot be established, do not run a mutating verification path.
+Real UI Smoke and XCUITest require explicit isolated data, defaults, and log locations. If safe isolation cannot be established, do not run the mutating verification path.
 
-## Bundle provenance
-
-Runtime evidence only applies to the bundle that was actually built and exercised.
-
-`./verify.sh ui` builds from the current source tree before running smoke checks. `./run-xcui-tests.sh` builds through the current Xcode project using temporary DerivedData.
-
-Do not treat an old `.app` as evidence for current source unless its provenance is known.
-
-## Choosing verification
-
-Use this rule of thumb:
-
-- domain or persistence change → `./verify.sh fast`;
-- deterministic UI/state change → `./verify.sh fast`;
-- real SwiftUI/AppKit runtime change → `./verify.sh ui` or `./verify.sh full` when fast coverage is also relevant;
-- external keyboard/button interaction → targeted XCUITest;
-- app-switch, Spaces or status-item lifecycle → manual acceptance until a reliable external driver exists.
-
-Add lower-level regression coverage when it protects a real failure mode. Do not duplicate the same assertion across every layer merely to make verification look stronger.
-
-## Failures
-
-A failing check can come from product code, stale tests, the test driver, platform behaviour or the environment.
-
-Classify the failure before changing production code to satisfy it.
-
-If a verification tool is unreliable, downgrade or remove that tool rather than making product code accommodate the test harness.
-
-## Reporting
-
-Report only material facts:
-
-- what changed;
-- which relevant checks ran and whether they passed;
-- what behaviour remains unverified;
-- any real blocker or remaining risk.
-
-No fixed readiness template or mandatory escalation sequence is required.
+Runtime evidence applies only to the bundle that was built and exercised. `./verify.sh ui` builds from the current source tree; `./run-xcui-tests.sh` builds through the current Xcode project. An old `.app` is not evidence for current source unless its provenance is known.

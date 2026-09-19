@@ -172,9 +172,15 @@ Do not add dependency injection frameworks for a small dependency graph. Prefer 
 
 Do not create wrappers that merely rename an Apple or Swift API without adding a meaningful contract.
 
+Before adding a component, view, controller, helper, or modifier that is almost the same as an existing one, inspect whether the existing implementation can be reused or composed. Near-duplicate components create competing ownership and make fixes drift.
+
+Extract shared behaviour when the common semantics and variation points are real today. Do not force small or coincidental duplication into a generic abstraction whose contract is still unclear. Reuse and DRY are decision criteria, not a reason for premature abstraction.
+
 ## 9 — Keep types cohesive
 
 A type should have one coherent reason to change.
+
+A large controller or view is a signal to review responsibilities, not an automatic line-count violation. Identify whether it owns multiple independent state, lifecycle, platform, effect, or presentation concerns. Split only along one of those real responsibility boundaries.
 
 Split a type when it accumulates unrelated responsibilities such as:
 
@@ -270,6 +276,12 @@ Do not expose internals, add production switches, introduce unnecessary protocol
 
 When a bug can be represented reliably below a system-interaction boundary, add or update focused regression coverage at that level.
 
+Regression coverage is the norm:
+
+- a new feature adds or updates an automated test for its important observable behaviour;
+- a bug fix adds a test that reproduces the failure and protects the corrected contract;
+- if the scenario cannot be automated reliably without changing the behaviour under test or introducing a flaky driver, record that reason and define explicit manual acceptance through the product QA workflow.
+
 When automation cannot faithfully reproduce the real interaction, follow `docs/VERIFICATION.md` rather than distorting production code for automation.
 
 ## 16 — Review the diff, not just the result
@@ -302,8 +314,11 @@ A coding change is ready for verification when:
 - concurrency assumptions are explicit and justified;
 - platform-sensitive behaviour follows current first-party guidance or has been investigated;
 - abstractions exist only for current, meaningful boundaries;
+- existing components were reused where their contract fits, without introducing a speculative abstraction;
+- large controllers or views were checked for mixed responsibilities rather than judged by line count alone;
 - the diff contains no unrelated architectural cleanup;
 - relevant persisted-data compatibility has been considered;
+- new features and bug fixes have focused regression coverage, or an explicit reliable-automation limitation and manual acceptance path;
 - the changed failure mode can be verified using `docs/VERIFICATION.md`.
 
 Then run only the verification required by the changed behaviour and failure mode.
