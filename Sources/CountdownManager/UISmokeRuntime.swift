@@ -286,6 +286,16 @@ final class UISmokeRuntime {
             try await waitForValue(field, equals: text)
         }
         try require(controls.entries["editor.subtask.add"] == nil, "eleventh subtask must not be available")
+        try await press("editor.emoji.more")
+        try await waitForValue("editor.emoji.category", equals: "Общие")
+        try await waitFor("unique expanded emoji controls") {
+            self.controls.ids(withPrefix: "editor.emoji.option.").count == 232
+        }
+        try await press("editor.emoji.page.dot.2")
+        try await waitForValue("editor.emoji.category", equals: "Дети")
+        try await press("editor.emoji.option.page.2.row.1.column.1.1f476")
+        try await waitForValue("editor.emoji", equals: "👶")
+        try await waitForValue("editor.emoji.more", equals: "collapsed")
         try await press("editor.emoji.preset.1f680")
         try await waitForValue("editor.emoji", equals: "🚀")
         try await hideAndShow()

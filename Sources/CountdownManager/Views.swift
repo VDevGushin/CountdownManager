@@ -8,6 +8,7 @@ struct ManagerView: View {
     @State private var editing: Countdown?
     @State private var showingEditor = false
     @State private var rootIdentity = UUID()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,7 +53,7 @@ struct ManagerView: View {
                     ForEach(store.active) { item in row(item) }
                 }
                 .padding(12)
-                .animation(.easeInOut(duration: 0.2), value: store.data.primaryID)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.data.primaryID)
             }
             .accessibilityIdentifier("event.list")
             .uiSmokeControl(id: "event.list")
@@ -112,7 +113,12 @@ struct ManagerView: View {
                 .buttonStyle(.plain)
                 .help(presentation.isPrimary ? "Основное событие" : "Сделать основным событием")
                 .accessibilityIdentifier("event.primary.\(item.id.uuidString)")
-                .accessibilityLabel("Сделать основным событием: \(item.title)")
+                .accessibilityLabel(
+                    presentation.isPrimary
+                        ? "Основное событие: \(item.title)"
+                        : "Сделать основным событием: \(item.title)"
+                )
+                .accessibilityValue(presentation.isPrimary ? "Выбрано" : "Не выбрано")
                 Button { edit(item) } label: {
                     Image(systemName: "pencil").frame(width: 28, height: 28)
                 }
@@ -184,6 +190,7 @@ private struct SubtaskChecklistView: View {
     let presentation: CountdownRowPresentation
 
     @ObservedObject private var disclosureState: SubtaskDisclosureState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
         store: Store,
@@ -230,7 +237,7 @@ private struct SubtaskChecklistView: View {
                 .accessibilityIdentifier("subtasks.list")
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: item.subtasks.map(\.isCompleted))
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: item.subtasks.map(\.isCompleted))
     }
 
     @ViewBuilder
@@ -553,7 +560,8 @@ struct EditorView: View {
                 Text(draft.emoji)
                     .font(.system(size: 26))
                     .frame(width: 36, height: 32)
-                    .accessibilityLabel("Emoji события")
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("Текущий emoji: \(draft.emoji)")
                     .accessibilityIdentifier("editor.emoji")
                     .uiSmokeControl(id: "editor.emoji", value: { draft.emoji })
                 Button(showingMoreEmoji ? "Скрыть" : "Ещё…", action: toggleMoreEmoji)
@@ -574,11 +582,13 @@ struct EditorView: View {
             } else {
                 HStack(spacing: Self.emojiSpacing) {
                     ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
-                        emojiButton(symbol, identifierPrefix: "editor.emoji.preset")
+                        emojiButton(
+                            symbol,
+                            identifier: "editor.emoji.preset.\(emojiIdentifier(symbol))"
+                        )
                     }
                 }
                 .frame(height: Self.emojiCellHeight, alignment: .top)
-                .accessibilityIdentifier("editor.emoji.quick")
                 .uiSmokeControl(id: "editor.emoji.quick", value: { "1x8" })
                 .transition(.opacity)
             }
@@ -591,6 +601,7 @@ struct EditorView: View {
                 ForEach(0..<Self.emojiPageCount, id: \.self) { page in
                     emojiPageGrid(page)
                         .frame(width: Self.emojiPageWidth, alignment: .leading)
+                        .accessibilityHidden(page != emojiPage)
                 }
             }
             .offset(x: -CGFloat(emojiPage) * Self.emojiPageWidth)
@@ -602,7 +613,6 @@ struct EditorView: View {
             .clipped()
             .contentShape(Rectangle())
             .gesture(emojiPageSwipe)
-            .accessibilityIdentifier("editor.emoji.expanded")
             .uiSmokeControl(
                 id: "editor.emoji.expanded",
                 value: { "6x8 page \(emojiPage + 1)/\(Self.emojiPageCount)" }
@@ -634,9 +644,12 @@ struct EditorView: View {
                         let symbol = Self.emojiRows[row][column]
                         emojiButton(
                             symbol,
-                            identifierPrefix: row == 0 && column < EventEmojiCatalog.presets.count
-                                ? "editor.emoji.preset"
-                                : "editor.emoji.option"
+                            identifier: emojiPageIdentifier(
+                                page: page,
+                                row: row,
+                                column: column - startColumn,
+                                symbol: symbol
+                            )
                         )
                     }
                 }
@@ -667,7 +680,7 @@ struct EditorView: View {
                         Circle()
                             .fill(page == emojiPage ? Color.primary : Color.secondary.opacity(0.35))
                             .frame(width: 6, height: 6)
-                            .frame(width: 14, height: 20)
+                            .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
@@ -699,7 +712,6 @@ struct EditorView: View {
         }
         .frame(width: Self.emojiPageWidth, alignment: .center)
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("editor.emoji.pagination")
         .uiSmokeControl(
             id: "editor.emoji.page",
             value: { "\(emojiPage + 1)/\(Self.emojiPageCount)" }
@@ -720,7 +732,7 @@ struct EditorView: View {
             }
     }
 
-    private func emojiButton(_ symbol: String, identifierPrefix: String) -> some View {
+    private func emojiButton(_ symbol: String, identifier: String) -> some View {
         Button(symbol) {
             chooseEmoji(symbol)
         }
@@ -729,12 +741,20 @@ struct EditorView: View {
         .frame(width: Self.emojiCellWidth, height: Self.emojiCellHeight)
         .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 6))
-        .accessibilityLabel("Выбрать \(symbol)")
-        .accessibilityIdentifier("\(identifierPrefix).\(emojiIdentifier(symbol))")
+        .accessibilityLabel("Emoji: \(symbol)")
+        .accessibilityValue(draft.emoji == symbol ? "Выбрано" : "Не выбрано")
+        .accessibilityIdentifier(identifier)
         .uiSmokeControl(
-            id: "\(identifierPrefix).\(emojiIdentifier(symbol))",
+            id: identifier,
             action: { chooseEmoji(symbol) }
         )
+    }
+
+    private func emojiPageIdentifier(page: Int, row: Int, column: Int, symbol: String) -> String {
+        let prefix = row == 0 && page == 0 && column < EventEmojiCatalog.presets.count
+            ? "editor.emoji.preset"
+            : "editor.emoji.option"
+        return "\(prefix).page.\(page + 1).row.\(row + 1).column.\(column + 1).\(emojiIdentifier(symbol))"
     }
 
     private func chooseEmoji(_ symbol: String) {

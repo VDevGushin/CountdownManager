@@ -59,6 +59,35 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(try persistedItems().count, 1)
     }
 
+    func testAccessibilityDescribesPrimaryAndCurrentEmoji() throws {
+        app.launch()
+        let primary = app.buttons["event.primary.\(eventID)"]
+        XCTAssertTrue(primary.waitForExistence(timeout: 3))
+        XCTAssertEqual(primary.label, "Основное событие: XCUITest Event")
+        XCTAssertEqual(primary.value as? String, "Выбрано")
+
+        openEditor()
+        let currentEmoji = app.descendants(matching: .any)["editor.emoji"]
+        XCTAssertTrue(currentEmoji.waitForExistence(timeout: 3))
+        XCTAssertEqual(currentEmoji.label, "Текущий emoji: 🎉")
+
+        app.scrollViews["editor.scroll"].swipeUp()
+        let selectedPreset = app.buttons["editor.emoji.preset.1f389"]
+        XCTAssertTrue(selectedPreset.waitForExistence(timeout: 3))
+        XCTAssertEqual(selectedPreset.label, "Emoji: 🎉")
+        XCTAssertEqual(selectedPreset.value as? String, "Выбрано")
+
+        app.buttons["editor.emoji.more"].click()
+        app.scrollViews["editor.scroll"].swipeUp()
+        let secondPageDot = app.buttons["editor.emoji.page.dot.2"]
+        XCTAssertTrue(secondPageDot.waitForExistence(timeout: 3))
+        XCTAssertTrue(secondPageDot.isHittable)
+        let secondPageOption = app.buttons["editor.emoji.option.page.2.row.1.column.1.1f476"]
+        XCTAssertTrue(waitForAbsence(secondPageOption))
+        secondPageDot.click()
+        XCTAssertTrue(secondPageOption.waitForExistence(timeout: 3))
+    }
+
     func testUtilityChromeAndKeyboardClose() {
         app.launch()
         openEditor()

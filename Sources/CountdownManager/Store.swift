@@ -52,32 +52,40 @@ package final class SubtaskDisclosureCache {
 @MainActor
 package final class Store: ObservableObject {
     @Published package private(set) var data = CountdownData()
-    @Published private(set) var today = Day(Date())
+    @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
     @Published var error: String?
     @Published private(set) var loginStatus = SMAppService.mainApp.status
     private let fileURL: URL
     private let repository: CountdownRepository
     private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
+    private let now: () -> Date
     private let disclosureCache: SubtaskDisclosureCache
     private var readFailed = false
     private var revision = 0
     private var durableRevision = 0
     private var durableData = CountdownData()
     private var inFlightPersistenceRevisions: Set<Int> = []
+    private var isRecoveringPersistence = false
+    private var recoveryMutationInFlight = false
+    private var persistenceRecoveryWaiters: [CheckedContinuation<Void, Never>] = []
+    private var needsDeferredNormalization = false
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
 
     package init(
         fileURL: URL? = nil,
         disclosureDefaults: UserDefaults = .standard,
-        persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil
+        persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil,
+        now: @escaping () -> Date = Date.init
     ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
         self.fileURL = resolvedURL
+        today = Day(now())
         repository = CountdownRepository(fileURL: resolvedURL)
         self.persistenceSaveOverride = persistenceSaveOverride
+        self.now = now
         disclosureCache = SubtaskDisclosureCache(
             persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults)
         )
@@ -128,8 +136,8 @@ package final class Store: ObservableObject {
         disclosureState(for: eventID).setExpanded(isExpanded)
     }
 
-    func refresh() {
-        let currentDay = Day(Date())
+    package func refresh() {
+        let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         if !isLoading && !readFailed {
             var updated = data
@@ -137,11 +145,15 @@ package final class Store: ObservableObject {
             if updated != data {
                 let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
                 DiagnosticLog.shared.record("data.normalize removed=\(data.items.count - updated.items.count)")
-                stagePersistence(
-                    updated,
-                    reason: "normalize",
-                    disclosureCleanup: removedEventIDs
-                )
+                if isRecoveringPersistence {
+                    needsDeferredNormalization = true
+                } else {
+                    stagePersistence(
+                        updated,
+                        reason: "normalize",
+                        disclosureCleanup: removedEventIDs
+                    )
+                }
             }
         }
         let currentLoginStatus = SMAppService.mainApp.status
@@ -162,6 +174,7 @@ package final class Store: ObservableObject {
         reason: String,
         disclosureCleanup: Set<UUID> = []
     ) {
+        guard !isRecoveringPersistence else { return }
         revision += 1
         let writeRevision = revision
         inFlightPersistenceRevisions.insert(writeRevision)
@@ -219,6 +232,7 @@ package final class Store: ObservableObject {
             )
             return true
         } catch {
+            isRecoveringPersistence = true
             finishPersistenceRevision(writeRevision)
             DiagnosticLog.shared.record("data.save failure error=\(error.localizedDescription)")
             self.error = "Не удалось сохранить изменения: \(error.localizedDescription)"
@@ -230,12 +244,55 @@ package final class Store: ObservableObject {
         inFlightPersistenceRevisions.remove(writeRevision)
         if inFlightPersistenceRevisions.isEmpty {
             data = durableData
+            startNextRecoveryMutationIfReady()
         }
     }
 
+    private func waitForPersistenceRecoveryIfNeeded() async -> Bool {
+        guard isRecoveringPersistence else { return false }
+        await withCheckedContinuation { continuation in
+            persistenceRecoveryWaiters.append(continuation)
+            startNextRecoveryMutationIfReady()
+        }
+        return true
+    }
+
+    private func finishRecoveryMutation() {
+        recoveryMutationInFlight = false
+        startNextRecoveryMutationIfReady()
+    }
+
+    private func startNextRecoveryMutationIfReady() {
+        guard isRecoveringPersistence,
+              !recoveryMutationInFlight,
+              inFlightPersistenceRevisions.isEmpty else { return }
+        guard !persistenceRecoveryWaiters.isEmpty else {
+            isRecoveringPersistence = false
+            persistDeferredNormalizationIfNeeded()
+            return
+        }
+        recoveryMutationInFlight = true
+        persistenceRecoveryWaiters.removeFirst().resume()
+    }
+
+    private func persistDeferredNormalizationIfNeeded() {
+        guard needsDeferredNormalization else { return }
+        needsDeferredNormalization = false
+        let currentDay = Day(now())
+        if currentDay != today { today = currentDay }
+        var updated = data
+        updated.normalize(today: today)
+        guard updated != data else { return }
+        let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
+        DiagnosticLog.shared.record("data.normalize deferred removed=\(data.items.count - updated.items.count)")
+        stagePersistence(updated, reason: "normalize", disclosureCleanup: removedEventIDs)
+    }
+
     package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
-        let currentDay = Day(Date())
+        let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         var updated = data
         // Check at the mutation boundary: an editor task may run after expiry/removal.
@@ -257,10 +314,12 @@ package final class Store: ObservableObject {
     }
 
     func addSubtask(to eventID: UUID, text: String) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("subtask.add begin event=\(eventID.uuidString)")
         var updated = data
         do {
-            _ = try updated.addSubtask(to: eventID, text: text, today: Day(Date()))
+            _ = try updated.addSubtask(to: eventID, text: text, today: Day(now()))
         } catch {
             DiagnosticLog.shared.record("subtask.add rejected event=\(eventID.uuidString) error=\(error.localizedDescription)")
             self.error = error.localizedDescription
@@ -276,10 +335,12 @@ package final class Store: ObservableObject {
     }
 
     func editSubtask(eventID: UUID, subtaskID: UUID, text: String) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("subtask.edit begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
-            try updated.editSubtask(eventID: eventID, subtaskID: subtaskID, text: text, today: Day(Date()))
+            try updated.editSubtask(eventID: eventID, subtaskID: subtaskID, text: text, today: Day(now()))
         } catch {
             DiagnosticLog.shared.record("subtask.edit rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
             self.error = error.localizedDescription
@@ -289,10 +350,12 @@ package final class Store: ObservableObject {
     }
 
     func deleteSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("subtask.delete begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
-            try updated.deleteSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(Date()))
+            try updated.deleteSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(now()))
         } catch {
             DiagnosticLog.shared.record("subtask.delete rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
             self.error = error.localizedDescription
@@ -307,10 +370,12 @@ package final class Store: ObservableObject {
     }
 
     func toggleSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("subtask.toggle begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
-            try updated.toggleSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(Date()))
+            try updated.toggleSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(now()))
         } catch {
             DiagnosticLog.shared.record("subtask.toggle rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
             self.error = error.localizedDescription
@@ -320,7 +385,9 @@ package final class Store: ObservableObject {
     }
 
     func makePrimary(_ id: UUID) async {
-        let currentDay = Day(Date())
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
+        let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         var updated = data
         updated.normalize(today: today)
@@ -332,9 +399,11 @@ package final class Store: ObservableObject {
 
     @discardableResult
     func delete(_ id: UUID) async -> Bool {
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
         DiagnosticLog.shared.record("countdown.delete id=\(id.uuidString)")
         var updated = data
-        updated.delete(id, today: Day(Date()))
+        updated.delete(id, today: Day(now()))
         let didDelete = await commit(updated, reason: "countdown.delete")
         if didDelete { disclosureCache.remove(eventID: id) }
         return didDelete

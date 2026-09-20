@@ -294,6 +294,12 @@ enum UIChecks {
         try await testOverlappingPersistenceOutcomesRestoreLatestDurableSnapshot(
             in: directory.appendingPathComponent("overlapping-failures", isDirectory: true)
         )
+        try await testFailedPersistenceDoesNotLeakIntoLaterMutation(
+            in: directory.appendingPathComponent("failed-mutation-recovery", isDirectory: true)
+        )
+        try await testDeferredNormalizationPersistsAfterRecovery(
+            in: directory.appendingPathComponent("deferred-normalization", isDirectory: true)
+        )
 
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
 
@@ -386,6 +392,143 @@ enum UIChecks {
         }
     }
 
+    @MainActor
+    private static func testFailedPersistenceDoesNotLeakIntoLaterMutation(in directory: URL) async throws {
+        for firstWriteSucceeds in [true, false] {
+            for recoveryWriteSucceeds in [true, false] {
+                let scenarioDirectory = directory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+            let fileURL = scenarioDirectory.appendingPathComponent("countdowns.json")
+            let repository = CountdownRepository(fileURL: fileURL)
+            let suiteName = "CountdownManagerFailedMutation.\(UUID().uuidString)"
+            let defaults = UserDefaults(suiteName: suiteName)!
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+
+            let today = Day(Date())
+            let baseline = Countdown(title: "Baseline", date: futureDay(1, from: today), emoji: "0️⃣")
+            var baselineData = CountdownData()
+            try baselineData.save(baseline, primary: true, today: today)
+            _ = try await repository.save(baselineData, revision: 0)
+
+            let gate = ControlledPersistence(repository: repository)
+            let store = Store(
+                fileURL: fileURL,
+                disclosureDefaults: defaults,
+                persistenceSaveOverride: { data, revision in
+                    try await gate.save(data, revision: revision)
+                }
+            )
+            while store.isLoading { await Task.yield() }
+
+            let first = Countdown(title: "First", date: futureDay(2, from: today), emoji: "1️⃣")
+            let failed = Countdown(title: "Failed", date: futureDay(3, from: today), emoji: "2️⃣")
+            let recovery = Countdown(title: "Recovery", date: futureDay(4, from: today), emoji: "3️⃣")
+            let later = Countdown(title: "Later", date: futureDay(5, from: today), emoji: "4️⃣")
+            let firstSave = Task { @MainActor in await store.save(first, primary: false) }
+            await gate.waitForRequest(revision: 1)
+            let failedSave = Task { @MainActor in await store.save(failed, primary: false) }
+            await gate.waitForRequest(revision: 2)
+
+            await gate.fail(revision: 2)
+            let didFail = await failedSave.value
+            precondition(!didFail)
+            let recoverySave = Task { @MainActor in await store.save(recovery, primary: false) }
+            let laterSave = Task { @MainActor in await store.save(later, primary: false) }
+
+            if firstWriteSucceeds {
+                try await gate.succeed(revision: 1)
+            } else {
+                await gate.fail(revision: 1)
+            }
+            _ = await firstSave.value
+            await gate.waitForRequest(revision: 3)
+            let hasLaterRequestBeforeRecovery = await gate.hasRequest(revision: 4)
+            precondition(!hasLaterRequestBeforeRecovery)
+            if recoveryWriteSucceeds {
+                try await gate.succeed(revision: 3)
+            } else {
+                await gate.fail(revision: 3)
+            }
+            let didSaveRecovery = await recoverySave.value
+            precondition(didSaveRecovery == recoveryWriteSucceeds)
+            await gate.waitForRequest(revision: 4)
+            try await gate.succeed(revision: 4)
+            let didSaveLater = await laterSave.value
+            precondition(didSaveLater)
+
+            var expected = baselineData
+            if firstWriteSucceeds {
+                try expected.save(first, primary: false, today: today)
+            }
+            if recoveryWriteSucceeds {
+                try expected.save(recovery, primary: false, today: today)
+            }
+            try expected.save(later, primary: false, today: today)
+            let diskData = try await CountdownRepository(fileURL: fileURL).load()
+            precondition(diskData == expected)
+            precondition(store.data == expected)
+            precondition(!store.data.items.contains(where: { $0.id == failed.id }))
+            if recoveryWriteSucceeds {
+                precondition(store.data.items.contains(where: { $0.id == recovery.id }))
+            } else {
+                precondition(!store.data.items.contains(where: { $0.id == recovery.id }))
+            }
+            }
+        }
+    }
+
+    @MainActor
+    private static func testDeferredNormalizationPersistsAfterRecovery(in directory: URL) async throws {
+        let fileURL = directory.appendingPathComponent("countdowns.json")
+        let suiteName = "CountdownManagerDeferredNormalization.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        var currentDate = Date()
+        let initialDay = Day(currentDate)
+        let expiring = Countdown(title: "Expires", date: initialDay, emoji: "⌛️")
+        let first = Countdown(title: "Survives", date: futureDay(2, from: initialDay), emoji: "✅")
+        let failed = Countdown(title: "Failed", date: futureDay(3, from: initialDay), emoji: "❌")
+        var baselineData = CountdownData()
+        baselineData.items = [expiring]
+        baselineData.primaryID = expiring.id
+
+        let repository = CountdownRepository(fileURL: fileURL)
+        _ = try await repository.save(baselineData, revision: 0)
+        let gate = ControlledPersistence(repository: repository)
+        let store = Store(
+            fileURL: fileURL,
+            disclosureDefaults: defaults,
+            persistenceSaveOverride: { data, revision in
+                try await gate.save(data, revision: revision)
+            },
+            now: { currentDate }
+        )
+        while store.isLoading { await Task.yield() }
+
+        let firstSave = Task { @MainActor in await store.save(first, primary: false) }
+        await gate.waitForRequest(revision: 1)
+        let failedSave = Task { @MainActor in await store.save(failed, primary: false) }
+        await gate.waitForRequest(revision: 2)
+        await gate.fail(revision: 2)
+        let didFail = await failedSave.value
+        precondition(!didFail)
+
+        currentDate = Day.calendar.date(byAdding: .day, value: 1, to: initialDay.date())!
+        store.refresh()
+
+        try await gate.succeed(revision: 1)
+        let didSaveFirst = await firstSave.value
+        precondition(didSaveFirst)
+        await gate.waitForRequest(revision: 3)
+        try await gate.succeed(revision: 3)
+        await Task.yield()
+
+        precondition(store.data.items.map(\.id) == [first.id])
+        let diskData = try await CountdownRepository(fileURL: fileURL).load()
+        precondition(diskData.items.map(\.id) == [first.id])
+        precondition(!diskData.items.contains(where: { $0.id == failed.id }))
+    }
+
     private static func futureDay(_ offset: Int, from today: Day) -> Day {
         Day(Day.calendar.date(byAdding: .day, value: offset, to: today.date())!)
     }
@@ -413,6 +556,7 @@ private actor ControlledPersistence {
     private let repository: CountdownRepository
     private var requests: [Int: Request] = [:]
     private var requestCountWaiters: [(count: Int, continuation: CheckedContinuation<Void, Never>)] = []
+    private var revisionWaiters: [Int: [CheckedContinuation<Void, Never>]] = [:]
 
     init(repository: CountdownRepository) {
         self.repository = repository
@@ -422,6 +566,19 @@ private actor ControlledPersistence {
         return try await withCheckedThrowingContinuation { continuation in
             requests[revision] = Request(data: data, continuation: continuation)
             resumeSatisfiedWaiters()
+            let waiters = revisionWaiters.removeValue(forKey: revision) ?? []
+            waiters.forEach { $0.resume() }
+        }
+    }
+
+    func hasRequest(revision: Int) -> Bool {
+        requests[revision] != nil
+    }
+
+    func waitForRequest(revision: Int) async {
+        if requests[revision] != nil { return }
+        await withCheckedContinuation { continuation in
+            revisionWaiters[revision, default: []].append(continuation)
         }
     }
 
