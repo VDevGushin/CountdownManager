@@ -2,14 +2,24 @@ import AppKit
 import CountdownCore
 import Darwin
 import Foundation
+import QuartzCore
+import SwiftUI
+
+@MainActor
+final class UISmokeVisualEnvironment: ObservableObject {
+    @Published var colorSchemeOverride: ColorScheme?
+}
 
 struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
+    static let captureLaunchArgument = "--ui-smoke-captures"
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
+    static let visualPreviewLaunchArgument = "--visual-preview"
+    static let visualPreviewMarkerName = ".countdown-visual-preview-environment"
 
     let homeURL: URL
     let resultURL: URL
@@ -20,12 +30,22 @@ struct UISmokeConfiguration {
         ProcessInfo.processInfo.arguments.contains(launchArgument)
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
+            || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
     }
 
     static var xcuiTestWasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(xcuiTestLaunchArgument)
     }
 
+    static var visualPreviewWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(visualPreviewLaunchArgument)
+    }
+
+    static var requiresIsolatedTestHome: Bool {
+        wasRequested || xcuiTestWasRequested || visualPreviewWasRequested
+    }
+
+    // Visual preview isolates data but deliberately keeps production shell lifecycle callbacks.
     static var isolatedTestEnvironmentWasRequested: Bool {
         wasRequested || xcuiTestWasRequested
     }
@@ -38,43 +58,88 @@ struct UISmokeConfiguration {
         ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
     }
 
+    static var captureWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
+    }
+
     static func load() throws -> UISmokeConfiguration? {
-        guard isolatedTestEnvironmentWasRequested else { return nil }
+        guard requiresIsolatedTestHome else { return nil }
+        let smokeArguments = [
+            launchArgument,
+            collapseRegressionLaunchArgument,
+            editorScrollRegressionLaunchArgument,
+            captureLaunchArgument,
+        ]
+        .filter { ProcessInfo.processInfo.arguments.contains($0) }
+        guard smokeArguments.count <= 1 else {
+            throw Failure("only one UI smoke mode can be requested")
+        }
+        guard !(visualPreviewWasRequested && (wasRequested || xcuiTestWasRequested)) else {
+            throw Failure("visual preview cannot be combined with UI smoke or XCUITest arguments")
+        }
         let environment = ProcessInfo.processInfo.environment
         guard let rawHome = environment["COUNTDOWN_MANAGER_TEST_HOME"], !rawHome.isEmpty else {
             throw Failure("COUNTDOWN_MANAGER_TEST_HOME is required")
         }
         let homeURL = URL(fileURLWithPath: rawHome, isDirectory: true)
             .standardizedFileURL.resolvingSymlinksInPath()
-        let requiredMarker = xcuiTestWasRequested ? xcuiTestMarkerName : markerName
+        let requiredMarker: String
+        if visualPreviewWasRequested {
+            requiredMarker = visualPreviewMarkerName
+        } else if xcuiTestWasRequested {
+            requiredMarker = xcuiTestMarkerName
+        } else {
+            requiredMarker = markerName
+        }
         guard FileManager.default.fileExists(atPath: homeURL.appendingPathComponent(requiredMarker).path) else {
             throw Failure("test-home marker is missing")
         }
-        if let accountHome = environment["HOME"] {
-            let productionSupport = URL(fileURLWithPath: accountHome, isDirectory: true)
-                .appendingPathComponent("Library/Application Support/CountdownManager", isDirectory: true)
-                .standardizedFileURL.resolvingSymlinksInPath()
-            guard homeURL.path != productionSupport.path,
-                  !homeURL.path.hasPrefix(productionSupport.path + "/"),
-                  !productionSupport.path.hasPrefix(homeURL.path + "/") else {
-                throw Failure("test home overlaps production Application Support")
-            }
+        let productionSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        )[0]
+        .appendingPathComponent("CountdownManager", isDirectory: true)
+        .standardizedFileURL.resolvingSymlinksInPath()
+        guard homeURL.path != productionSupport.path,
+              !homeURL.path.hasPrefix(productionSupport.path + "/"),
+              !productionSupport.path.hasPrefix(homeURL.path + "/") else {
+            throw Failure("test home overlaps production Application Support")
         }
         let resultURL = homeURL.appendingPathComponent("ui-smoke-result.txt")
         let suiteName = "local.countdownmanager.ui-smoke.\(homeURL.deletingLastPathComponent().lastPathComponent).\(homeURL.lastPathComponent)"
         guard let defaults = UserDefaults(suiteName: suiteName) else {
             throw Failure("cannot create isolated UserDefaults")
         }
-        return UISmokeConfiguration(
+        let configuration = UISmokeConfiguration(
             homeURL: homeURL,
             resultURL: resultURL,
             defaults: defaults,
             defaultsSuiteName: suiteName
         )
+        if captureWasRequested {
+            try configuration.seedTodayCaptureFixture()
+        }
+        return configuration
     }
 
     var dataURL: URL {
         homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+    }
+
+    private func seedTodayCaptureFixture() throws {
+        guard !FileManager.default.fileExists(atPath: dataURL.path) else {
+            throw Failure("capture fixture must start without saved event data")
+        }
+        let today = Day(Date())
+        let primary = Countdown(title: "Сегодня: важная встреча", date: today, emoji: "📅")
+        let secondary = Countdown(title: "Короткое событие", date: today, emoji: "✨")
+        var data = CountdownData()
+        data.items = [primary, secondary]
+        data.primaryID = primary.id
+        try FileManager.default.createDirectory(
+            at: dataURL.deletingLastPathComponent(), withIntermediateDirectories: true
+        )
+        try JSONEncoder().encode(data).write(to: dataURL, options: .atomic)
     }
 
     struct Failure: LocalizedError {
@@ -86,6 +151,23 @@ struct UISmokeConfiguration {
 
 @MainActor
 final class UISmokeRuntime {
+    private struct CaptureRecord: Codable {
+        let name: String
+        let file: String
+        let width: Int
+        let height: Int
+        let scale: Double
+        let opaqueCorners: Bool
+        let colorSchemeOverride: String?
+        let highContrastOverride: Bool?
+        let reduceMotionOverride: Bool?
+    }
+
+    private struct CaptureManifest: Codable {
+        let version: Int
+        let captures: [CaptureRecord]
+    }
+
     private let configuration: UISmokeConfiguration
     private let store: Store
     private let window: () -> NSWindow?
@@ -93,15 +175,22 @@ final class UISmokeRuntime {
     private let showSurface: () -> Void
     private let isSurfaceShown: () -> Bool
     private let pressStatusItem: () -> Void
+    private let timer: CountdownTimer
+    private let accessibilitySettings: AuroraAccessibilitySettings
+    private let visualEnvironment: UISmokeVisualEnvironment
     private let controls = UISmokeControlRegistry.shared
     private var passed: [String] = []
     private var responderToRegistryOffsets: [ObjectIdentifier: CGPoint] = [:]
+    private var captures: [CaptureRecord] = []
 
     init(configuration: UISmokeConfiguration, store: Store, window: @escaping () -> NSWindow?,
          hideSurface: @escaping () -> Void,
          showSurface: @escaping () -> Void,
          isSurfaceShown: @escaping () -> Bool,
-         pressStatusItem: @escaping () -> Void) {
+         pressStatusItem: @escaping () -> Void,
+         timer: CountdownTimer,
+         accessibilitySettings: AuroraAccessibilitySettings,
+         visualEnvironment: UISmokeVisualEnvironment) {
         self.configuration = configuration
         self.store = store
         self.window = window
@@ -109,9 +198,13 @@ final class UISmokeRuntime {
         self.showSurface = showSurface
         self.isSurfaceShown = isSurfaceShown
         self.pressStatusItem = pressStatusItem
+        self.timer = timer
+        self.accessibilitySettings = accessibilitySettings
+        self.visualEnvironment = visualEnvironment
     }
 
     func start() {
+        scheduleHardTimeout()
         Task { @MainActor in
             do {
                 try await waitFor("loaded root window") {
@@ -119,7 +212,9 @@ final class UISmokeRuntime {
                         && self.controls.value("root.window") != nil
                         && self.controls.entries["event.add"]?.isEnabled == true
                 }
-                if UISmokeConfiguration.collapseRegressionWasRequested {
+                if UISmokeConfiguration.captureWasRequested {
+                    try await runVisualCaptures()
+                } else if UISmokeConfiguration.collapseRegressionWasRequested {
                     try await runCollapseRegression()
                 } else if UISmokeConfiguration.editorScrollRegressionWasRequested {
                     try await runSessionContinuity()
@@ -129,6 +224,21 @@ final class UISmokeRuntime {
                 try requireNoUIStall()
                 finishSuccess()
             } catch { finishFailure(error) }
+        }
+    }
+
+    // `open -W` waits for the LaunchServices-launched process, but terminating
+    // the waiting launcher does not reliably terminate that separate process.
+    // Keep the existing shell timeout as a final guard, and let this isolated
+    // runtime report and exit on its own if the AppKit main thread stops making
+    // progress before a scenario timeout can run.
+    private func scheduleHardTimeout() {
+        let resultURL = configuration.resultURL
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 43) {
+            let output = "UISmoke\nFAIL after hard timeout: 43s"
+            try? output.write(to: resultURL, atomically: true, encoding: .utf8)
+            fputs(output + "\n", stderr)
+            Darwin._exit(124)
         }
     }
 
@@ -264,8 +374,317 @@ final class UISmokeRuntime {
         pass("repeated checklist collapse/expand remains responsive with multiple events")
     }
 
+    private func runVisualCaptures() async throws {
+        try require(store.active.count == 2, "today capture fixture did not load")
+        visualEnvironment.colorSchemeOverride = .dark
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+
+        let todayPrimary = try requireValue(store.primary, "today capture primary")
+        try require(todayPrimary.title == "Сегодня: важная встреча", "today capture title is incorrect")
+        try require(todayPrimary.date == store.today, "today capture date is incorrect")
+        try require(store.active.contains { $0.title == "Короткое событие" },
+                    "today capture secondary event is missing")
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 2)
+        try capture(name: "12-today-badge")
+        for item in store.active {
+            let removed = await store.delete(item.id)
+            try require(removed, "today capture fixture removal failed")
+        }
+        try await waitFor("empty capture fixture after today capture") { self.store.active.isEmpty }
+
+        try require(timer.phase == .finished, "finished timer capture fixture was not restored")
+        try await settleLayout()
+        try capture(name: "05-timer-finished")
+
+        timer.delete()
+        try await waitFor("idle timer for empty capture") { self.timer.phase == .idle }
+        try await settleLayout()
+        try capture(name: "06-empty")
+
+        let primary = Countdown(
+            title: "Переезд в новую квартиру",
+            note: "Длинная карточка с заметкой и чек-листом для визуальной проверки.",
+            date: Day(store.tomorrow),
+            emoji: "📦",
+            subtasks: try [
+                Subtask(text: "Подтвердить время доставки"),
+                Subtask(text: "Собрать документы", isCompleted: true),
+                Subtask(text: "Проверить адрес"),
+            ]
+        )
+        let secondary = [
+            Countdown(title: "Короткое событие", date: Day(store.tomorrow), emoji: "✨"),
+            Countdown(
+                title: "День рождения Маши",
+                note: "Выбрать подарок и заказать торт.",
+                date: Day(store.tomorrow),
+                emoji: "🎂",
+                subtasks: try [Subtask(text: "Позвонить"), Subtask(text: "Купить свечи")]
+            ),
+            Countdown(title: "Понедельник", date: Day(store.tomorrow), emoji: "🗓️"),
+            Countdown(title: "Билеты", date: Day(store.tomorrow), emoji: "✈️"),
+            Countdown(
+                title: "Нижнее короткое событие",
+                date: Day(store.tomorrow),
+                emoji: "⭐️"
+            ),
+        ]
+        let savedPrimary = await store.save(primary, primary: true)
+        try require(savedPrimary, "primary capture fixture save failed")
+        for item in secondary {
+            let savedSecondary = await store.save(item, primary: false)
+            try require(savedSecondary, "secondary capture fixture save failed")
+        }
+        try await waitFor("varied-height capture list") { self.store.active.count == secondary.count + 1 }
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 4)
+        try capture(name: "01-idle-list")
+
+        try await scrollRootList()
+        let promoted = try requireValue(secondary.last, "below-fold capture fixture")
+        await store.makePrimary(promoted.id)
+        try await waitFor("promoted primary") { self.store.data.primaryID == promoted.id }
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 4)
+        try capture(name: "02-promoted-settled")
+
+        timer.start(minutes: 5)
+        try await waitFor("running timer") {
+            if case .running = self.timer.phase { return true }
+            return false
+        }
+        try await settleLayout()
+        try capture(name: "03-timer-running")
+
+        timer.delete()
+
+        try await press("event.edit.\(promoted.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await settleLayout()
+        try capture(name: "04-editor")
+
+        try await press("editor.cancel")
+        try await waitFor("list restored after editor capture") {
+            self.controls.entries["editor.edit"] == nil
+        }
+        try await scrollRootListToTop()
+        visualEnvironment.colorSchemeOverride = .light
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 4)
+        try capture(name: "07-light-list")
+
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 4)
+        try capture(name: "08-light-high-contrast")
+
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        visualEnvironment.colorSchemeOverride = .dark
+        try await settleLayout()
+        try await press("timer.duration.120")
+        try await waitForValue("timer.duration", equals: "120")
+        try await settleLayout()
+        try requireTimerPresetLayout()
+        try capture(name: "10-timer-preset-120-static")
+
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try await settleLayout()
+        try await press("timer.duration.5")
+        try await waitForValue("timer.duration", equals: "5")
+        try await settleLayout()
+        try requireTimerPresetLayout()
+        try capture(name: "11-timer-preset-reduced-motion-5-static")
+
+        timer.start(minutes: 5)
+        try await waitFor("running timer with Reduce Motion override") {
+            if case .running = self.timer.phase { return true }
+            return false
+        }
+        try await settleLayout()
+        try capture(name: "09-reduce-motion-running")
+        try writeCaptureManifest()
+        pass("real panel capture set records baseline and isolated accessibility states")
+    }
+
+    private func settleLayout() async throws {
+        try await Task.sleep(nanoseconds: 250_000_000)
+        window()?.contentView?.layoutSubtreeIfNeeded()
+        window()?.contentView?.display()
+        CATransaction.flush()
+        await Task.yield()
+    }
+
+    private func requireNonOverlappingCardFrames(minimumCount: Int) throws {
+        let frames = controls.ids(withPrefix: "event.card.")
+            .compactMap { controls.frame($0) }
+            .sorted { $0.minY < $1.minY }
+        try require(frames.count >= minimumCount, "capture fixture did not render enough card frames")
+        for (upper, lower) in zip(frames, frames.dropFirst()) {
+            try require(upper.maxY <= lower.minY + 0.5, "event card frames overlap")
+        }
+    }
+
+    private func capture(name: String) throws {
+        guard UISmokeConfiguration.captureWasRequested else {
+            throw Failure("capture requested outside isolated capture mode")
+        }
+        let panel = try requireValue(window(), "capture panel")
+        let contentView = try requireValue(panel.contentView, "capture content view")
+        let bounds = contentView.bounds.integral
+        contentView.layoutSubtreeIfNeeded()
+        contentView.display()
+        CATransaction.flush()
+        guard let sourceBitmap = contentView.bitmapImageRepForCachingDisplay(in: bounds) else {
+            throw Failure("cannot allocate AppKit capture bitmap")
+        }
+        contentView.cacheDisplay(in: bounds, to: sourceBitmap)
+        let width = sourceBitmap.pixelsWide
+        let height = sourceBitmap.pixelsHigh
+        let scale = Double(width) / Double(bounds.width)
+
+        // A borderless panel has transparent rounded outer pixels.  Preserve the
+        // retained SwiftUI hierarchy above its real Aurora canvas, rather than
+        // exporting those pixels against whatever happens to be behind the panel.
+        let isDark = visualEnvironment.colorSchemeOverride == .dark
+            || (visualEnvironment.colorSchemeOverride == nil
+                && panel.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
+        let canvas = NSColor(AuroraInstrument.canvas(for: isDark ? .dark : .light))
+        try requireRetainedPanelCoverage(
+            bitmap: sourceBitmap,
+            canvas: canvas,
+            captureName: name
+        )
+        guard let sourceImage = sourceBitmap.cgImage,
+              let context = CGContext(
+                  data: nil,
+                  width: width,
+                  height: height,
+                  bitsPerComponent: 8,
+                  bytesPerRow: 0,
+                  space: CGColorSpaceCreateDeviceRGB(),
+                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+              ) else {
+            throw Failure("cannot create opaque capture bitmap")
+        }
+        context.setFillColor(canvas.cgColor)
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        context.draw(sourceImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let compositeImage = context.makeImage() else {
+            throw Failure("cannot finalize opaque capture bitmap")
+        }
+        let bitmap = NSBitmapImageRep(cgImage: compositeImage)
+        bitmap.size = bounds.size
+        let corners = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
+        let opaqueCorners = corners.allSatisfy { point in
+            (bitmap.colorAt(x: point.0, y: point.1)?.alphaComponent ?? 0) >= 0.99
+        }
+        try require(opaqueCorners, "capture did not composite against the panel canvas")
+        guard let png = bitmap.representation(using: .png, properties: [:]) else {
+            throw Failure("cannot encode PNG capture")
+        }
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let file = "\(name).png"
+        try png.write(to: directory.appendingPathComponent(file), options: .atomic)
+        captures.append(CaptureRecord(
+            name: name,
+            file: file,
+            width: width,
+            height: height,
+            scale: scale,
+            opaqueCorners: opaqueCorners,
+            colorSchemeOverride: visualEnvironment.colorSchemeOverride.map {
+                $0 == .dark ? "dark" : "light"
+            },
+            highContrastOverride: accessibilitySettings.isolatedCaptureOverrideValue,
+            reduceMotionOverride: accessibilitySettings.isolatedReduceMotionOverrideValue
+        ))
+    }
+
+    private func requireRetainedPanelCoverage(
+        bitmap: NSBitmapImageRep,
+        canvas: NSColor,
+        captureName: String
+    ) throws {
+        let width = bitmap.pixelsWide
+        let height = bitmap.pixelsHigh
+        let regions = [
+            (name: "footer", y: Int(Double(height) * 0.02)..<Int(Double(height) * 0.16)),
+            (name: "body", y: Int(Double(height) * 0.20)..<Int(Double(height) * 0.78)),
+            (name: "header", y: Int(Double(height) * 0.84)..<Int(Double(height) * 0.98)),
+        ]
+        let xRange = Int(Double(width) * 0.05)..<Int(Double(width) * 0.95)
+        let step = max(2, width / 160)
+        guard let canvasRGB = canvas.usingColorSpace(.deviceRGB) else {
+            throw Failure("cannot resolve capture canvas color")
+        }
+
+        for region in regions {
+            var samples = 0
+            var opaqueSamples = 0
+            var nonCanvasSamples = 0
+            for y in stride(from: region.y.lowerBound, to: region.y.upperBound, by: step) {
+                for x in stride(from: xRange.lowerBound, to: xRange.upperBound, by: step) {
+                    guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB) else { continue }
+                    samples += 1
+                    if color.alphaComponent >= 0.9 {
+                        opaqueSamples += 1
+                    }
+                    let distance = abs(color.redComponent - canvasRGB.redComponent)
+                        + abs(color.greenComponent - canvasRGB.greenComponent)
+                        + abs(color.blueComponent - canvasRGB.blueComponent)
+                    if color.alphaComponent >= 0.1 && distance >= 0.08 {
+                        nonCanvasSamples += 1
+                    }
+                }
+            }
+            try require(samples > 0, "capture \(captureName) has no \(region.name) samples")
+            try require(
+                Double(opaqueSamples) / Double(samples) >= 0.9,
+                "capture \(captureName) retained \(region.name) is incomplete"
+            )
+            try require(
+                nonCanvasSamples >= max(8, samples / 1_000),
+                "capture \(captureName) retained \(region.name) has no visible content"
+            )
+        }
+    }
+
+    private func writeCaptureManifest() throws {
+        try require(captures.count == 12, "capture set is incomplete")
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let manifest = CaptureManifest(version: 2, captures: captures.sorted { $0.name < $1.name })
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try encoder.encode(manifest).write(
+            to: directory.appendingPathComponent("manifest.json"),
+            options: .atomic
+        )
+    }
+
     private func run() async throws {
         try require(store.active.isEmpty, "fixture must be isolated and empty")
+        try await waitForValue("timer.duration", equals: "30")
+        try await settleLayout()
+        try requireTimerPresetLayout()
+        try await press("timer.duration.120")
+        try await waitForValue("timer.duration", equals: "120")
+        try await press("timer.duration.5")
+        try await waitForValue("timer.duration", equals: "5")
+        for minutes in [40, 10, 60, 15, 120, 5] {
+            try require(controls.press("timer.duration.\(minutes)"), "rapid timer preset tap failed")
+        }
+        try await waitForValue("timer.duration", equals: "5")
+        try await press("timer.start")
+        try await waitFor("Play uses final five-minute preset") {
+            guard case let .running(remainingSeconds) = self.timer.phase else { return false }
+            return (295...300).contains(remainingSeconds)
+        }
+        timer.delete()
+        try await waitFor("timer returns to idle after preset smoke") { self.timer.phase == .idle }
+        pass("timer preset selection reaches both ends, is last-tap-wins and drives Play")
+
         try await press("event.add")
         try await waitForElement("editor.new")
         try await waitForFirstResponder("editor.title")
@@ -385,6 +804,34 @@ final class UISmokeRuntime {
         try await waitFor("real root list scroll") {
             guard let current = self.rootListScrollView()?.contentView.documentVisibleRect else { return false }
             return current.origin.y > visible.origin.y
+        }
+    }
+
+    private func requireTimerPresetLayout() throws {
+        let timerFrame = try requireValue(controls.frame("timer"), "timer strip frame")
+        let selectorFrame = try requireValue(controls.frame("timer.duration"), "timer preset selector frame")
+        try require(abs(timerFrame.height - 59) < 1, "timer strip height changed")
+        let segmentFrames = countdownTimerPresetMinutes.compactMap {
+            controls.frame("timer.duration.\($0)")
+        }
+        try require(segmentFrames.count == countdownTimerPresetMinutes.count, "timer preset segments are incomplete")
+        for frame in segmentFrames {
+            try require(frame.width >= 30 && frame.height >= 26, "timer preset hit area is too small")
+            try require(frame.minX >= selectorFrame.minX - 1 && frame.maxX <= selectorFrame.maxX + 1,
+                        "timer preset segment escaped selector bounds")
+        }
+    }
+
+    private func scrollRootListToTop() async throws {
+        guard let scrollView = rootListScrollView() else {
+            throw Failure("root event list is not scrollable")
+        }
+        let clipView = scrollView.contentView
+        clipView.scroll(to: CGPoint(x: clipView.bounds.origin.x, y: 0))
+        scrollView.reflectScrolledClipView(clipView)
+        try await waitFor("root list returned to top") {
+            guard let current = self.rootListScrollView()?.contentView.documentVisibleRect else { return false }
+            return abs(current.origin.y) < 1
         }
     }
 

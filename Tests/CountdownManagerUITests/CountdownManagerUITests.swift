@@ -44,6 +44,12 @@ enum UIChecks {
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
         precondition(countdownTimerMaximumMinutes == 120)
         precondition(timerCompletionAlertDisplayDuration == 5)
+        let presetMotion = timerPresetSelectionMotion(reduceMotion: false)
+        guard case let .slide(duration) = presetMotion else {
+            preconditionFailure("timer preset selection must slide when motion is allowed")
+        }
+        precondition((0.15...0.22).contains(duration))
+        precondition(timerPresetSelectionMotion(reduceMotion: true) == .immediate)
         let shake = makeTimerAttentionAnimation(reduceMotion: false)
         precondition(shake is CAKeyframeAnimation)
         precondition(shake.repeatCount == Float.greatestFiniteMagnitude)
@@ -302,8 +308,30 @@ enum UIChecks {
         )
 
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
+        await MainActor.run {
+            testIsolatedStoreCannotManageLoginItem(
+                in: directory.appendingPathComponent("isolated-login-item", isDirectory: true)
+            )
+        }
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items")
+    }
+
+    @MainActor
+    private static func testIsolatedStoreCannotManageLoginItem(in directory: URL) {
+        let suiteName = "CountdownManagerIsolatedLoginItem.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = Store(
+            fileURL: directory.appendingPathComponent("countdowns.json"),
+            disclosureDefaults: defaults,
+            loginItemManagementIsAvailable: false
+        )
+        precondition(!store.loginItemManagementIsAvailable)
+        precondition(store.loginStatus == .notRegistered)
+        store.setLogin(true)
+        precondition(store.loginStatus == .notRegistered)
+        store.openLoginItemSettings()
     }
 
     @MainActor

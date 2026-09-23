@@ -55,7 +55,8 @@ package final class Store: ObservableObject {
     @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
     @Published var error: String?
-    @Published private(set) var loginStatus = SMAppService.mainApp.status
+    @Published package private(set) var loginStatus: SMAppService.Status
+    package let loginItemManagementIsAvailable: Bool
     private let fileURL: URL
     private let repository: CountdownRepository
     private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
@@ -77,7 +78,8 @@ package final class Store: ObservableObject {
         fileURL: URL? = nil,
         disclosureDefaults: UserDefaults = .standard,
         persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        loginItemManagementIsAvailable: Bool = true
     ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
@@ -86,6 +88,8 @@ package final class Store: ObservableObject {
         repository = CountdownRepository(fileURL: resolvedURL)
         self.persistenceSaveOverride = persistenceSaveOverride
         self.now = now
+        self.loginItemManagementIsAvailable = loginItemManagementIsAvailable
+        loginStatus = loginItemManagementIsAvailable ? SMAppService.mainApp.status : .notRegistered
         disclosureCache = SubtaskDisclosureCache(
             persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults)
         )
@@ -156,8 +160,10 @@ package final class Store: ObservableObject {
                 }
             }
         }
-        let currentLoginStatus = SMAppService.mainApp.status
-        if currentLoginStatus != loginStatus { loginStatus = currentLoginStatus }
+        if loginItemManagementIsAvailable {
+            let currentLoginStatus = SMAppService.mainApp.status
+            if currentLoginStatus != loginStatus { loginStatus = currentLoginStatus }
+        }
         rescheduleMidnightTimer()
     }
 
@@ -409,7 +415,8 @@ package final class Store: ObservableObject {
         return didDelete
     }
 
-    func setLogin(_ enabled: Bool) {
+    package func setLogin(_ enabled: Bool) {
+        guard loginItemManagementIsAvailable else { return }
         DiagnosticLog.shared.record("login-item.change requested=\(enabled)")
         do {
             if enabled { try SMAppService.mainApp.register() }
@@ -420,6 +427,11 @@ package final class Store: ObservableObject {
         }
         loginStatus = SMAppService.mainApp.status
         DiagnosticLog.shared.record("login-item.status value=\(loginStatus.rawValue)")
+    }
+
+    package func openLoginItemSettings() {
+        guard loginItemManagementIsAvailable else { return }
+        SMAppService.openSystemSettingsLoginItems()
     }
 
     func openDiagnostics() {

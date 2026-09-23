@@ -88,6 +88,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var hostingController: NSHostingController<CountdownManagerRootView>!
     private var store: Store!
     private var timer: CountdownTimer!
+    private let accessibilitySettings = AuroraAccessibilitySettings()
+    private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
     private let timerCompletionAlert = TimerCompletionAlertPresenter()
@@ -108,9 +110,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         DiagnosticLog.shared.record("app.launch version=\(version) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
+        if UISmokeConfiguration.captureWasRequested {
+            defaults.set(Date().addingTimeInterval(-1).timeIntervalSince1970,
+                         forKey: CountdownTimer.deadlineKey)
+        }
         store = Store(
             fileURL: uiSmokeConfiguration?.dataURL,
-            disclosureDefaults: defaults
+            disclosureDefaults: defaults,
+            loginItemManagementIsAvailable: uiSmokeConfiguration == nil
         )
         timer = CountdownTimer(defaults: defaults)
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -120,7 +127,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             button.setAccessibilityLabel("Countdown Manager")
         }
         hostingController = NSHostingController(
-            rootView: CountdownManagerRootView(timer: timer, store: store)
+            rootView: CountdownManagerRootView(
+                timer: timer,
+                store: store,
+                accessibilitySettings: accessibilitySettings,
+                visualEnvironment: visualEnvironment
+            )
         )
         panel = CountdownStatusPanel(
             contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
@@ -184,13 +196,20 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 hideSurface: { [weak self] in self?.hidePanel(source: "ui-smoke") },
                 showSurface: { [weak self] in self?.showPanel() },
                 isSurfaceShown: { [weak self] in self?.panel.isVisible == true },
-                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) }
+                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
+                timer: timer,
+                accessibilitySettings: accessibilitySettings,
+                visualEnvironment: visualEnvironment
             )
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPanel()
                 self?.uiSmokeRuntime?.start()
             }
         } else if uiSmokeConfiguration != nil, UISmokeConfiguration.xcuiTestWasRequested {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                self?.showPanel()
+            }
+        } else if uiSmokeConfiguration != nil, UISmokeConfiguration.visualPreviewWasRequested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPanel()
             }

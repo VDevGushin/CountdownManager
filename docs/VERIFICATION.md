@@ -11,6 +11,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
+| Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 
@@ -45,6 +46,13 @@ It does not prove real AppKit event routing, external keyboard delivery, system 
 
 `./verify.sh ui` builds a release application bundle from the current source tree in a temporary isolated environment. It exercises the real SwiftUI/AppKit hierarchy in process.
 
+The harness launches that temporary bundle through macOS LaunchServices (`open -n -W`), with an
+isolated test home passed only to that instance. It must run from a normal logged-in Aqua session:
+the harness fails clearly when that session is unavailable rather than executing
+`Contents/MacOS/CountdownManager` directly. Direct execution is not a valid AppKit launch path and
+can abort during `NSApplication` registration before app code runs. Scenario success is read from
+the isolated result file; the launcher itself is not the test result.
+
 Current capabilities include:
 
 - view construction and hosted root identity;
@@ -54,11 +62,40 @@ Current capabilities include:
 - focus/responder paths reproducible in process;
 - main-thread stall detection.
 
+`./verify.sh capture <marked-output-directory>` adds a separate isolated capture run. The output
+directory must already contain `.countdown-ui-capture-output`; after a PASS it receives a timestamped
+set of backing-scale PNGs and `manifest.json`. The captures cover an idle varied-height list, a
+below-fold event promoted to primary, running and finished timer/list boundaries, the editor, the
+empty state, Light appearance, Increase Contrast, and a running-timer render with Reduce Motion.
+Two additional static endpoint captures record the timer preset pill at `120` and at `5` under
+Reduce Motion. These stills prove final layout states, not movement over time; focused UIChecks and
+Real UI Smoke cover the 180-millisecond motion policy, immediate reduced-motion policy, endpoint
+selection, rapid last-tap-wins behaviour and the final value consumed by Play.
+An isolated today-dated primary and short secondary event add a full-panel capture of the date and
+`Сегодня` badge. The fixture is removed before the other capture scenarios run.
+Appearance and accessibility values are injected only into the isolated retained hierarchy and are
+recorded per image in the manifest; system settings are never changed. A still image under the
+Reduce Motion environment proves that the state renders cleanly, while the deterministic animation
+checks prove the selected animation type—it cannot visually prove motion over time.
+They are evidence for the retained real panel hierarchy, not golden-image tests or proof of external
+macOS interactions.
+
 Limitations:
 
 - it cannot prove that macOS delivered an external app switch, Space change, or status-item activation as a user would;
 - test-mode lifecycle suppression or direct internal actions are not evidence of production system behaviour;
 - configuration and property assertions support evidence but do not prove the corresponding user-visible interaction.
+
+## Manual visual preview
+
+`--visual-preview` opens the panel automatically for a manual visual QA session. It requires
+`COUNTDOWN_MANAGER_TEST_HOME` and the `.countdown-visual-preview-environment` marker in that
+separate directory. The mode isolates event data, timer preferences and diagnostics in that test
+home, including the production-path overlap rejection used by the other runtime harnesses.
+
+Unlike UI Smoke and XCUITest, visual preview preserves normal application deactivation, occlusion
+and Space callbacks so that panel visibility behaves as it does in production. It is a manual
+inspection surface, not automated verification evidence.
 
 ## XCUITest
 

@@ -8,7 +8,8 @@ struct ManagerView: View {
     @State private var editing: Countdown?
     @State private var showingEditor = false
     @State private var rootIdentity = UUID()
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,7 +17,14 @@ struct ManagerView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(error).font(.caption).textSelection(.enabled)
                     Button("Понятно") { store.error = nil }
-                }.padding(10)
+                }
+                .padding(10)
+                .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius))
+                .overlay(
+                    RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
+                        .stroke(Color.red.opacity(0.45), lineWidth: 1)
+                )
+                .padding([.horizontal, .top], 10)
                 .accessibilityIdentifier("application.error")
                 .uiSmokeControl(id: "application.error", value: { store.error })
             }
@@ -32,7 +40,7 @@ struct ManagerView: View {
             }
         }
         .frame(width: 390, height: 540)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AuroraPanelCanvas())
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("root.window")
         .uiSmokeControl(id: "root.window", value: { rootIdentity.uuidString })
@@ -45,15 +53,29 @@ struct ManagerView: View {
             ScrollView {
                 VStack(spacing: 8) {
                     if store.isLoading {
-                        ProgressView("Загружаем события…")
+                        VStack(spacing: 12) {
+                            AuroraLoadingPlaceholder()
+                            ProgressView("Загружаем события…")
+                        }
                     } else if store.active.isEmpty {
-                        Text(EventUIStrings.emptyTitle).font(.headline)
-                        Text(EventUIStrings.emptyMessage).foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 12) {
+                            AuroraEmptyMark()
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(EventUIStrings.emptyTitle)
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text(EventUIStrings.emptyMessage)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
                     ForEach(store.active) { item in row(item) }
                 }
                 .padding(12)
-                .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: store.data.primaryID)
+                .animation(
+                    accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
+                    value: store.data.primaryID
+                )
             }
             .accessibilityIdentifier("event.list")
             .uiSmokeControl(id: "event.list")
@@ -65,8 +87,10 @@ struct ManagerView: View {
     private var header: some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Countdown Manager").font(.headline)
-                Text("\(store.active.count) активных · сегодня и позже").font(.caption).foregroundStyle(.secondary)
+                Text("Countdown Manager").font(.system(size: 13, weight: .semibold))
+                Text("\(store.active.count) активных · сегодня и позже")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Button(action: add) { Image(systemName: "plus") }
@@ -85,29 +109,79 @@ struct ManagerView: View {
         )
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 10) {
-                Text(item.emoji).font(.system(size: 27)).frame(width: 35)
+                ZStack {
+                    AuroraEmojiBackplate(isPrimary: presentation.isPrimary)
+                        .frame(width: 32, height: 32)
+                    Text(item.emoji).font(.system(size: 27))
+                }
+                .frame(width: 35, height: 35)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title).font(.system(size: 13, weight: .semibold)).lineLimit(2)
                     if let note = presentation.note, !note.isEmpty {
                         Text(note).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                             .accessibilityIdentifier("event.note")
                     }
-                    ViewThatFits(in: .horizontal) {
-                        Text(presentation.dateAndRemainingLabel)
-                            .lineLimit(1)
-                        Text("\(presentation.dateLabel)\n\(presentation.remainingLabel)")
-                            .lineLimit(2)
+                    Group {
+                        if presentation.isToday {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(presentation.dateLabel)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                Text(presentation.remainingLabel)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background {
+                                        Capsule().fill(
+                                            AuroraInstrument.todayColor(
+                                                for: colorScheme,
+                                                highContrast: accessibilitySettings.prefersHighContrast
+                                            )
+                                            .opacity(0.1)
+                                        )
+                                    }
+                                    .fixedSize()
+                                    .accessibilityIdentifier("event.today")
+                            }
+                        } else {
+                            ViewThatFits(in: .horizontal) {
+                                Text(presentation.dateAndRemainingLabel)
+                                    .lineLimit(1)
+                                Text("\(presentation.dateLabel)\n\(presentation.remainingLabel)")
+                                    .lineLimit(2)
+                            }
+                            .accessibilityIdentifier("event.remaining")
+                        }
                     }
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundStyle(presentation.isToday ? Color.accentColor : Color.primary)
+                    .foregroundStyle(
+                        presentation.isToday
+                            ? AuroraInstrument.todayColor(
+                                for: colorScheme,
+                                highContrast: accessibilitySettings.prefersHighContrast
+                            )
+                            : Color.primary
+                    )
                     .monospacedDigit()
-                    .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
                 }
                 Spacer(minLength: 4)
                 Button { Task { await store.makePrimary(item.id) } } label: {
                     Image(systemName: presentation.isPrimary ? "star.fill" : "star")
                         .foregroundStyle(presentation.isPrimary ? Color.accentColor : .secondary)
                         .frame(width: 28, height: 28)
+                        .background {
+                            if presentation.isPrimary {
+                                Circle()
+                                    .fill(AuroraInstrument.accentSurface(
+                                        for: colorScheme,
+                                        highContrast: accessibilitySettings.prefersHighContrast
+                                    ))
+                                    .overlay(
+                                        Circle().stroke(AuroraInstrument.accentBorder(
+                                            for: colorScheme,
+                                            highContrast: accessibilitySettings.prefersHighContrast
+                                        ), lineWidth: accessibilitySettings.prefersHighContrast ? 1 : 0)
+                                    )
+                            }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -136,10 +210,7 @@ struct ManagerView: View {
             }
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(presentation.isPrimary ? Color.accentColor.opacity(0.09) : Color.primary.opacity(0.045))
-        )
+        .background(AuroraCardBackground(isPrimary: presentation.isPrimary))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("event.card.\(item.id.uuidString)")
         .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.title })
@@ -150,10 +221,13 @@ struct ManagerView: View {
             Toggle("Запускать при входе в macOS", isOn: Binding(
                 get: { store.loginStatus == .enabled || store.loginStatus == .requiresApproval },
                 set: { store.setLogin($0) }
-            )).toggleStyle(.checkbox)
+            ))
+            .toggleStyle(.checkbox)
+            .disabled(!store.loginItemManagementIsAvailable)
             if store.loginStatus == .requiresApproval {
-                Button("Разрешить в настройках macOS…") { SMAppService.openSystemSettingsLoginItems() }
+                Button("Разрешить в настройках macOS…") { store.openLoginItemSettings() }
                     .font(.caption)
+                    .disabled(!store.loginItemManagementIsAvailable)
             }
             HStack {
                 Text("Хранится на этом Mac").font(.caption).foregroundStyle(.secondary)
@@ -161,7 +235,9 @@ struct ManagerView: View {
                 Button("Диагностика…") { store.openDiagnostics() }
                 Button("Выйти") { NSApp.terminate(nil) }
             }
-        }.padding(14)
+        }
+        .padding(14)
+        .background(AuroraPanelCanvas())
     }
 
     private func finishEditor() {
@@ -190,7 +266,7 @@ private struct SubtaskChecklistView: View {
     let presentation: CountdownRowPresentation
 
     @ObservedObject private var disclosureState: SubtaskDisclosureState
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
 
     init(
         store: Store,
@@ -213,6 +289,9 @@ private struct SubtaskChecklistView: View {
                     .font(.caption)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.primary.opacity(0.045), in: Capsule())
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -237,7 +316,10 @@ private struct SubtaskChecklistView: View {
                 .accessibilityIdentifier("subtasks.list")
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: item.subtasks.map(\.isCompleted))
+        .animation(
+            accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
+            value: item.subtasks.map(\.isCompleted)
+        )
     }
 
     @ViewBuilder
@@ -297,7 +379,8 @@ struct EditorView: View {
     @State private var showingMoreEmoji = false
     @State private var emojiPage = 0
     @FocusState private var focusedField: EditorFocusTarget?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
 
     private static let emojiPageTitles = ["Общие", "Дети", "Работа", "Транспорт", "Праздники"]
     private static let emojiRows = [
@@ -352,7 +435,7 @@ struct EditorView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(item == nil ? EventUIStrings.newEvent : EventUIStrings.editEvent)
-                .font(.headline)
+                .font(.system(size: 13, weight: .semibold))
                 .padding(.bottom, 12)
             ScrollViewReader { proxy in
                 ScrollView {
@@ -362,6 +445,7 @@ struct EditorView: View {
                             TextField("Например, отпуск", text: $draft.title)
                                 .textFieldStyle(.roundedBorder)
                                 .focused($focusedField, equals: .title)
+                                .auroraInputChrome(isFocused: focusedField == .title)
                                 .accessibilityIdentifier("editor.title")
                                 .uiSmokeControl(
                                     id: "editor.title",
@@ -381,6 +465,7 @@ struct EditorView: View {
                                 .lineLimit(2...3)
                                 .accessibilityIdentifier("editor.note")
                                 .focused($focusedField, equals: .note)
+                                .auroraInputChrome(isFocused: focusedField == .note)
                                 .uiSmokeControl(
                                     id: "editor.note",
                                     action: { focus(.note, id: "editor.note") },
@@ -437,6 +522,7 @@ struct EditorView: View {
                         else { Text("Сохранить") }
                     }
                     .buttonStyle(.borderedProminent)
+                    .tint(AuroraInstrument.violet)
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("editor.save")
                     .uiSmokeControl(id: "editor.save", action: save)
@@ -514,6 +600,7 @@ struct EditorView: View {
                     TextField("Подзадача", text: $subtask.text)
                         .textFieldStyle(.roundedBorder)
                         .focused($focusedField, equals: .subtask(subtask.id))
+                        .auroraInputChrome(isFocused: focusedField == .subtask(subtask.id))
                         .accessibilityIdentifier("editor.subtask.\(subtask.id.uuidString)")
                         .uiSmokeControl(
                             id: "editor.subtask.\(subtask.id.uuidString)",
@@ -560,6 +647,17 @@ struct EditorView: View {
                 Text(draft.emoji)
                     .font(.system(size: 26))
                     .frame(width: 36, height: 32)
+                    .background { emojiCurrentValueBackground }
+                    .overlay(
+                        RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
+                            .stroke(
+                                AuroraInstrument.accentBorder(
+                                    for: colorScheme,
+                                    highContrast: accessibilitySettings.prefersHighContrast
+                                ),
+                                lineWidth: 1
+                            )
+                    )
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Текущий emoji: \(draft.emoji)")
                     .accessibilityIdentifier("editor.emoji")
@@ -739,7 +837,19 @@ struct EditorView: View {
         .buttonStyle(.plain)
         .font(.system(size: 22))
         .frame(width: Self.emojiCellWidth, height: Self.emojiCellHeight)
-        .background(draft.emoji == symbol ? Color.accentColor.opacity(0.16) : Color.clear)
+        .background { emojiSelectionBackground(isSelected: draft.emoji == symbol) }
+        .overlay {
+            if draft.emoji == symbol {
+                RoundedRectangle(cornerRadius: AuroraInstrument.emojiCornerRadius)
+                    .stroke(
+                        AuroraInstrument.accentBorder(
+                            for: colorScheme,
+                            highContrast: accessibilitySettings.prefersHighContrast
+                        ),
+                        lineWidth: 1
+                    )
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .accessibilityLabel("Emoji: \(symbol)")
         .accessibilityValue(draft.emoji == symbol ? "Выбрано" : "Не выбрано")
@@ -748,6 +858,39 @@ struct EditorView: View {
             id: identifier,
             action: { chooseEmoji(symbol) }
         )
+    }
+
+    @ViewBuilder
+    private var emojiCurrentValueBackground: some View {
+        if accessibilitySettings.prefersHighContrast {
+            RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
+                .fill(AuroraInstrument.accentSurface(for: colorScheme, highContrast: true))
+        } else {
+            LinearGradient(
+                colors: [AuroraInstrument.violet.opacity(0.14), AuroraInstrument.cyan.opacity(0.1)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .clipShape(RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius))
+        }
+    }
+
+    @ViewBuilder
+    private func emojiSelectionBackground(isSelected: Bool) -> some View {
+        if isSelected {
+            if accessibilitySettings.prefersHighContrast {
+                RoundedRectangle(cornerRadius: AuroraInstrument.emojiCornerRadius)
+                    .fill(AuroraInstrument.accentSurface(for: colorScheme, highContrast: true))
+            } else {
+                LinearGradient(
+                    colors: [AuroraInstrument.violet.opacity(0.2), AuroraInstrument.cyan.opacity(0.15)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        } else {
+            Color.clear
+        }
     }
 
     private func emojiPageIdentifier(page: Int, row: Int, column: Int, symbol: String) -> String {
@@ -759,7 +902,7 @@ struct EditorView: View {
 
     private func chooseEmoji(_ symbol: String) {
         guard CountdownData.isEmoji(symbol) else { return }
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
             _ = draft.replaceEmoji(with: symbol)
             emojiPage = 0
             showingMoreEmoji = false
@@ -767,7 +910,7 @@ struct EditorView: View {
     }
 
     private func toggleMoreEmoji() {
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
             emojiPage = 0
             showingMoreEmoji.toggle()
         }
@@ -777,7 +920,7 @@ struct EditorView: View {
         guard showingMoreEmoji else { return }
         let boundedPage = min(max(page, 0), Self.emojiPageCount - 1)
         guard boundedPage != emojiPage else { return }
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) {
+        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
             emojiPage = boundedPage
         }
     }

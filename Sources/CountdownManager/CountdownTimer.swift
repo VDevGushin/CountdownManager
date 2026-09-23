@@ -6,6 +6,15 @@ import SwiftUI
 package let countdownTimerPresetMinutes = [5, 10, 15, 30, 40, 60, 120]
 package let countdownTimerMaximumMinutes = 120
 
+package enum TimerPresetSelectionMotion: Equatable {
+    case immediate
+    case slide(duration: TimeInterval)
+}
+
+package func timerPresetSelectionMotion(reduceMotion: Bool) -> TimerPresetSelectionMotion {
+    reduceMotion ? .immediate : .slide(duration: 0.18)
+}
+
 package func validatedTimerDeadline(timeIntervalSince1970: Double, now: Date) -> Date? {
     let deadline = Date(timeIntervalSince1970: timeIntervalSince1970)
     let remaining = deadline.timeIntervalSince(now)
@@ -26,7 +35,7 @@ final class CountdownTimer: ObservableObject {
         case finished
     }
 
-    private static let deadlineKey = "timer.deadline"
+    static let deadlineKey = "timer.deadline"
     @Published private(set) var deadline: Date?
     @Published private(set) var now: Date
 
@@ -134,40 +143,60 @@ package func countdownTimerLabel(_ totalSeconds: Int) -> String {
 struct CountdownManagerRootView: View {
     @ObservedObject var timer: CountdownTimer
     let store: Store
+    @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
+    @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
+    @Environment(\.colorScheme) private var systemColorScheme
 
     var body: some View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
-            Divider()
             ManagerView(store: store)
         }
         .frame(width: 390, height: 600)
+        .background(AuroraPanelCanvas())
+        .environmentObject(accessibilitySettings)
+        .environment(\.colorScheme, visualEnvironment.colorSchemeOverride ?? systemColorScheme)
     }
 }
 
 private struct CountdownTimerStrip: View {
     @ObservedObject var timer: CountdownTimer
     @State private var selectedMinutes = 30
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("⏰")
-                .font(.system(size: 20))
-                .accessibilityHidden(true)
+            ZStack {
+                AuroraTimerOrb(appearance: auroraAppearance)
+                Text("⏰")
+                    .font(.system(size: 20))
+                    .accessibilityHidden(true)
+            }
 
             switch timer.phase {
             case .idle:
                 idleControls
             case let .running(remainingSeconds):
                 Text(countdownTimerLabel(remainingSeconds))
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
                     .monospacedDigit()
+                    .animation(
+                        accessibilitySettings.prefersReducedMotion ? nil : .easeOut(duration: 0.1),
+                        value: remainingSeconds
+                    )
                     .accessibilityIdentifier("timer.running")
                 Spacer()
                 deleteButton
             case .finished:
                 Text("Время вышло")
                     .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(
+                        AuroraInstrument.finishedColor(
+                            for: colorScheme,
+                            highContrast: accessibilitySettings.prefersHighContrast
+                        )
+                    )
                     .accessibilityIdentifier("timer.finished")
                 Spacer()
                 deleteButton
@@ -175,22 +204,32 @@ private struct CountdownTimerStrip: View {
         }
         .padding(.horizontal, 12)
         .frame(height: 59)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(AuroraTimerBackground(appearance: auroraAppearance))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("timer")
+        .uiSmokeControl(id: "timer")
+    }
+
+    private var auroraAppearance: AuroraTimerAppearance {
+        switch timer.phase {
+        case .idle:
+            .idle
+        case .running:
+            .running
+        case .finished:
+            .finished
+        }
     }
 
     private var idleControls: some View {
         HStack(spacing: 8) {
-            Picker("Время таймера", selection: $selectedMinutes) {
-                ForEach(countdownTimerPresetMinutes, id: \.self) { minutes in
-                    Text("\(minutes)").tag(minutes)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
+            AuroraTimerPresetSelector(
+                presets: countdownTimerPresetMinutes,
+                selection: $selectedMinutes
+            )
             .frame(width: 270)
             .accessibilityIdentifier("timer.duration")
+            .uiSmokeControl(id: "timer.duration", value: { String(selectedMinutes) })
 
             Spacer(minLength: 0)
 
@@ -200,9 +239,11 @@ private struct CountdownTimerStrip: View {
                 Image(systemName: "play.fill")
             }
             .buttonStyle(.borderedProminent)
+            .tint(AuroraInstrument.violet)
             .help("Запустить")
             .accessibilityLabel("Запустить таймер")
             .accessibilityIdentifier("timer.start")
+            .uiSmokeControl(id: "timer.start", action: { timer.start(minutes: selectedMinutes) })
         }
     }
 
