@@ -684,6 +684,7 @@ final class UISmokeRuntime {
         timer.delete()
         try await waitFor("timer returns to idle after preset smoke") { self.timer.phase == .idle }
         pass("timer preset selection reaches both ends, is last-tap-wins and drives Play")
+        try await verifyCompletionAlertDismissal()
 
         try await press("event.add")
         try await waitForElement("editor.new")
@@ -864,6 +865,69 @@ final class UISmokeRuntime {
 
     private func allSubviews(of view: NSView) -> [NSView] {
         view.subviews + view.subviews.flatMap { allSubviews(of: $0) }
+    }
+
+    private func verifyCompletionAlertDismissal() async throws {
+        let suite = "timer-alert-smoke-\(UUID().uuidString)"
+        let defaults = try requireValue(UserDefaults(suiteName: suite), "isolated timer defaults")
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(Date().addingTimeInterval(-1).timeIntervalSince1970,
+                     forKey: CountdownTimer.deadlineKey)
+        let finishedTimer = CountdownTimer(defaults: defaults)
+        try require(finishedTimer.phase == .finished, "timer fixture is not finished")
+
+        let presenter = TimerCompletionAlertPresenter()
+        let originalKeyWindow = NSApp.keyWindow
+        let originalActiveState = NSApp.isActive
+        presenter.present()
+        let panel = try requireValue(
+            NSApp.windows.first { $0.identifier?.rawValue == "timer.completion.alert" },
+            "completion alert panel"
+        )
+        try require(panel.isVisible && !panel.ignoresMouseEvents, "completion alert cannot receive a click")
+        try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
+                    "presenting completion alert changed app focus")
+
+        let content = try requireValue(panel.contentView, "completion alert content")
+        let title = try requireValue(
+            allSubviews(of: content).first { $0.identifier?.rawValue == "timer.completion.title" },
+            "completion alert title"
+        )
+        let titlePoint = title.convert(NSPoint(x: title.bounds.midX, y: title.bounds.midY), to: nil)
+        try require(content.hitTest(titlePoint) === content, "title click does not hit alert background")
+        try postAlertClick(at: titlePoint, in: panel)
+        try require(!panel.isVisible, "click on completion alert title did not hide panel immediately")
+        try require(finishedTimer.phase == .finished, "dismissing alert deleted the timer")
+        try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
+                    "clicking completion alert changed app focus")
+
+        presenter.present()
+        try require(panel.isVisible, "completion alert did not reappear")
+        try postAlertClick(at: NSPoint(x: 8, y: 8), in: panel)
+        try require(!panel.isVisible, "click on completion alert background did not hide panel immediately")
+        try require(finishedTimer.phase == .finished, "background click deleted the timer")
+
+        presenter.present()
+        try require(panel.isVisible, "completion alert did not reappear for timeout check")
+        let presentedAt = ProcessInfo.processInfo.systemUptime
+        try await waitFor("completion alert auto dismisses", timeout: 6) { !panel.isVisible }
+        try require(ProcessInfo.processInfo.systemUptime - presentedAt >= timerCompletionAlertDisplayDuration,
+                    "completion alert auto dismissed too early")
+        try require(finishedTimer.phase == .finished, "auto dismissal deleted the timer")
+        pass("completion alert closes on its first click or after five seconds without changing timer state")
+    }
+
+    private func postAlertClick(at point: NSPoint, in panel: NSWindow) throws {
+        for (type, eventNumber) in [(NSEvent.EventType.leftMouseDown, 1), (.leftMouseUp, 2)] {
+            let event = try requireValue(
+                NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
+                                   timestamp: ProcessInfo.processInfo.systemUptime,
+                                   windowNumber: panel.windowNumber, context: nil,
+                                   eventNumber: eventNumber, clickCount: 1, pressure: 1),
+                "completion alert mouse event"
+            )
+            panel.sendEvent(event)
+        }
     }
 
     private func insertText(_ text: String) throws {

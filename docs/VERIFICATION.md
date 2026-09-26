@@ -60,6 +60,7 @@ Current capabilities include:
 - draft and scroll continuity;
 - rendered control state;
 - focus/responder paths reproducible in process;
+- in-process AppKit mouse delivery and hit testing for the timer completion alert;
 - main-thread stall detection.
 
 `./verify.sh capture <marked-output-directory>` adds a separate isolated capture run. The output
@@ -83,6 +84,7 @@ macOS interactions.
 Limitations:
 
 - it cannot prove that macOS delivered an external app switch, Space change, or status-item activation as a user would;
+- its direct alert-window mouse events do not prove the first physical click while another app is active;
 - test-mode lifecycle suppression or direct internal actions are not evidence of production system behaviour;
 - configuration and property assertions support evidence but do not prove the corresponding user-visible interaction.
 

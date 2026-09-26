@@ -3,14 +3,34 @@ import AppKit
 package let timerCompletionAlertDisplayDuration: TimeInterval = 5
 
 @MainActor
+private final class TimerCompletionAlertView: NSVisualEffectView {
+    var onClick: (() -> Void)?
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        let localPoint = convert(point, from: superview)
+        return bounds.contains(localPoint) ? self : nil
+    }
+
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override var needsPanelToBecomeKey: Bool { false }
+    override var mouseDownCanMoveWindow: Bool { false }
+
+    override func mouseDown(with event: NSEvent) {
+        onClick?()
+    }
+}
+
+@MainActor
 final class TimerCompletionAlertPresenter {
     private var panel: NSPanel?
     private var sound: NSSound?
     private var dismissWorkItem: DispatchWorkItem?
+    private var presentationGeneration = 0
 
     func present() {
         let panel = panel ?? makePanel()
         self.panel = panel
+        presentationGeneration += 1
         dismissWorkItem?.cancel()
         position(panel)
         playSound()
@@ -43,15 +63,25 @@ final class TimerCompletionAlertPresenter {
             panel.orderOut(nil)
             return
         }
+        let generation = presentationGeneration
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.15
             panel.animator().alphaValue = 0
-        } completionHandler: {
-            Task { @MainActor in
+        } completionHandler: { [weak self] in
+            Task { @MainActor [weak self] in
+                guard self?.presentationGeneration == generation else { return }
                 panel.orderOut(nil)
                 panel.alphaValue = 1
             }
         }
+    }
+
+    private func dismissImmediately() {
+        presentationGeneration += 1
+        dismissWorkItem?.cancel()
+        dismissWorkItem = nil
+        panel?.orderOut(nil)
+        panel?.alphaValue = 1
     }
 
     private func makePanel() -> NSPanel {
@@ -68,10 +98,12 @@ final class TimerCompletionAlertPresenter {
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.level = .statusBar
-        panel.ignoresMouseEvents = true
+        panel.ignoresMouseEvents = false
+        panel.becomesKeyOnlyIfNeeded = true
         panel.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle, .fullScreenAuxiliary]
 
-        let background = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        let background = TimerCompletionAlertView(frame: NSRect(origin: .zero, size: size))
+        background.onClick = { [weak self] in self?.dismissImmediately() }
         background.material = .hudWindow
         background.blendingMode = .behindWindow
         background.state = .active
