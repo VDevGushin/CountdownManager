@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import os
@@ -166,6 +167,7 @@ def session_start(root: Path, event: dict[str, Any], path: Path) -> None:
 def post_tool_use(root: Path, event: dict[str, Any], path: Path) -> None:
     current = swift_snapshot(root)
     state = load_state(path)
+    needs_initial_state = state is None
     if state is None:
         state = {
             "baseline": current,
@@ -181,7 +183,8 @@ def post_tool_use(root: Path, event: dict[str, Any], path: Path) -> None:
     state["current"] = current
 
     if not changed:
-        save_state(path, state)
+        if needs_initial_state:
+            save_state(path, state)
         return
 
     state["swift_touched"] = True
@@ -250,12 +253,16 @@ def main() -> int:
         session_id = str(event.get("session_id") or "unknown-session")
         path = state_path(root, session_id)
 
-        if sys.argv[1] == "session-start":
-            session_start(root, event, path)
-        elif sys.argv[1] == "post-tool-use":
-            post_tool_use(root, event, path)
-        else:
-            stop(root, event, path)
+        # Serialize the complete read/modify/write cycle for this session.
+        # Keep the lock file in place so waiting processes share the same inode.
+        with path.with_suffix(".lock").open("a") as lock_file:
+            fcntl.flock(lock_file, fcntl.LOCK_EX)
+            if sys.argv[1] == "session-start":
+                session_start(root, event, path)
+            elif sys.argv[1] == "post-tool-use":
+                post_tool_use(root, event, path)
+            else:
+                stop(root, event, path)
     except Exception as error:  # Hooks must return a useful gate failure, not a traceback.
         failure(f"Swift harness hook failed: {error}")
     return 0
