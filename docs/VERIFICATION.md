@@ -74,6 +74,9 @@ Real UI Smoke cover the 180-millisecond motion policy, immediate reduced-motion 
 selection, rapid last-tap-wins behaviour and the final value consumed by Play.
 An isolated today-dated primary and short secondary event add a full-panel capture of the date and
 `Сегодня` badge. The fixture is removed before the other capture scenarios run.
+Two day-creation captures show the inline `Завтра` / `Выбрать дату` choices and the default
+`Новый день` editor. Real UI Smoke separately exercises the native date field, weekday title
+updates and manual override, Save/Cancel data boundaries and retained day drafts through hide/show.
 Appearance and accessibility values are injected only into the isolated retained hierarchy and are
 recorded per image in the manifest; system settings are never changed. A still image under the
 Reduce Motion environment proves that the state renders cleanly, while the deterministic animation

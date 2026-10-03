@@ -232,6 +232,7 @@ Contains deterministic UI-facing transformations and state that do not require S
 - normal event menu-bar title generation;
 - editor validity checks;
 - editor draft representation;
+- day-creation defaults and Russian calendar weekday titles;
 - disclosure preference persistence.
 
 Timer-specific remaining-time formatting stays with `CountdownTimer.swift` because it is independent of event presentation semantics.
@@ -246,6 +247,8 @@ Files:
 `CountdownManagerRootView` is the stable SwiftUI root inside the retained hosting controller. It composes the compact timer strip with `ManagerView`.
 
 `ManagerView` owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
+
+The header calendar control reveals inline day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: tomorrow's date, `📅`, a Russian weekday title and empty note/subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary; no template library, week state or schema field is introduced.
 
 Emoji selection stays in the editor through a plain current-value display, compact presets and an inline expanded catalog. `Ещё…` reveals a fixed-size paged grid: `EditorView` keeps a transient page index, renders five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`) in one horizontally sliding page strip, shows the active set name above conventional previous/next buttons and clickable page dots, and also accepts a horizontal drag to change sets. The first set reuses the compact presets as its top row. Choosing an emoji replaces the draft value, resets the page index and collapses the expanded grid; expansion uses opacity/layout animation while page changes slide horizontally, and both respect Reduce Motion. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
 

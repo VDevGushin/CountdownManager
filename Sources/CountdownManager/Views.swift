@@ -7,6 +7,9 @@ struct ManagerView: View {
     @ObservedObject var store: Store
     @State private var editing: Countdown?
     @State private var showingEditor = false
+    @State private var showingDayChoices = false
+    @State private var dayPreset: DayCreationPreset?
+    @State private var selectDayDate = false
     @State private var rootIdentity = UUID()
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
@@ -35,7 +38,13 @@ struct ManagerView: View {
                     .allowsHitTesting(!showingEditor)
                     .accessibilityHidden(showingEditor)
                 if showingEditor {
-                    EditorView(store: store, item: editing, done: finishEditor)
+                    EditorView(
+                        store: store,
+                        item: editing,
+                        dayPreset: dayPreset,
+                        selectDayDate: selectDayDate,
+                        done: finishEditor
+                    )
                 }
             }
         }
@@ -49,6 +58,9 @@ struct ManagerView: View {
     private var listScreen: some View {
         VStack(spacing: 0) {
             header
+            if showingDayChoices {
+                dayChoices
+            }
             Divider()
             ScrollView {
                 VStack(spacing: 8) {
@@ -93,12 +105,33 @@ struct ManagerView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button(action: toggleDayChoices) { Image(systemName: "calendar.badge.plus") }
+                .help(EventUIStrings.createDay).accessibilityLabel(EventUIStrings.createDay)
+                .accessibilityIdentifier("day.add")
+                .uiSmokeControl(id: "day.add", action: toggleDayChoices)
+                .disabled(store.isLoading)
             Button(action: add) { Image(systemName: "plus") }
                 .help(EventUIStrings.addEvent).accessibilityLabel(EventUIStrings.addEvent)
                 .accessibilityIdentifier("event.add")
                 .uiSmokeControl(id: "event.add", action: add)
                 .disabled(store.isLoading)
         }.padding(16)
+    }
+
+    private var dayChoices: some View {
+        HStack {
+            Text(EventUIStrings.createDay).font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button("Завтра") { createDay(selectDate: false) }
+                .accessibilityIdentifier("creation.day.tomorrow")
+                .uiSmokeControl(id: "creation.day.tomorrow", action: { createDay(selectDate: false) })
+            Button("Выбрать дату") { createDay(selectDate: true) }
+                .accessibilityIdentifier("creation.day.chooseDate")
+                .uiSmokeControl(id: "creation.day.chooseDate", action: { createDay(selectDate: true) })
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+        .disabled(store.isLoading)
     }
 
     private func row(_ item: Countdown) -> some View {
@@ -243,12 +276,33 @@ struct ManagerView: View {
     private func finishEditor() {
         showingEditor = false
         editing = nil
+        dayPreset = nil
+        selectDayDate = false
     }
 
     private func add() {
         guard !showingEditor else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
         editing = nil
+        dayPreset = nil
+        selectDayDate = false
+        showingDayChoices = false
+        showingEditor = true
+    }
+
+    private func toggleDayChoices() {
+        guard !showingEditor else { return }
+        showingDayChoices.toggle()
+    }
+
+    private func createDay(selectDate: Bool) {
+        guard !showingEditor,
+              let preset = DayCreationPreset.tomorrow(after: store.today) else { return }
+        DiagnosticLog.shared.record("editor.open mode=day")
+        editing = nil
+        dayPreset = preset
+        selectDayDate = selectDate
+        showingDayChoices = false
         showingEditor = true
     }
 
@@ -256,6 +310,9 @@ struct ManagerView: View {
         guard !showingEditor else { return }
         DiagnosticLog.shared.record("editor.open mode=edit id=\(item.id.uuidString)")
         editing = item
+        dayPreset = nil
+        selectDayDate = false
+        showingDayChoices = false
         showingEditor = true
     }
 }
@@ -371,6 +428,8 @@ struct EditorView: View {
     @ObservedObject var store: Store
     let item: Countdown?
     let done: () -> Void
+    private let isNewDay: Bool
+    private let selectDayDate: Bool
     @State private var draft: EventEditorDraft
     @State private var date: Date
     @State private var primary: Bool
@@ -406,10 +465,22 @@ struct EditorView: View {
             + emojiSpacing * CGFloat(emojiRows.count - 1)
     }
 
-    init(store: Store, item: Countdown?, done: @escaping () -> Void) {
+    init(
+        store: Store,
+        item: Countdown?,
+        dayPreset: DayCreationPreset? = nil,
+        selectDayDate: Bool = false,
+        done: @escaping () -> Void
+    ) {
         self.store = store; self.item = item; self.done = done
-        _draft = State(initialValue: EventEditorDraft(item: item))
-        _date = State(initialValue: item?.date.date() ?? store.tomorrow)
+        isNewDay = item == nil && dayPreset != nil
+        self.selectDayDate = isNewDay && selectDayDate
+        if item == nil, let dayPreset {
+            _draft = State(initialValue: EventEditorDraft(day: dayPreset.day))
+        } else {
+            _draft = State(initialValue: EventEditorDraft(item: item))
+        }
+        _date = State(initialValue: item?.date.date() ?? dayPreset?.day.date() ?? store.tomorrow)
         _primary = State(initialValue: item == nil ? store.active.isEmpty : store.data.primaryID == item?.id)
     }
 
@@ -434,15 +505,23 @@ struct EditorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(item == nil ? EventUIStrings.newEvent : EventUIStrings.editEvent)
+            Text(item != nil ? EventUIStrings.editEvent : (isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent))
                 .font(.system(size: 13, weight: .semibold))
                 .padding(.bottom, 12)
+            if selectDayDate {
+                Text("Выберите дату для нового дня.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+            }
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 6) {
                             Text("Название").font(.caption).foregroundStyle(.secondary)
-                            TextField("Например, отпуск", text: $draft.title)
+                            TextField("Например, отпуск", text: Binding(
+                                get: { draft.title },
+                                set: { draft.setTitle($0) }
+                            ))
                                 .textFieldStyle(.roundedBorder)
                                 .focused($focusedField, equals: .title)
                                 .auroraInputChrome(isFocused: focusedField == .title)
@@ -545,6 +624,9 @@ struct EditorView: View {
         }
         .environment(\.locale, Locale(identifier: "ru_RU"))
         .environment(\.calendar, Day.calendar)
+        .onChange(of: date) { newDate in
+            draft.updateDayTitle(for: Day(newDate))
+        }
     }
 
     private var deletionControls: some View {

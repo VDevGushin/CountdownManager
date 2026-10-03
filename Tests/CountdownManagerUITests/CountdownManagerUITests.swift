@@ -39,6 +39,7 @@ enum UIChecks {
         precondition(EventUIStrings.deleteEvent == "Удалить событие?")
         precondition(EventUIStrings.emptyTitle == "Пока нет событий")
         precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
+        testDayCreationDefaultsAndCalendarBoundaries()
 
         // The timer exposes only bounded presets and cannot overflow display seconds.
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
@@ -314,7 +315,7 @@ enum UIChecks {
             )
         }
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; day defaults, seven Russian weekdays, civil-date boundaries and title override")
     }
 
     @MainActor
@@ -332,6 +333,86 @@ enum UIChecks {
         store.setLogin(true)
         precondition(store.loginStatus == .notRegistered)
         store.openLoginItemSettings()
+    }
+
+    private static func testDayCreationDefaultsAndCalendarBoundaries() {
+        let weekdayNames = [
+            "Понедельник", "Вторник", "Среда", "Четверг",
+            "Пятница", "Суббота", "Воскресенье"
+        ]
+        for (offset, title) in weekdayNames.enumerated() {
+            let day = civilDay(2026, 10, 5 + offset)
+            let draft = EventEditorDraft(day: day)
+            precondition(russianWeekdayTitle(day) == title)
+            precondition(draft.title == title && draft.emoji == "📅")
+            precondition(draft.note.isEmpty && draft.subtasks.isEmpty)
+            let event = draft.countdown(id: UUID(), date: day)
+            precondition(event.title == title && event.date == day && event.emoji == "📅")
+            precondition((event.note ?? "").isEmpty && event.subtasks.isEmpty)
+            precondition(editorCanSave(
+                title: draft.title, note: draft.note, date: day,
+                emoji: draft.emoji, today: civilDay(2026, 10, 3)
+            ))
+        }
+
+        // Adding a civil day must work at year/month/leap-day and DST boundaries.
+        let boundaries = [
+            (civilDay(2026, 12, 31), civilDay(2027, 1, 1)),
+            (civilDay(2026, 4, 30), civilDay(2026, 5, 1)),
+            (civilDay(2028, 2, 28), civilDay(2028, 2, 29)),
+            (civilDay(2028, 2, 29), civilDay(2028, 3, 1)),
+            (civilDay(2027, 2, 28), civilDay(2027, 3, 1)),
+            (civilDay(2026, 3, 8), civilDay(2026, 3, 9)),
+            (civilDay(2026, 11, 1), civilDay(2026, 11, 2))
+        ]
+        for zone in ["UTC", "Europe/Moscow", "America/Los_Angeles"] {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: zone)!
+            for (today, expected) in boundaries {
+                precondition(DayCreationPreset.tomorrow(after: today, calendar: calendar)?.day == expected)
+            }
+        }
+
+        let monday = civilDay(2026, 10, 5)
+        let tuesday = civilDay(2026, 10, 6)
+        var followingDate = EventEditorDraft(day: monday)
+        followingDate.note = "Plan for this day"
+        followingDate.subtasks = [try! Subtask(text: "Sport")]
+        followingDate.emoji = "🏍️"
+        followingDate.updateDayTitle(for: tuesday)
+        precondition(followingDate.title == "Вторник")
+        precondition(followingDate.note == "Plan for this day")
+        precondition(followingDate.emoji == "🏍️" && followingDate.subtasks[0].text == "Sport")
+        followingDate.setTitle("Мой день")
+        followingDate.updateDayTitle(for: monday)
+        precondition(followingDate.title == "Мой день")
+
+        // Native fields may commit their unchanged value when the date changes.
+        var manuallyNamed = EventEditorDraft(day: monday)
+        manuallyNamed.setTitle("Понедельник")
+        manuallyNamed.updateDayTitle(for: tuesday)
+        precondition(manuallyNamed.title == "Вторник")
+        manuallyNamed.setTitle("Мой день")
+        manuallyNamed.setTitle("Понедельник")
+        manuallyNamed.updateDayTitle(for: tuesday)
+        precondition(manuallyNamed.title == "Понедельник")
+
+        var ordinary = EventEditorDraft(item: nil)
+        precondition(ordinary.title.isEmpty && ordinary.emoji == "🎉")
+        ordinary.updateDayTitle(for: monday)
+        precondition(ordinary.title.isEmpty)
+        var existing = EventEditorDraft(item: Countdown(title: "Custom event", date: monday, emoji: "🚀"))
+        existing.updateDayTitle(for: tuesday)
+        precondition(existing.title == "Custom event" && existing.emoji == "🚀")
+        precondition(!editorCanSave(
+            title: "Понедельник", note: "", date: monday, emoji: "📅", today: monday
+        ))
+    }
+
+    private static func civilDay(_ year: Int, _ month: Int, _ day: Int) -> Day {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return Day(calendar.date(from: DateComponents(year: year, month: month, day: day))!, calendar: calendar)
     }
 
     @MainActor

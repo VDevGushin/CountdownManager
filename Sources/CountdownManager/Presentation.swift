@@ -5,6 +5,8 @@ package enum EventUIStrings {
     package static let addEvent = "Добавить событие"
     package static let newEvent = "Новое событие"
     package static let editEvent = "Редактировать событие"
+    package static let createDay = "Создать день"
+    package static let newDay = "Новый день"
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
     package static let emptyMessage = "Добавь событие и выбери дату — приложение покажет, сколько дней до него осталось."
@@ -110,17 +112,59 @@ package enum EditorFocusTarget: Hashable {
     case subtask(UUID)
 }
 
+package func russianWeekdayTitle(_ day: Day) -> String {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let titles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+    return titles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
+}
+
+package struct DayCreationPreset: Equatable {
+    package let day: Day
+
+    package init(day: Day) {
+        self.day = day
+    }
+
+    package static func tomorrow(after today: Day, calendar: Calendar = Day.calendar) -> DayCreationPreset? {
+        guard let date = calendar.date(byAdding: .day, value: 1, to: today.date(calendar: calendar)) else {
+            return nil
+        }
+        return DayCreationPreset(day: Day(date, calendar: calendar))
+    }
+}
+
 package struct EventEditorDraft: Equatable {
     package var title: String
     package var note: String
     package var emoji: String
     package var subtasks: [Subtask]
+    private var followsDayDate = false
 
     package init(item: Countdown?) {
         title = item?.title ?? ""
         note = item?.note ?? ""
         emoji = item?.emoji ?? "🎉"
         subtasks = item?.subtasks ?? []
+    }
+
+    package init(day: Day) {
+        title = russianWeekdayTitle(day)
+        note = ""
+        emoji = "📅"
+        subtasks = []
+        followsDayDate = true
+    }
+
+    package mutating func setTitle(_ title: String) {
+        guard title != self.title else { return }
+        self.title = title
+        followsDayDate = false
+    }
+
+    package mutating func updateDayTitle(for day: Day) {
+        guard followsDayDate else { return }
+        title = russianWeekdayTitle(day)
     }
 
     @discardableResult

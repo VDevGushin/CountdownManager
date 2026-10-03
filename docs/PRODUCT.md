@@ -78,6 +78,18 @@ The first saved event becomes the primary event automatically.
 
 Changes entered in the editor do not become event data until the user explicitly saves them.
 
+### Creating a day
+
+The header calendar control, labelled `Создать день`, reveals inline `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
+
+Both day choices open the existing editor as `Новый день`, initially dated tomorrow. `Выбрать дату` asks the user to choose a future date in the ordinary date field. A day draft starts with the calendar emoji `📅`, the Russian weekday name for its selected date, an empty note and no subtasks.
+
+While the title has not been manually edited, changing the date updates the weekday title. After a manual title edit, later date changes preserve that custom title. All ordinary event fields remain editable.
+
+Opening a day draft creates no persisted event. Save creates an ordinary event with the existing date, validation, primary-selection and expiry rules. Multiple events on the same date remain allowed. A repeated creation request while an editor is already open preserves that editor and its input rather than replacing it. Hiding and showing the panel also preserve the draft.
+
+This is a single-day creation shortcut; it does not create a week or store reusable templates.
+
 ### Editing an event
 
 An existing event may be edited while it is scheduled for today.

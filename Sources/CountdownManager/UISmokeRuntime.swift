@@ -469,6 +469,16 @@ final class UISmokeRuntime {
             self.controls.entries["editor.edit"] == nil
         }
         try await scrollRootListToTop()
+        try await press("day.add")
+        try await waitForElement("creation.day.chooseDate")
+        try await settleLayout()
+        try capture(name: "13-day-choices")
+        try await press("creation.day.tomorrow")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(Day(store.tomorrow)))
+        try await settleLayout()
+        try capture(name: "14-day-editor")
+        try await press("editor.cancel")
+        try await waitFor("list restored after day capture") { self.controls.entries["editor.new"] == nil }
         visualEnvironment.colorSchemeOverride = .light
         try await settleLayout()
         try requireNonOverlappingCardFrames(minimumCount: 4)
@@ -652,7 +662,7 @@ final class UISmokeRuntime {
     }
 
     private func writeCaptureManifest() throws {
-        try require(captures.count == 12, "capture set is incomplete")
+        try require(captures.count == 14, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifest = CaptureManifest(version: 2, captures: captures.sorted { $0.name < $1.name })
@@ -787,6 +797,96 @@ final class UISmokeRuntime {
         pass("inline deletion confirmation preserves cancellation and persists explicit deletion")
         try verifyDiagnosticsPrivacy(forbidden: ["Window smoke event", "Private synthetic note", "Keep unavailable draft", "Alpha", "😎"])
         pass("diagnostics remain free of private editor input")
+        try await verifyDayCreation()
+    }
+
+    private func verifyDayCreation() async throws {
+        let initialData = store.data
+        let initialJSON = try Data(contentsOf: configuration.dataURL)
+        let tomorrow = Day(store.tomorrow)
+        try await press("day.add")
+        try await press("creation.day.tomorrow")
+        try await waitForElement("editor.new")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try await waitForValue("editor.emoji", equals: "📅")
+        try require(controls.value("editor.note")?.isEmpty == true, "new day has a nonempty note")
+        try require(editorSubtaskFieldIDs().isEmpty, "new day inherited subtasks")
+        try require(controls.value("editor.date") == dateValue(tomorrow), "new day is not tomorrow")
+        try require(store.data == initialData, "opening day editor created event data")
+        try require(Data(contentsOf: configuration.dataURL) == initialJSON, "opening day editor wrote JSON")
+
+        let chosenDay = Day(Day.calendar.date(byAdding: .day, value: 2, to: store.today.date())!)
+        try await selectEditorDate(chosenDay)
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(chosenDay))
+        try await focusAndReplace("editor.title", with: "Personal day plan")
+        let finalDay = Day(Day.calendar.date(byAdding: .day, value: 3, to: store.today.date())!)
+        try await selectEditorDate(finalDay)
+        try require(controls.value("editor.title") == "Personal day plan", "date overwrote a manual day title")
+        try await focusAndReplace("editor.note", with: "Synthetic day note")
+        try await press("editor.subtask.add")
+        try await waitFor("one day subtask") { self.editorSubtaskFieldIDs().count == 1 }
+        let field = try requireValue(editorSubtaskFieldIDs().first, "day subtask field")
+        try await waitForFirstResponder(field)
+        try insertText("Sport")
+        try await waitForValue(field, equals: "Sport")
+        let owner = controls.entries["editor.new"]?.ownerID
+        try require(!controls.press("day.add"), "inactive day creation action accepted input while editing")
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.new"]?.ownerID == owner, "day editor identity changed on reopen")
+        try require(controls.value("editor.title") == "Personal day plan"
+                    && controls.value("editor.note") == "Synthetic day note"
+                    && controls.value(field) == "Sport"
+                    && controls.value("editor.date") == dateValue(finalDay),
+                    "day editor draft changed on reopen or repeated creation")
+        try require(store.data == initialData, "unsaved day changed event data")
+        try require(Data(contentsOf: configuration.dataURL) == initialJSON, "unsaved day wrote JSON")
+        try await press("editor.save")
+        try await waitFor("day saved") { self.controls.entries["editor.new"] == nil && self.store.active.count == 1 }
+        let saved = try requireValue(store.active.first, "saved day")
+        try require(saved.title == "Personal day plan" && saved.date == finalDay && saved.emoji == "📅"
+                    && saved.note == "Synthetic day note" && saved.subtasks.count == 1
+                    && saved.subtasks[0].text == "Sport" && !saved.subtasks[0].isCompleted,
+                    "day Save did not persist the editor fields")
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(persisted == store.data, "day Save is not durable")
+        pass("tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show")
+
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
+        let savedData = store.data
+        try await press("day.add")
+        try await press("creation.day.chooseDate")
+        try await waitForElement("editor.new")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try require(controls.value("editor.note")?.isEmpty == true && controls.value("editor.emoji") == "📅"
+                    && editorSubtaskFieldIDs().isEmpty,
+                    "choose-date day inherited the previously saved plan")
+        let selectedDay = Day(Day.calendar.date(byAdding: .day, value: 4, to: store.today.date())!)
+        try await selectEditorDate(selectedDay)
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(selectedDay))
+        try await hideAndShow()
+        try await press("editor.cancel")
+        try await waitFor("day cancelled") { self.controls.entries["editor.new"] == nil }
+        try require(store.data == savedData, "day Cancel changed event data")
+        try require(Data(contentsOf: configuration.dataURL) == savedJSON, "day Cancel wrote JSON")
+        pass("choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged")
+        try verifyDiagnosticsPrivacy(forbidden: ["Personal day plan", "Synthetic day note", "Sport"])
+    }
+
+    private func dateValue(_ day: Day) -> String {
+        "\(day.year)-\(day.month)-\(day.day)"
+    }
+
+    private func editorSubtaskFieldIDs() -> [String] {
+        controls.ids(withPrefix: "editor.subtask.").filter { $0 != "editor.subtask.add" }
+    }
+
+    private func selectEditorDate(_ day: Day) async throws {
+        let content = try requireValue(window()?.contentView, "editor content")
+        let picker = try requireValue(allSubviews(of: content).compactMap { $0 as? NSDatePicker }.first,
+                                     "native editor date picker")
+        picker.dateValue = day.date()
+        try require(picker.sendAction(picker.action, to: picker.target), "native date picker did not deliver its action")
+        try await waitForValue("editor.date", equals: dateValue(day))
     }
 
     private func scrollRootList() async throws {
@@ -1025,11 +1125,13 @@ final class UISmokeRuntime {
             return view.convert(view.bounds, to: contentView)
         }()
         let emoji = controls.value("editor.emoji") ?? "nil"
+        let title = controls.value("editor.title") ?? "nil"
+        let date = controls.value("editor.date") ?? "nil"
         let subtaskFrames = controls.ids(withPrefix: "subtask.toggle.")
             .map { "\($0)=\(String(describing: controls.frame($0)))" }
             .joined(separator: ", ")
         finish(
-            "UISmoke\nWindow visible=\(window()?.isVisible == true), key=\(window()?.isKeyWindow == true), loading=\(store.isLoading), saveEnabled=\(controls.entries["editor.save"]?.isEnabled == true)\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)\nActual: focus=\(controls.focusedID ?? "nil"), responder=\(responder), delegate=\(delegate), delegateFrame=\(String(describing: delegateFrame)), emoji=\(emoji), \(frames), \(subtaskFrames)",
+            "UISmoke\nWindow visible=\(window()?.isVisible == true), key=\(window()?.isKeyWindow == true), loading=\(store.isLoading), saveEnabled=\(controls.entries["editor.save"]?.isEnabled == true)\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)\nActual: focus=\(controls.focusedID ?? "nil"), responder=\(responder), delegate=\(delegate), delegateFrame=\(String(describing: delegateFrame)), title=\(title), date=\(date), emoji=\(emoji), \(frames), \(subtaskFrames)",
             exitCode: 1
         )
     }
