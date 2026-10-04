@@ -44,79 +44,83 @@ final class AuroraAccessibilitySettings: ObservableObject {
 }
 
 enum AuroraInstrument {
-    static let cardCornerRadius: CGFloat = 14
-    static let controlCornerRadius: CGFloat = 10
-    static let inputCornerRadius: CGFloat = 8
-    static let emojiCornerRadius: CGFloat = 6
+    static let cardCornerRadius: CGFloat = 8
+    static let controlCornerRadius: CGFloat = 8
+    static let inputCornerRadius: CGFloat = 4
+    static let emojiCornerRadius: CGFloat = 5
 
-    static let violet = Color(red: 0.39, green: 0.36, blue: 1)
-    static let cyan = Color(red: 0.21, green: 0.73, blue: 1)
-    static let today = Color(red: 0.03, green: 0.46, blue: 0.35)
-    static let finished = Color(red: 0.64, green: 0.32, blue: 0)
-    static let focus = Color(red: 0.31, green: 0.41, blue: 1)
+    static func accent(for scheme: ColorScheme, highContrast: Bool) -> Color {
+        if scheme == .dark {
+            return highContrast ? Color(red: 1, green: 0.75, blue: 0.63) : Color(red: 0.96, green: 0.61, blue: 0.5)
+        }
+        return highContrast ? Color(red: 0.63, green: 0.17, blue: 0.1) : Color(red: 0.82, green: 0.28, blue: 0.18)
+    }
+
+    static func ink(for scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color(red: 0.95, green: 0.9, blue: 0.83) : Color(red: 0.19, green: 0.15, blue: 0.13)
+    }
 
     static func canvas(for scheme: ColorScheme) -> Color {
-        scheme == .dark
-            ? Color(red: 0.07, green: 0.07, blue: 0.1)
-            : Color(red: 0.96, green: 0.97, blue: 0.98)
+        scheme == .dark ? Color(red: 0.13, green: 0.11, blue: 0.1) : Color(red: 0.98, green: 0.96, blue: 0.93)
     }
 
     static func surface(for scheme: ColorScheme, elevated: Bool, highContrast: Bool) -> Color {
         if scheme == .dark {
-            return elevated
-                ? Color(red: 0.14, green: 0.16, blue: 0.21)
-                : Color(red: 0.11, green: 0.12, blue: 0.16)
+            return elevated ? Color(red: 0.2, green: 0.16, blue: 0.13) : Color(red: 0.16, green: 0.13, blue: 0.11)
         }
-        return elevated || highContrast ? Color.white : Color.white.opacity(0.72)
+        return highContrast ? .white : Color(red: 1, green: 0.98, blue: 0.95)
+    }
+
+    static func timerSurface(for scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color(red: 0.18, green: 0.15, blue: 0.12) : Color(red: 0.95, green: 0.92, blue: 0.87)
     }
 
     static func stroke(for scheme: ColorScheme, highContrast: Bool) -> Color {
         if highContrast {
-            return scheme == .dark
-                ? Color(red: 0.73, green: 0.76, blue: 0.82)
-                : Color(red: 0.3, green: 0.33, blue: 0.39)
+            return scheme == .dark ? Color(red: 0.75, green: 0.68, blue: 0.59) : Color(red: 0.36, green: 0.28, blue: 0.22)
         }
-        return scheme == .dark ? Color.white.opacity(0.12) : Color.white.opacity(0.62)
+        return scheme == .dark ? Color(red: 0.49, green: 0.4, blue: 0.31).opacity(0.5)
+            : Color(red: 0.68, green: 0.55, blue: 0.36).opacity(0.3)
     }
 
     static func accentSurface(for scheme: ColorScheme, highContrast: Bool) -> Color {
-        guard highContrast else {
-            return violet.opacity(scheme == .dark ? 0.2 : 0.12)
-        }
-        return scheme == .dark
-            ? Color(red: 0.25, green: 0.24, blue: 0.44)
-            : Color(red: 0.89, green: 0.88, blue: 1)
+        accent(for: scheme, highContrast: highContrast).opacity(highContrast ? 0.22 : 0.1)
     }
 
     static func accentBorder(for scheme: ColorScheme, highContrast: Bool) -> Color {
-        guard highContrast else { return violet.opacity(0.42) }
-        return scheme == .dark
-            ? Color(red: 0.71, green: 0.68, blue: 1)
-            : Color(red: 0.25, green: 0.24, blue: 0.68)
+        accent(for: scheme, highContrast: highContrast).opacity(highContrast ? 1 : 0.5)
     }
 
     static func secondaryInk(for scheme: ColorScheme) -> Color {
-        scheme == .dark
-            ? Color(red: 0.65, green: 0.68, blue: 0.74)
-            : Color(red: 0.39, green: 0.42, blue: 0.48)
+        scheme == .dark ? Color(red: 0.76, green: 0.69, blue: 0.6) : Color(red: 0.45, green: 0.36, blue: 0.29)
+    }
+
+    static func completedCheck(for scheme: ColorScheme, highContrast: Bool) -> Color {
+        if highContrast {
+            return scheme == .dark ? Color(red: 0.53, green: 0.48, blue: 0.43)
+                : Color(red: 0.38, green: 0.35, blue: 0.32)
+        }
+        return scheme == .dark ? Color(red: 0.5, green: 0.46, blue: 0.42)
+            : Color(red: 0.48, green: 0.44, blue: 0.4)
+    }
+
+    static func accentInk(for scheme: ColorScheme, highContrast: Bool) -> Color {
+        scheme == .dark ? accent(for: scheme, highContrast: highContrast)
+            : Color(red: highContrast ? 0.57 : 0.7, green: 0.2, blue: 0.12)
     }
 
     static func finishedColor(for scheme: ColorScheme, highContrast: Bool) -> Color {
         if scheme == .dark {
-            return highContrast
-                ? Color(red: 1, green: 0.82, blue: 0.54)
-                : Color(red: 1, green: 0.7, blue: 0.36)
+            return highContrast ? Color(red: 1, green: 0.82, blue: 0.54) : Color(red: 1, green: 0.7, blue: 0.36)
         }
-        return highContrast ? Color(red: 0.51, green: 0.24, blue: 0) : finished
+        return highContrast ? Color(red: 0.51, green: 0.24, blue: 0) : Color(red: 0.64, green: 0.32, blue: 0)
     }
 
     static func todayColor(for scheme: ColorScheme, highContrast: Bool) -> Color {
         if scheme == .dark {
-            return highContrast
-                ? Color(red: 0.33, green: 0.88, blue: 0.69)
-                : Color(red: 0.25, green: 0.84, blue: 0.64)
+            return highContrast ? Color(red: 0.55, green: 0.94, blue: 0.75) : Color(red: 0.4, green: 0.85, blue: 0.65)
         }
-        return highContrast ? Color(red: 0, green: 0.36, blue: 0.27) : today
+        return Color(red: 0, green: highContrast ? 0.32 : 0.39, blue: 0.23)
     }
 }
 
@@ -134,182 +138,31 @@ struct AuroraPanelCanvas: View {
     }
 }
 
-struct AuroraCardBackground: View {
-    let isPrimary: Bool
-
-    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
-    @Environment(\.colorScheme) private var colorScheme
-
-    private var highContrast: Bool { accessibilitySettings.prefersHighContrast }
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius)
-        shape
-            .fill(AuroraInstrument.surface(
-                for: colorScheme,
-                elevated: isPrimary,
-                highContrast: highContrast
-            ))
-            .overlay {
-                if isPrimary && !highContrast {
-                    LinearGradient(
-                        colors: [
-                            AuroraInstrument.violet.opacity(colorScheme == .dark ? 0.18 : 0.1),
-                            AuroraInstrument.cyan.opacity(colorScheme == .dark ? 0.12 : 0.07),
-                            .clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
-            }
-            .overlay(alignment: .topLeading) {
-                if isPrimary && !highContrast {
-                    // An overlay preserves the resolved card size; the decorative
-                    // 86-point glow must not become the background's layout size.
-                    Circle()
-                        .fill(AuroraInstrument.cyan.opacity(colorScheme == .dark ? 0.15 : 0.08))
-                        .frame(width: 86, height: 86)
-                        .blur(radius: 22)
-                        .offset(x: -18, y: -26)
-                }
-            }
-            .clipShape(shape)
-            .overlay(shape.stroke(AuroraInstrument.stroke(for: colorScheme, highContrast: highContrast), lineWidth: 1))
-            .accessibilityHidden(true)
-    }
-}
-
-struct AuroraEmojiBackplate: View {
-    let isPrimary: Bool
-
-    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: AuroraInstrument.controlCornerRadius)
-            .fill(backgroundColor)
-            .overlay(
-                RoundedRectangle(cornerRadius: AuroraInstrument.controlCornerRadius)
-                    .stroke(AuroraInstrument.stroke(
-                        for: colorScheme,
-                        highContrast: accessibilitySettings.prefersHighContrast
-                    ), lineWidth: 1)
-            )
-            .accessibilityHidden(true)
-    }
-
-    private var backgroundColor: Color {
-        if isPrimary {
-            return AuroraInstrument.accentSurface(
-                for: colorScheme,
-                highContrast: accessibilitySettings.prefersHighContrast
-            )
-        }
-        return colorScheme == .dark ? Color.white.opacity(0.06) : Color.black.opacity(0.035)
-    }
-}
-
 struct AuroraTimerBackground: View {
     let appearance: AuroraTimerAppearance
 
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
-    private var highContrast: Bool { accessibilitySettings.prefersHighContrast }
-
     var body: some View {
-        ZStack {
-            baseColor
-            if !highContrast {
-                effectLayer
+        AuroraInstrument.timerSurface(for: colorScheme)
+            .overlay {
+                if case .finished = appearance {
+                    AuroraInstrument.finishedColor(
+                        for: colorScheme,
+                        highContrast: accessibilitySettings.prefersHighContrast
+                    ).opacity(0.1)
+                }
             }
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(borderColor)
-                .frame(height: 1)
-        }
-        .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private var effectLayer: some View {
-        switch appearance {
-        case .idle:
-            LinearGradient(
-                colors: [AuroraInstrument.violet.opacity(0.1), AuroraInstrument.cyan.opacity(0.07)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        case .running:
-            LinearGradient(
-                colors: [AuroraInstrument.violet.opacity(0.18), AuroraInstrument.cyan.opacity(0.14)],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        case .finished:
-            LinearGradient(
-                colors: [AuroraInstrument.finishedColor(for: colorScheme, highContrast: highContrast).opacity(0.16), .clear],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-        }
-    }
-
-    private var baseColor: Color {
-        switch appearance {
-        case .idle:
-            AuroraInstrument.surface(for: colorScheme, elevated: false, highContrast: highContrast)
-        case .running:
-            AuroraInstrument.surface(for: colorScheme, elevated: true, highContrast: highContrast)
-        case .finished:
-            if colorScheme == .dark {
-                Color(red: 0.19, green: 0.14, blue: 0.1)
-            } else {
-                Color(red: 1, green: 0.96, blue: 0.9)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(AuroraInstrument.stroke(
+                        for: colorScheme,
+                        highContrast: accessibilitySettings.prefersHighContrast
+                    ))
+                    .frame(height: 1)
             }
-        }
-    }
-
-    private var borderColor: Color {
-        switch appearance {
-        case .finished:
-            AuroraInstrument.finishedColor(for: colorScheme, highContrast: highContrast).opacity(highContrast ? 0.7 : 0.32)
-        case .idle, .running:
-            AuroraInstrument.stroke(for: colorScheme, highContrast: highContrast)
-        }
-    }
-}
-
-struct AuroraTimerOrb: View {
-    let appearance: AuroraTimerAppearance
-
-    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
-    @Environment(\.colorScheme) private var colorScheme
-
-    var body: some View {
-        Circle()
-            .fill(fill)
-            .overlay(Circle().stroke(AuroraInstrument.stroke(
-                for: colorScheme,
-                highContrast: accessibilitySettings.prefersHighContrast
-            ), lineWidth: 1))
-            .frame(width: 28, height: 28)
             .accessibilityHidden(true)
-    }
-
-    private var fill: Color {
-        switch appearance {
-        case .idle, .running:
-            AuroraInstrument.violet.opacity(colorScheme == .dark ? 0.22 : 0.12)
-        case .finished:
-            AuroraInstrument.finishedColor(
-                for: colorScheme,
-                highContrast: accessibilitySettings.prefersHighContrast
-            )
-            .opacity(colorScheme == .dark ? 0.24 : 0.14)
-        }
     }
 }
 
@@ -323,31 +176,12 @@ struct AuroraTimerPresetSelector: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(presets.enumerated()), id: \.element) { index, minutes in
+        HStack(spacing: 2) {
+            ForEach(presets, id: \.self) { minutes in
                 presetButton(minutes)
-                if index < presets.count - 1 {
-                    Rectangle()
-                        .fill(AuroraInstrument.stroke(
-                            for: colorScheme,
-                            highContrast: accessibilitySettings.prefersHighContrast
-                        ))
-                        .frame(width: 1, height: 16)
-                        .accessibilityHidden(true)
-                }
             }
         }
-        .frame(height: 28)
-        .background(selectorBackground)
-        .clipShape(RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
-                .stroke(AuroraInstrument.stroke(
-                    for: colorScheme,
-                    highContrast: accessibilitySettings.prefersHighContrast
-                ), lineWidth: 1)
-                .allowsHitTesting(false)
-        )
+        .frame(height: 32)
         .onMoveCommand(perform: moveSelection)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Время таймера")
@@ -358,8 +192,8 @@ struct AuroraTimerPresetSelector: View {
         return Button {
             select(minutes)
         } label: {
-            Text("\(minutes)")
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+            Text(minutes == 60 ? "1 ч" : (minutes == 120 ? "2 ч" : "\(minutes)"))
+                .font(.system(size: 11, weight: .medium))
                 .monospacedDigit()
                 .foregroundStyle(labelColor(isSelected: isSelected))
                 .transaction { transaction in
@@ -377,7 +211,10 @@ struct AuroraTimerPresetSelector: View {
                 .overlay {
                     if focusedPreset == minutes {
                         RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius - 1)
-                            .stroke(AuroraInstrument.focus, lineWidth: 2)
+                            .stroke(isSelected ? labelColor(isSelected: true) : AuroraInstrument.accent(
+                                for: colorScheme,
+                                highContrast: accessibilitySettings.prefersHighContrast
+                            ), lineWidth: 2)
                             .padding(1)
                     }
                 }
@@ -394,42 +231,17 @@ struct AuroraTimerPresetSelector: View {
         )
     }
 
-    private var selectorBackground: some View {
-        RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
-            .fill(colorScheme == .dark ? Color.white.opacity(0.18) : Color.white.opacity(0.92))
-    }
-
-    @ViewBuilder
     private var selectionBackground: some View {
-        let shape = RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius - 1)
-        if accessibilitySettings.prefersHighContrast {
-            shape
-                .fill(AuroraInstrument.accentSurface(for: colorScheme, highContrast: true))
-                .overlay(shape.stroke(AuroraInstrument.accentBorder(
-                    for: colorScheme,
-                    highContrast: true
-                ), lineWidth: 2))
-                .padding(1)
-        } else {
-            shape
-                .fill(
-                    LinearGradient(
-                        colors: [AuroraInstrument.violet, AuroraInstrument.cyan.opacity(0.78)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .padding(1)
-                .shadow(color: AuroraInstrument.violet.opacity(0.26), radius: 4, y: 1)
-        }
+        RoundedRectangle(cornerRadius: 5)
+            .fill(AuroraInstrument.accent(
+                for: colorScheme,
+                highContrast: accessibilitySettings.prefersHighContrast
+            ))
     }
 
     private func labelColor(isSelected: Bool) -> Color {
-        guard isSelected else { return .primary }
-        if accessibilitySettings.prefersHighContrast && colorScheme == .light {
-            return Color(red: 0.12, green: 0.11, blue: 0.25)
-        }
-        return .white
+        guard isSelected else { return AuroraInstrument.secondaryInk(for: colorScheme) }
+        return colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white
     }
 
     private func select(_ minutes: Int) {
@@ -473,7 +285,10 @@ struct AuroraEmptyMark: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(AuroraInstrument.violet.opacity(colorScheme == .dark ? 0.16 : 0.08))
+                .fill(AuroraInstrument.accent(
+                    for: colorScheme,
+                    highContrast: accessibilitySettings.prefersHighContrast
+                ).opacity(0.12))
             Circle().stroke(AuroraInstrument.stroke(
                 for: colorScheme,
                 highContrast: accessibilitySettings.prefersHighContrast
@@ -528,7 +343,10 @@ struct AuroraInputChrome: ViewModifier {
             .overlay(
                 RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
                     .stroke(
-                        isFocused ? AuroraInstrument.focus : AuroraInstrument.stroke(
+                        isFocused ? AuroraInstrument.accent(
+                            for: colorScheme,
+                            highContrast: accessibilitySettings.prefersHighContrast
+                        ) : AuroraInstrument.stroke(
                             for: colorScheme,
                             highContrast: accessibilitySettings.prefersHighContrast
                         ),

@@ -157,7 +157,10 @@ copy_capture_evidence() {
         09-reduce-motion-running \
         10-timer-preset-120-static \
         11-timer-preset-reduced-motion-5-static \
-        12-today-badge; do
+        12-today-badge \
+        13-day-choices \
+        14-day-editor \
+        15-subtasks-reduced-motion-collapsed; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
             return 1

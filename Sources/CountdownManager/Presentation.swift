@@ -25,10 +25,21 @@ package enum EditorLayout {
     package static let actionAreaSpacing: CGFloat = 16
 }
 
+package enum SubtaskDisclosureMotion: Equatable {
+    case immediate
+    case heightAndOpacity(duration: TimeInterval)
+}
+
+package func subtaskDisclosureMotion(reduceMotion: Bool) -> SubtaskDisclosureMotion {
+    reduceMotion ? .immediate : .heightAndOpacity(duration: 0.2)
+}
+
 package struct CountdownRowPresentation: Equatable {
     package let note: String?
     package let dateLabel: String
     package let remainingLabel: String
+    package let remainingDays: Int
+    package let remainingUnit: String?
     package let dateAndRemainingLabel: String
     package let isToday: Bool
     package let isPrimary: Bool
@@ -37,10 +48,11 @@ package struct CountdownRowPresentation: Equatable {
     package let completionLabel: String?
 
     package init(item: Countdown, today: Day, primaryID: UUID?) {
-        let remainingDays = item.date.days(from: today)
+        remainingDays = item.date.days(from: today)
         note = item.note
         dateLabel = humanDateLabel(item.date)
         remainingLabel = countdownLabel(remainingDays)
+        remainingUnit = remainingDays == 0 ? nil : remainingLabel.split(separator: " ").dropFirst().joined(separator: " ")
         dateAndRemainingLabel = "\(dateLabel) · \(remainingLabel)"
         isToday = remainingDays == 0
         isPrimary = primaryID == item.id
@@ -50,6 +62,24 @@ package struct CountdownRowPresentation: Equatable {
             ? nil
             : "\(completedSubtasks.count)/\(item.subtasks.count)"
     }
+}
+
+package struct CalendarDateTilePresentation: Equatable {
+    package let monthLabel: String
+    package let dayLabel: String
+
+    package init(day: Day) {
+        let months = [
+            "ЯНВ", "ФЕВР", "МАРТ", "АПР", "МАЙ", "ИЮНЬ",
+            "ИЮЛЬ", "АВГ", "СЕНТ", "ОКТ", "НОЯБ", "ДЕК"
+        ]
+        monthLabel = months[day.month - 1]
+        dayLabel = String(day.day)
+    }
+}
+
+package func eventListEmoji(_ emoji: String) -> String? {
+    emoji == "📅" ? nil : emoji
 }
 
 package func humanDateLabel(_ day: Day) -> String {
@@ -144,7 +174,7 @@ package struct EventEditorDraft: Equatable {
     package init(item: Countdown?) {
         title = item?.title ?? ""
         note = item?.note ?? ""
-        emoji = item?.emoji ?? "🎉"
+        emoji = item?.emoji ?? "📅"
         subtasks = item?.subtasks ?? []
     }
 

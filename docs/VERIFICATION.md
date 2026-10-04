@@ -77,6 +77,12 @@ An isolated today-dated primary and short secondary event add a full-panel captu
 Two day-creation captures show the inline `Завтра` / `Выбрать дату` choices and the default
 `Новый день` editor. Real UI Smoke separately exercises the native date field, weekday title
 updates and manual override, Save/Cancel data boundaries and retained day drafts through hide/show.
+A fifteenth capture records a collapsed checklist under Reduce Motion. The capture scenario also
+checks that hidden checklist controls reject input and that reopening restores the completion groups
+without changing event JSON. The collapse regression exercises interrupted repeated requests, final
+card height, independent disclosure preferences, hide/show continuity and reopening a completed task.
+These checks establish final states and data boundaries; a still capture or motion-policy assertion
+does not prove intermediate animation smoothness or exact wall-clock duration.
 Appearance and accessibility values are injected only into the isolated retained hierarchy and are
 recorded per image in the manifest; system settings are never changed. A still image under the
 Reduce Motion environment proves that the state renders cleanly, while the deterministic animation
