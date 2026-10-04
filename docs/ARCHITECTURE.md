@@ -228,6 +228,7 @@ Contains deterministic UI-facing transformations and state that do not require S
 - compact emoji presets;
 - row presentation values;
 - human-readable dates;
+- calendar-leaf month/day labels and list-only suppression of the default calendar emoji;
 - active-event ordering for presentation;
 - normal event menu-bar title generation;
 - editor validity checks;
@@ -243,8 +244,13 @@ Files:
 
 - `Sources/CountdownManager/CountdownTimer.swift`
 - `Sources/CountdownManager/Views.swift`
+- `Sources/CountdownManager/AuroraInstrument.swift`
 
 `CountdownManagerRootView` is the stable SwiftUI root inside the retained hosting controller. It composes the compact timer strip with `ManagerView`.
+
+`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the primary event and a smaller left-hand leaf for other events. Calendar labels and optional list emoji are derived from `Presentation.swift`; they introduce no separate event state or persisted representation.
+
+An event surface groups the row and its checklist as one block. Checklist disclosure continues to use the cached `SubtaskDisclosureState` as its sole owner; standard SwiftUI layout and opacity transitions animate its presentation without storing a second expanded state or introducing timer-based animation control.
 
 `ManagerView` owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
 

@@ -358,20 +358,98 @@ final class UISmokeRuntime {
     private func runCollapseRegression() async throws {
         for number in 1...7 {
             let event = Countdown(title: "Collapse fixture \(number)", date: Day(store.tomorrow), emoji: "📅",
-                                  subtasks: try (1...5).map { try Subtask(text: "Task \($0)") })
+                                  subtasks: try (1...5).map {
+                                      try Subtask(text: "Task \($0)", isCompleted: $0 == 2 || $0 == 4)
+                                  })
             let saved = await store.save(event, primary: false)
             try require(saved, "fixture save failed")
         }
         let event = try requireValue(store.active.first, "collapse fixture")
+        let sibling = try requireValue(store.active.dropFirst().first, "independent collapse fixture")
         let disclosure = "subtasks.disclosure.\(event.id.uuidString)"
         try await waitForValue(disclosure, equals: "expanded")
+        try await settleLayout()
+        try requireChecklistOrder(event)
+        let expandedHeight = try requireValue(controls.frame("event.card.\(event.id.uuidString)"), "expanded card").height
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
         for _ in 0..<8 {
             try await press(disclosure)
             try await waitForValue(disclosure, equals: "collapsed")
             try await press(disclosure)
             try await waitForValue(disclosure, equals: "expanded")
         }
-        pass("repeated checklist collapse/expand remains responsive with multiple events")
+        // Interrupt before the 200 ms transition ends; assert the eventual state,
+        // not a timing-dependent midpoint of SwiftUI's rendered presentation.
+        for _ in 0..<3 {
+            try require(controls.press(disclosure), "rapid disclosure request was rejected")
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        try await waitForValue(disclosure, equals: "collapsed")
+        try await requireChecklistControls(event, expanded: false)
+        try await settleLayout()
+        let collapsedHeight = try requireValue(controls.frame("event.card.\(event.id.uuidString)"), "collapsed card").height
+        try require(collapsedHeight < expandedHeight - 20, "collapsed checklist still occupies its expanded height")
+        try await requireChecklistControls(sibling, expanded: true)
+        try require(store.subtasksAreExpanded(for: sibling.id), "collapse changed another event's preference")
+        let preferences = SubtaskDisclosurePersistence(defaults: configuration.defaults)
+        try require(!preferences.isExpanded(eventID: event.id) && preferences.isExpanded(eventID: sibling.id),
+                    "independent disclosure preferences were not persisted")
+        try await hideAndShow()
+        try require(!store.subtasksAreExpanded(for: event.id), "hide/show reset the collapsed preference")
+        try require(try Data(contentsOf: configuration.dataURL) == savedJSON,
+                    "disclosure changed persisted event content")
+        pass("interrupted checklist transitions honor the last request, reject hidden controls and preserve independent preferences/data")
+
+        try await press(disclosure)
+        try await requireChecklistControls(event, expanded: true)
+        try await settleLayout()
+        try requireChecklistOrder(event)
+        let reopened = try requireValue(event.subtasks.first(where: \.isCompleted), "completed fixture task")
+        try await press("subtask.toggle.\(reopened.id.uuidString)")
+        try await waitForValue("subtask.toggle.\(reopened.id.uuidString)", equals: "active")
+        let updated = try requireValue(store.active.first(where: { $0.id == event.id }), "updated collapse fixture")
+        try await settleLayout()
+        try requireChecklistOrder(updated)
+        try await waitFor("reopened task persisted") {
+            guard let bytes = try? Data(contentsOf: self.configuration.dataURL),
+                  let data = try? JSONDecoder().decode(CountdownData.self, from: bytes) else { return false }
+            return data.items.first(where: { $0.id == event.id }) == updated
+        }
+        let updatedJSON = try Data(contentsOf: configuration.dataURL)
+        try await press(disclosure)
+        try await requireChecklistControls(updated, expanded: false)
+        try await press(disclosure)
+        try await requireChecklistControls(updated, expanded: true)
+        try await settleLayout()
+        try requireChecklistOrder(updated)
+        try require(try Data(contentsOf: configuration.dataURL) == updatedJSON,
+                    "reopening checklist changed completion data")
+        pass("completed tasks survive disclosure and reopen in stable active/completed order")
+    }
+
+    private func requireChecklistControls(_ event: Countdown, expanded: Bool) async throws {
+        let ids = event.subtasks.map { "subtask.toggle.\($0.id.uuidString)" }
+        try await waitFor("checklist controls \(expanded ? "expanded" : "hidden")") {
+            ids.allSatisfy { self.controls.entries[$0]?.isEnabled == expanded }
+        }
+        if !expanded {
+            for id in ids {
+                try require(!controls.press(id), "collapsed checklist still accepts task changes")
+            }
+        }
+    }
+
+    private func requireChecklistOrder(_ event: Countdown) throws {
+        let ordered = event.subtasks.filter { !$0.isCompleted } + event.subtasks.filter(\.isCompleted)
+        let frames = try ordered.map { subtask in
+            let id = "subtask.toggle.\(subtask.id.uuidString)"
+            try require(controls.value(id) == (subtask.isCompleted ? "completed" : "active"),
+                        "rendered checklist lost completion state")
+            return try requireValue(controls.frame(id), "ordered checklist control")
+        }
+        for (upper, lower) in zip(frames, frames.dropFirst()) {
+            try require(upper.maxY <= lower.minY + 0.5, "checklist does not preserve active/completed group order")
+        }
     }
 
     private func runVisualCaptures() async throws {
@@ -506,6 +584,8 @@ final class UISmokeRuntime {
         try requireTimerPresetLayout()
         try capture(name: "11-timer-preset-reduced-motion-5-static")
 
+        try await runReducedMotionDisclosureCapture(primary)
+
         timer.start(minutes: 5)
         try await waitFor("running timer with Reduce Motion override") {
             if case .running = self.timer.phase { return true }
@@ -515,6 +595,25 @@ final class UISmokeRuntime {
         try capture(name: "09-reduce-motion-running")
         try writeCaptureManifest()
         pass("real panel capture set records baseline and isolated accessibility states")
+    }
+
+    private func runReducedMotionDisclosureCapture(_ event: Countdown) async throws {
+        try require(accessibilitySettings.prefersReducedMotion, "reduced-motion capture override was not applied")
+        let disclosure = "subtasks.disclosure.\(event.id.uuidString)"
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
+        try await requireChecklistControls(event, expanded: true)
+        try await press(disclosure)
+        try await requireChecklistControls(event, expanded: false)
+        try await settleLayout()
+        try requireNonOverlappingCardFrames(minimumCount: 4)
+        try capture(name: "15-subtasks-reduced-motion-collapsed")
+        try await press(disclosure)
+        try await requireChecklistControls(event, expanded: true)
+        try await settleLayout()
+        try requireChecklistOrder(event)
+        try require(try Data(contentsOf: configuration.dataURL) == savedJSON,
+                    "reduced-motion disclosure changed persisted event content")
+        pass("reduced-motion checklist closes noninteractive and reopens with completion groups intact")
     }
 
     private func settleLayout() async throws {
@@ -662,7 +761,7 @@ final class UISmokeRuntime {
     }
 
     private func writeCaptureManifest() throws {
-        try require(captures.count == 14, "capture set is incomplete")
+        try require(captures.count == 15, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifest = CaptureManifest(version: 2, captures: captures.sorted { $0.name < $1.name })

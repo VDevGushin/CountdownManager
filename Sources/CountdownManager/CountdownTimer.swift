@@ -166,20 +166,15 @@ private struct CountdownTimerStrip: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                AuroraTimerOrb(appearance: auroraAppearance)
-                Text("⏰")
-                    .font(.system(size: 20))
-                    .accessibilityHidden(true)
-            }
+        HStack(spacing: 8) {
+            timerIcon
 
             switch timer.phase {
             case .idle:
                 idleControls
             case let .running(remainingSeconds):
                 Text(countdownTimerLabel(remainingSeconds))
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .font(.system(size: 23, weight: .semibold))
                     .monospacedDigit()
                     .animation(
                         accessibilitySettings.prefersReducedMotion ? nil : .easeOut(duration: 0.1),
@@ -202,7 +197,7 @@ private struct CountdownTimerStrip: View {
                 deleteButton
             }
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 16)
         .frame(height: 59)
         .background(AuroraTimerBackground(appearance: auroraAppearance))
         .accessibilityElement(children: .contain)
@@ -221,25 +216,49 @@ private struct CountdownTimerStrip: View {
         }
     }
 
+    @ViewBuilder
+    private var timerIcon: some View {
+        if timer.phase == .idle {
+            Image(systemName: "clock")
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .frame(width: 20)
+                .accessibilityHidden(true)
+        } else {
+            Text("⏰")
+                .font(.system(size: 20))
+                .frame(width: 20)
+                .accessibilityHidden(true)
+        }
+    }
+
     private var idleControls: some View {
         HStack(spacing: 8) {
             AuroraTimerPresetSelector(
                 presets: countdownTimerPresetMinutes,
                 selection: $selectedMinutes
             )
-            .frame(width: 270)
+            .frame(maxWidth: .infinity)
             .accessibilityIdentifier("timer.duration")
             .uiSmokeControl(id: "timer.duration", value: { String(selectedMinutes) })
-
-            Spacer(minLength: 0)
 
             Button {
                 timer.start(minutes: selectedMinutes)
             } label: {
                 Image(systemName: "play.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(colorScheme == .dark ? Color(red: 0.18, green: 0.14, blue: 0.11) : .white)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(AuroraInstrument.accent(
+                                for: colorScheme,
+                                highContrast: accessibilitySettings.prefersHighContrast
+                            ))
+                    )
+                    .contentShape(RoundedRectangle(cornerRadius: 6))
             }
-            .buttonStyle(.borderedProminent)
-            .tint(AuroraInstrument.violet)
+            .buttonStyle(.plain)
             .help("Запустить")
             .accessibilityLabel("Запустить таймер")
             .accessibilityIdentifier("timer.start")
@@ -252,7 +271,9 @@ private struct CountdownTimerStrip: View {
             timer.delete()
         } label: {
             Image(systemName: "trash")
-                .frame(width: 28, height: 28)
+                .font(.system(size: 14))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

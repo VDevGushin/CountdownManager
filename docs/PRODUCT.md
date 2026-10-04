@@ -27,7 +27,11 @@ The single timer is shown as a compact strip above the event interface. There is
 
 The editor contains the existing event fields, a plain display of the current emoji, compact presets and an `Ещё…` action that reveals a larger inline emoji catalog inside the editor. The expanded catalog is organized into five named sets: `Общие`, `Дети`, `Работа`, `Транспорт` and `Праздники`. Each set is a six-row/eight-column page. The current set name is shown above conventional previous/next controls with page dots, so navigation remains visually standard while the page meaning is explicit; horizontal drag/swipe may also change sets. The first set keeps the compact presets as its top row. Choosing an emoji from the expanded catalog replaces the current value and immediately collapses the catalog. The current emoji is not presented as an editable text field. New emoji selections come from the provided catalog; an existing stored valid emoji outside that catalog remains displayable and may be preserved until the user selects another one. Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
 
-Use ordinary controls inside the panel, preserving the existing typography and event hierarchy. Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
+Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The primary event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. Each leaf shows the event's actual month and day, without a leading zero. The event emoji appears immediately before the primary-selection star; the default `📅` is omitted from the list because the leaf already conveys the date. This omission does not change the stored emoji, its editor display or the menu-bar representation.
+
+Each event and its checklist form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
+
+Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
 
 ## Timer
 
@@ -75,6 +79,8 @@ A new event must use a date later than today.
 Past dates and today cannot be selected as the date of a newly created event.
 
 The first saved event becomes the primary event automatically.
+
+An ordinary new-event draft starts with `📅`, just like a new-day draft. The user does not need to choose an emoji before saving. They may replace this default with another emoji; editing an existing event preserves its stored choice.
 
 Changes entered in the editor do not become event data until the user explicitly saves them.
 
@@ -185,6 +191,8 @@ The subtask list may be expanded or collapsed independently for each event.
 Collapse state is UI preference state rather than event content.
 
 It is stored separately from `countdowns.json` and restored across normal application restarts.
+
+Expanding and collapsing a checklist uses a short, non-spring transition of height and opacity lasting 200 milliseconds. With Reduce Motion enabled, it switches immediately. Rapid repeated clicks leave the checklist in the state requested by the last click; other events' disclosure states and event data remain unchanged. Collapsed subtasks do not receive input or remain exposed as interactive accessibility content.
 
 ## Menu bar
 

@@ -40,6 +40,9 @@ enum UIChecks {
         precondition(EventUIStrings.emptyTitle == "Пока нет событий")
         precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
         testDayCreationDefaultsAndCalendarBoundaries()
+        try testPlannerCalendarPresentation()
+        precondition(subtaskDisclosureMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.2))
+        precondition(subtaskDisclosureMotion(reduceMotion: true) == .immediate)
 
         // The timer exposes only bounded presets and cannot overflow display seconds.
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
@@ -249,6 +252,23 @@ enum UIChecks {
         precondition(cachedValuesAreIndependent)
         precondition(initialCachedIDsAreCorrect)
 
+        let lastDesiredValuesPersist = await MainActor.run {
+            for desired in [true, false, true, true, false] {
+                cachedToday.setExpanded(desired)
+                precondition(cachedToday.isExpanded == desired && cachedFuture.isExpanded)
+            }
+            cachedFuture.setExpanded(false)
+            for desired in [true, false, false, true] {
+                cachedToday.setExpanded(desired)
+                precondition(cachedToday.isExpanded == desired && !cachedFuture.isExpanded)
+            }
+            let recreated = SubtaskDisclosureCache(persistence: SubtaskDisclosurePersistence(defaults: defaults))
+            return recreated.state(for: todayItem.id).isExpanded
+                && !recreated.state(for: futureItem.id).isExpanded
+        }
+        precondition(lastDesiredValuesPersist)
+        await MainActor.run { cachedFuture.setExpanded(true) }
+
         // Removing an event clears both the cached object and its persisted value.
         await MainActor.run { disclosureCache.remove(eventID: todayItem.id) }
         let removedCachedID = await MainActor.run {
@@ -398,15 +418,100 @@ enum UIChecks {
         precondition(manuallyNamed.title == "Понедельник")
 
         var ordinary = EventEditorDraft(item: nil)
-        precondition(ordinary.title.isEmpty && ordinary.emoji == "🎉")
+        precondition(ordinary.title.isEmpty && ordinary.emoji == "📅")
+        precondition(ordinary.note.isEmpty && ordinary.subtasks.isEmpty)
         ordinary.updateDayTitle(for: monday)
         precondition(ordinary.title.isEmpty)
+        for emoji in ["🎉", "📅", "👨‍👩‍👧‍👦"] {
+            let stored = Countdown(title: "Existing", date: monday, emoji: emoji)
+            let draft = EventEditorDraft(item: stored)
+            precondition(draft.emoji == emoji && draft.title == stored.title)
+        }
         var existing = EventEditorDraft(item: Countdown(title: "Custom event", date: monday, emoji: "🚀"))
         existing.updateDayTitle(for: tuesday)
         precondition(existing.title == "Custom event" && existing.emoji == "🚀")
         precondition(!editorCanSave(
             title: "Понедельник", note: "", date: monday, emoji: "📅", today: monday
         ))
+    }
+
+    private static func testPlannerCalendarPresentation() throws {
+        let monthNames = [
+            "ЯНВ", "ФЕВР", "МАРТ", "АПР", "МАЙ", "ИЮНЬ",
+            "ИЮЛЬ", "АВГ", "СЕНТ", "ОКТ", "НОЯБ", "ДЕК"
+        ]
+        for (offset, month) in monthNames.enumerated() {
+            let tile = CalendarDateTilePresentation(day: civilDay(2026, offset + 1, 5))
+            precondition(tile.monthLabel == month && tile.dayLabel == "5")
+        }
+        let dates: [(day: Day, month: String, number: String)] = [
+            (civilDay(2026, 12, 31), "ДЕК", "31"),
+            (civilDay(2027, 1, 1), "ЯНВ", "1"),
+            (civilDay(2028, 2, 29), "ФЕВР", "29"),
+            (civilDay(2028, 3, 1), "МАРТ", "1"),
+            (civilDay(2026, 10, 10), "ОКТ", "10")
+        ]
+        for date in dates {
+            // Tiles represent civil components, including on the opposite sides of the date line.
+            for zone in ["Pacific/Kiritimati", "America/Los_Angeles", "Europe/Moscow"] {
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = TimeZone(identifier: zone)!
+                let localDay = Day(date.day.date(calendar: calendar), calendar: calendar)
+                let tile = CalendarDateTilePresentation(day: localDay)
+                precondition(tile.monthLabel == date.month && tile.dayLabel == date.number)
+            }
+        }
+
+        let today = civilDay(2026, 10, 3)
+        let counts = [(1, "день"), (2, "дня"), (5, "дней"), (11, "дней"), (21, "день"), (101, "день")]
+        for (count, unit) in counts {
+            let event = Countdown(title: "Plan", date: futureDay(count, from: today), emoji: "📅")
+            let row = CountdownRowPresentation(item: event, today: today, primaryID: event.id)
+            precondition(row.remainingDays == count && row.remainingUnit == unit)
+            precondition(row.remainingLabel == "\(count) \(unit)" && !row.isToday)
+        }
+        let todayEvent = Countdown(title: "Today plan", date: today, emoji: "📅")
+        let todayRow = CountdownRowPresentation(item: todayEvent, today: today, primaryID: todayEvent.id)
+        precondition(todayRow.isToday && todayRow.remainingLabel == "Сегодня" && todayRow.remainingUnit == nil)
+        precondition(CalendarDateTilePresentation(day: todayEvent.date).dayLabel == "3")
+        try testPlannerEmojiAndOrderingPreserveEventData(today: today)
+    }
+
+    private static func testPlannerEmojiAndOrderingPreserveEventData(today: Day) throws {
+        let calendarEvent = Countdown(
+            title: "Far primary", note: "Keep this note", date: civilDay(2027, 1, 1), emoji: "📅",
+            subtasks: [try Subtask(text: "Already complete", isCompleted: true)]
+        )
+        let first = Countdown(title: "Z first", date: civilDay(2026, 10, 5), emoji: "✈️")
+        let second = Countdown(title: "A second", date: first.date, emoji: "🗓️")
+        let expired = Countdown(title: "Expired", date: civilDay(2026, 10, 2), emoji: "⌛️")
+        var data = CountdownData()
+        data.items = [first, calendarEvent, second, expired]
+        data.primaryID = calendarEvent.id
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        let beforePresentation = try encoder.encode(data)
+
+        precondition(eventListEmoji(calendarEvent.emoji) == nil)
+        for emoji in ["🗓️", "✈️", "☀️", "👨‍👩‍👧‍👦"] {
+            precondition(eventListEmoji(emoji) == emoji)
+        }
+        let displayed = activeCountdowns(in: data, today: today)
+        precondition(displayed.map(\.id) == [calendarEvent.id, first.id, second.id])
+        for event in displayed {
+            _ = CalendarDateTilePresentation(day: event.date)
+            _ = CountdownRowPresentation(item: event, today: today, primaryID: data.primaryID)
+            _ = eventListEmoji(event.emoji)
+        }
+        precondition(calendarEvent.emoji == "📅")
+        precondition(EventEditorDraft(item: calendarEvent).emoji == "📅")
+        precondition(EventEditorDraft(day: first.date).emoji == "📅")
+        precondition(statusBarTitle(data: data, today: today) == "📅 \(countdownLabel(calendarEvent.date.days(from: today)))")
+        let afterPresentation = try encoder.encode(data)
+        precondition(beforePresentation == afterPresentation)
+        let roundTrip = try JSONDecoder().decode(CountdownData.self, from: afterPresentation)
+        precondition(roundTrip == data)
+        precondition(roundTrip.items[1].subtasks[0].isCompleted)
     }
 
     private static func civilDay(_ year: Int, _ month: Int, _ day: Int) -> Day {
