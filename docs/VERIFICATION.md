@@ -137,3 +137,33 @@ Never mutate production Countdown Manager data during tests.
 Real UI Smoke and XCUITest require explicit isolated data, defaults, and log locations. If safe isolation cannot be established, do not run the mutating verification path.
 
 Runtime evidence applies only to the bundle that was built and exercised. `./verify.sh ui` builds from the current source tree; `./run-xcui-tests.sh` builds through the current Xcode project. An old `.app` is not evidence for current source unless its provenance is known.
+
+Optional-icon/favorite coverage includes a sixteenth capture, `16-nearest-today-without-icon`: the Today event has no additional emoji and no explicit favorite, with the nearest-event heading and unfilled star. Real UI Smoke exercises empty-icon Save, draft-only clear/Cancel, menu fallback, explicit favorite select/clear in the list and editor, and a fresh repository read preserving absent selection. External XCUITest adds ordinary button and keyboard cases for these flows; it retains the existing lifecycle limitations.
+
+Grouped-editor coverage adds captures 17–24: empty and selected emoji fields, compact presets and the
+full catalog in both Dark and Light appearances. Real UI
+Smoke exercises the selector's closed/presets/catalog states, all eight columns across the five
+catalog pages, selection and clear actions, repeated disclosure requests, isolated live Reduce
+Motion, draft preservation and retained hide/show behavior. External XCUITest covers normal selector,
+preset, catalog and clear-button interaction. Captures prove settled layouts; they do not prove
+perceived animation smoothness or precise wall-clock duration.
+
+Captures 25–28 record the actual timer completion alert window in Dark and Light appearances,
+including both Increase Contrast variants. The full set requires 28 images. The manifest records
+the source window and appearance for each capture. Appearance is overridden only on isolated test
+windows; global macOS display settings are unchanged. Real UI Smoke checks shared palette colors,
+appearance changes on the reused alert, title/background click dismissal, unchanged finished timer
+state and app focus, and the five-second automatic dismissal. In-process mouse delivery remains
+distinct from a physical first click while another application is active.
+
+Completion-icon motion checks exercise the native image layer's animation key, fresh cycle timing,
+live Reduce Motion, hidden/dismissing-state suppression, interrupted dismissal/re-presentation,
+identity resets and unchanged label/card geometry. UIChecks cover bounded transform keyframes,
+coordinate direction and the burst/pause policy. Popup stills 25–28 explicitly use isolated Reduce
+Motion and record that override; they show resting layout, not perceived animation smoothness.
+
+Editor Add/Delete motion coverage exercises 0/1/10 limits, animated removal and disabled outgoing
+controls, stable neighboring UUIDs/text/completion, focus and scrolling, live Reduce Motion and
+Save/Cancel boundaries. A focused external XCUITest types into newly added rows, deletes a middle
+row and verifies the retained neighbors after Save. Settled geometry and motion-policy checks do
+not establish perceived intermediate smoothness.

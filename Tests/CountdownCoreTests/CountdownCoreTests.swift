@@ -98,7 +98,7 @@ final class CountdownCoreTests {
         var first = Countdown(title: "First", note: "  Small note  ", date: day(2026, 9, 6), emoji: "☀️")
         let second = Countdown(title: "Second", date: day(2026, 9, 8), emoji: "✈️")
         try data.save(first, primary: false, today: today)
-        XCTAssertEqual(data.primaryID, first.id)
+        XCTAssertNil(data.primaryID)
         XCTAssertEqual(data.items[0].note, "Small note")
         try data.save(second, primary: true, today: today)
         XCTAssertEqual(data.primaryID, second.id)
@@ -113,7 +113,7 @@ final class CountdownCoreTests {
         XCTAssertEqual(data.primaryID, first.id)
         data.normalize(today: day(2026, 9, 7))
         XCTAssertEqual(data.items.count, 1)
-        XCTAssertEqual(data.primaryID, second.id)
+        XCTAssertNil(data.primaryID)
         data.delete(second.id, today: today)
         XCTAssertNil(data.primaryID)
         XCTAssertTrue(data.items.isEmpty)
@@ -189,7 +189,7 @@ final class CountdownCoreTests {
         try lifecycle.save(later, primary: false, today: day(2026, 9, 5))
         lifecycle.normalize(today: day(2026, 9, 7))
         XCTAssertEqual(lifecycle.items, [later])
-        XCTAssertEqual(lifecycle.primaryID, later.id)
+        XCTAssertNil(lifecycle.primaryID)
     }
 
     func testStableOrderForSameDateAndPrimaryReplacement() throws {
@@ -205,7 +205,81 @@ final class CountdownCoreTests {
         try data.save(first, primary: false, today: today)
         XCTAssertEqual(data.items.map(\.id), [first.id, second.id, primary.id])
         data.normalize(today: day(2026, 9, 7))
-        XCTAssertEqual(data.primaryID, first.id)
+        XCTAssertNil(data.primaryID)
+    }
+
+    func testOptionalEmojiValidationAndRoundTrip() throws {
+        let today = day(2026, 9, 5)
+        let original = Countdown(
+            title: "No additional icon", note: "Keep note", date: day(2026, 9, 6), emoji: "",
+            subtasks: [try Subtask(text: "Active"), try Subtask(text: "Completed", isCompleted: true)]
+        )
+        let existing = Countdown(title: "Existing icon", date: day(2026, 9, 8), emoji: "👨‍👩‍👧‍👦")
+        var data = CountdownData()
+        try data.save(original, primary: false, today: today)
+        try data.save(existing, primary: true, today: today)
+        var edited = original
+        edited.emoji = " \n\t "
+        try data.save(edited, primary: false, today: today)
+        XCTAssertEqual(data.items[0], original)
+        XCTAssertEqual(data.primaryID, existing.id)
+        edited.emoji = "  🎉  "
+        try data.save(edited, primary: false, today: today)
+        XCTAssertEqual(data.items[0].emoji, "🎉")
+        XCTAssertEqual(data.items[0].subtasks, original.subtasks)
+        edited.emoji = ""
+        try data.save(edited, primary: false, today: today)
+        XCTAssertEqual(data.items[0], original)
+        let unchanged = data
+        for invalid in ["abc", "1", "🎉🎉", "☀️text"] {
+            edited.emoji = invalid
+            XCTAssertThrowsError(try data.save(edited, primary: true, today: today))
+            XCTAssertEqual(data, unchanged)
+        }
+        XCTAssertFalse(CountdownData.isEmoji(""))
+        let bytes = try JSONEncoder().encode(data)
+        let decoded = try JSONDecoder().decode(CountdownData.self, from: bytes)
+        XCTAssertEqual(decoded, data)
+        guard let json = try JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+              let items = json["items"] as? [[String: Any]] else {
+            fatalError("Countdown JSON must retain its event array")
+        }
+        XCTAssertEqual(items[0]["emoji"] as? String, "")
+        XCTAssertEqual(items[1]["emoji"] as? String, existing.emoji)
+    }
+
+    func testOptionalPrimarySelectionLifecycle() throws {
+        let today = day(2026, 9, 5)
+        let first = Countdown(title: "First same date", date: day(2026, 9, 6), emoji: "")
+        let second = Countdown(title: "Second same date", date: first.date, emoji: "🎉")
+        let later = Countdown(title: "Later", date: day(2026, 9, 9), emoji: "📅")
+        var data = CountdownData()
+        for event in [later, first, second] {
+            try data.save(event, primary: false, today: today)
+            XCTAssertNil(data.primaryID)
+        }
+        data.normalize(today: today)
+        XCTAssertNil(data.primaryID)
+        let decoded = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
+        XCTAssertEqual(decoded, data)
+        try data.save(later, primary: true, today: today)
+        try data.save(first, primary: false, today: today)
+        XCTAssertEqual(data.primaryID, later.id)
+        try data.save(later, primary: false, today: today)
+        XCTAssertNil(data.primaryID)
+        try data.save(second, primary: true, today: today)
+        data.delete(first.id, today: today)
+        XCTAssertEqual(data.primaryID, second.id)
+        data.normalize(today: day(2026, 9, 7))
+        XCTAssertEqual(data.items, [later])
+        XCTAssertNil(data.primaryID)
+        data.primaryID = UUID()
+        data.normalize(today: day(2026, 9, 7))
+        XCTAssertNil(data.primaryID)
+        try data.save(later, primary: true, today: today)
+        data.delete(later.id, today: today)
+        XCTAssertNil(data.primaryID)
+        XCTAssertTrue(data.items.isEmpty)
     }
 
     func testCalendarDaysAcrossDSTAndYear() {
@@ -345,6 +419,8 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try checks.testStableOrderForSameDateAndPrimaryReplacement()
         checks.testCalendarDaysAcrossDSTAndYear()
         checks.testPluralAndEmoji()
+        try checks.testOptionalEmojiValidationAndRoundTrip()
+        try checks.testOptionalPrimarySelectionLifecycle()
         try checks.testRejectInvalidStoredDatesAndSubtasks()
         try await checks.testLegacyJSONMigrationAndNewModelRoundTrip()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()

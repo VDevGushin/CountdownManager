@@ -37,7 +37,7 @@ Key responsibilities:
 - civil calendar dates;
 - countdown and subtask models;
 - domain validation and mutations;
-- expiry and primary-event recovery;
+- expiry and optional primary-selection normalization;
 - persistence data representation;
 - serialized filesystem repository.
 
@@ -140,12 +140,12 @@ Mutable aggregate of persisted countdown state.
 It owns operations including:
 
 - normalization and expiry;
-- primary-event recovery;
+- optional primary-selection normalization;
 - event save and validation;
 - event deletion;
 - subtask CRUD and completion toggling.
 
-It also stores `primaryID`.
+It stores the optional explicit favorite in `primaryID`. Normalization clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
 
 The timer deliberately does not belong to `CountdownData`: events use civil-day semantics, while the timer uses an absolute deadline.
 
@@ -194,6 +194,21 @@ Files:
 - `Sources/CountdownManager/TimerCompletionAlert.swift`
 
 `CountdownTimer` is a separate `@MainActor` `ObservableObject` because its duration/deadline semantics do not belong to the civil-day event model. `TimerCompletionAlertPresenter` owns the short-lived, non-activating AppKit completion alert and plays the bundled `Resources/TimerFinished.mp3` sound, with the system `Glass` sound as a fallback.
+
+The alert retains a layer-backed `TimerCompletionAlertView` that derives its AppKit background,
+text, border and alarm-symbol tint from the shared `AuroraInstrument` palette. The existing
+`AuroraAccessibilitySettings` owned by `AppDelegate` supplies contrast to both the primary UI and
+the alert. The alert observes that shared value; effective appearance, window attachment and each
+presentation also refresh the same view's colors. Its non-activating panel and first-click
+forwarding remain owned by the existing presenter and content view; appearance changes do not
+modify timer state or create another window.
+
+The same view owns a single Core Animation transform loop on the alarm image's layer. A short
+burst of bounded tilts/lifts is followed by a resting pause. Its request flag distinguishes active
+presentation from the still-visible fade-out phase. Presentation resets and starts the cycle;
+every dismissal clears the request and removes the animation before hiding. Live Reduce Motion
+uses the shared settings owner and keeps the icon static. The card, labels and status-item motion
+retain their existing owners and geometry.
 
 It owns:
 
@@ -248,15 +263,23 @@ Files:
 
 `CountdownManagerRootView` is the stable SwiftUI root inside the retained hosting controller. It composes the compact timer strip with `ManagerView`.
 
-`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the primary event and a smaller left-hand leaf for other events. Calendar labels and optional list emoji are derived from `Presentation.swift`; they introduce no separate event state or persisted representation.
+`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the displayed favorite or automatic nearest event and a smaller left-hand leaf for other events. `Store.primary` derives the displayed event without changing the explicit selection. `CountdownRowPresentation` separates `isFeatured` (large presentation) from `isPrimary` (filled star). Menu-bar emoji fallback is `📅`; calendar labels and optional list emoji are derived from `Presentation.swift`; they introduce no separate event state or persisted representation.
 
 An event surface groups the row and its checklist as one block. Checklist disclosure continues to use the cached `SubtaskDisclosureState` as its sole owner; standard SwiftUI layout and opacity transitions animate its presentation without storing a second expanded state or introducing timer-based animation control.
 
 `ManagerView` owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
 
-The header calendar control reveals inline day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: tomorrow's date, `📅`, a Russian weekday title and empty note/subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary; no template library, week state or schema field is introduced.
+The header calendar control reveals inline day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: tomorrow's date, no additional emoji, a Russian weekday title and empty note/subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary; no template library, week state or schema field is introduced.
 
-Emoji selection stays in the editor through a plain current-value display, compact presets and an inline expanded catalog. `Ещё…` reveals a fixed-size paged grid: `EditorView` keeps a transient page index, renders five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`) in one horizontally sliding page strip, shows the active set name above conventional previous/next buttons and clickable page dots, and also accepts a horizontal drag to change sets. The first set reuses the compact presets as its top row. Choosing an emoji replaces the draft value, resets the page index and collapses the expanded grid; expansion uses opacity/layout animation while page changes slide horizontally, and both respect Reduce Motion. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
+The editor groups event fields, additional emoji and subtasks on separate subtle surfaces, followed by the favorite choice. The scrollable form keeps the existing retained draft and fixed action footer. Emoji selection uses a full-width button styled as a selection field, with a disclosure chevron and a separate clear button inside the same visual boundary. Empty selection hides the clear button rather than reserving a disconnected action area.
+
+Editor subtask rows use identity-scoped layout/opacity animation for Add/Delete. Their text bindings
+resolve stable UUIDs against the same parent draft and retain an immutable outgoing value while a
+removed row finishes its transition; setters ignore absent UUIDs. Removed rows lose input and
+accessibility eligibility immediately. Deferred Add focus checks membership before scrolling or
+focusing. Typing does not change the identity array and therefore does not animate the block.
+
+`EditorView` owns one transient picker state: closed, compact presets or a catalog page. The selector starts closed; `Все значки` advances from compact presets to the inline catalog. The catalog retains five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`), conventional previous/next controls, page dots and horizontal drag navigation. Grid dimensions fit the grouped editor's inner width. Choosing or clearing an emoji replaces only the draft value and closes the picker, resetting navigation. Native layout/opacity transitions animate disclosure for 200 milliseconds while page changes slide horizontally; both respect live Reduce Motion. The stable picker boundary excludes closed content from hit testing and accessibility, including during removal transitions. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
 
 ## AppKit application shell
 

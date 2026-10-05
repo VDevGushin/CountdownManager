@@ -25,9 +25,17 @@ The menu-bar entry opens a temporary panel anchored directly below the status it
 
 The single timer is shown as a compact strip above the event interface. There is one event editor inside the primary panel. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, application-owned emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
 
-The editor contains the existing event fields, a plain display of the current emoji, compact presets and an `Ещё…` action that reveals a larger inline emoji catalog inside the editor. The expanded catalog is organized into five named sets: `Общие`, `Дети`, `Работа`, `Транспорт` and `Праздники`. Each set is a six-row/eight-column page. The current set name is shown above conventional previous/next controls with page dots, so navigation remains visually standard while the page meaning is explicit; horizontal drag/swipe may also change sets. The first set keeps the compact presets as its top row. Choosing an emoji from the expanded catalog replaces the current value and immediately collapses the catalog. The current emoji is not presented as an editable text field. New emoji selections come from the provided catalog; an existing stored valid emoji outside that catalog remains displayable and may be preserved until the user selects another one. Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
+The editor groups title, optional note and date together, with separate subtle blocks for the additional emoji and subtasks. Blocks use 12-point inner spacing, 8-point corners and 12-point separation. The menu-bar favorite choice is separated below these groups. The timer strip and fixed Save/Cancel action area keep their existing responsibilities; the form scrolls within the panel.
 
-Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The primary event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. Each leaf shows the event's actual month and day, without a leading zero. The event emoji appears immediately before the primary-selection star; the default `📅` is omitted from the list because the leaf already conveys the date. This omission does not change the stored emoji, its editor display or the menu-bar representation.
+The additional emoji is a single full-width selection control labelled `Значок · необязательно`. It displays `Без значка` or the selected emoji, with a disclosure chevron at the right edge. A separate small clear button appears inside the same visual field only when an emoji is selected; clearing must not also open the picker. The field is a selection control, not an editable text input. The picker is initially collapsed. Activating the field reveals eight compact presets and a `Все значки` action; activating it again collapses the picker. Opening or closing it preserves every draft field.
+
+`Все значки` reveals the larger inline catalog organized into five named sets: `Общие`, `Дети`, `Работа`, `Транспорт` and `Праздники`. Each set is a six-row/eight-column page, fitting the editor's available inner width. The current set name is shown above conventional previous/next controls with page dots; horizontal drag/swipe may also change sets. The first set keeps the compact presets as its top row. Choosing any emoji or clearing the selection resets catalog navigation and collapses the entire picker. New selections come from the provided catalog; an existing stored valid emoji outside that catalog remains displayable and may be preserved until the user selects another one.
+
+Picker disclosure uses a 200-millisecond non-spring height and opacity transition. The chevron communicates expansion, and changing the selected value may use a brief opacity transition. With Reduce Motion enabled, transitions are immediate. Rapid repeated requests finish in the state requested by the last action. Collapsed picker content does not receive input or remain exposed as interactive accessibility content.
+
+Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
+
+Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the favorite star. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
 
 Each event and its checklist form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
 
@@ -52,9 +60,16 @@ Deleting the timer clears it immediately and dismisses any visible completion al
 
 The timer uses an absolute deadline rather than decrementing persisted seconds. Closing or hiding the panel, quitting and relaunching the app, system sleep, and ordinary clock ticking do not reset the timer. Time elapsed while the app is not visible still counts.
 
-When the deadline is reached while Countdown Manager is running, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. The application also plays its bundled completion sound and presents its own non-activating completion alert above other windows for five seconds. Clicking anywhere on the alert dismisses it immediately without activating Countdown Manager or changing the finished timer state; without a click, it hides automatically after five seconds. While the timer runs, its menu-bar representation breathes with a gentle pulse. The finished menu-bar alarm keeps rocking from foot to foot, like a ringing mechanical alarm clock hopping on the surface it stands on, until the user deletes the finished timer; with Reduce Motion enabled, it pulses instead. This alert does not depend on macOS notification permission.
+When the deadline is reached while Countdown Manager is running, the timer enters a finished state that shows `⏰ Время вышло` until the user deletes it. The application also plays its bundled completion sound and presents its own non-activating completion alert above other windows for five seconds. The alert uses the application's shared warm palette: an ivory surface and terracotta alarm accent in Light appearance, with the related warm surface and accent in Dark appearance. Text, border and accent adapt to Increase Contrast; a reused alert follows appearance changes. Clicking anywhere on the alert dismisses it immediately without activating Countdown Manager or changing the finished timer state; without a click, it hides automatically after five seconds. While the timer runs, its menu-bar representation breathes with a gentle pulse. The finished menu-bar alarm keeps rocking from foot to foot, like a ringing mechanical alarm clock hopping on the surface it stands on, until the user deletes the finished timer; with Reduce Motion enabled, it pulses instead. This alert does not depend on macOS notification permission.
 
 Countdown Manager does not schedule a system notification. If the application is not running when the deadline passes, relaunching it restores the finished state without replaying the sound or completion alert.
+
+While the completion alert is visible, only its alarm symbol performs short bursts of two or three
+quick tilts and small lifts, separated by a brief pause. The card and text remain stationary. Each
+presentation starts a fresh cycle; every dismissal stops the symbol's animation and restores its
+resting transform. Hidden alerts never animate. With Reduce Motion enabled, the symbol is static,
+including when the setting changes while the alert is visible. This does not change the alert's
+five-second lifetime, click dismissal, sound or finished timer state.
 
 The timer is separate from events and subtasks. It does not create an event, a subtask, an archive item, or any other durable task record.
 
@@ -65,7 +80,7 @@ An event contains:
 - a title;
 - an optional note;
 - a calendar date;
-- one emoji;
+- an optional additional emoji;
 - zero to ten subtasks.
 
 Multiple events may use the same date.
@@ -78,9 +93,9 @@ A new event must use a date later than today.
 
 Past dates and today cannot be selected as the date of a newly created event.
 
-The first saved event becomes the primary event automatically.
+Saving the first event does not select a favorite automatically. The favorite choice in a new draft is initially off.
 
-An ordinary new-event draft starts with `📅`, just like a new-day draft. The user does not need to choose an emoji before saving. They may replace this default with another emoji; editing an existing event preserves its stored choice.
+Ordinary event and day drafts start without an additional emoji. The editor offers `Без значка` to clear a selected emoji; Save accepts this empty choice. Editing an existing event preserves its stored emoji until the user changes or clears it.
 
 Changes entered in the editor do not become event data until the user explicitly saves them.
 
@@ -88,7 +103,7 @@ Changes entered in the editor do not become event data until the user explicitly
 
 The header calendar control, labelled `Создать день`, reveals inline `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
 
-Both day choices open the existing editor as `Новый день`, initially dated tomorrow. `Выбрать дату` asks the user to choose a future date in the ordinary date field. A day draft starts with the calendar emoji `📅`, the Russian weekday name for its selected date, an empty note and no subtasks.
+Both day choices open the existing editor as `Новый день`, initially dated tomorrow. `Выбрать дату` asks the user to choose a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks.
 
 While the title has not been manually edited, changing the date updates the weekday title. After a manual title edit, later date changes preserve that custom title. All ordinary event fields remain editable.
 
@@ -122,24 +137,17 @@ There is no overdue state and no automatic rollover.
 
 Incomplete subtasks do not prevent event expiry.
 
-## Primary event
+## Favorite and automatic event
 
-When at least one event exists, one event is primary.
+Zero or one event may be explicitly selected as the favorite. It appears first and supplies the event representation in the menu bar when the timer is idle. Clicking its filled star clears the selection; clicking another event's unfilled star selects that event. The editor also permits clearing or setting the choice on Save.
 
-The primary event:
+With no favorite, the nearest active event starting with today supplies the menu bar and the large featured block. Equal dates retain stable user order. This automatic display never selects or persists a favorite.
 
-- appears first in the event list;
-- supplies the normal event representation in the macOS menu bar when the timer is idle.
-
-The user may explicitly make another event primary.
-
-If the primary event is deleted or expires, the nearest remaining event becomes primary.
-
-When several eligible events have the same date, stable user order determines which becomes primary.
+Deleting or expiring a selected event clears the choice and returns to automatic display. Existing valid stored selections are preserved; an absent or invalid selection remains absent after normalization and restart.
 
 ## Event ordering
 
-The primary event is always displayed first.
+An explicitly selected favorite is displayed first. With no selection, all events use ascending calendar-date order starting with today.
 
 All other events are ordered by ascending event date.
 
@@ -163,6 +171,15 @@ A subtask does not have:
 - reminder;
 - priority;
 - nesting.
+
+In the event editor, adding and removing subtask rows uses a 100-millisecond non-spring transition
+of layout height and opacity. Existing rows move smoothly; typing text and its character count do
+not animate. With Reduce Motion enabled, rows change immediately, including when the setting
+changes during a transition. Stable subtask identifiers preserve other rows' text, completion state
+and order. Rapid actions respect the ten-subtask limit and never focus a row that has been removed.
+Adding retains the existing autofocus and scroll-to-row behavior. Removing a row remains a draft
+change until Save, and removed row controls do not accept input or remain interactive accessibility
+content.
 
 ### Completion
 
@@ -196,11 +213,11 @@ Expanding and collapsing a checklist uses a short, non-spring transition of heig
 
 ## Menu bar
 
-When the timer is idle, the menu bar represents only the primary event.
+When the timer is idle, the menu bar represents the favorite, or the nearest active event starting with today when no favorite is selected.
 
 Its normal event representation contains:
 
-- the event emoji;
+- the event emoji, or `📅` when no additional emoji is stored;
 - remaining calendar days, or `Сегодня`.
 
 It does not display:

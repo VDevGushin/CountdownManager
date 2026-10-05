@@ -34,6 +34,55 @@ package func subtaskDisclosureMotion(reduceMotion: Bool) -> SubtaskDisclosureMot
     reduceMotion ? .immediate : .heightAndOpacity(duration: 0.2)
 }
 
+package func editorSubtaskMotion(reduceMotion: Bool) -> SubtaskDisclosureMotion {
+    reduceMotion ? .immediate : .heightAndOpacity(duration: 0.1)
+}
+
+package enum EditorEmojiPickerState: Equatable {
+    case closed
+    case presets
+    case catalog(page: Int)
+
+    package var isOpen: Bool { self != .closed }
+    package var isCatalog: Bool {
+        if case .catalog = self { return true }
+        return false
+    }
+    package var pageIndex: Int {
+        if case let .catalog(page) = self { return page }
+        return 0
+    }
+
+    package mutating func toggle() {
+        self = isOpen ? .closed : .presets
+    }
+
+    package mutating func showCatalog() {
+        guard self == .presets else { return }
+        self = .catalog(page: 0)
+    }
+
+    package mutating func setPage(_ page: Int, pageCount: Int) {
+        guard isCatalog, pageCount > 0 else { return }
+        self = .catalog(page: min(max(page, 0), pageCount - 1))
+    }
+
+    package mutating func close() {
+        self = .closed
+    }
+}
+
+package enum EditorEmojiPickerMotion: Equatable {
+    case immediate
+    case heightAndOpacity(duration: TimeInterval)
+}
+
+package func editorEmojiPickerMotion(reduceMotion: Bool) -> EditorEmojiPickerMotion {
+    reduceMotion ? .immediate : .heightAndOpacity(duration: 0.2)
+}
+
+package let editorEmojiValueTransitionDuration: TimeInterval = 0.12
+
 package struct CountdownRowPresentation: Equatable {
     package let note: String?
     package let dateLabel: String
@@ -43,11 +92,12 @@ package struct CountdownRowPresentation: Equatable {
     package let dateAndRemainingLabel: String
     package let isToday: Bool
     package let isPrimary: Bool
+    package let isFeatured: Bool
     package let activeSubtasks: [Subtask]
     package let completedSubtasks: [Subtask]
     package let completionLabel: String?
 
-    package init(item: Countdown, today: Day, primaryID: UUID?) {
+    package init(item: Countdown, today: Day, primaryID: UUID?, featuredID: UUID? = nil) {
         remainingDays = item.date.days(from: today)
         note = item.note
         dateLabel = humanDateLabel(item.date)
@@ -56,6 +106,7 @@ package struct CountdownRowPresentation: Equatable {
         dateAndRemainingLabel = "\(dateLabel) · \(remainingLabel)"
         isToday = remainingDays == 0
         isPrimary = primaryID == item.id
+        isFeatured = (featuredID ?? primaryID) == item.id
         activeSubtasks = item.subtasks.filter { !$0.isCompleted }
         completedSubtasks = item.subtasks.filter(\.isCompleted)
         completionLabel = item.subtasks.isEmpty
@@ -79,7 +130,7 @@ package struct CalendarDateTilePresentation: Equatable {
 }
 
 package func eventListEmoji(_ emoji: String) -> String? {
-    emoji == "📅" ? nil : emoji
+    emoji.isEmpty || emoji == "📅" ? nil : emoji
 }
 
 package func humanDateLabel(_ day: Day) -> String {
@@ -97,7 +148,8 @@ package func subtaskDisclosureLabel(isExpanded: Bool, completion: String) -> Str
 
 package func statusBarTitle(data: CountdownData, today: Day) -> String {
     guard let primary = activeCountdowns(in: data, today: today).first else { return "◷ Countdown" }
-    return "\(primary.emoji) \(countdownLabel(primary.date.days(from: today)))"
+    let emoji = primary.emoji.isEmpty ? "📅" : primary.emoji
+    return "\(emoji) \(countdownLabel(primary.date.days(from: today)))"
 }
 
 package func activeCountdowns(in data: CountdownData, today: Day) -> [Countdown] {
@@ -122,6 +174,7 @@ package func editorCanSave(
     today: Day,
     originalDate: Day? = nil
 ) -> Bool {
+    let cleanedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
     let dateIsValid = date > today || (originalDate == today && date == today)
     let subtasksAreValid = subtasks.count <= Subtask.maximumCount
         && subtasks.allSatisfy {
@@ -131,7 +184,7 @@ package func editorCanSave(
     return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         && dateIsValid
         && note.trimmingCharacters(in: .whitespacesAndNewlines).count <= 280
-        && CountdownData.isEmoji(emoji.trimmingCharacters(in: .whitespacesAndNewlines))
+        && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
         && subtasksAreValid
 }
 
@@ -174,14 +227,14 @@ package struct EventEditorDraft: Equatable {
     package init(item: Countdown?) {
         title = item?.title ?? ""
         note = item?.note ?? ""
-        emoji = item?.emoji ?? "📅"
+        emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
     }
 
     package init(day: Day) {
         title = russianWeekdayTitle(day)
         note = ""
-        emoji = "📅"
+        emoji = ""
         subtasks = []
         followsDayDate = true
     }
@@ -211,6 +264,10 @@ package struct EventEditorDraft: Equatable {
         guard CountdownData.isEmoji(symbol) else { return false }
         emoji = symbol
         return true
+    }
+
+    package mutating func clearEmoji() {
+        emoji = ""
     }
 
     package func countdown(id: UUID, date: Day) -> Countdown {

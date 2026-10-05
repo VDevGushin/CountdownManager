@@ -35,7 +35,8 @@ final class AuroraAccessibilitySettings: ObservableObject {
     var isolatedReduceMotionOverrideValue: Bool? { isolatedReduceMotionOverride }
 
     func setIsolatedCaptureOverrides(highContrast: Bool?, reduceMotion: Bool?) {
-        guard UISmokeConfiguration.captureWasRequested else { return }
+        // Smoke and capture modes validate their isolated test home before constructing this UI.
+        guard UISmokeConfiguration.wasRequested else { return }
         isolatedCaptureOverride = highContrast
         isolatedReduceMotionOverride = reduceMotion
         prefersHighContrast = highContrast ?? NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
