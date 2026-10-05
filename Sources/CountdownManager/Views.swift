@@ -58,8 +58,10 @@ struct ManagerView: View {
     }
 
     private var listScreen: some View {
-        VStack(spacing: 0) {
-            header
+        let displayed = store.active
+        let featuredID = displayed.first?.id
+        return VStack(spacing: 0) {
+            header(activeCount: displayed.count)
             if showingDayChoices {
                 dayChoices
             }
@@ -70,7 +72,7 @@ struct ManagerView: View {
                             AuroraLoadingPlaceholder()
                             ProgressView("Загружаем события…")
                         }
-                    } else if store.active.isEmpty {
+                    } else if displayed.isEmpty {
                         HStack(alignment: .top, spacing: 12) {
                             AuroraEmptyMark()
                             VStack(alignment: .leading, spacing: 4) {
@@ -82,7 +84,7 @@ struct ManagerView: View {
                             }
                         }
                     }
-                    ForEach(store.active) { item in row(item) }
+                    ForEach(displayed) { item in row(item, featuredID: featuredID) }
                 }
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
@@ -98,12 +100,12 @@ struct ManagerView: View {
         }
     }
 
-    private var header: some View {
+    private func header(activeCount: Int) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Countdown Manager").font(.custom("Georgia", size: 22))
                     .tracking(-0.8)
-                Text("\(store.active.count) активных · сегодня и позже")
+                Text("\(activeCount) активных · сегодня и позже")
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
@@ -160,11 +162,16 @@ struct ManagerView: View {
         AuroraInstrument.stroke(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
     }
 
-    private func row(_ item: Countdown) -> some View {
-        let presentation = CountdownRowPresentation(item: item, today: store.today, primaryID: store.data.primaryID)
+    private func row(_ item: Countdown, featuredID: UUID?) -> some View {
+        let presentation = CountdownRowPresentation(
+            item: item,
+            today: store.today,
+            primaryID: store.data.primaryID,
+            featuredID: featuredID
+        )
         return VStack(alignment: .leading, spacing: 0) {
-            if presentation.isPrimary {
-                primaryEvent(item, presentation: presentation)
+            if presentation.isFeatured {
+                featuredEvent(item, presentation: presentation)
             } else {
                 secondaryEvent(item, presentation: presentation)
             }
@@ -191,10 +198,11 @@ struct ManagerView: View {
         .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.title })
     }
 
-    private func primaryEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
+    private func featuredEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Основное событие")
+                Text(presentation.isPrimary ? "Основное событие" : "Ближайшее событие")
+                    .accessibilityIdentifier("event.featured.label.\(item.id.uuidString)")
                     .font(.system(size: 11))
                     .tracking(0.6)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -213,7 +221,7 @@ struct ManagerView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 }
-                calendarTile(item, isPrimary: true)
+                calendarTile(item, isFeatured: true)
             }
             if presentation.isToday {
                 Text(presentation.remainingLabel)
@@ -245,7 +253,7 @@ struct ManagerView: View {
 
     private func secondaryEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
         HStack(alignment: .center, spacing: 13) {
-            calendarTile(item, isPrimary: false)
+            calendarTile(item, isFeatured: false)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 3) {
                     Text(item.title)
@@ -268,8 +276,8 @@ struct ManagerView: View {
         }
     }
 
-    private func calendarTile(_ item: Countdown, isPrimary: Bool) -> some View {
-        PlannerCalendarDateTile(day: item.date, isPrimary: isPrimary)
+    private func calendarTile(_ item: Countdown, isFeatured: Bool) -> some View {
+        PlannerCalendarDateTile(day: item.date, isFeatured: isFeatured)
             .accessibilityHidden(true)
             .uiSmokeControl(id: "event.calendar.\(item.id.uuidString)", value: { humanDateLabel(item.date) })
     }
@@ -291,18 +299,23 @@ struct ManagerView: View {
                 Text(emoji).font(.system(size: 18)).frame(width: 28, height: 28)
                     .accessibilityLabel("Значок события: \(emoji)")
             }
-            Button { Task { await store.makePrimary(item.id) } } label: {
+            Button { togglePrimary(item.id) } label: {
                 Image(systemName: presentation.isPrimary ? "star.fill" : "star")
                     .foregroundStyle(presentation.isPrimary ? plannerAccent : AuroraInstrument.secondaryInk(for: colorScheme))
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(presentation.isPrimary ? "Основное событие" : "Сделать основным событием")
+            .help(presentation.isPrimary ? "Снять основное событие" : "Сделать основным событием")
             .accessibilityIdentifier("event.primary.\(item.id.uuidString)")
             .accessibilityLabel(presentation.isPrimary
-                ? "Основное событие: \(item.title)" : "Сделать основным событием: \(item.title)")
+                ? "Снять основное событие: \(item.title)" : "Сделать основным событием: \(item.title)")
             .accessibilityValue(presentation.isPrimary ? "Выбрано" : "Не выбрано")
+            .uiSmokeControl(
+                id: "event.primary.\(item.id.uuidString)",
+                action: { togglePrimary(item.id) },
+                value: { store.data.primaryID == item.id ? "Выбрано" : "Не выбрано" }
+            )
             Button { edit(item) } label: {
                 Image(systemName: "pencil")
                     .frame(width: 28, height: 28)
@@ -315,6 +328,16 @@ struct ManagerView: View {
             .uiSmokeControl(id: "event.edit.\(item.id.uuidString)", action: { edit(item) })
         }
         .fixedSize()
+    }
+
+    private func togglePrimary(_ id: UUID) {
+        Task {
+            if store.data.primaryID == id {
+                await store.clearPrimary()
+            } else {
+                await store.makePrimary(id)
+            }
+        }
     }
 
     private var footer: some View {
@@ -390,33 +413,33 @@ struct ManagerView: View {
 
 private struct PlannerCalendarDateTile: View {
     let day: Day
-    let isPrimary: Bool
+    let isFeatured: Bool
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         let presentation = CalendarDateTilePresentation(day: day)
-        let shape = RoundedRectangle(cornerRadius: isPrimary ? 5 : 4)
+        let shape = RoundedRectangle(cornerRadius: isFeatured ? 5 : 4)
         VStack(spacing: 0) {
             Text(presentation.monthLabel)
                 .font(.system(size: 11, weight: .semibold))
-                .tracking(isPrimary ? 1 : 0.5)
+                .tracking(isFeatured ? 1 : 0.5)
                 .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, isPrimary ? 5 : 3)
+                .padding(.vertical, isFeatured ? 5 : 3)
                 .background(AuroraInstrument.accent(
                     for: colorScheme,
                     highContrast: accessibilitySettings.prefersHighContrast
                 ))
             Text(presentation.dayLabel)
-                .font(.custom("Georgia", size: isPrimary ? 34 : 23))
+                .font(.custom("Georgia", size: isFeatured ? 34 : 23))
                 .tracking(-0.5)
                 .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
                 .frame(maxWidth: .infinity)
                 .padding(.top, 2)
                 .padding(.bottom, 8)
         }
-        .frame(width: isPrimary ? 65 : 46)
+        .frame(width: isFeatured ? 65 : 46)
         .background(AuroraInstrument.surface(
             for: colorScheme,
             elevated: false,
@@ -427,7 +450,7 @@ private struct PlannerCalendarDateTile: View {
             for: colorScheme,
             highContrast: accessibilitySettings.prefersHighContrast
         ), lineWidth: 1))
-        .rotationEffect(.degrees(isPrimary ? 3 : 2))
+        .rotationEffect(.degrees(isFeatured ? 3 : 2))
         .shadow(color: AuroraInstrument.stroke(for: colorScheme, highContrast: false).opacity(0.3), radius: 0, x: 2, y: 3)
     }
 }
@@ -578,8 +601,7 @@ struct EditorView: View {
     @State private var primary: Bool
     @State private var isSaving = false
     @State private var confirmingDeletion = false
-    @State private var showingMoreEmoji = false
-    @State private var emojiPage = 0
+    @State private var emojiPicker: EditorEmojiPickerState = .closed
     @FocusState private var focusedField: EditorFocusTarget?
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
@@ -595,9 +617,9 @@ struct EditorView: View {
     ]
 
     private static let emojiColumnsPerPage = 8
-    private static let emojiCellWidth: CGFloat = 34
+    private static let emojiCellWidth: CGFloat = 31
     private static let emojiCellHeight: CGFloat = 32
-    private static let emojiSpacing: CGFloat = 7
+    private static let emojiSpacing: CGFloat = 5
     private static var emojiPageCount: Int { emojiPageTitles.count }
     private static var emojiPageWidth: CGFloat {
         emojiCellWidth * CGFloat(emojiColumnsPerPage)
@@ -624,10 +646,19 @@ struct EditorView: View {
             _draft = State(initialValue: EventEditorDraft(item: item))
         }
         _date = State(initialValue: item?.date.date() ?? dayPreset?.day.date() ?? store.tomorrow)
-        _primary = State(initialValue: item == nil ? store.active.isEmpty : store.data.primaryID == item?.id)
+        _primary = State(initialValue: item.map { store.data.primaryID == $0.id } ?? false)
     }
 
-    private var isCurrentPrimary: Bool { item != nil && store.data.primaryID == item?.id }
+    private var emojiPage: Int { emojiPicker.pageIndex }
+    private var emojiPickerAnimation: Animation? {
+        switch editorEmojiPickerMotion(reduceMotion: accessibilitySettings.prefersReducedMotion) {
+        case .immediate:
+            nil
+        case let .heightAndOpacity(duration):
+            .easeInOut(duration: duration)
+        }
+    }
+
     private var minimumDate: Date { item?.date == store.today ? store.today.date() : store.tomorrow }
     private var validDate: Bool { Day(date) > store.today || (item?.date == store.today && Day(date) == store.today) }
     private var isUnavailable: Bool {
@@ -659,58 +690,71 @@ struct EditorView: View {
             }
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Название").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                            TextField("Например, отпуск", text: Binding(
-                                get: { draft.title },
-                                set: { draft.setTitle($0) }
-                            ))
-                                .textFieldStyle(.roundedBorder)
-                                .focused($focusedField, equals: .title)
-                                .auroraInputChrome(isFocused: focusedField == .title)
-                                .accessibilityIdentifier("editor.title")
-                                .uiSmokeControl(
-                                    id: "editor.title",
-                                    action: { focus(.title, id: "editor.title") },
-                                    value: { draft.title }
-                                )
-                        }
-                        VStack(alignment: .leading, spacing: 6) {
-                            HStack {
-                                Text("Заметка · необязательно").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                                Spacer()
-                                Text("\(draft.note.count)/280").font(.caption2)
-                                    .foregroundStyle(draft.note.count <= 280 ? Color.secondary : Color.red)
+                    VStack(alignment: .leading, spacing: 12) {
+                        editorBlock {
+                            VStack(alignment: .leading, spacing: 12) {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("Название").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                                    TextField("Например, отпуск", text: Binding(
+                                        get: { draft.title },
+                                        set: { draft.setTitle($0) }
+                                    ))
+                                        .textFieldStyle(.roundedBorder)
+                                        .focused($focusedField, equals: .title)
+                                        .auroraInputChrome(isFocused: focusedField == .title)
+                                        .accessibilityIdentifier("editor.title")
+                                        .uiSmokeControl(
+                                            id: "editor.title",
+                                            action: { focus(.title, id: "editor.title") },
+                                            value: { draft.title }
+                                        )
+                                }
+                                VStack(alignment: .leading, spacing: 6) {
+                                    HStack {
+                                        Text("Заметка · необязательно").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                                        Spacer()
+                                        Text("\(draft.note.count)/280").font(.caption2)
+                                            .foregroundStyle(draft.note.count <= 280 ? Color.secondary : Color.red)
+                                    }
+                                    TextField("Пара слов о событии", text: $draft.note, axis: .vertical)
+                                        .textFieldStyle(.roundedBorder)
+                                        .lineLimit(2...3)
+                                        .accessibilityIdentifier("editor.note")
+                                        .focused($focusedField, equals: .note)
+                                        .auroraInputChrome(isFocused: focusedField == .note)
+                                        .uiSmokeControl(
+                                            id: "editor.note",
+                                            action: { focus(.note, id: "editor.note") },
+                                            value: { draft.note }
+                                        )
+                                }
+                                VStack(alignment: .leading, spacing: 6) {
+                                    DatePicker("Дата", selection: $date, in: minimumDate..., displayedComponents: [.date])
+                                        .datePickerStyle(.field)
+                                        .accessibilityIdentifier("editor.date")
+                                        .uiSmokeControl(id: "editor.date", value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
+                                    Text(dateHelp)
+                                        .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
+                                }
                             }
-                            TextField("Пара слов о событии", text: $draft.note, axis: .vertical)
-                                .textFieldStyle(.roundedBorder)
-                                .lineLimit(2...3)
-                                .accessibilityIdentifier("editor.note")
-                                .focused($focusedField, equals: .note)
-                                .auroraInputChrome(isFocused: focusedField == .note)
-                                .uiSmokeControl(
-                                    id: "editor.note",
-                                    action: { focus(.note, id: "editor.note") },
-                                    value: { draft.note }
-                                )
                         }
-                        VStack(alignment: .leading, spacing: 6) {
-                            DatePicker("Дата", selection: $date, in: minimumDate..., displayedComponents: [.date])
-                                .datePickerStyle(.field)
-                                .accessibilityIdentifier("editor.date")
-                                .uiSmokeControl(id: "editor.date", value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
-                            Text(dateHelp)
-                                .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
-                        }
-                        emojiControls
-                        editorSubtasks(scrollProxy: proxy)
-                        VStack(alignment: .leading, spacing: 5) {
+                        editorBlock { emojiControls }
+                        editorBlock { editorSubtasks(scrollProxy: proxy) }
+                        VStack(alignment: .leading, spacing: 12) {
+                            Rectangle()
+                                .fill(AuroraInstrument.stroke(
+                                    for: colorScheme,
+                                    highContrast: accessibilitySettings.prefersHighContrast
+                                ))
+                                .frame(height: 1)
+                                .accessibilityHidden(true)
                             Toggle("Основное — показывать в строке меню", isOn: $primary)
-                                .disabled(isCurrentPrimary || store.active.isEmpty)
-                            if isCurrentPrimary {
-                                Text("Чтобы сменить основное событие, выберите другое.").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                            }
+                                .accessibilityIdentifier("editor.primary")
+                                .uiSmokeControl(
+                                    id: "editor.primary",
+                                    action: { primary.toggle() },
+                                    value: { primary ? "Выбрано" : "Не выбрано" }
+                                )
                         }
                     }
                     .padding([.top, .bottom, .leading], EditorLayout.focusRingInset)
@@ -768,7 +812,7 @@ struct EditorView: View {
             await Task.yield()
             focusedField = .title
             await Task.yield()
-            if UISmokeConfiguration.wasRequested {
+            if UISmokeConfiguration.wasRequested && focusedField == .title {
                 UISmokeControlRegistry.shared.markFocused("editor.title")
             }
         }
@@ -822,107 +866,225 @@ struct EditorView: View {
                 Spacer()
                 Text("\(draft.subtasks.count)/\(Subtask.maximumCount)").font(.caption2).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
-            ForEach($draft.subtasks) { $subtask in
-                HStack(spacing: 7) {
-                    if subtask.isCompleted {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                            .accessibilityLabel("Выполнена")
-                    }
-                    TextField("Подзадача", text: $subtask.text)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focusedField, equals: .subtask(subtask.id))
-                        .auroraInputChrome(isFocused: focusedField == .subtask(subtask.id))
-                        .accessibilityIdentifier("editor.subtask.\(subtask.id.uuidString)")
-                        .uiSmokeControl(
-                            id: "editor.subtask.\(subtask.id.uuidString)",
-                            action: {
-                                focus(.subtask(subtask.id), id: "editor.subtask.\(subtask.id.uuidString)")
-                            },
-                            value: { subtask.text }
-                        )
-                    Text("\(subtask.text.count)/\(Subtask.maximumTextLength)")
-                        .font(.caption2)
-                        .foregroundStyle(subtask.text.count <= Subtask.maximumTextLength ? Color.secondary : Color.red)
-                        .frame(width: 34, alignment: .trailing)
-                    Button(role: .destructive) {
-                        draft.subtasks.removeAll { $0.id == subtask.id }
-                    } label: {
-                        Image(systemName: "trash")
-                            .frame(width: 28, height: 28)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("Удалить подзадачу")
-                    .accessibilityLabel("Удалить подзадачу")
-                }
-                .id(subtask.id)
-            }
-            if draft.subtasks.count < Subtask.maximumCount {
-                Button("+ Добавить") { addSubtask(scrollProxy: scrollProxy) }
-                .buttonStyle(.plain)
-                .foregroundStyle(AuroraInstrument.accentInk(
-                    for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                ))
-                .accessibilityLabel("Добавить подзадачу")
-                .accessibilityIdentifier("editor.subtask.add")
-                .uiSmokeControl(
-                    id: "editor.subtask.add",
-                    action: { addSubtask(scrollProxy: scrollProxy) }
+            ForEach(draft.subtasks) { subtask in
+                EditorSubtaskRow(
+                    draft: $draft,
+                    subtask: subtask,
+                    focusedField: $focusedField,
+                    focusField: focus,
+                    deleteRow: removeSubtask
                 )
+                .id(subtask.id)
+                .transition(accessibilitySettings.prefersReducedMotion ? .identity : .opacity)
+            }
+            Group {
+                if draft.subtasks.count < Subtask.maximumCount {
+                    Button("+ Добавить") { addSubtask(scrollProxy: scrollProxy) }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(AuroraInstrument.accentInk(
+                        for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                    ))
+                    .accessibilityLabel("Добавить подзадачу")
+                    .accessibilityIdentifier("editor.subtask.add")
+                    .uiSmokeControl(
+                        id: "editor.subtask.add",
+                        action: { addSubtask(scrollProxy: scrollProxy) }
+                    )
+                }
+            }
+            .disabled(draft.subtasks.count >= Subtask.maximumCount)
+            .allowsHitTesting(draft.subtasks.count < Subtask.maximumCount)
+            .accessibilityHidden(draft.subtasks.count >= Subtask.maximumCount)
+        }
+        .animation(editorSubtaskAnimation, value: draft.subtasks.map(\.id))
+        .transaction { transaction in
+            if accessibilitySettings.prefersReducedMotion {
+                transaction.animation = nil
+                transaction.disablesAnimations = true
+            }
+        }
+        .uiSmokeControl(id: "editor.subtasks", value: { String(draft.subtasks.count) })
+    }
+
+    private func editorBlock<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+            .background(AuroraInstrument.surface(
+                for: colorScheme,
+                elevated: false,
+                highContrast: accessibilitySettings.prefersHighContrast
+            ), in: RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius))
+            .overlay {
+                if accessibilitySettings.prefersHighContrast {
+                    RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius)
+                        .stroke(AuroraInstrument.stroke(for: colorScheme, highContrast: true), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+            }
+    }
+
+    private var emojiControls: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Значок · необязательно")
+                .font(.caption)
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            emojiSelectionField
+            emojiPickerContents
+        }
+        .transaction { transaction in
+            if accessibilitySettings.prefersReducedMotion {
+                transaction.animation = nil
+                transaction.disablesAnimations = true
             }
         }
     }
 
-    private var emojiControls: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Значок").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-            HStack(spacing: 8) {
-                Text(draft.emoji)
-                    .font(.system(size: 26))
-                    .frame(width: 36, height: 32)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Текущий emoji: \(draft.emoji)")
-                    .accessibilityIdentifier("editor.emoji")
-                    .uiSmokeControl(id: "editor.emoji", value: { draft.emoji })
-                Button(showingMoreEmoji ? "Скрыть" : "Ещё…", action: toggleMoreEmoji)
-                    .accessibilityLabel(
-                        showingMoreEmoji ? "Скрыть расширенный выбор emoji" : "Показать больше emoji"
-                    )
-                    .accessibilityIdentifier("editor.emoji.more")
-                    .uiSmokeControl(
-                        id: "editor.emoji.more",
-                        action: toggleMoreEmoji,
-                        value: { showingMoreEmoji ? "expanded" : "collapsed" }
-                    )
-            }
-
-            if showingMoreEmoji {
-                expandedEmojiPicker
-                    .transition(.opacity)
-            } else {
-                HStack(spacing: Self.emojiSpacing) {
-                    ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
-                        emojiButton(
-                            symbol,
-                            identifier: "editor.emoji.preset.\(emojiIdentifier(symbol))"
-                        )
-                    }
+    private var emojiSelectionField: some View {
+        ZStack(alignment: .trailing) {
+            Button(action: toggleEmojiPicker) {
+                HStack {
+                    Text(draft.emoji.isEmpty ? "Без значка" : draft.emoji)
+                        .font(.system(size: draft.emoji.isEmpty ? 13 : 26))
+                        .foregroundStyle(draft.emoji.isEmpty
+                            ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
+                        .frame(height: 28, alignment: .leading)
+                        .id(draft.emoji)
+                        .transition(.opacity)
+                        .animation(accessibilitySettings.prefersReducedMotion ? nil
+                            : .easeInOut(duration: editorEmojiValueTransitionDuration), value: draft.emoji)
+                        .accessibilityHidden(true)
+                        .uiSmokeControl(id: "editor.emoji", value: { draft.emoji })
+                    Spacer(minLength: 0)
                 }
-                .frame(height: Self.emojiCellHeight, alignment: .top)
-                .uiSmokeControl(id: "editor.emoji.quick", value: { "1x8" })
-                .transition(.opacity)
+                .padding(.leading, 10)
+                .padding(.trailing, draft.emoji.isEmpty ? 34 : 70)
+                .frame(maxWidth: .infinity, minHeight: 38, maxHeight: 38)
+                .contentShape(Rectangle())
+                .overlay(alignment: .trailing) {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                        .rotationEffect(.degrees(emojiPicker.isOpen ? 180 : 0))
+                        .animation(emojiPickerAnimation, value: emojiPicker.isOpen)
+                        .padding(.trailing, 10)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
+            .buttonStyle(.plain)
+            .focused($focusedField, equals: .emoji)
+            .accessibilityLabel(emojiPicker.isOpen
+                ? "Скрыть выбор значка, \(draft.emoji.isEmpty ? "без значка" : "текущий значок: " + draft.emoji)"
+                : (draft.emoji.isEmpty ? "Выбрать значок" : "Изменить значок: \(draft.emoji)"))
+            .accessibilityValue(emojiPicker.isOpen ? "Раскрыто" : "Свёрнуто")
+            .accessibilityIdentifier("editor.emoji.toggle")
+            .uiSmokeControl(
+                id: "editor.emoji.toggle",
+                action: toggleEmojiPicker,
+                value: { emojiPicker.isOpen ? "expanded" : "collapsed" }
+            )
+
+            if !draft.emoji.isEmpty {
+                Button(action: clearEmoji) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 34)
+                .accessibilityLabel("Убрать значок")
+                .help("Убрать значок")
+                .accessibilityIdentifier("editor.emoji.none")
+                .uiSmokeControl(id: "editor.emoji.none", action: clearEmoji)
             }
         }
+        .background(AuroraInstrument.canvas(for: colorScheme),
+                    in: RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius))
+        .auroraInputChrome(isFocused: focusedField == .emoji)
+    }
+
+    private var emojiPickerContents: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Group {
+                if emojiPicker == .presets {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: Self.emojiSpacing) {
+                            ForEach(EventEmojiCatalog.presets, id: \.self) { symbol in
+                                emojiButton(symbol, identifier: "editor.emoji.preset.\(emojiIdentifier(symbol))")
+                            }
+                        }
+                        .frame(height: Self.emojiCellHeight, alignment: .top)
+                        .uiSmokeControl(id: "editor.emoji.quick", value: { "1x8" })
+                        Button(action: showEmojiCatalog) {
+                            HStack {
+                                Text("Все значки")
+                                Image(systemName: "chevron.right").font(.system(size: 10))
+                                Spacer()
+                            }
+                            .font(.system(size: 12))
+                            .frame(minHeight: 28)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                        .accessibilityLabel("Все значки")
+                        .accessibilityIdentifier("editor.emoji.more")
+                        .uiSmokeControl(id: "editor.emoji.more", action: showEmojiCatalog, value: { "collapsed" })
+                    }
+                    .transition(.opacity)
+                }
+            }
+            .disabled(emojiPicker != .presets)
+            .allowsHitTesting(emojiPicker == .presets)
+            .accessibilityHidden(emojiPicker != .presets)
+            Group {
+                if emojiPicker.isCatalog {
+                    expandedEmojiPicker.transition(.opacity)
+                }
+            }
+            .disabled(!emojiPicker.isCatalog)
+            .allowsHitTesting(emojiPicker.isCatalog)
+            .accessibilityHidden(!emojiPicker.isCatalog)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AuroraInstrument.canvas(for: colorScheme),
+                    in: RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius))
+        .overlay(RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius)
+            .stroke(AuroraInstrument.stroke(
+                for: colorScheme,
+                highContrast: accessibilitySettings.prefersHighContrast
+            ), lineWidth: 1)
+            .allowsHitTesting(false))
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(height: emojiPicker.isOpen ? nil : 0, alignment: .top)
+        .opacity(emojiPicker.isOpen ? 1 : 0)
+        .clipped()
+        .disabled(!emojiPicker.isOpen)
+        .allowsHitTesting(emojiPicker.isOpen)
+        .accessibilityHidden(!emojiPicker.isOpen)
+        .animation(emojiPickerAnimation, value: emojiPicker)
+        .uiSmokeControl(id: "editor.emoji.picker", value: { emojiPicker.isOpen ? "expanded" : "collapsed" })
     }
 
     private var expandedEmojiPicker: some View {
         VStack(spacing: 6) {
             HStack(alignment: .top, spacing: 0) {
                 ForEach(0..<Self.emojiPageCount, id: \.self) { page in
-                    emojiPageGrid(page)
-                        .frame(width: Self.emojiPageWidth, alignment: .leading)
-                        .accessibilityHidden(page != emojiPage)
+                    Group {
+                        if page == emojiPage {
+                            emojiPageGrid(page)
+                        } else {
+                            Color.clear.accessibilityHidden(true)
+                        }
+                    }
+                    .frame(width: Self.emojiPageWidth, height: Self.emojiExpandedHeight, alignment: .topLeading)
+                    .disabled(page != emojiPage)
+                    .allowsHitTesting(page == emojiPage)
+                    .accessibilityHidden(page != emojiPage)
                 }
             }
             .offset(x: -CGFloat(emojiPage) * Self.emojiPageWidth)
@@ -1100,26 +1262,37 @@ struct EditorView: View {
 
     private func chooseEmoji(_ symbol: String) {
         guard CountdownData.isEmoji(symbol) else { return }
-        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
+        withAnimation(emojiPickerAnimation) {
             _ = draft.replaceEmoji(with: symbol)
-            emojiPage = 0
-            showingMoreEmoji = false
+            emojiPicker.close()
+            focusedField = .emoji
         }
     }
 
-    private func toggleMoreEmoji() {
-        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
-            emojiPage = 0
-            showingMoreEmoji.toggle()
+    private func clearEmoji() {
+        withAnimation(emojiPickerAnimation) {
+            draft.clearEmoji()
+            emojiPicker.close()
+            focusedField = .emoji
+        }
+    }
+
+    private func toggleEmojiPicker() {
+        withAnimation(emojiPickerAnimation) {
+            emojiPicker.toggle()
+        }
+    }
+
+    private func showEmojiCatalog() {
+        withAnimation(emojiPickerAnimation) {
+            emojiPicker.showCatalog()
         }
     }
 
     private func setEmojiPage(_ page: Int) {
-        guard showingMoreEmoji else { return }
-        let boundedPage = min(max(page, 0), Self.emojiPageCount - 1)
-        guard boundedPage != emojiPage else { return }
-        withAnimation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.18)) {
-            emojiPage = boundedPage
+        guard emojiPicker.isCatalog else { return }
+        withAnimation(emojiPickerAnimation) {
+            emojiPicker.setPage(page, pageCount: Self.emojiPageCount)
         }
     }
 
@@ -1131,14 +1304,35 @@ struct EditorView: View {
         setEmojiPage(emojiPage + 1)
     }
 
+    private var editorSubtaskAnimation: Animation? {
+        switch editorSubtaskMotion(reduceMotion: accessibilitySettings.prefersReducedMotion) {
+        case .immediate:
+            nil
+        case let .heightAndOpacity(duration):
+            .easeInOut(duration: duration)
+        }
+    }
+
+    private func removeSubtask(_ id: UUID) {
+        guard draft.subtasks.contains(where: { $0.id == id }) else { return }
+        if focusedField == .subtask(id) {
+            focusedField = nil
+        }
+        withAnimation(editorSubtaskAnimation) {
+            draft.subtasks.removeAll { $0.id == id }
+        }
+    }
+
     private func addSubtask(scrollProxy: ScrollViewProxy) {
-        guard let target = draft.addSubtask(), case let .subtask(id) = target else { return }
+        let result = withAnimation(editorSubtaskAnimation) { draft.addSubtask() }
+        guard let target = result, case let .subtask(id) = target else { return }
         Task { @MainActor in
             await Task.yield()
+            guard draft.subtasks.contains(where: { $0.id == id }) else { return }
             scrollProxy.scrollTo(id, anchor: .center)
             focusedField = target
             await Task.yield()
-            if UISmokeConfiguration.wasRequested {
+            if UISmokeConfiguration.wasRequested && focusedField == target {
                 UISmokeControlRegistry.shared.markFocused("editor.subtask.\(id.uuidString)")
             }
         }
@@ -1148,7 +1342,7 @@ struct EditorView: View {
         focusedField = target
         Task { @MainActor in
             await Task.yield()
-            if UISmokeConfiguration.wasRequested {
+            if UISmokeConfiguration.wasRequested && focusedField == target {
                 UISmokeControlRegistry.shared.markFocused(id)
             }
         }
@@ -1176,5 +1370,73 @@ struct EditorView: View {
 
     private func emojiIdentifier(_ symbol: String) -> String {
         symbol.unicodeScalars.map { String($0.value, radix: 16) }.joined(separator: "-")
+    }
+}
+
+private struct EditorSubtaskRow: View {
+    @Binding var draft: EventEditorDraft
+    let subtask: Subtask
+    @FocusState.Binding var focusedField: EditorFocusTarget?
+    let focusField: (EditorFocusTarget, String) -> Void
+    let deleteRow: (UUID) -> Void
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var currentSubtask: Subtask {
+        draft.subtasks.first { $0.id == subtask.id } ?? subtask
+    }
+
+    private var isAvailable: Bool {
+        draft.subtasks.contains { $0.id == subtask.id }
+    }
+
+    private var text: Binding<String> {
+        Binding(
+            get: { currentSubtask.text },
+            set: { value in
+                guard let index = draft.subtasks.firstIndex(where: { $0.id == subtask.id }) else { return }
+                draft.subtasks[index].text = value
+            }
+        )
+    }
+
+    var body: some View {
+        HStack(spacing: 7) {
+            if currentSubtask.isCompleted {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .accessibilityLabel("Выполнена")
+            }
+            TextField("Подзадача", text: text)
+                .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .subtask(subtask.id))
+                .auroraInputChrome(isFocused: focusedField == .subtask(subtask.id))
+                .accessibilityIdentifier("editor.subtask.\(subtask.id.uuidString)")
+                .uiSmokeControl(
+                    id: "editor.subtask.\(subtask.id.uuidString)",
+                    action: {
+                        guard isAvailable else { return }
+                        focusField(.subtask(subtask.id), "editor.subtask.\(subtask.id.uuidString)")
+                    },
+                    value: { currentSubtask.text }
+                )
+            Text("\(currentSubtask.text.count)/\(Subtask.maximumTextLength)")
+                .font(.caption2)
+                .foregroundStyle(currentSubtask.text.count <= Subtask.maximumTextLength ? Color.secondary : Color.red)
+                .frame(width: 34, alignment: .trailing)
+            Button(role: .destructive) { deleteRow(subtask.id) } label: {
+                Image(systemName: "trash")
+                    .frame(width: 28, height: 28)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .help("Удалить подзадачу")
+            .accessibilityLabel("Удалить подзадачу")
+            .accessibilityIdentifier("editor.subtask.delete.\(subtask.id.uuidString)")
+            .uiSmokeControl(id: "editor.subtask.delete.\(subtask.id.uuidString)", action: { deleteRow(subtask.id) })
+        }
+        .disabled(!isAvailable)
+        .allowsHitTesting(isAvailable)
+        .accessibilityHidden(!isAvailable)
     }
 }

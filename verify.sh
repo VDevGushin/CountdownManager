@@ -160,7 +160,20 @@ copy_capture_evidence() {
         12-today-badge \
         13-day-choices \
         14-day-editor \
-        15-subtasks-reduced-motion-collapsed; do
+        15-subtasks-reduced-motion-collapsed \
+        16-nearest-today-without-icon \
+        17-editor-dark-empty \
+        18-editor-dark-selected \
+        19-editor-dark-presets \
+        20-editor-dark-catalogue \
+        21-editor-light-empty \
+        22-editor-light-selected \
+        23-editor-light-presets \
+        24-editor-light-catalogue \
+        25-timer-completion-dark \
+        26-timer-completion-light \
+        27-timer-completion-dark-high-contrast \
+        28-timer-completion-light-high-contrast; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
             return 1

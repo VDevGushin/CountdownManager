@@ -161,6 +161,10 @@ final class UISmokeRuntime {
         let colorSchemeOverride: String?
         let highContrastOverride: Bool?
         let reduceMotionOverride: Bool?
+        let windowIdentifier: String?
+        let appearanceName: String
+        let bitmapColorSpace: String?
+        let colorProfileEmbedded: Bool?
     }
 
     private struct CaptureManifest: Codable {
@@ -465,6 +469,19 @@ final class UISmokeRuntime {
         try await settleLayout()
         try requireNonOverlappingCardFrames(minimumCount: 2)
         try capture(name: "12-today-badge")
+        try await press("event.edit.\(todayPrimary.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await press("editor.emoji.none")
+        try await press("editor.primary")
+        try await press("editor.save")
+        try await waitFor("today event saved without icon or favorite") {
+            self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nil
+        }
+        try require(store.primary?.id == todayPrimary.id && store.primary?.emoji.isEmpty == true
+                    && store.statusTitle == "📅 Сегодня",
+                    "unfavorited iconless today event did not supply the menu display")
+        try await settleLayout()
+        try capture(name: "16-nearest-today-without-icon")
         for item in store.active {
             let removed = await store.delete(item.id)
             try require(removed, "today capture fixture removal failed")
@@ -482,7 +499,7 @@ final class UISmokeRuntime {
 
         let primary = Countdown(
             title: "Переезд в новую квартиру",
-            note: "Длинная карточка с заметкой и чек-листом для визуальной проверки.",
+            note: "Забрать ключи, организовать доставку и подготовить документы.",
             date: Day(store.tomorrow),
             emoji: "📦",
             subtasks: try [
@@ -492,7 +509,7 @@ final class UISmokeRuntime {
             ]
         )
         let secondary = [
-            Countdown(title: "Короткое событие", date: Day(store.tomorrow), emoji: "✨"),
+            Countdown(title: "До отпуска", date: Day(store.tomorrow), emoji: "✨"),
             Countdown(
                 title: "День рождения Маши",
                 note: "Выбрать подарок и заказать торт.",
@@ -503,7 +520,7 @@ final class UISmokeRuntime {
             Countdown(title: "Понедельник", date: Day(store.tomorrow), emoji: "🗓️"),
             Countdown(title: "Билеты", date: Day(store.tomorrow), emoji: "✈️"),
             Countdown(
-                title: "Нижнее короткое событие",
+                title: "Концерт",
                 date: Day(store.tomorrow),
                 emoji: "⭐️"
             ),
@@ -546,6 +563,7 @@ final class UISmokeRuntime {
         try await waitFor("list restored after editor capture") {
             self.controls.entries["editor.edit"] == nil
         }
+        try await captureGroupedEditors()
         try await scrollRootListToTop()
         try await press("day.add")
         try await waitForElement("creation.day.chooseDate")
@@ -593,6 +611,7 @@ final class UISmokeRuntime {
         }
         try await settleLayout()
         try capture(name: "09-reduce-motion-running")
+        try await captureCompletionAlerts()
         try writeCaptureManifest()
         pass("real panel capture set records baseline and isolated accessibility states")
     }
@@ -616,8 +635,9 @@ final class UISmokeRuntime {
         pass("reduced-motion checklist closes noninteractive and reopens with completion groups intact")
     }
 
-    private func settleLayout() async throws {
-        try await Task.sleep(nanoseconds: 250_000_000)
+    private func settleLayout(waitForAnimation: Bool = true) async throws {
+        if waitForAnimation { try await Task.sleep(nanoseconds: 250_000_000) }
+        await Task.yield()
         window()?.contentView?.layoutSubtreeIfNeeded()
         window()?.contentView?.display()
         CATransaction.flush()
@@ -707,7 +727,11 @@ final class UISmokeRuntime {
                 $0 == .dark ? "dark" : "light"
             },
             highContrastOverride: accessibilitySettings.isolatedCaptureOverrideValue,
-            reduceMotionOverride: accessibilitySettings.isolatedReduceMotionOverrideValue
+            reduceMotionOverride: accessibilitySettings.isolatedReduceMotionOverrideValue,
+            windowIdentifier: panel.identifier?.rawValue,
+            appearanceName: panel.effectiveAppearance.name.rawValue,
+            bitmapColorSpace: nil,
+            colorProfileEmbedded: nil
         ))
     }
 
@@ -760,16 +784,301 @@ final class UISmokeRuntime {
         }
     }
 
+    private func captureGroupedEditors() async throws {
+        for (index, scheme) in [ColorScheme.dark, .light].enumerated() {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await press("event.add")
+            try await waitForElement("editor.new")
+            try await focusAndReplace("editor.title", with: "Поездка на выходные")
+            try await focusAndReplace("editor.note", with: "Забронировать билеты и выбрать маршрут.")
+            try await press("editor.subtask.add")
+            try await waitFor("capture subtask") { self.editorSubtaskFieldIDs().count == 1 }
+            let field = try requireValue(editorSubtaskFieldIDs().first, "capture subtask field")
+            try await focusAndReplace(field, with: "Проверить расписание")
+            try scrollEditorToTop()
+            try await requireEmojiPickerClosed()
+            try await settleLayout()
+            let firstNumber = 17 + index * 4
+            let theme = scheme == .dark ? "dark" : "light"
+            try capture(name: "\(firstNumber)-editor-\(theme)-empty")
+            try await press("editor.emoji.toggle")
+            try await press("editor.emoji.preset.1f680")
+            try await requireEmojiPickerClosed()
+            try await settleLayout()
+            try capture(name: "\(firstNumber + 1)-editor-\(theme)-selected")
+            try await press("editor.emoji.toggle")
+            try await waitForElement("editor.emoji.quick")
+            try await settleLayout()
+            try requireEmojiRowLayout(page: nil)
+            try capture(name: "\(firstNumber + 2)-editor-\(theme)-presets")
+            try await press("editor.emoji.more")
+            try await waitForValue("editor.emoji.page", equals: "1/5")
+            try await settleLayout()
+            try scrollEditorCatalogueIntoView()
+            try await settleLayout()
+            try requireEmojiRowLayout(page: 1)
+            let viewport = try requireValue(controls.frame("editor.scroll"), "capture editor viewport")
+            let grid = try requireValue(controls.frame("editor.emoji.expanded"), "capture catalogue")
+            let pagination = try requireValue(controls.frame("editor.emoji.page"), "capture pagination")
+            try require(grid.minY >= viewport.minY - 1 && pagination.maxY <= viewport.maxY + 1,
+                        "capture clipped catalogue rows or pagination")
+            try capture(name: "\(firstNumber + 3)-editor-\(theme)-catalogue")
+            try await press("editor.cancel")
+            try await waitFor("list restored after grouped editor capture") { self.controls.entries["editor.new"] == nil }
+        }
+        visualEnvironment.colorSchemeOverride = .dark
+    }
+
+    private func editorScrollView() throws -> NSScrollView {
+        let content = try requireValue(window()?.contentView, "editor content view")
+        return try requireValue(allSubviews(of: content).compactMap { $0 as? NSScrollView }.first { scroll in
+            self.allSubviews(of: scroll).contains { $0 is NSDatePicker }
+        }, "native editor scroll view")
+    }
+
+    private func scrollEditorToTop() throws {
+        let scroll = try editorScrollView()
+        scroll.contentView.scroll(to: CGPoint(x: scroll.contentView.bounds.origin.x, y: 0))
+        scroll.reflectScrolledClipView(scroll.contentView)
+    }
+
+    private func scrollEditorCatalogueIntoView() throws {
+        let scroll = try editorScrollView()
+        let grid = try requireValue(controls.frame("editor.emoji.expanded"), "capture catalogue")
+        let pagination = try requireValue(controls.frame("editor.emoji.page"), "capture catalogue pagination")
+        let viewport = try requireValue(controls.frame("editor.scroll"), "capture editor viewport")
+        let excessHeight = max(0, pagination.maxY - viewport.maxY + 8)
+        scroll.contentView.scroll(to: CGPoint(
+            x: scroll.contentView.bounds.origin.x,
+            y: scroll.contentView.bounds.origin.y + excessHeight
+        ))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try require(pagination.maxY - grid.minY <= viewport.height, "catalogue is taller than the editor viewport")
+    }
+
     private func writeCaptureManifest() throws {
-        try require(captures.count == 15, "capture set is incomplete")
+        try require(captures.count == 28, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let manifest = CaptureManifest(version: 2, captures: captures.sorted { $0.name < $1.name })
+        let manifest = CaptureManifest(version: 3, captures: captures.sorted { $0.name < $1.name })
         let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
         try encoder.encode(manifest).write(
             to: directory.appendingPathComponent("manifest.json"),
             options: .atomic
         )
+    }
+
+    private func runEditorEmojiRegression() async throws {
+        let fixture = Countdown(
+            title: "Emoji regression", note: "Original note", date: Day(store.tomorrow), emoji: "",
+            subtasks: try [Subtask(text: "Active draft"), Subtask(text: "Completed draft", isCompleted: true)]
+        )
+        let saved = await store.save(fixture, primary: true)
+        try require(saved, "emoji regression fixture save failed")
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
+        try await press("event.edit.\(fixture.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await requireEmojiPickerClosed()
+        try require(controls.entries["editor.emoji.none"] == nil, "empty emoji exposes a clear action")
+        try await focusAndReplace("editor.title", with: "Retained emoji draft")
+        try await focusAndReplace("editor.note", with: "Retained note")
+        let taskID = "editor.subtask.\(fixture.subtasks[0].id.uuidString)"
+        try await focusAndReplace(taskID, with: "Retained subtask")
+        try await press("editor.primary")
+        let selectedDate = Day(try requireValue(
+            Day.calendar.date(byAdding: .day, value: 2, to: store.tomorrow), "emoji regression date"
+        ))
+        try await selectEditorDate(selectedDate)
+        let fieldIDs = ["editor.title", "editor.note", "editor.date", "editor.primary"] + editorSubtaskFieldIDs()
+        let draftValues = fieldIDs.map { ($0, controls.value($0)) }
+        let owner = controls.entries["editor.edit"]?.ownerID
+
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await press("editor.emoji.toggle")
+            try await waitForElement("editor.emoji.quick")
+            try await settleLayout()
+            try requireEmojiRowLayout(page: nil)
+            for id in controls.ids(withPrefix: "editor.emoji.option.") {
+                try require(controls.entries[id]?.isEnabled == false && !controls.press(id),
+                            "quick presets exposed an interactive catalogue choice")
+            }
+            try await press("editor.emoji.more")
+            try await waitForValue("editor.emoji.category", equals: "Общие")
+            try await waitFor("complete emoji catalogue") {
+                let choices = self.controls.ids(withPrefix: "editor.emoji.preset.")
+                    + self.controls.ids(withPrefix: "editor.emoji.option.")
+                let active = choices.filter { self.controls.entries[$0]?.isEnabled == true }
+                return active.count == 48 && active.allSatisfy { $0.contains(".page.1.") }
+            }
+            for page in 1...5 {
+                try await press("editor.emoji.page.dot.\(page)")
+                try await waitForValue("editor.emoji.page", equals: "\(page)/5")
+                try await settleLayout()
+                try requireEmojiRowLayout(page: page)
+            }
+            try await press("editor.emoji.page.dot.2")
+            try await press("editor.emoji.option.page.2.row.1.column.1.1f476")
+            try await waitForValue("editor.emoji", equals: "👶")
+            try await requireEmojiPickerClosed()
+            try await press("editor.emoji.toggle")
+            try await press("editor.emoji.none")
+            try await waitForValue("editor.emoji", equals: "")
+            try await requireEmojiPickerClosed()
+            try await waitFor("clear action removed without an emoji") { self.controls.entries["editor.emoji.none"] == nil }
+        }
+        visualEnvironment.colorSchemeOverride = nil
+
+        var expandedPickerHeight: CGFloat = 0
+        for reduceMotion in [false, true] {
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: reduceMotion)
+            try require(accessibilitySettings.prefersReducedMotion == reduceMotion
+                        && accessibilitySettings.isolatedReduceMotionOverrideValue == reduceMotion,
+                        "isolated emoji Reduce Motion override was not applied")
+            try await press("editor.emoji.toggle")
+            try await waitForElement("editor.emoji.quick")
+            // A second request interrupts the first transition; the third reopens it.
+            try require(controls.press("editor.emoji.toggle"), "rapid close was rejected")
+            try require(controls.press("editor.emoji.toggle"), "rapid reopen was rejected")
+            try await waitForValue("editor.emoji.toggle", equals: "expanded")
+            try await settleLayout()
+            let expandedFrame = try requireValue(controls.frame("editor.emoji.picker"), "expanded picker")
+            try require(expandedFrame.height > 0, "last rapid open did not restore row height")
+            expandedPickerHeight = expandedFrame.height
+            try require(controls.press("editor.emoji.toggle"), "rapid final close was rejected")
+            try await requireEmojiPickerClosed()
+            try await settleLayout()
+            let closedFrame = try requireValue(controls.frame("editor.emoji.picker"), "closed picker")
+            try require(abs(closedFrame.height) < 0.5,
+                        "closed picker retained expanded height")
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        try require(!accessibilitySettings.prefersReducedMotion, "live Reduce Motion fixture did not start with motion")
+        try await press("editor.emoji.toggle")
+        try await waitForValue("editor.emoji.toggle", equals: "expanded")
+        // Change the live environment during the opening request, before its usual 200ms settling wait.
+        try await Task.sleep(nanoseconds: 50_000_000)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try require(accessibilitySettings.prefersReducedMotion
+                    && accessibilitySettings.isolatedReduceMotionOverrideValue == true,
+                    "live Reduce Motion change was not applied")
+        try await settleLayout(waitForAnimation: false)
+        let liveFrame = try requireValue(controls.frame("editor.emoji.picker"), "live reduced-motion picker")
+        try require(abs(liveFrame.height - expandedPickerHeight) < 0.5
+                    && controls.entries["editor.emoji.quick"]?.isEnabled == true,
+                    "live Reduce Motion did not lay out the expanded endpoint")
+        for (id, value) in draftValues {
+            try require(controls.value(id) == value, "live Reduce Motion changed \(id)")
+        }
+        try require(Data(contentsOf: configuration.dataURL) == savedJSON, "live Reduce Motion persisted draft changes")
+        try await press("editor.emoji.toggle")
+        try await requireEmojiPickerClosed()
+        try await settleLayout(waitForAnimation: false)
+        let liveClosedFrame = try requireValue(controls.frame("editor.emoji.picker"), "live reduced-motion closed picker")
+        try require(abs(liveClosedFrame.height) < 0.5, "live Reduce Motion did not lay out the closed endpoint")
+        pass("isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: nil, reduceMotion: nil)
+        try await press("editor.emoji.toggle")
+        try await press("editor.emoji.more")
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.edit"]?.ownerID == owner, "emoji disclosure replaced the editor")
+        try require(controls.value("editor.emoji.toggle") == "expanded"
+                    && controls.value("editor.emoji.category") == "Общие", "hide/show collapsed the catalogue")
+        for (id, value) in draftValues {
+            try require(controls.value(id) == value, "emoji interaction changed \(id)")
+        }
+        try require(Data(contentsOf: configuration.dataURL) == savedJSON, "emoji disclosure wrote draft event data")
+        try await press("editor.cancel")
+        try await waitFor("emoji regression cancelled") { self.controls.entries["editor.edit"] == nil }
+        try require(Data(contentsOf: configuration.dataURL) == savedJSON, "emoji Cancel changed event data")
+        let deleted = await store.delete(fixture.id)
+        try require(deleted, "emoji regression cleanup failed")
+        try FileManager.default.removeItem(at: configuration.dataURL)
+        pass("emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show")
+        pass("five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly")
+    }
+
+    private func requireEmojiPickerClosed() async throws {
+        try await waitFor("closed emoji picker has no enabled choices") {
+            self.controls.value("editor.emoji.toggle") == "collapsed"
+                && self.controls.ids(withPrefix: "editor.emoji.preset.").allSatisfy {
+                    self.controls.entries[$0]?.isEnabled == false
+                }
+                && self.controls.ids(withPrefix: "editor.emoji.option.").allSatisfy {
+                    self.controls.entries[$0]?.isEnabled == false
+                }
+                && self.controls.entries["editor.emoji.more"]?.isEnabled != true
+        }
+        for id in controls.ids(withPrefix: "editor.emoji.preset.") + controls.ids(withPrefix: "editor.emoji.option.") {
+            try require(!controls.press(id), "closed emoji picker still accepts input")
+        }
+    }
+
+    private func requireEmojiRowLayout(page: Int?) throws {
+        if let page {
+            let choices = controls.ids(withPrefix: "editor.emoji.preset.") + controls.ids(withPrefix: "editor.emoji.option.")
+            let enabled = choices.filter { controls.entries[$0]?.isEnabled == true }
+            if enabled.count != 48 {
+                let pageSummary = (1...5).map { index in
+                    let pageIDs = choices.filter { $0.contains(".page.\(index).") }
+                    let activeCount = pageIDs.filter { controls.entries[$0]?.isEnabled == true }.count
+                    return "page\(index)=\(pageIDs.count) raw/\(activeCount) enabled"
+                }.joined(separator: ", ")
+                let missingCoordinates = (1...6).flatMap { row in
+                    (1...8).compactMap { column in
+                        let coordinate = ".page.\(page).row.\(row).column.\(column)."
+                        return enabled.contains { $0.contains(coordinate) } ? nil : coordinate
+                    }
+                }
+                let extraIDs = choices.filter { !$0.contains(".page.\(page).") }.sorted()
+                let registrySnapshot = choices.sorted().map { id in
+                    "\(id): enabled=\(String(describing: controls.entries[id]?.isEnabled)), frame=\(String(describing: controls.frame(id)))"
+                }.joined(separator: "\n")
+                throw Failure("active emoji catalogue page did not contain exactly 48 enabled controls; "
+                    + "requestedPage=\(page), renderedPage=\(controls.value("editor.emoji.page") ?? "nil"), "
+                    + "category=\(controls.value("editor.emoji.category") ?? "nil"), rawCount=\(choices.count), "
+                    + "enabledCount=\(enabled.count), \(pageSummary), missingCoordinates=\(missingCoordinates), "
+                    + "extraIDs=\(extraIDs)\nRegistry:\n\(registrySnapshot)")
+            }
+            try require(enabled.count == 48, "active emoji catalogue page did not contain exactly 48 enabled controls")
+            try require(enabled.allSatisfy { $0.contains(".page.\(page).") },
+                        "inactive emoji catalogue page exposes an enabled choice")
+            for id in choices where !id.contains(".page.\(page).") {
+                try require(controls.entries[id]?.isEnabled == false && !controls.press(id),
+                            "inactive emoji catalogue page still accepts input")
+            }
+            for row in 1...6 {
+                try require(enabled.filter { $0.contains(".row.\(row).column.") }.count == 8,
+                            "emoji catalogue page did not retain its 6x8 grid")
+            }
+            for id in enabled {
+                try require(controls.entries[id]?.isEnabled == true, "active emoji catalogue page rejects input")
+            }
+        }
+        let ids = (controls.ids(withPrefix: "editor.emoji.preset.") + controls.ids(withPrefix: "editor.emoji.option."))
+            .filter { id in
+                guard controls.entries[id]?.isEnabled == true else { return false }
+                if let page { return id.contains(".page.\(page).row.1.column.") }
+                return !id.contains(".page.")
+            }
+        let frames = try ids.map { try requireValue(controls.frame($0), "emoji row cell") }
+            .sorted { $0.minX < $1.minX }
+        let viewport = try requireValue(controls.frame(page == nil ? "editor.emoji.quick" : "editor.emoji.expanded"),
+                                        "emoji row viewport")
+        let scroll = try requireValue(controls.frame("editor.scroll"), "editor scroll viewport")
+        try require(frames.count == 8, "emoji row did not render all eight columns")
+        try require(viewport.minX >= scroll.minX - 1 && viewport.maxX <= scroll.maxX + 1,
+                    "emoji row escaped the narrow editor")
+        for frame in frames {
+            try require(frame.width >= 24 && frame.height >= 28, "emoji cell has an undersized hit area")
+            try require(frame.minX >= viewport.minX - 1 && frame.maxX <= viewport.maxX + 1,
+                        "eighth emoji column is clipped")
+            try require(abs(frame.minY - frames[0].minY) < 1, "emoji row wrapped")
+        }
+        for (left, right) in zip(frames, frames.dropFirst()) {
+            try require(left.maxX <= right.minX + 0.5, "emoji hit areas overlap")
+        }
+        for id in ids { try require(controls.entries[id]?.isEnabled == true, "visible emoji column rejects input") }
     }
 
     private func run() async throws {
@@ -794,6 +1103,8 @@ final class UISmokeRuntime {
         try await waitFor("timer returns to idle after preset smoke") { self.timer.phase == .idle }
         pass("timer preset selection reaches both ends, is last-tap-wins and drives Play")
         try await verifyCompletionAlertDismissal()
+        try await runEditorEmojiRegression()
+        try await verifyEditorSubtaskMotion()
 
         try await press("event.add")
         try await waitForElement("editor.new")
@@ -804,27 +1115,39 @@ final class UISmokeRuntime {
             "Alpha", "Beta", "Gamma", "Delta", "Epsilon",
             "Zeta", "Eta", "Theta", "Iota", "Kappa",
         ] {
-            let before = Set(controls.ids(withPrefix: "editor.subtask."))
+            let before = Set(editorSubtaskFieldIDs())
             try await press("editor.subtask.add")
             try await waitFor("new subtask") {
-                Set(self.controls.ids(withPrefix: "editor.subtask.")).subtracting(before).count == 1
+                Set(self.editorSubtaskFieldIDs()).subtracting(before).count == 1
             }
-            let field = try requireValue(Set(controls.ids(withPrefix: "editor.subtask.")).subtracting(before).first, "subtask field")
+            let field = try requireValue(Set(editorSubtaskFieldIDs()).subtracting(before).first, "subtask field")
             try await waitForFirstResponder(field)
             try insertText(text)
             try await waitForValue(field, equals: text)
         }
-        try require(controls.entries["editor.subtask.add"] == nil, "eleventh subtask must not be available")
+        let tenSubtaskIDs = Set(editorSubtaskFieldIDs())
+        try require(tenSubtaskIDs.count == 10, "ten subtask fields were not retained")
+        try await waitFor("eleventh subtask action unavailable") {
+            self.controls.entries["editor.subtask.add"]?.isEnabled != true
+        }
+        try require(!controls.press("editor.subtask.add"), "eleventh subtask action still accepts input")
+        try require(controls.value("editor.subtasks") == "10" && Set(editorSubtaskFieldIDs()) == tenSubtaskIDs,
+                    "unavailable eleventh addition changed subtask count or UUIDs")
+        try await press("editor.emoji.toggle")
         try await press("editor.emoji.more")
         try await waitForValue("editor.emoji.category", equals: "Общие")
         try await waitFor("unique expanded emoji controls") {
-            self.controls.ids(withPrefix: "editor.emoji.option.").count == 232
+            let choices = self.controls.ids(withPrefix: "editor.emoji.preset.")
+                + self.controls.ids(withPrefix: "editor.emoji.option.")
+            let active = choices.filter { self.controls.entries[$0]?.isEnabled == true }
+            return active.count == 48 && active.allSatisfy { $0.contains(".page.1.") }
         }
         try await press("editor.emoji.page.dot.2")
         try await waitForValue("editor.emoji.category", equals: "Дети")
         try await press("editor.emoji.option.page.2.row.1.column.1.1f476")
         try await waitForValue("editor.emoji", equals: "👶")
-        try await waitForValue("editor.emoji.more", equals: "collapsed")
+        try await requireEmojiPickerClosed()
+        try await press("editor.emoji.toggle")
         try await press("editor.emoji.preset.1f680")
         try await waitForValue("editor.emoji", equals: "🚀")
         try await hideAndShow()
@@ -834,7 +1157,8 @@ final class UISmokeRuntime {
         try await waitFor("save") { self.store.active.count == 1 && self.controls.entries["editor.new"] == nil }
         let item = try requireValue(store.active.first, "saved event")
         try require(item.subtasks.count == 10 && item.emoji == "🚀" && item.note == "Private synthetic note", "editor fields not saved")
-        try require(store.data.primaryID == item.id, "first event must be primary")
+        try require(store.data.primaryID == nil && store.primary?.id == item.id,
+                    "first event must stay unfavorited while supplying the nearest-event display")
         pass("single editor persists note, emoji and ten subtasks only on Save")
         let task = item.subtasks[0]
         let toggle = "subtask.toggle.\(task.id.uuidString)"
@@ -897,6 +1221,7 @@ final class UISmokeRuntime {
         try verifyDiagnosticsPrivacy(forbidden: ["Window smoke event", "Private synthetic note", "Keep unavailable draft", "Alpha", "😎"])
         pass("diagnostics remain free of private editor input")
         try await verifyDayCreation()
+        try await verifyOptionalIconsAndFavorites()
     }
 
     private func verifyDayCreation() async throws {
@@ -907,7 +1232,7 @@ final class UISmokeRuntime {
         try await press("creation.day.tomorrow")
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
-        try await waitForValue("editor.emoji", equals: "📅")
+        try await waitForValue("editor.emoji", equals: "")
         try require(controls.value("editor.note")?.isEmpty == true, "new day has a nonempty note")
         try require(editorSubtaskFieldIDs().isEmpty, "new day inherited subtasks")
         try require(controls.value("editor.date") == dateValue(tomorrow), "new day is not tomorrow")
@@ -942,7 +1267,7 @@ final class UISmokeRuntime {
         try await press("editor.save")
         try await waitFor("day saved") { self.controls.entries["editor.new"] == nil && self.store.active.count == 1 }
         let saved = try requireValue(store.active.first, "saved day")
-        try require(saved.title == "Personal day plan" && saved.date == finalDay && saved.emoji == "📅"
+        try require(saved.title == "Personal day plan" && saved.date == finalDay && saved.emoji.isEmpty
                     && saved.note == "Synthetic day note" && saved.subtasks.count == 1
                     && saved.subtasks[0].text == "Sport" && !saved.subtasks[0].isCompleted,
                     "day Save did not persist the editor fields")
@@ -956,7 +1281,7 @@ final class UISmokeRuntime {
         try await press("creation.day.chooseDate")
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
-        try require(controls.value("editor.note")?.isEmpty == true && controls.value("editor.emoji") == "📅"
+        try require(controls.value("editor.note")?.isEmpty == true && controls.value("editor.emoji")?.isEmpty == true
                     && editorSubtaskFieldIDs().isEmpty,
                     "choose-date day inherited the previously saved plan")
         let selectedDay = Day(Day.calendar.date(byAdding: .day, value: 4, to: store.today.date())!)
@@ -971,12 +1296,238 @@ final class UISmokeRuntime {
         try verifyDiagnosticsPrivacy(forbidden: ["Personal day plan", "Synthetic day note", "Sport"])
     }
 
+    private func verifyOptionalIconsAndFavorites() async throws {
+        let plannedDay = try requireValue(store.active.first, "unfavorited day fixture")
+        try require(plannedDay.emoji.isEmpty && store.data.primaryID == nil,
+                    "day creation selected an icon or favorite automatically")
+        try await press("event.add")
+        try await waitForElement("editor.new")
+        try await waitForValue("editor.emoji", equals: "")
+        try await waitForValue("editor.primary", equals: "Не выбрано")
+        try await waitForFirstResponder("editor.title")
+        try insertText("Nearest without icon")
+        try await press("editor.save")
+        try await waitFor("iconless ordinary event saved") {
+            self.controls.entries["editor.new"] == nil && self.store.active.count == 2
+        }
+        let nearest = try requireValue(store.active.first(where: { $0.title == "Nearest without icon" }), "nearest fixture")
+        try require(nearest.emoji.isEmpty && store.data.primaryID == nil && store.primary?.id == nearest.id
+                    && store.statusTitle == "📅 1 день", "nearest iconless event did not supply the fallback display")
+        try await waitForValue("event.primary.\(nearest.id.uuidString)", equals: "Не выбрано")
+        pass("ordinary and day creation allow no icon and no favorite while the nearest event supplies the display")
+
+        try await press("event.edit.\(nearest.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await press("editor.emoji.toggle")
+        try await press("editor.emoji.preset.1f389")
+        try await press("editor.save")
+        try await waitFor("chosen icon saved") {
+            self.controls.entries["editor.edit"] == nil && self.store.primary?.emoji == "🎉"
+        }
+        try require(store.statusTitle == "🎉 1 день", "chosen event icon did not replace the menu fallback")
+        let chosenJSON = try Data(contentsOf: configuration.dataURL)
+        try await press("event.edit.\(nearest.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await press("editor.emoji.none")
+        try await waitForValue("editor.emoji", equals: "")
+        try await press("editor.emoji.toggle")
+        try await press("editor.emoji.preset.1f680")
+        try await hideAndShow()
+        try await press("editor.cancel")
+        try await waitFor("icon changes cancelled") { self.controls.entries["editor.edit"] == nil }
+        try require(store.primary?.emoji == "🎉" && Data(contentsOf: configuration.dataURL) == chosenJSON,
+                    "cancelled icon changes altered the stored choice")
+        try await press("event.edit.\(nearest.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await press("editor.emoji.none")
+        try await press("editor.save")
+        try await waitFor("icon cleared") {
+            self.controls.entries["editor.edit"] == nil && self.store.primary?.emoji.isEmpty == true
+        }
+        try require(store.statusTitle == "📅 1 день", "clearing an icon did not restore the fallback")
+        pass("choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon")
+
+        let plannedStar = "event.primary.\(plannedDay.id.uuidString)"
+        try await press(plannedStar)
+        try await waitForValue(plannedStar, equals: "Выбрано")
+        try require(store.primary?.id == plannedDay.id && store.statusTitle == "📅 3 дня",
+                    "explicit favorite did not override the nearest event")
+        try await press(plannedStar)
+        try await waitForValue(plannedStar, equals: "Не выбрано")
+        try require(store.data.primaryID == nil && store.primary?.id == nearest.id,
+                    "clearing the filled star selected another explicit favorite")
+        try await press("event.edit.\(nearest.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await press("editor.primary")
+        try await press("editor.save")
+        try await waitFor("editor selected favorite") {
+            self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nearest.id
+        }
+        try await press("event.edit.\(nearest.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await waitForValue("editor.primary", equals: "Выбрано")
+        try require(controls.entries["editor.primary"]?.isEnabled == true, "favorite editor toggle cannot be cleared")
+        try await press("editor.primary")
+        try await press("editor.save")
+        try await waitFor("editor cleared favorite") {
+            self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nil
+        }
+        let reopened = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        try require(reopened.primaryID == nil && reopened.items.first(where: { $0.id == nearest.id })?.emoji.isEmpty == true,
+                    "saved absence of favorite/icon did not survive repository reopening")
+        try await hideAndShow()
+        try await waitForValue("event.primary.\(nearest.id.uuidString)", equals: "Не выбрано")
+        pass("list and editor can select or clear a favorite; no favorite remains durable after reopening")
+    }
+
     private func dateValue(_ day: Day) -> String {
         "\(day.year)-\(day.month)-\(day.day)"
     }
 
     private func editorSubtaskFieldIDs() -> [String] {
-        controls.ids(withPrefix: "editor.subtask.").filter { $0 != "editor.subtask.add" }
+        let prefix = "editor.subtask."
+        return controls.ids(withPrefix: prefix).filter {
+            UUID(uuidString: String($0.dropFirst(prefix.count))) != nil && controls.entries[$0]?.isEnabled == true
+        }
+    }
+
+    private func addEditorSubtaskAndWait() async throws -> String {
+        let before = Set(editorSubtaskFieldIDs())
+        try await press("editor.subtask.add")
+        try await waitFor("one new enabled editor subtask") {
+            Set(self.editorSubtaskFieldIDs()).subtracting(before).count == 1
+        }
+        return try requireValue(Set(editorSubtaskFieldIDs()).subtracting(before).first, "new editor subtask")
+    }
+
+    private func deleteEditorSubtask(_ fieldID: String) async throws {
+        let suffix = fieldID.dropFirst("editor.subtask.".count)
+        try await press("editor.subtask.delete.\(suffix)")
+        try await waitFor("deleted editor subtask rejects input") {
+            self.controls.entries[fieldID]?.isEnabled != true
+                && self.controls.entries["editor.subtask.delete.\(suffix)"]?.isEnabled != true
+        }
+        try require(!controls.press(fieldID) && !controls.press("editor.subtask.delete.\(suffix)"),
+                    "removed editor subtask still accepts input")
+    }
+
+    private func verifyEditorSubtaskMotion() async throws {
+        let contrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let motion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: motion) }
+        try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
+                    "subtask motion fixture requires an isolated empty store")
+        for reduceMotion in [false, true] {
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: reduceMotion)
+            try require(accessibilitySettings.prefersReducedMotion == reduceMotion, "subtask motion override did not apply")
+            try await press("event.add")
+            try await waitForElement("editor.new")
+            try await focusAndReplace("editor.title", with: "Subtask animation fixture")
+            try await focusAndReplace("editor.note", with: "Keep all other fields")
+            try await waitForValue("editor.subtasks", equals: "0")
+            try await settleLayout(waitForAnimation: !reduceMotion)
+            let emptyHeight = try requireValue(controls.frame("editor.subtasks"), "empty subtask block").height
+            let first = try await addEditorSubtaskAndWait()
+            try await waitForFirstResponder(first)
+            try await waitFor("first subtask stays inside the editor viewport") {
+                guard let field = self.controls.frame(first), let viewport = self.controls.frame("editor.scroll") else { return false }
+                return field.minY >= viewport.minY - 1 && field.maxY <= viewport.maxY + 1
+            }
+            try insertText("First retained row")
+            try await waitForValue(first, equals: "First retained row")
+            try await settleLayout(waitForAnimation: !reduceMotion)
+            let oneHeight = try requireValue(controls.frame("editor.subtasks"), "one subtask block").height
+            try require(oneHeight > emptyHeight, "adding a row did not expand the subtask block")
+            try await focusAndReplace(first, with: "Edited without layout motion")
+            try require(abs((controls.frame("editor.subtasks")?.height ?? 0) - oneHeight) < 0.5,
+                        "typing changed the subtask block's layout height")
+            let animatedTemporary = try await addEditorSubtaskAndWait()
+            try await waitForFirstResponder(animatedTemporary)
+            try insertText("Removed animated row")
+            try await waitForValue(animatedTemporary, equals: "Removed animated row")
+            try await deleteEditorSubtask(animatedTemporary)
+            try await settleLayout(waitForAnimation: !reduceMotion)
+            try require(editorSubtaskFieldIDs() == [first] && controls.value(first) == "Edited without layout motion"
+                        && abs((controls.frame("editor.subtasks")?.height ?? 0) - oneHeight) < 0.5,
+                        "animated deletion changed the surviving row or its block height")
+            for _ in 0..<9 { try require(controls.press("editor.subtask.add"), "rapid subtask add was rejected") }
+            try await waitForValue("editor.subtasks", equals: "10")
+            try await waitFor("ten enabled editor fields") { self.editorSubtaskFieldIDs().count == 10 }
+            if !reduceMotion {
+                accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+                try require(accessibilitySettings.prefersReducedMotion, "live subtask Reduce Motion did not apply")
+            }
+            try await settleLayout(waitForAnimation: false)
+            let fullHeight = try requireValue(controls.frame("editor.subtasks"), "ten subtask block").height
+            try require(fullHeight > oneHeight, "ten rows did not expand the editor block")
+            let fullIDs = Set(editorSubtaskFieldIDs())
+            try await waitFor("no eleventh row action") { self.controls.entries["editor.subtask.add"]?.isEnabled != true }
+            try require(!controls.press("editor.subtask.add"), "editor accepted an eleventh subtask action")
+            try require(controls.value("editor.subtasks") == "10" && Set(editorSubtaskFieldIDs()) == fullIDs,
+                        "unavailable eleventh row request changed the draft count or UUIDs")
+            let fields = editorSubtaskFieldIDs()
+            let ordered = fields.sorted { (controls.frame($0)?.minY ?? 0) < (controls.frame($1)?.minY ?? 0) }
+            try require(Set(fields).count == 10 && ordered.first == first, "rapid addition changed row identity or order")
+            try require(controls.value(first) == "Edited without layout motion", "rapid addition lost existing row text")
+            for field in fields where field != first {
+                let suffix = field.dropFirst("editor.subtask.".count)
+                try require(controls.press("editor.subtask.delete.\(suffix)"), "rapid subtask deletion was rejected")
+            }
+            try await waitForValue("editor.subtasks", equals: "1")
+            try await waitFor("rapid deletes leave the stable first row") { self.editorSubtaskFieldIDs() == [first] }
+            for field in fields where field != first {
+                let deleteID = "editor.subtask.delete.\(field.dropFirst("editor.subtask.".count))"
+                try await waitFor("rapidly deleted row disables every input") {
+                    self.controls.entries[field]?.isEnabled != true && self.controls.entries[deleteID]?.isEnabled != true
+                }
+                try require(!controls.press(field) && !controls.press(deleteID), "deleted row still accepts input")
+            }
+            try await settleLayout(waitForAnimation: false)
+            try require(abs((controls.frame("editor.subtasks")?.height ?? 0) - oneHeight) < 0.5,
+                        "inverse rapid row requests did not restore the block height")
+            try await deleteEditorSubtask(first)
+            try await waitForValue("editor.subtasks", equals: "0")
+            try await settleLayout(waitForAnimation: false)
+            try require(abs((controls.frame("editor.subtasks")?.height ?? 0) - emptyHeight) < 0.5,
+                        "removing the final row did not restore the empty block")
+            try await waitFor("empty editor restores enabled row addition") {
+                self.controls.entries["editor.subtask.add"]?.isEnabled == true && self.editorSubtaskFieldIDs().isEmpty
+            }
+            try require(controls.value("editor.title") == "Subtask animation fixture"
+                        && controls.value("editor.note") == "Keep all other fields",
+                        "row transitions changed another draft field")
+            try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
+                        "row transitions persisted an unsaved draft")
+            try await press("editor.cancel")
+            try await waitFor("subtask motion draft cancelled") { self.controls.entries["editor.new"] == nil }
+        }
+
+        let fixture = Countdown(title: "Stable row fixture", note: "Stable note", date: Day(store.tomorrow), emoji: "🎉",
+                                subtasks: try [Subtask(text: "Active original"), Subtask(text: "Completed original", isCompleted: true)])
+        let saved = await store.save(fixture, primary: true)
+        try require(saved, "stable subtask fixture save failed")
+        try await press("event.edit.\(fixture.id.uuidString)")
+        try await waitForElement("editor.edit")
+        let temporary = try await addEditorSubtaskAndWait()
+        let retained = try await addEditorSubtaskAndWait()
+        try await focusAndReplace(retained, with: "Retained neighbor")
+        try await deleteEditorSubtask(temporary)
+        try require(controls.value(retained) == "Retained neighbor", "deleting a preceding row changed its neighbor text")
+        try await press("editor.save")
+        try await waitFor("stable row draft saved") { self.controls.entries["editor.edit"] == nil }
+        let result = try requireValue(store.active.first(where: { $0.id == fixture.id }), "stable saved row fixture")
+        let retainedUUID = try requireValue(UUID(uuidString: String(retained.dropFirst("editor.subtask.".count))), "retained row UUID")
+        try require(result.subtasks.map(\.id) == fixture.subtasks.map(\.id) + [retainedUUID]
+                    && Array(result.subtasks.prefix(2)) == fixture.subtasks
+                    && result.subtasks.last?.text == "Retained neighbor" && result.subtasks.last?.isCompleted == false,
+                    "animated row changes lost stable IDs, text, order or completion state")
+        try require(result.title == fixture.title && result.note == fixture.note && result.date == fixture.date
+                    && result.emoji == fixture.emoji && store.data.primaryID == fixture.id,
+                    "animated row changes altered unrelated event fields")
+        let deleted = await store.delete(fixture.id)
+        try require(deleted, "stable subtask fixture cleanup failed")
+        try FileManager.default.removeItem(at: configuration.dataURL)
+        pass("editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout")
     }
 
     private func selectEditorDate(_ day: Day) async throws {
@@ -1067,6 +1618,15 @@ final class UISmokeRuntime {
     }
 
     private func verifyCompletionAlertDismissal() async throws {
+        let originalContrastOverride = accessibilitySettings.isolatedCaptureOverrideValue
+        let originalMotionOverride = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer {
+            accessibilitySettings.setIsolatedCaptureOverrides(
+                highContrast: originalContrastOverride, reduceMotion: originalMotionOverride
+            )
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrastOverride, reduceMotion: false)
+        try require(!accessibilitySettings.prefersReducedMotion, "completion motion fixture did not enable motion")
         let suite = "timer-alert-smoke-\(UUID().uuidString)"
         let defaults = try requireValue(UserDefaults(suiteName: suite), "isolated timer defaults")
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -1075,7 +1635,7 @@ final class UISmokeRuntime {
         let finishedTimer = CountdownTimer(defaults: defaults)
         try require(finishedTimer.phase == .finished, "timer fixture is not finished")
 
-        let presenter = TimerCompletionAlertPresenter()
+        let presenter = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
         let originalKeyWindow = NSApp.keyWindow
         let originalActiveState = NSApp.isActive
         presenter.present()
@@ -1086,8 +1646,12 @@ final class UISmokeRuntime {
         try require(panel.isVisible && !panel.ignoresMouseEvents, "completion alert cannot receive a click")
         try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
                     "presenting completion alert changed app focus")
+        try await verifyCompletionAlertAppearances(presenter: presenter, panel: panel, captureImages: false)
+        try await verifyCompletionIconLifecycle(presenter: presenter, panel: panel)
 
         let content = try requireValue(panel.contentView, "completion alert content")
+        let icon = try requireCompletionIcon(in: content)
+        try requireCompletionIconMotion(icon, running: true)
         let title = try requireValue(
             allSubviews(of: content).first { $0.identifier?.rawValue == "timer.completion.title" },
             "completion alert title"
@@ -1096,14 +1660,17 @@ final class UISmokeRuntime {
         try require(content.hitTest(titlePoint) === content, "title click does not hit alert background")
         try postAlertClick(at: titlePoint, in: panel)
         try require(!panel.isVisible, "click on completion alert title did not hide panel immediately")
+        try requireCompletionIconMotion(icon, running: false)
         try require(finishedTimer.phase == .finished, "dismissing alert deleted the timer")
         try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
                     "clicking completion alert changed app focus")
 
         presenter.present()
         try require(panel.isVisible, "completion alert did not reappear")
+        try requireCompletionIconMotion(icon, running: true)
         try postAlertClick(at: NSPoint(x: 8, y: 8), in: panel)
         try require(!panel.isVisible, "click on completion alert background did not hide panel immediately")
+        try requireCompletionIconMotion(icon, running: false)
         try require(finishedTimer.phase == .finished, "background click deleted the timer")
 
         presenter.present()
@@ -1113,7 +1680,341 @@ final class UISmokeRuntime {
         try require(ProcessInfo.processInfo.systemUptime - presentedAt >= timerCompletionAlertDisplayDuration,
                     "completion alert auto dismissed too early")
         try require(finishedTimer.phase == .finished, "auto dismissal deleted the timer")
+        try requireCompletionIconMotion(icon, running: false)
         pass("completion alert closes on its first click or after five seconds without changing timer state")
+    }
+
+    private func requireCompletionIcon(in content: NSView) throws -> NSImageView {
+        try requireValue(allSubviews(of: content).first {
+            $0.identifier?.rawValue == "timer.completion.icon"
+        } as? NSImageView, "completion motion icon")
+    }
+
+    private func requireCompletionIconMotion(_ icon: NSImageView, running: Bool) throws {
+        let layer = try requireValue(icon.layer, "completion motion layer")
+        try require(CATransform3DIsIdentity(layer.transform), "completion icon model transform did not reset")
+        if !running {
+            try require(layer.animation(forKey: timerCompletionIconAnimationKey) == nil,
+                        "static or hidden completion icon retained its animation")
+            return
+        }
+        let animation = try requireValue(layer.animation(forKey: timerCompletionIconAnimationKey) as? CAKeyframeAnimation,
+                                        "visible completion icon keyframes")
+        try require(animation.keyPath == "transform" && animation.repeatCount == Float.greatestFiniteMagnitude,
+                    "completion icon loop is not a repeating native transform")
+        try require(animation.duration > 0 && animation.duration < timerCompletionAlertDisplayDuration
+                    && animation.timeOffset == 0,
+                    "completion icon loop did not start with a fresh bounded cycle")
+        try require((layer.animationKeys() ?? []).filter { $0 == timerCompletionIconAnimationKey }.count == 1,
+                    "completion icon accumulated repeated animation keys")
+        let content = try requireValue(icon.window?.contentView, "completion motion drawing surface")
+        let drawingBounds = icon.cell?.imageRect(forBounds: icon.bounds) ?? icon.bounds
+        try require(!drawingBounds.isEmpty, "completion icon has no drawing bounds")
+        let values = try requireValue(animation.values as? [NSValue], "completion transform poses")
+        let parentIsFlipped = layer.superlayer?.isGeometryFlipped ?? icon.isFlipped
+        let textFrames = allSubviews(of: content).filter { $0 is NSTextField }.map { $0.convert($0.bounds, to: content) }
+        for value in values {
+            let pose = value.caTransform3DValue
+            if pose.m42 != 0 {
+                try require(parentIsFlipped ? pose.m42 < 0 : pose.m42 > 0,
+                            "completion icon hop does not follow its parent geometry")
+            }
+            let transform = CGAffineTransform(a: pose.m11, b: pose.m12, c: pose.m21, d: pose.m22,
+                                              tx: pose.m41, ty: pose.m42)
+            let centered = drawingBounds.offsetBy(dx: -icon.bounds.midX, dy: -icon.bounds.midY)
+            let transformed = centered.applying(transform).offsetBy(dx: icon.bounds.midX, dy: icon.bounds.midY)
+            let renderedBounds = icon.convert(transformed, to: content)
+            try require(content.bounds.contains(renderedBounds), "completion icon motion escapes the alert drawing bounds")
+            try require(textFrames.allSatisfy { !$0.intersects(renderedBounds) }, "completion icon motion overlaps the labels")
+        }
+    }
+
+    private func verifyCompletionIconLifecycle(presenter: TimerCompletionAlertPresenter, panel: NSWindow) async throws {
+        let content = try requireValue(panel.contentView, "completion motion content")
+        let icon = try requireCompletionIcon(in: content)
+        let textViews = allSubviews(of: content).filter { $0 is NSTextField }
+        let textFrames = textViews.map(\.frame)
+        let originalPanelSize = panel.frame.size
+        let originalContentFrame = content.frame
+        let originalIconFrame = icon.frame
+        let originalKeyWindow = NSApp.keyWindow
+        let originalActiveState = NSApp.isActive
+        try requireCompletionIconMotion(icon, running: true)
+
+        for _ in 0..<2 {
+            let layer = try requireValue(icon.layer, "completion restart layer")
+            let restartAt = layer.convertTime(CACurrentMediaTime(), from: nil)
+            presenter.present()
+            try requireCompletionIconMotion(icon, running: true)
+            let restarted = try requireValue(layer.animation(forKey: timerCompletionIconAnimationKey), "restarted completion animation")
+            try require(restarted.beginTime >= restartAt, "completion re-presentation reused an old cycle position")
+            try require(panel.contentView === content && panel.isVisible, "completion re-presentation replaced or hid the alert")
+        }
+        let contrast = accessibilitySettings.isolatedCaptureOverrideValue
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+        try require(accessibilitySettings.prefersReducedMotion, "live completion Reduce Motion override was not applied")
+        try await waitFor("live completion icon becomes static") {
+            icon.layer?.animation(forKey: timerCompletionIconAnimationKey) == nil
+        }
+        try requireCompletionIconMotion(icon, running: false)
+        let layer = try requireValue(icon.layer, "live completion motion layer")
+        let resumeAt = layer.convertTime(CACurrentMediaTime(), from: nil)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: false)
+        try require(!accessibilitySettings.prefersReducedMotion, "live completion motion restart override was not applied")
+        try await waitFor("visible completion icon resumes") {
+            icon.layer?.animation(forKey: timerCompletionIconAnimationKey) != nil
+        }
+        try requireCompletionIconMotion(icon, running: true)
+        let resumed = try requireValue(layer.animation(forKey: timerCompletionIconAnimationKey), "resumed completion animation")
+        try require(resumed.beginTime >= resumeAt, "live completion motion resumed midway through an old cycle")
+
+        presenter.dismiss()
+        try requireCompletionIconMotion(icon, running: false)
+        presenter.present()
+        try await settleLayout()
+        try require(panel.isVisible, "old dismissal completion hid a newly presented alert")
+        try requireCompletionIconMotion(icon, running: true)
+        presenter.dismiss()
+        try requireCompletionIconMotion(icon, running: false)
+        try await waitFor("completion motion fixture hidden") { !panel.isVisible }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+        await Task.yield()
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: false)
+        try await settleLayout()
+        try require(!panel.isVisible, "changing Reduce Motion reopened a hidden completion alert")
+        try requireCompletionIconMotion(icon, running: false)
+
+        presenter.present()
+        try requireCompletionIconMotion(icon, running: true)
+        try require(panel.frame.size == originalPanelSize && content.frame == originalContentFrame
+                    && icon.frame == originalIconFrame && textViews.map(\.frame) == textFrames,
+                    "icon animation moved or resized the completion card or labels")
+        try require(content.layer.map { CATransform3DIsIdentity($0.transform) } ?? true,
+                    "completion card received an icon transform")
+        for view in textViews {
+            try require(view.layer.map { CATransform3DIsIdentity($0.transform) } ?? true,
+                        "completion labels received an icon transform")
+        }
+        try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
+                    "completion icon animation changed app focus")
+        pass("completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion")
+    }
+
+    private func captureCompletionAlerts() async throws {
+        let presenter = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
+        presenter.present()
+        let panel = try requireValue(
+            NSApp.windows.first { $0.identifier?.rawValue == "timer.completion.alert" }, "capture completion alert"
+        )
+        try await verifyCompletionAlertAppearances(presenter: presenter, panel: panel, captureImages: true)
+        try postAlertClick(at: NSPoint(x: 8, y: 8), in: panel)
+        try require(!panel.isVisible, "completion capture did not dismiss its isolated alert")
+    }
+
+    private func verifyCompletionAlertAppearances(
+        presenter: TimerCompletionAlertPresenter, panel: NSWindow, captureImages: Bool
+    ) async throws {
+        let originalAppearance = panel.appearance
+        let originalContent = try requireValue(panel.contentView, "completion alert appearance content")
+        let originalKeyWindow = NSApp.keyWindow
+        let originalActiveState = NSApp.isActive
+        let originalContrastOverride = accessibilitySettings.isolatedCaptureOverrideValue
+        let originalMotionOverride = accessibilitySettings.isolatedReduceMotionOverrideValue
+        // Captures record static endpoints; a still image cannot establish the visible icon's movement.
+        let appearanceMotionOverride = captureImages ? true : (originalMotionOverride ?? false)
+        defer {
+            panel.appearance = originalAppearance
+            accessibilitySettings.setIsolatedCaptureOverrides(
+                highContrast: originalContrastOverride, reduceMotion: originalMotionOverride
+            )
+        }
+        let cases: [(name: NSAppearance.Name, scheme: ColorScheme, highContrast: Bool, capture: String)] = [
+            (.darkAqua, .dark, false, "25-timer-completion-dark"),
+            (.aqua, .light, false, "26-timer-completion-light"),
+            (.darkAqua, .dark, true, "27-timer-completion-dark-high-contrast"),
+            (.aqua, .light, true, "28-timer-completion-light-high-contrast"),
+        ]
+        for item in cases {
+            accessibilitySettings.setIsolatedCaptureOverrides(
+                highContrast: item.highContrast, reduceMotion: appearanceMotionOverride
+            )
+            try require(accessibilitySettings.prefersHighContrast == item.highContrast
+                        && accessibilitySettings.isolatedCaptureOverrideValue == item.highContrast,
+                        "isolated completion Increase Contrast override was not applied")
+            try require(accessibilitySettings.prefersReducedMotion == appearanceMotionOverride,
+                        "isolated completion capture motion override was not applied")
+            panel.appearance = try requireValue(NSAppearance(named: item.name), "isolated completion appearance")
+            presenter.present()
+            let shownAlerts = NSApp.windows.filter {
+                $0.identifier?.rawValue == "timer.completion.alert" && $0.isVisible
+            }
+            try require(shownAlerts.count == 1 && shownAlerts.first === panel,
+                        "completion presenter replaced or duplicated the alert panel")
+            try require(panel.contentView === originalContent, "completion alert content was rebuilt for an appearance change")
+            try require(panel.isVisible, "reused completion alert panel was not shown")
+            try await settleLayout()
+            originalContent.layoutSubtreeIfNeeded()
+            originalContent.display()
+            CATransaction.flush()
+            try requireCompletionAlertPalette(panel, scheme: item.scheme, highContrast: item.highContrast)
+            try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
+                        "changing completion alert appearance changed app focus")
+            if captureImages {
+                try captureCompletionAlert(panel, name: item.capture, scheme: item.scheme, highContrast: item.highContrast)
+            }
+            if item.scheme == .dark && !item.highContrast {
+                let originalFrame = panel.frame
+                let labelFrames = allSubviews(of: originalContent).filter { $0 is NSTextField }.map(\.frame)
+                for liveContrast in [true, false] {
+                    accessibilitySettings.setIsolatedCaptureOverrides(
+                        highContrast: liveContrast, reduceMotion: appearanceMotionOverride
+                    )
+                    try require(accessibilitySettings.prefersHighContrast == liveContrast,
+                                "live completion contrast change was not applied to the shared owner")
+                    // No present call: the retained visible view must observe its real settings owner.
+                    try await settleLayout()
+                    originalContent.layoutSubtreeIfNeeded()
+                    originalContent.display()
+                    CATransaction.flush()
+                    try requireCompletionAlertPalette(panel, scheme: item.scheme, highContrast: liveContrast)
+                    try require(panel.isVisible && panel.frame == originalFrame && panel.contentView === originalContent,
+                                "live completion contrast change rebuilt, hid or resized the alert")
+                    try require(allSubviews(of: originalContent).filter { $0 is NSTextField }.map(\.frame) == labelFrames,
+                                "live completion contrast change moved the labels")
+                    try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
+                                "live completion contrast change changed app focus")
+                }
+            }
+        }
+        pass("the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast")
+    }
+
+    private func requireCompletionAlertPalette(_ panel: NSWindow, scheme: ColorScheme, highContrast: Bool) throws {
+        let actualScheme: ColorScheme = panel.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+            ? .dark : .light
+        try require(actualScheme == scheme, "isolated completion appearance was not applied to the panel")
+        let content = try requireValue(panel.contentView, "completion alert palette content")
+        let layer = try requireValue(content.layer, "completion alert background layer")
+        let paletteContext = "panelAppearance=\(panel.effectiveAppearance.name.rawValue), "
+            + "contentAppearance=\(content.effectiveAppearance.name.rawValue), expectedScheme=\(scheme), "
+            + "expectedHighContrast=\(highContrast), systemHighContrast=\(NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast), "
+            + "sharedHighContrast=\(accessibilitySettings.prefersHighContrast), "
+            + "borderWidth=\(layer.borderWidth)"
+        try require(content.identifier?.rawValue == "timer.completion.background", "completion alert background identifier changed")
+        try requireColor(layer.backgroundColor.flatMap { NSColor(cgColor: $0) },
+                         equals: NSColor(AuroraInstrument.canvas(for: scheme)), "completion background", context: paletteContext)
+        try requireColor(layer.borderColor.flatMap { NSColor(cgColor: $0) },
+                         equals: NSColor(AuroraInstrument.stroke(for: scheme, highContrast: highContrast)),
+                         "completion border", context: paletteContext)
+        try require(layer.borderWidth == (highContrast ? 1 : 0), "completion alert contrast border width is incorrect")
+        let title = try requireValue(allSubviews(of: content).first {
+            $0.identifier?.rawValue == "timer.completion.title"
+        } as? NSTextField, "completion title label")
+        let detail = try requireValue(allSubviews(of: content).first {
+            $0.identifier?.rawValue == "timer.completion.detail"
+        } as? NSTextField, "completion detail label")
+        let icon = try requireValue(allSubviews(of: content).first {
+            $0.identifier?.rawValue == "timer.completion.icon"
+        } as? NSImageView, "completion alarm icon")
+        try requireColor(title.textColor, equals: NSColor(AuroraInstrument.ink(for: scheme)), "completion title")
+        try requireColor(detail.textColor, equals: NSColor(highContrast
+            ? AuroraInstrument.ink(for: scheme) : AuroraInstrument.secondaryInk(for: scheme)), "completion detail")
+        try requireColor(icon.contentTintColor, equals: NSColor(AuroraInstrument.accent(
+            for: scheme, highContrast: highContrast
+        )), "completion alarm")
+        if accessibilitySettings.prefersReducedMotion {
+            try requireCompletionIconMotion(icon, running: false)
+        }
+        try require(icon.image != nil, "completion alarm image is absent")
+        try require(title.stringValue == "Время вышло" && detail.stringValue == "Таймер Countdown Manager завершён",
+                    "completion alert text changed")
+        let contentViews: [NSView] = [title, detail, icon]
+        for view in contentViews {
+            let frame = view.convert(view.bounds, to: content)
+            try require(!frame.isEmpty && content.bounds.contains(frame), "completion alert content is clipped")
+        }
+    }
+
+    private func requireColor(
+        _ color: NSColor?, equals expected: NSColor, _ description: String, context: String = ""
+    ) throws {
+        let actualRGB = try requireValue(color?.usingColorSpace(.sRGB), "\(description) sRGB color")
+        let expectedRGB = try requireValue(expected.usingColorSpace(.sRGB), "\(description) expected sRGB color")
+        let difference = [abs(actualRGB.redComponent - expectedRGB.redComponent),
+                          abs(actualRGB.greenComponent - expectedRGB.greenComponent),
+                          abs(actualRGB.blueComponent - expectedRGB.blueComponent),
+                          abs(actualRGB.alphaComponent - expectedRGB.alphaComponent)].max() ?? 0
+        guard difference < 0.02 else {
+            let actualComponents = [actualRGB.redComponent, actualRGB.greenComponent,
+                                    actualRGB.blueComponent, actualRGB.alphaComponent]
+            let expectedComponents = [expectedRGB.redComponent, expectedRGB.greenComponent,
+                                      expectedRGB.blueComponent, expectedRGB.alphaComponent]
+            let normalizedExpected = NSColor(cgColor: expected.cgColor)?.usingColorSpace(.sRGB)
+            let normalizedComponents = normalizedExpected.map {
+                [$0.redComponent, $0.greenComponent, $0.blueComponent, $0.alphaComponent]
+            }
+            throw Failure("\(description) does not use the shared Aurora color; actualRGBA=\(actualComponents), "
+                + "expectedRGBA=\(expectedComponents), sRGBDifference=\(difference), "
+                + "expectedCGColorRGBA=\(String(describing: normalizedComponents)), "
+                + "actualSource=\(String(describing: color)), expectedSource=\(expected), \(context)")
+        }
+    }
+
+    private func captureCompletionAlert(
+        _ panel: NSWindow, name: String, scheme: ColorScheme, highContrast: Bool
+    ) throws {
+        try require(UISmokeConfiguration.captureWasRequested, "completion image requested outside isolated capture mode")
+        let content = try requireValue(panel.contentView, "completion image content")
+        let bounds = content.bounds.integral
+        let backingBounds = content.convertToBacking(bounds)
+        let allocation = try requireValue(NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int(backingBounds.width.rounded(.up)),
+            pixelsHigh: Int(backingBounds.height.rounded(.up)), bitsPerSample: 8, samplesPerPixel: 4,
+            hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+            bitmapFormat: [], bytesPerRow: 0, bitsPerPixel: 32
+        ), "completion RGBA bitmap allocation")
+        // Tag the empty destination before AppKit draws; changing an existing image's tag would reinterpret its pixels.
+        let bitmap = try requireValue(allocation.retagging(with: .sRGB), "completion sRGB destination bitmap")
+        bitmap.size = bounds.size
+        let pixels = try requireValue(bitmap.bitmapData, "completion bitmap storage")
+        pixels.update(repeating: 0, count: bitmap.bytesPerRow * bitmap.pixelsHigh)
+        let profile = try requireValue(NSColorSpace.sRGB.iccProfileData, "completion sRGB ICC profile")
+        bitmap.setProperty(.colorSyncProfileData, withValue: profile)
+        content.cacheDisplay(in: bounds, to: bitmap)
+        let scale = Double(bitmap.pixelsWide) / Double(bounds.width)
+        let canvasSample = try profiledPixelColor(in: bitmap, x: max(1, Int(12 * scale)), y: bitmap.pixelsHigh / 2)
+        try requireColor(canvasSample, equals: NSColor(AuroraInstrument.canvas(for: scheme)), "rendered completion background",
+                         context: "bitmapColorSpace=\(String(describing: bitmap.colorSpace.localizedName))")
+        let corners = [(0, 0), (bitmap.pixelsWide - 1, 0),
+                       (0, bitmap.pixelsHigh - 1), (bitmap.pixelsWide - 1, bitmap.pixelsHigh - 1)]
+        let opaqueCorners = corners.allSatisfy { (bitmap.colorAt(x: $0.0, y: $0.1)?.alphaComponent ?? 0) >= 0.99 }
+        let png = try requireValue(bitmap.representation(using: .png, properties: [.colorSyncProfileData: profile]),
+                                   "completion PNG encoding")
+        let decoded = try requireValue(NSBitmapImageRep(data: png), "completion PNG profile readback")
+        try require(decoded.value(forProperty: .colorSyncProfileData) as? Data == profile,
+                    "completion PNG did not preserve its sRGB ICC profile")
+        try requireColor(try profiledPixelColor(in: decoded, x: max(1, Int(12 * scale)), y: decoded.pixelsHigh / 2),
+                         equals: NSColor(AuroraInstrument.canvas(for: scheme)), "encoded completion background")
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let file = "\(name).png"
+        try png.write(to: directory.appendingPathComponent(file), options: .atomic)
+        captures.append(CaptureRecord(
+            name: name, file: file, width: bitmap.pixelsWide, height: bitmap.pixelsHigh, scale: scale,
+            opaqueCorners: opaqueCorners, colorSchemeOverride: scheme == .dark ? "dark" : "light",
+            highContrastOverride: highContrast, reduceMotionOverride: accessibilitySettings.isolatedReduceMotionOverrideValue,
+            windowIdentifier: panel.identifier?.rawValue, appearanceName: panel.effectiveAppearance.name.rawValue,
+            bitmapColorSpace: bitmap.colorSpace.localizedName, colorProfileEmbedded: true
+        ))
+    }
+
+    private func profiledPixelColor(in bitmap: NSBitmapImageRep, x: Int, y: Int) throws -> NSColor {
+        try require(bitmap.colorSpace.iccProfileData == NSColorSpace.sRGB.iccProfileData,
+                    "completion pixel bitmap does not carry the verified sRGB profile")
+        let pixel = try requireValue(bitmap.colorAt(x: x, y: y), "completion pixel sample")
+        // colorAt labels these channel values as calibrated RGB, so resolve them with the bitmap's actual ICC profile.
+        let components = [pixel.redComponent, pixel.greenComponent, pixel.blueComponent, pixel.alphaComponent]
+        return NSColor(colorSpace: bitmap.colorSpace, components: components, count: 4)
     }
 
     private func postAlertClick(at point: NSPoint, in panel: NSWindow) throws {
@@ -1160,14 +2061,21 @@ final class UISmokeRuntime {
     private func waitForFirstResponder(_ description: String) async throws {
         try await waitFor("first responder for \(description)") {
             guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView,
-                  self.controls.focusedID == description,
                   let fieldFrame = self.controls.frame(description),
-                  let delegateView = editor.delegate as? NSView,
-                  let responderWindow = delegateView.window,
+                  let nativeField = editor.delegate as? NSTextField,
+                  nativeField.currentEditor() === editor,
+                  nativeField.isEditable, nativeField.isEnabled,
+                  let responderWindow = nativeField.window,
+                  responderWindow === NSApp.keyWindow,
                   let contentView = responderWindow.contentView else { return false }
-            let responderFrame = delegateView.convert(delegateView.bounds, to: contentView)
+            let nativeID = nativeField.accessibilityIdentifier()
+            if nativeID.hasPrefix("editor."), nativeID != description { return false }
+            let responderFrame = nativeField.convert(nativeField.bounds, to: contentView)
             let windowID = ObjectIdentifier(responderWindow)
             if self.responderToRegistryOffsets[windowID] == nil {
+                // Establish the coordinate mapping only from the actual title control, never a queued focus marker.
+                guard description == "editor.title",
+                      nativeID == "editor.title" || nativeField.placeholderString == "Например, отпуск" else { return false }
                 self.responderToRegistryOffsets[windowID] = CGPoint(
                     x: fieldFrame.minX - responderFrame.minX,
                     y: fieldFrame.minY - responderFrame.minY
@@ -1176,6 +2084,8 @@ final class UISmokeRuntime {
             guard let offset = self.responderToRegistryOffsets[windowID] else { return false }
             return abs((responderFrame.minX + offset.x) - fieldFrame.minX) < 2
                 && abs((responderFrame.minY + offset.y) - fieldFrame.minY) < 2
+                && abs(responderFrame.width - fieldFrame.width) < 2
+                && abs(responderFrame.height - fieldFrame.height) < 2
         }
     }
 
@@ -1218,6 +2128,8 @@ final class UISmokeRuntime {
         let responder = NSApp.keyWindow?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
         let delegate = (NSApp.keyWindow?.firstResponder as? NSTextView)?.delegate
             .map { String(describing: type(of: $0)) } ?? "nil"
+        let nativeField = (NSApp.keyWindow?.firstResponder as? NSTextView)?.delegate as? NSTextField
+        let nativeFieldID = nativeField?.accessibilityIdentifier() ?? "nil"
         let delegateFrame: CGRect? = {
             guard let view = (NSApp.keyWindow?.firstResponder as? NSTextView)?.delegate as? NSView,
                   let contentView = view.window?.contentView else { return nil }
@@ -1226,11 +2138,11 @@ final class UISmokeRuntime {
         let emoji = controls.value("editor.emoji") ?? "nil"
         let title = controls.value("editor.title") ?? "nil"
         let date = controls.value("editor.date") ?? "nil"
-        let subtaskFrames = controls.ids(withPrefix: "subtask.toggle.")
+        let subtaskFrames = (controls.ids(withPrefix: "subtask.toggle.") + controls.ids(withPrefix: "editor.subtask."))
             .map { "\($0)=\(String(describing: controls.frame($0)))" }
             .joined(separator: ", ")
         finish(
-            "UISmoke\nWindow visible=\(window()?.isVisible == true), key=\(window()?.isKeyWindow == true), loading=\(store.isLoading), saveEnabled=\(controls.entries["editor.save"]?.isEnabled == true)\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)\nActual: focus=\(controls.focusedID ?? "nil"), responder=\(responder), delegate=\(delegate), delegateFrame=\(String(describing: delegateFrame)), title=\(title), date=\(date), emoji=\(emoji), \(frames), \(subtaskFrames)",
+            "UISmoke\nWindow visible=\(window()?.isVisible == true), key=\(window()?.isKeyWindow == true), loading=\(store.isLoading), saveEnabled=\(controls.entries["editor.save"]?.isEnabled == true)\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)\nActual: focus=\(controls.focusedID ?? "nil"), nativeFieldID=\(nativeFieldID), responder=\(responder), delegate=\(delegate), delegateFrame=\(String(describing: delegateFrame)), title=\(title), date=\(date), emoji=\(emoji), \(frames), \(subtaskFrames)",
             exitCode: 1
         )
     }

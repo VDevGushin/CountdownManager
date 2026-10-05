@@ -174,7 +174,7 @@ public enum CountdownError: LocalizedError {
         case .title: return "Укажите название события."
         case .note: return "Заметка должна быть не длиннее 280 символов."
         case .date: return "Дата события недопустима. Выберите будущую дату."
-        case .emoji: return "Укажите один emoji, например ☀️ или 🎉."
+        case .emoji: return "Выберите один emoji или оставьте значок пустым."
         case .eventNotFound: return "Событие больше недоступно."
         case .subtaskNotFound: return "Подзадача больше недоступна."
         case .subtaskText: return "Введите текст подзадачи."
@@ -199,11 +199,7 @@ public struct CountdownData: Codable, Equatable {
     public mutating func normalize(today: Day) {
         items.removeAll { $0.date < today }
         if !items.contains(where: { $0.id == primaryID }) {
-            primaryID = items.enumerated().min {
-                $0.element.date == $1.element.date
-                    ? $0.offset < $1.offset
-                    : $0.element.date < $1.element.date
-            }?.element.id
+            primaryID = nil
         }
     }
 
@@ -221,13 +217,13 @@ public struct CountdownData: Codable, Equatable {
         let existing = items.first(where: { $0.id == item.id })
         let keepsToday = existing?.date == today && cleaned.date == today
         guard cleaned.date > today || keepsToday else { throw CountdownError.date }
-        guard Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
+        guard cleaned.emoji.isEmpty || Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         guard cleaned.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
         normalize(today: today)
         if let index = items.firstIndex(where: { $0.id == item.id }) { items[index] = cleaned }
         else { items.append(cleaned) }
-        if primary || primaryID == nil { primaryID = item.id }
-        // An existing primary stays primary until another event is selected.
+        if primary { primaryID = item.id }
+        else if primaryID == item.id { primaryID = nil }
     }
 
     public mutating func addSubtask(to eventID: UUID, text: String, today: Day) throws -> UUID {

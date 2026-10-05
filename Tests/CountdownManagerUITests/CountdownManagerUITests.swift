@@ -41,13 +41,20 @@ enum UIChecks {
         precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
         testDayCreationDefaultsAndCalendarBoundaries()
         try testPlannerCalendarPresentation()
+        try testOptionalIconDrafts()
+        try testOptionalFavoritePresentation()
         precondition(subtaskDisclosureMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.2))
         precondition(subtaskDisclosureMotion(reduceMotion: true) == .immediate)
+        precondition(editorSubtaskMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.1))
+        precondition(editorSubtaskMotion(reduceMotion: true) == .immediate)
+        testEditorEmojiDisclosure()
+        testEditorSubtaskLimitsAndIdentity()
 
         // The timer exposes only bounded presets and cannot overflow display seconds.
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
         precondition(countdownTimerMaximumMinutes == 120)
         precondition(timerCompletionAlertDisplayDuration == 5)
+        testCompletionIconMotion()
         let presetMotion = timerPresetSelectionMotion(reduceMotion: false)
         guard case let .slide(duration) = presetMotion else {
             preconditionFailure("timer preset selection must slide when motion is allowed")
@@ -329,6 +336,7 @@ enum UIChecks {
         )
 
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
+        try await testClearingFavoritePersistsAndRollsBack(in: directory.appendingPathComponent("clear-favorite"))
         await MainActor.run {
             testIsolatedStoreCannotManageLoginItem(
                 in: directory.appendingPathComponent("isolated-login-item", isDirectory: true)
@@ -364,10 +372,10 @@ enum UIChecks {
             let day = civilDay(2026, 10, 5 + offset)
             let draft = EventEditorDraft(day: day)
             precondition(russianWeekdayTitle(day) == title)
-            precondition(draft.title == title && draft.emoji == "📅")
+            precondition(draft.title == title && draft.emoji.isEmpty)
             precondition(draft.note.isEmpty && draft.subtasks.isEmpty)
             let event = draft.countdown(id: UUID(), date: day)
-            precondition(event.title == title && event.date == day && event.emoji == "📅")
+            precondition(event.title == title && event.date == day && event.emoji.isEmpty)
             precondition((event.note ?? "").isEmpty && event.subtasks.isEmpty)
             precondition(editorCanSave(
                 title: draft.title, note: draft.note, date: day,
@@ -418,7 +426,7 @@ enum UIChecks {
         precondition(manuallyNamed.title == "Понедельник")
 
         var ordinary = EventEditorDraft(item: nil)
-        precondition(ordinary.title.isEmpty && ordinary.emoji == "📅")
+        precondition(ordinary.title.isEmpty && ordinary.emoji.isEmpty)
         precondition(ordinary.note.isEmpty && ordinary.subtasks.isEmpty)
         ordinary.updateDayTitle(for: monday)
         precondition(ordinary.title.isEmpty)
@@ -505,13 +513,212 @@ enum UIChecks {
         }
         precondition(calendarEvent.emoji == "📅")
         precondition(EventEditorDraft(item: calendarEvent).emoji == "📅")
-        precondition(EventEditorDraft(day: first.date).emoji == "📅")
+        precondition(EventEditorDraft(day: first.date).emoji.isEmpty)
         precondition(statusBarTitle(data: data, today: today) == "📅 \(countdownLabel(calendarEvent.date.days(from: today)))")
         let afterPresentation = try encoder.encode(data)
         precondition(beforePresentation == afterPresentation)
         let roundTrip = try JSONDecoder().decode(CountdownData.self, from: afterPresentation)
         precondition(roundTrip == data)
         precondition(roundTrip.items[1].subtasks[0].isCompleted)
+    }
+
+    private static func testEditorSubtaskLimitsAndIdentity() {
+        var draft = EventEditorDraft(item: nil)
+        var identities: [UUID] = []
+        for number in 1...Subtask.maximumCount {
+            guard case let .subtask(id)? = draft.addSubtask() else {
+                preconditionFailure("editor subtask addition did not target the new row")
+            }
+            identities.append(id)
+            precondition(draft.subtasks.count == number && draft.subtasks.last?.id == id)
+            precondition(draft.subtasks.last?.text.isEmpty == true && draft.subtasks.last?.isCompleted == false)
+            draft.subtasks[number - 1].text = "Stable \(number)"
+            precondition(draft.subtasks.map(\.id) == identities)
+            precondition(draft.subtasks.map(\.text) == (1...number).map { "Stable \($0)" })
+        }
+        precondition(Set(identities).count == Subtask.maximumCount)
+        let unchanged = draft
+        precondition(draft.addSubtask() == nil && draft == unchanged)
+    }
+
+    private static func testCompletionIconMotion() {
+        precondition(makeTimerCompletionIconAnimation(reduceMotion: true, isGeometryFlipped: false) == nil)
+        precondition(makeTimerCompletionIconAnimation(reduceMotion: true, isGeometryFlipped: true) == nil)
+        for isFlipped in [false, true] {
+            guard let animation = makeTimerCompletionIconAnimation(reduceMotion: false, isGeometryFlipped: isFlipped),
+                  let values = animation.values as? [NSValue], let times = animation.keyTimes else {
+                preconditionFailure("completion icon must have native transform keyframes")
+            }
+            precondition(animation.keyPath == "transform" && animation.repeatCount == Float.greatestFiniteMagnitude)
+            precondition(animation.duration > 0 && animation.duration < timerCompletionAlertDisplayDuration)
+            precondition(values.count == times.count && times.first?.doubleValue == 0 && times.last?.doubleValue == 1)
+            let transforms = values.map(\.caTransform3DValue)
+            precondition(CATransform3DIsIdentity(transforms[0]) && CATransform3DIsIdentity(transforms[transforms.count - 1]))
+            let poses = transforms.filter { !CATransform3DIsIdentity($0) }
+            precondition((2...3).contains(poses.count))
+            precondition(poses.contains { $0.m12 < 0 } && poses.contains { $0.m12 > 0 })
+            for pose in poses {
+                precondition(abs(pose.m42) <= 1.5 && abs(pose.m42) > 0)
+                precondition(isFlipped ? pose.m42 < 0 : pose.m42 > 0)
+                precondition(abs(atan2(pose.m12, pose.m11)) <= .pi / 18)
+            }
+            guard let lastPose = transforms.lastIndex(where: { !CATransform3DIsIdentity($0) }) else {
+                preconditionFailure("completion icon did not tilt")
+            }
+            precondition(lastPose + 1 < transforms.count - 1)
+            precondition(transforms[(lastPose + 1)...].allSatisfy(CATransform3DIsIdentity))
+            let activeDuration = times[lastPose + 1].doubleValue * animation.duration
+            precondition(activeDuration <= 0.6)
+            precondition(animation.duration - activeDuration >= 0.5)
+        }
+    }
+
+    private static func testEditorEmojiDisclosure() {
+        precondition(editorEmojiPickerMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.2))
+        precondition(editorEmojiPickerMotion(reduceMotion: true) == .immediate)
+        precondition(editorEmojiValueTransitionDuration == 0.12)
+        var state = EditorEmojiPickerState.closed
+        precondition(!state.isOpen && !state.isCatalog && state.pageIndex == 0)
+        state.showCatalog()
+        state.setPage(3, pageCount: 5)
+        precondition(state == .closed)
+        state.toggle()
+        precondition(state == .presets && state.isOpen && !state.isCatalog)
+        state.showCatalog()
+        precondition(state == .catalog(page: 0) && state.isCatalog)
+        state.setPage(2, pageCount: 5)
+        precondition(state.pageIndex == 2)
+        state.setPage(99, pageCount: 5)
+        precondition(state.pageIndex == 4)
+        state.setPage(-1, pageCount: 5)
+        precondition(state.pageIndex == 0)
+        state.close()
+        precondition(state == .closed)
+        // Requests are synchronous: interrupted open/close sequences resolve to the last request.
+        for _ in 0..<3 { state.toggle() }
+        precondition(state == .presets)
+        state.toggle()
+        precondition(state == .closed)
+        state.toggle()
+        state.showCatalog()
+        state.setPage(4, pageCount: 5)
+        state.toggle()
+        state.toggle()
+        precondition(state == .presets && state.pageIndex == 0)
+    }
+
+    private static func testOptionalIconDrafts() throws {
+        let today = civilDay(2026, 10, 4)
+        let date = civilDay(2026, 10, 5)
+        for emoji in ["", " \n\t ", "☀️", "  ☀️  "] {
+            precondition(editorCanSave(title: "Plan", note: "", date: date, emoji: emoji, today: today))
+        }
+        for emoji in ["abc", "1", "🎉🎉", "☀️text"] {
+            precondition(!editorCanSave(title: "Plan", note: "", date: date, emoji: emoji, today: today))
+        }
+        let event = Countdown(
+            title: "Existing plan", note: "Keep note", date: date, emoji: "👨‍👩‍👧‍👦",
+            subtasks: [try Subtask(text: "Active"), try Subtask(text: "Completed", isCompleted: true)]
+        )
+        var data = CountdownData()
+        try data.save(event, primary: false, today: today)
+        let unchanged = data
+        var draft = EventEditorDraft(item: event)
+        draft.clearEmoji()
+        precondition(draft.emoji.isEmpty && draft.title == event.title && draft.note == event.note)
+        precondition(draft.subtasks == event.subtasks && data == unchanged)
+        precondition(!draft.replaceEmoji(with: "") && !draft.replaceEmoji(with: "🎉🎉"))
+        precondition(draft.emoji.isEmpty)
+        precondition(draft.replaceEmoji(with: "🚀"))
+        precondition(draft.emoji == "🚀" && data == unchanged)
+        draft.clearEmoji()
+        try data.save(draft.countdown(id: event.id, date: date), primary: false, today: today)
+        precondition(data.items[0].emoji.isEmpty && data.items[0].subtasks == event.subtasks)
+        precondition(data.primaryID == nil)
+        precondition(eventListEmoji("") == nil && eventListEmoji("📅") == nil)
+        precondition(eventListEmoji("🗓️") == "🗓️")
+        precondition(statusBarTitle(data: data, today: today) == "📅 1 день")
+        let restored = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
+        precondition(restored == data)
+    }
+
+    private static func testOptionalFavoritePresentation() throws {
+        let today = civilDay(2026, 10, 5)
+        let nearest = Countdown(title: "Z first today", date: today, emoji: "")
+        let equalDate = Countdown(title: "A second today", date: today, emoji: "🎉")
+        let far = Countdown(title: "Far favorite", date: civilDay(2026, 10, 9), emoji: "🚀")
+        let expired = Countdown(title: "Expired", date: civilDay(2026, 10, 4), emoji: "☀️")
+        var data = CountdownData()
+        data.items = [far, nearest, equalDate, expired]
+        data.normalize(today: today)
+        let ordered = activeCountdowns(in: data, today: today)
+        precondition(ordered.map(\.id) == [nearest.id, equalDate.id, far.id] && data.primaryID == nil)
+        for event in ordered {
+            let row = CountdownRowPresentation(item: event, today: today, primaryID: nil, featuredID: ordered.first?.id)
+            precondition(!row.isPrimary && row.isFeatured == (event.id == nearest.id))
+        }
+        precondition(statusBarTitle(data: data, today: today) == "📅 Сегодня")
+        let noneSelected = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
+        precondition(noneSelected == data && noneSelected.primaryID == nil)
+        try data.save(far, primary: true, today: today)
+        precondition(activeCountdowns(in: data, today: today).first?.id == far.id)
+        let favoriteRow = CountdownRowPresentation(item: far, today: today, primaryID: data.primaryID, featuredID: far.id)
+        precondition(favoriteRow.isPrimary && favoriteRow.isFeatured)
+        precondition(statusBarTitle(data: data, today: today) == "🚀 4 дня")
+        try data.save(far, primary: false, today: today)
+        precondition(data.primaryID == nil && activeCountdowns(in: data, today: today).first?.id == nearest.id)
+        data.primaryID = UUID()
+        precondition(statusBarTitle(data: data, today: today) == "📅 Сегодня")
+        data.normalize(today: civilDay(2026, 10, 6))
+        precondition(data.items == [far] && data.primaryID == nil)
+        precondition(statusBarTitle(data: data, today: civilDay(2026, 10, 6)) == "🚀 3 дня")
+        data.delete(far.id, today: today)
+        precondition(statusBarTitle(data: data, today: today) == "◷ Countdown")
+    }
+
+    @MainActor
+    private static func testClearingFavoritePersistsAndRollsBack(in directory: URL) async throws {
+        let suite = "CountdownManagerOptionalFavorite.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let today = civilDay(2026, 10, 5)
+        let now = today.date()
+        let favorite = Countdown(
+            title: "Far selected", note: "Keep content", date: civilDay(2026, 10, 9), emoji: "",
+            subtasks: [try Subtask(text: "Completed", isCompleted: true)]
+        )
+        let nearest = Countdown(title: "Nearest", date: civilDay(2026, 10, 6), emoji: "☀️")
+        var initial = CountdownData()
+        try initial.save(favorite, primary: true, today: today)
+        try initial.save(nearest, primary: false, today: today)
+        let fileURL = directory.appendingPathComponent("countdowns.json")
+        let repository = CountdownRepository(fileURL: fileURL)
+        _ = try await repository.save(initial, revision: 1)
+        let store = Store(fileURL: fileURL, disclosureDefaults: defaults, now: { now }, loginItemManagementIsAvailable: false)
+        while store.isLoading { await Task.yield() }
+        await store.clearPrimary()
+        precondition(store.data.primaryID == nil && store.data.items == initial.items)
+        let cleared = try await repository.load()
+        precondition(cleared == store.data)
+        let recreated = Store(fileURL: fileURL, disclosureDefaults: defaults, now: { now }, loginItemManagementIsAvailable: false)
+        while recreated.isLoading { await Task.yield() }
+        precondition(recreated.data == cleared && recreated.data.primaryID == nil)
+        let didSelect = await store.save(favorite, primary: true, requireExisting: true)
+        precondition(didSelect && store.data.primaryID == favorite.id)
+        struct SaveFailure: Error {}
+        var attemptedClear = false
+        let failing = Store(
+            fileURL: fileURL, disclosureDefaults: defaults,
+            persistenceSaveOverride: { _, _ in
+                attemptedClear = true
+                throw SaveFailure()
+            }, now: { now }, loginItemManagementIsAvailable: false
+        )
+        while failing.isLoading { await Task.yield() }
+        await failing.clearPrimary()
+        precondition(attemptedClear && failing.data.primaryID == favorite.id && failing.data.items == initial.items)
+        let afterFailure = try await repository.load()
+        precondition(afterFailure.primaryID == favorite.id && afterFailure.items == initial.items)
     }
 
     private static func civilDay(_ year: Int, _ month: Int, _ day: Int) -> Day {

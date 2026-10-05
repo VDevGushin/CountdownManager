@@ -92,7 +92,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
-    private let timerCompletionAlert = TimerCompletionAlertPresenter()
+    private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
     private var accessibilityDisplayObserver: NSObjectProtocol?

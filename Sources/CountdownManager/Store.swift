@@ -391,15 +391,24 @@ package final class Store: ObservableObject {
     }
 
     func makePrimary(_ id: UUID) async {
+        await setPrimarySelection(id)
+    }
+
+    package func clearPrimary() async {
+        await setPrimarySelection(nil)
+    }
+
+    private func setPrimarySelection(_ id: UUID?) async {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         var updated = data
         updated.normalize(today: today)
-        guard updated.items.contains(where: { $0.id == id }) else { return }
-        DiagnosticLog.shared.record("countdown.primary id=\(id.uuidString)")
+        if let id, !updated.items.contains(where: { $0.id == id }) { return }
+        DiagnosticLog.shared.record("countdown.primary id=\(id?.uuidString ?? "none")")
         updated.primaryID = id
+        guard updated != data else { return }
         _ = await commit(updated, reason: "countdown.primary")
     }
 
