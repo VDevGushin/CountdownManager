@@ -88,9 +88,24 @@ def state_path(root: Path, session_id: str) -> Path:
 def load_state(path: Path) -> dict[str, Any] | None:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+    except FileNotFoundError:
         return None
-    return value if isinstance(value, dict) else None
+    except (json.JSONDecodeError, UnicodeError, OSError) as error:
+        raise RuntimeError(f"Cannot read Swift verification state: {path}: {error}") from error
+    if not isinstance(value, dict):
+        raise RuntimeError(f"Invalid Swift verification state: {path}")
+    for key in ("baseline", "current"):
+        snapshot = value.get(key)
+        if not isinstance(snapshot, dict) or not all(
+            isinstance(name, str) and isinstance(checksum, str)
+            for name, checksum in snapshot.items()
+        ):
+            raise RuntimeError(f"Invalid Swift verification state field: {key}")
+    if not isinstance(value.get("swift_touched"), bool):
+        raise RuntimeError("Invalid Swift verification state field: swift_touched")
+    if value.get("last_gate_pass") is not None and not isinstance(value["last_gate_pass"], str):
+        raise RuntimeError("Invalid Swift verification state field: last_gate_pass")
+    return value
 
 
 def save_state(path: Path, state: dict[str, Any]) -> None:
@@ -145,6 +160,17 @@ def snapshot_fingerprint(snapshot: dict[str, str]) -> str:
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
+def gate_fingerprint(root: Path, snapshot: dict[str, str]) -> str:
+    inputs = {}
+    for name in (".swiftlint.yml", "verify.sh"):
+        try:
+            inputs[name] = hashlib.sha256((root / name).read_bytes()).hexdigest()
+        except FileNotFoundError:
+            inputs[name] = None
+    payload = json.dumps({"swift": snapshot, "verification": inputs}, sort_keys=True)
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
 def failure(reason: str) -> None:
     print(json.dumps({"decision": "block", "reason": reason[-8000:]}))
 
@@ -167,14 +193,9 @@ def session_start(root: Path, event: dict[str, Any], path: Path) -> None:
 def post_tool_use(root: Path, event: dict[str, Any], path: Path) -> None:
     current = swift_snapshot(root)
     state = load_state(path)
-    needs_initial_state = state is None
     if state is None:
-        state = {
-            "baseline": current,
-            "current": current,
-            "swift_touched": False,
-            "last_gate_pass": None,
-        }
+        failure("Swift verification state is missing; SessionStart must establish the baseline before tools run.")
+        return
 
     previous = state.get("current")
     if not isinstance(previous, dict):
@@ -183,8 +204,6 @@ def post_tool_use(root: Path, event: dict[str, Any], path: Path) -> None:
     state["current"] = current
 
     if not changed:
-        if needs_initial_state:
-            save_state(path, state)
         return
 
     state["swift_touched"] = True
@@ -200,7 +219,7 @@ def post_tool_use(root: Path, event: dict[str, Any], path: Path) -> None:
 def stop(root: Path, event: dict[str, Any], path: Path) -> None:
     state = load_state(path)
     if state is None:
-        print("{}")
+        failure("Swift verification state is missing; this session cannot be certified without its baseline.")
         return
 
     current = swift_snapshot(root)
@@ -215,7 +234,7 @@ def stop(root: Path, event: dict[str, Any], path: Path) -> None:
         print("{}")
         return
 
-    fingerprint = snapshot_fingerprint(current)
+    fingerprint = gate_fingerprint(root, current)
     if state.get("last_gate_pass") == fingerprint:
         print("{}")
         return

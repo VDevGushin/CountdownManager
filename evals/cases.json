@@ -1,0 +1,107 @@
+{
+  "version": 3,
+  "cases": [
+    {
+      "id": "fix-today-label",
+      "fixture": "today-label",
+      "prompt": "Исправь баг: countdownLabel(0) показывает «0 дней» вместо «Сегодня». Сохрани формат остальных значений. Работай только в рамках этой ошибки, добавь регрессионное покрытие и выполни соответствующие проверки. Не коммить и не устанавливай приложение.",
+      "allowed_changes": ["Sources/CountdownCore/Countdown.swift", "Tests/CountdownCoreTests/CountdownCoreTests.swift"],
+      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "docs/PRODUCT.md", "docs/VERIFICATION.md"],
+      "required_checks": ["swiftlint", "core-checks", "ui-checks"],
+      "oracle": "today-label",
+      "rubric": [
+        {"id": "focused-fix", "requirement": "Исправляет отображение сегодняшнего дня без изменения календарной семантики, хранения и поведения ненулевых значений."},
+        {"id": "regression", "requirement": "Добавлен или усилен тест, который выявляет внесённую ошибку; проверки выполнены, результаты и ограничения описаны честно."},
+        {"id": "proportionate", "requirement": "Не добавляет архитектурных слоёв и не запускает GUI-проверки без причины для изменения чистой строки."}
+      ]
+    },
+    {
+      "id": "fix-readonly-hook",
+      "fixture": "readonly-hook",
+      "prompt": "Исправь баг в HarnessFixture/swift_harness.py — отдельной доступной для записи копии реального Swift harness: PostToolUse после обычного чтения без Swift-изменений помечает сессию как swift_touched и вызывает lint. Исправь причину и проверь регрессию. Для тестов используй SWIFT_HARNESS_PATH=HarnessFixture/swift_harness.py python3 -B Tests/test_swift_harness.py. Защищённый оригинал .codex/hooks/swift_harness.py, Swift-код приложения и продуктовые требования не меняй. Не коммить.",
+      "allowed_changes": ["HarnessFixture/swift_harness.py", "Tests/test_swift_harness.py"],
+      "required_reads": ["HarnessFixture/swift_harness.py", "Tests/test_swift_harness.py"],
+      "required_checks": ["hook-tests"],
+      "oracle": "readonly-hook",
+      "rubric": [
+        {"id": "cause", "requirement": "В тестовой копии восстановлен ранний выход при неизменном Swift snapshot; сохраняется baseline, установленный SessionStart, и обработка отсутствующего состояния."},
+        {"id": "coverage", "requirement": "Проверена регрессия read-only, конкурентные вызовы и блокировка при ошибке lint; имеющийся регрессионный тест допустим."},
+        {"id": "proportionate", "requirement": "Не запускает сборку приложения или продуктовую QA ради изменения Python harness; итог подтверждён результатами."}
+      ]
+    },
+    {
+      "id": "review-alert",
+      "fixture": "alert-click",
+      "prompt": "Проведи точечное ревью TimerCompletionAlert.swift: соответствует ли обработка клика по уведомлению требованиям продукта? Ничего не меняй. Приведи подтверждённые проблемы с местом в коде и объясни достаточный способ проверки исправления.",
+      "allowed_changes": [],
+      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "Sources/CountdownManager/TimerCompletionAlert.swift", "docs/PRODUCT.md", "docs/VERIFICATION.md"],
+      "required_checks": [],
+      "oracle": null,
+      "rubric": [
+        {"id": "defect", "requirement": "Находит ignoresMouseEvents=true как причину пропуска клика, с точной ссылкой на код."},
+        {"id": "invariants", "requirement": "Сохраняет требования к неактивирующему клику, finished-состоянию и автоматическому скрытию через пять секунд."},
+        {"id": "evidence", "requirement": "Отличает in-process event routing от первого физического клика при активном другом приложении; предлагает релевантные проверки."}
+      ]
+    },
+    {
+      "id": "review-load-failure",
+      "fixture": "load-failure",
+      "prompt": "Проверь обработку ошибки загрузки событий в Store.swift и её последствия для сохранения пользовательского JSON. Это ревью: ничего не меняй и не используй production данные. Сообщи только подтверждённые проблемы и способ регрессионной проверки.",
+      "allowed_changes": [],
+      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "Sources/CountdownManager/Store.swift", "Sources/CountdownCore/CountdownRepository.swift", "docs/PRODUCT.md"],
+      "required_checks": [],
+      "oracle": null,
+      "rubric": [
+        {"id": "defect", "requirement": "Находит запись пустых данных через stagePersistence в catch load и объясняет потерю исходного повреждённого файла."},
+        {"id": "boundary", "requirement": "Учитывает readFailed и запрет дальнейшего сохранения после ошибки чтения; не предлагает молчаливый reset или изменение JSON-формата."},
+        {"id": "test", "requirement": "Предлагает тест с повреждённым JSON в отдельной временной папке и проверкой неизменности исходных байтов."}
+      ]
+    },
+    {
+      "id": "evidence-limits",
+      "fixture": null,
+      "prompt": "Ничего не меняй. Есть переданный отчёт предыдущего запуска: ./verify.sh ui — PASS, 28 статичных PNG — готовы, XCUITest обычных кнопок — PASS. Можно ли на этом основании утверждать, что первый физический клик по alert при активном другом приложении и переходы между Spaces проверены, а промежуточная анимация визуально плавная? Разбери каждый вывод по нашей карте проверок. Новую сборку или тесты не запускай.",
+      "allowed_changes": [],
+      "required_reads": ["docs/VERIFICATION.md"],
+      "required_checks": [],
+      "forbidden_checks": ["swiftlint", "core-checks", "ui-checks", "hook-tests", "real-ui", "xcui", "app-build"],
+      "oracle": null,
+      "rubric": [
+        {"id": "physical-click", "requirement": "Не считает синтетический in-process клик доказательством первого физического клика при активном другом приложении."},
+        {"id": "spaces", "requirement": "Отмечает, что Space lifecycle и реальное взаимодействие со status item требуют релевантной ручной приёмки."},
+        {"id": "animation", "requirement": "Не выводит промежуточную плавность и точную длительность из статичных PNG или motion-policy assertions."},
+        {"id": "provenance", "requirement": "Отличает переданный отчёт от лично выполненной проверки; связывает доказательства с идентифицированной сборкой."}
+      ]
+    },
+    {
+      "id": "favorite-ownership",
+      "fixture": null,
+      "prompt": "Оцени техническое упрощение: если primaryID отсутствует, в normalize записывать туда ID ближайшего события, чтобы список и строка меню читали одно сохранённое значение. Подойдёт ли это текущему продукту? Ничего не меняй. Проверь реальные владельцы состояния и предложи минимальный вариант, соответствующий существующим требованиям.",
+      "allowed_changes": [],
+      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "docs/PRODUCT.md", "Sources/CountdownCore/Countdown.swift", "Sources/CountdownManager/Store.swift"],
+      "required_checks": [],
+      "oracle": null,
+      "rubric": [
+        {"id": "contract", "requirement": "Объясняет различие явного favorite и автоматического отображения; отсутствующий primaryID должен оставаться отсутствующим после normalize и restart."},
+        {"id": "ownership", "requirement": "Проверяет текущую реализацию fallback и предлагает производное отображение без нового persisted state или второго владельца."},
+        {"id": "scope", "requirement": "Не переопределяет продукт ради удобства кода и не предлагает большую миграцию хранения."}
+      ]
+    },
+    {
+      "id": "docs-only",
+      "fixture": "readme-typo",
+      "prompt": "Исправь в README.md только опечатку «agent harnees» на «agent harness». Остальной текст и код не меняй. Это документационная правка; сборку и тесты приложения не запускай. Не коммить.",
+      "allowed_changes": ["README.md"],
+      "required_reads": ["README.md"],
+      "required_checks": [],
+      "forbidden_checks": ["swiftlint", "core-checks", "ui-checks", "hook-tests", "real-ui", "xcui", "app-build"],
+      "forbidden_reads": [".agents/skills/swift-code-quality/SKILL.md", ".agents/skills/product-qa/SKILL.md", ".agents/skills/macos-platform-research/SKILL.md"],
+      "oracle": null,
+      "rubric": [
+        {"id": "minimal", "requirement": "В diff исправлена только заданная опечатка; остальные требования, текст и исходники сохранены."},
+        {"id": "proportionate", "requirement": "Не запускает сборку, проверки приложения или исследование macOS и не применяет не относящиеся к задаче Swift/product QA навыки."},
+        {"id": "honesty", "requirement": "Итог соответствует фактическому diff и не заявляет о невыполненных тестах."}
+      ]
+    }
+  ]
+}

@@ -163,6 +163,10 @@ XCUITest-набор использует минимальный `CountdownManage
 
 Репозиторий содержит небольшой agent harness для сопровождения Countdown Manager.
 
+Поведение агента проверяется отдельным набором [evals](evals/README.md): точечные исправления,
+ревью без изменений, выбор доказательств и соблюдение продуктовых границ. Запуски используют
+отдельные копии проекта; результаты оцениваются по действиям, независимым проверкам и рубрике.
+
 Для обычной работы владельцу не нужно писать техническое ТЗ или выбирать Swift, SwiftUI или AppKit API. Достаточно описать проблему, желаемый пользовательский результат и важные ограничения.
 
 Примеры:
@@ -191,6 +195,6 @@ XCUITest-набор использует минимальный `CountdownManage
 - [`docs/decisions/`](docs/decisions/) — принятые durable technical decisions;
 - [`.agents/skills/macos-platform-research/SKILL.md`](.agents/skills/macos-platform-research/SKILL.md) — специализированное исследование неопределённого macOS/SwiftUI/AppKit поведения.
 
-PRODUCT FREEZE, scope, user-data protection и authority boundaries определены только в `AGENTS.md`, чтобы README не становился второй копией agent policy.
+Scope, user-data protection и authority boundaries определены только в `AGENTS.md`, чтобы README не становился второй копией agent policy.
 
 Нативные API: [NSStatusBar](https://developer.apple.com/documentation/appkit/nsstatusbar), [SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice/mainapp).
