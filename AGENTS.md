@@ -5,7 +5,8 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 ## Router
 
 - Swift, SwiftUI, or AppKit implementation and non-trivial code review: read `.agents/skills/swift-code-quality/SKILL.md`.
-- Product acceptance for a feature, bug fix, or user-visible change: after automated checks are green, read `.agents/skills/product-qa/SKILL.md`.
+- Product acceptance for a feature or fix that changes Countdown Manager's user-visible behaviour: after automated checks are green, read `.agents/skills/product-qa/SKILL.md`.
+- Agent-harness, tooling and documentation-only changes: use their focused checks from `docs/VERIFICATION.md`. Do not apply `product-qa` or run application UI checks when product behaviour is unchanged.
 - A technical direction that depends on uncertain macOS, SwiftUI, or AppKit behaviour: read `.agents/skills/macos-platform-research/SKILL.md`.
 - Codex hooks enforce mechanical SwiftLint and fast regression gates. They do not replace product-risk judgment or manual-only macOS acceptance.
 

@@ -14,10 +14,40 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
+| Hook regression checks | `python3 -B Tests/test_swift_harness.py` | Deterministic Python hook checks; no application data or Swift builds |
+| Eval runner checks | `python3 -B Tests/test_agent_evals.py` | Deterministic checks of fixtures, grading and execution; no model calls |
+| Native transport checks | `python3 -B Tests/test_native_hooks.py` | Local protocol/cleanup regression checks; no Codex process or model calls |
+| Agent behaviour evals | `python3 -B evals/run.py run --model <supported-cli-model> --output evals/artifacts/<new-run>` | Opt-in isolated Codex runs plus independent checks and rubric review |
+| Native Codex hooks | `python3 -B evals/native_hooks.py --model <supported-cli-model> --output evals/artifacts/<new-native-run>` | Opt-in real app-server delivery, trusted hooks, lint/fast failures and automatic repair; CLI 0.157.1 |
 
 SwiftLint must be available on `PATH`; on macOS install it with `brew install swiftlint`.
 
 Codex hooks run SwiftLint only on changed Swift files after an edit. Before a Swift task completes, they run full SwiftLint and `./verify.sh fast`. Real UI Smoke and XCUITest remain evidence selected for the actual runtime risk; they are not automatic gates for unrelated Swift work.
+
+SessionStart establishes the verification baseline. Missing, unreadable or malformed state cannot
+certify a session: later hooks report a blocking diagnostic instead of silently initializing a new
+baseline or treating the failure as success. A successful gate is cached against Swift contents plus
+`.swiftlint.yml` and `verify.sh`; changing those verification inputs invalidates the cached result.
+This cache does not track every toolchain or environment change; rerun affected checks when those
+change materially. Hook regression checks cover state failures, Stop gates, cache invalidation,
+read-only calls and concurrent lifecycle calls. They do not prove native hook registration or trust.
+
+The separate native hook check exercises actual `hook/started` and `hook/completed` notifications
+through Codex app-server in an isolated copy. Hook script/config bytes match the reviewed repository.
+Scoped SessionFlags reuse exact hashes already trusted for this project's definitions, after checking
+fixture discovery and hash equality; normal runtime trust remains enforced. Global configuration is
+checked byte-for-byte before and after. No bypass flags or credential copying are used.
+The check observes SessionStart, read-only PostToolUse/Stop, genuine SwiftLint feedback, and a failing
+CoreChecks process causing Stop feedback followed by model repair and a successful gate. A successful
+gate is evidenced by completed Stop and the cache fingerprint, which is saved only after lint/fast
+exit zero; successful fast stdout is not emitted by the production hook. The 2026-10-06 native run
+passed and received independent artifact review. This does not test UI trust onboarding, every desktop
+client configuration, or product window interaction. See `evals/README.md` for setup and limits.
+
+Python harness/eval changes require their focused deterministic checks. Live agent evals are opt-in
+when changing instructions, skills, tools or verification policy. They are not part of `verify.sh`
+or the Swift completion hook. See [`evals/README.md`](../evals/README.md) for cases, artifacts, rubric
+review, isolation and limitations. A successful machine check alone is `REVIEW_REQUIRED`, not PASS.
 
 ## CoreChecks
 
