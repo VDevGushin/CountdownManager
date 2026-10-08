@@ -7,6 +7,7 @@ package enum EventUIStrings {
     package static let editEvent = "Редактировать событие"
     package static let createDay = "Создать день"
     package static let newDay = "Новый день"
+    package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи."
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
     package static let emptyMessage = "Добавь событие и выбери дату — приложение покажет, сколько дней до него осталось."
@@ -171,11 +172,10 @@ package func editorCanSave(
     date: Day,
     emoji: String,
     subtasks: [Subtask] = [],
-    today: Day,
-    originalDate: Day? = nil
+    today: Day
 ) -> Bool {
     let cleanedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
-    let dateIsValid = date > today || (originalDate == today && date == today)
+    let dateIsValid = date >= today
     let subtasksAreValid = subtasks.count <= Subtask.maximumCount
         && subtasks.allSatisfy {
             let cleaned = $0.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -207,6 +207,10 @@ package struct DayCreationPreset: Equatable {
 
     package init(day: Day) {
         self.day = day
+    }
+
+    package static func today(_ today: Day) -> DayCreationPreset {
+        DayCreationPreset(day: today)
     }
 
     package static func tomorrow(after today: Day, calendar: Calendar = Day.calendar) -> DayCreationPreset? {

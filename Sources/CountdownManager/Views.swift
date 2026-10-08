@@ -141,13 +141,19 @@ struct ManagerView: View {
     private var dayChoices: some View {
         HStack {
             Text(EventUIStrings.createDay).font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .uiSmokeControl(id: "creation.day.label")
             Spacer()
-            Button("Завтра") { createDay(selectDate: false) }
+            Button("Сегодня") { createDay(preset: .today(store.today)) }
+                .accessibilityIdentifier("creation.day.today")
+                .uiSmokeControl(id: "creation.day.today", action: { createDay(preset: .today(store.today)) })
+            Button("Завтра") { createDay(preset: .tomorrow(after: store.today)) }
                 .accessibilityIdentifier("creation.day.tomorrow")
-                .uiSmokeControl(id: "creation.day.tomorrow", action: { createDay(selectDate: false) })
-            Button("Выбрать дату") { createDay(selectDate: true) }
+                .uiSmokeControl(id: "creation.day.tomorrow", action: { createDay(preset: .tomorrow(after: store.today)) })
+            Button("Выбрать дату") { createDay(preset: .tomorrow(after: store.today), selectDate: true) }
                 .accessibilityIdentifier("creation.day.chooseDate")
-                .uiSmokeControl(id: "creation.day.chooseDate", action: { createDay(selectDate: true) })
+                .uiSmokeControl(id: "creation.day.chooseDate", action: {
+                    createDay(preset: .tomorrow(after: store.today), selectDate: true)
+                })
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
@@ -389,9 +395,8 @@ struct ManagerView: View {
         showingDayChoices.toggle()
     }
 
-    private func createDay(selectDate: Bool) {
-        guard !showingEditor,
-              let preset = DayCreationPreset.tomorrow(after: store.today) else { return }
+    private func createDay(preset: DayCreationPreset?, selectDate: Bool = false) {
+        guard !showingEditor, let preset else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
         editing = nil
         dayPreset = preset
@@ -659,8 +664,8 @@ struct EditorView: View {
         }
     }
 
-    private var minimumDate: Date { item?.date == store.today ? store.today.date() : store.tomorrow }
-    private var validDate: Bool { Day(date) > store.today || (item?.date == store.today && Day(date) == store.today) }
+    private var minimumDate: Date { store.today.date() }
+    private var validDate: Bool { Day(date) >= store.today }
     private var isUnavailable: Bool {
         guard let item else { return false }
         return item.date < store.today || !store.active.contains(where: { $0.id == item.id })
@@ -672,8 +677,7 @@ struct EditorView: View {
             date: Day(date),
             emoji: draft.emoji,
             subtasks: draft.subtasks,
-            today: store.today,
-            originalDate: item?.date
+            today: store.today
         )
     }
 
@@ -735,6 +739,8 @@ struct EditorView: View {
                                         .uiSmokeControl(id: "editor.date", value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
                                     Text(dateHelp)
                                         .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
+                                        .accessibilityIdentifier("editor.date.help")
+                                        .uiSmokeControl(id: "editor.date.help", value: { dateHelp })
                                 }
                             }
                         }
@@ -853,10 +859,8 @@ struct EditorView: View {
     }
 
     private var dateHelp: String {
-        if item?.date == store.today {
-            return validDate ? "Можно оставить сегодня или перенести событие в будущее." : "Прошлая дата недоступна."
-        }
-        return validDate ? "Можно выбрать начиная с завтрашнего дня." : "Эта дата уже наступила. Выберите будущую."
+        guard validDate else { return "Прошлая дата недоступна. Выберите сегодня или позже." }
+        return Day(date) == store.today ? EventUIStrings.todayExpiryNotice : "Можно выбрать сегодня или будущую дату."
     }
 
     private func editorSubtasks(scrollProxy: ScrollViewProxy) -> some View {

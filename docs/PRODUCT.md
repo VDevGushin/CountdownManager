@@ -2,9 +2,9 @@
 
 ## Purpose
 
-Countdown Manager is a native macOS menu-bar application for tracking future events by calendar day.
+Countdown Manager is a native macOS menu-bar application for tracking today's and future events by calendar day.
 
-The product is intentionally small and quiet. The central concept is a future event date and the number of calendar days remaining until that date. The application also provides one lightweight countdown timer for short time-based reminders.
+The product is intentionally small and quiet. The central concept is an event date and the number of calendar days remaining until that date, including `Сегодня` on the event's date. The application also provides one lightweight countdown timer for short time-based reminders.
 
 Countdown Manager is not a task manager or calendar replacement. Outside the single timer completion alert, it does not provide event or subtask reminder workflows.
 
@@ -89,9 +89,9 @@ Event dates and countdowns use calendar-day semantics rather than elapsed-second
 
 ### Creating an event
 
-A new event must use a date later than today.
+A new event may use today's date or a future date. Ordinary event creation initially selects tomorrow.
 
-Past dates and today cannot be selected as the date of a newly created event.
+Past dates cannot be selected or saved. Date validation uses the current calendar day when saving, including when a draft remains open across midnight.
 
 Saving the first event does not select a favorite automatically. The favorite choice in a new draft is initially off.
 
@@ -101,9 +101,9 @@ Changes entered in the editor do not become event data until the user explicitly
 
 ### Creating a day
 
-The header calendar control, labelled `Создать день`, reveals inline `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
+The header calendar control, labelled `Создать день`, reveals inline `Сегодня`, `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
 
-Both day choices open the existing editor as `Новый день`, initially dated tomorrow. `Выбрать дату` asks the user to choose a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks.
+All day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks.
 
 While the title has not been manually edited, changing the date updates the weekday title. After a manual title edit, later date changes preserve that custom title. All ordinary event fields remain editable.
 
@@ -115,7 +115,7 @@ This is a single-day creation shortcut; it does not create a week or store reusa
 
 An existing event may be edited while it is scheduled for today.
 
-An event occurring today may remain on today's date or be moved to a future date.
+An active event may be moved to today's date or a future date. An event occurring today may also remain on today's date.
 
 Editing does not change durable event data until the user explicitly saves.
 
@@ -126,6 +126,8 @@ An event remains active and available throughout its entire calendar date.
 On that date, its countdown is represented as `Сегодня`.
 
 The event remains editable and removable during that day.
+
+When an editor's selected date is today, it shows `После окончания дня событие будет удалено, включая незавершённые подзадачи.` This applies to ordinary event creation, day creation and editing an existing event.
 
 ### Expiry
 

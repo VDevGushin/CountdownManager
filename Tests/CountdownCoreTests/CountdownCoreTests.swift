@@ -14,16 +14,38 @@ final class CountdownCoreTests {
 
     func testCreationAndFieldValidation() throws {
         var data = CountdownData()
-        for date in [day(2026, 9, 4), day(2026, 9, 5)] {
-            XCTAssertThrowsError(try data.save(
-                Countdown(title: "Test", date: date, emoji: "🎉"),
-                primary: false,
-                today: day(2026, 9, 5)
-            ))
-        }
+        XCTAssertThrowsError(try data.save(
+            Countdown(title: "Test", date: day(2026, 9, 4), emoji: "🎉"),
+            primary: false,
+            today: day(2026, 9, 5)
+        ))
         XCTAssertThrowsError(try data.save(Countdown(title: "  ", date: day(2026, 9, 6), emoji: "🎉"), primary: false, today: day(2026, 9, 5)))
         XCTAssertThrowsError(try data.save(Countdown(title: "Test", date: day(2026, 9, 6), emoji: "abc"), primary: false, today: day(2026, 9, 5)))
         XCTAssertThrowsError(try data.save(Countdown(title: "Test", note: String(repeating: "x", count: 281), date: day(2026, 9, 6), emoji: "🎉"), primary: false, today: day(2026, 9, 5)))
+        XCTAssertTrue(data.items.isEmpty)
+    }
+
+    func testTodayCreationAndMidnightBoundary() throws {
+        let today = day(2026, 9, 5)
+        let event = Countdown(
+            title: "Today",
+            date: today,
+            emoji: "",
+            subtasks: [try Subtask(text: "Unfinished")]
+        )
+        var data = CountdownData()
+        try data.save(event, primary: false, today: today)
+        XCTAssertEqual(data.items, [event])
+        XCTAssertNil(data.primaryID)
+        XCTAssertEqual(try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data)), data)
+        data.normalize(today: today)
+        XCTAssertEqual(data.items, [event])
+
+        let nextDay = day(2026, 9, 6)
+        var unsaved = CountdownData()
+        XCTAssertThrowsError(try unsaved.save(event, primary: false, today: nextDay))
+        XCTAssertTrue(unsaved.items.isEmpty)
+        data.normalize(today: nextDay)
         XCTAssertTrue(data.items.isEmpty)
     }
 
@@ -181,7 +203,9 @@ final class CountdownCoreTests {
         XCTAssertEqual(data.items[0].date, day(2026, 9, 9))
         var futureMovedBackToToday = movedToFuture
         futureMovedBackToToday.date = day(2026, 9, 6)
-        XCTAssertThrowsError(try data.save(futureMovedBackToToday, primary: true, today: day(2026, 9, 6)))
+        try data.save(futureMovedBackToToday, primary: true, today: day(2026, 9, 6))
+        XCTAssertEqual(data.items[0].date, day(2026, 9, 6))
+        XCTAssertEqual(data.items[0].subtasks, futureMovedBackToToday.subtasks)
 
         // Restore today's date to verify expiry with an unfinished subtask.
         var lifecycle = CountdownData()
@@ -411,6 +435,7 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
     static func main() async throws {
         let checks = CountdownCoreTests()
         try checks.testCreationAndFieldValidation()
+        try checks.testTodayCreationAndMidnightBoundary()
         try checks.testSubtaskLimitsNormalizationCompletionAndOrder()
         try checks.testAllSubtasksCompletedDoesNotFinishEvent()
         try checks.testCRUDPrimaryExpiryAndPersistence()
@@ -424,6 +449,6 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try checks.testRejectInvalidStoredDatesAndSubtasks()
         try await checks.testLegacyJSONMigrationAndNewModelRoundTrip()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
-        print("PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today editing, expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
+        print("PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today creation/editing, midnight rejection and expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
     }
 }

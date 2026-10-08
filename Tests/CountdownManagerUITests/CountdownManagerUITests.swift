@@ -97,7 +97,7 @@ enum UIChecks {
         precondition(emptyRow.completionLabel == nil) // No disclosure and no 0/0.
         precondition(emptyRow.dateAndRemainingLabel == "\(humanDateLabel(Day(tomorrowDate))) · 1 день")
 
-        // Creation versus editing an event on Today.
+        // Creation and editing both accept Today, while past dates remain invalid.
         precondition(editorCanSave(
             title: "Future UI",
             note: String(repeating: "я", count: 280),
@@ -105,8 +105,8 @@ enum UIChecks {
             emoji: futureItem.emoji,
             today: today
         ))
-        precondition(!editorCanSave(
-            title: "Today is invalid for creation",
+        precondition(editorCanSave(
+            title: "Today is valid for creation",
             note: "",
             date: today,
             emoji: futureItem.emoji,
@@ -118,8 +118,7 @@ enum UIChecks {
             date: today,
             emoji: "🎂",
             subtasks: todayItem.subtasks,
-            today: today,
-            originalDate: today
+            today: today
         ))
         precondition(editorCanSave(
             title: "Move Today forward",
@@ -127,8 +126,14 @@ enum UIChecks {
             date: Day(twoDaysDate),
             emoji: "🎂",
             subtasks: todayItem.subtasks,
-            today: today,
-            originalDate: today
+            today: today
+        ))
+        precondition(!editorCanSave(
+            title: "Yesterday is invalid",
+            note: "",
+            date: Day(yesterdayDate),
+            emoji: "",
+            today: today
         ))
         precondition(!editorCanSave(
             title: "Invalid note",
@@ -336,6 +341,7 @@ enum UIChecks {
         )
 
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
+        try await testTodaySaveAndMidnightBoundary(in: directory.appendingPathComponent("today-midnight"))
         try await testClearingFavoritePersistsAndRollsBack(in: directory.appendingPathComponent("clear-favorite"))
         await MainActor.run {
             testIsolatedStoreCannotManageLoginItem(
@@ -343,7 +349,7 @@ enum UIChecks {
             )
         }
 
-        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; day defaults, seven Russian weekdays, civil-date boundaries and title override")
+        print("PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor/save and midnight rejection, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; today/tomorrow day defaults, seven Russian weekdays, civil-date boundaries and title override")
     }
 
     @MainActor
@@ -370,7 +376,9 @@ enum UIChecks {
         ]
         for (offset, title) in weekdayNames.enumerated() {
             let day = civilDay(2026, 10, 5 + offset)
-            let draft = EventEditorDraft(day: day)
+            let preset = DayCreationPreset.today(day)
+            precondition(preset.day == day)
+            let draft = EventEditorDraft(day: preset.day)
             precondition(russianWeekdayTitle(day) == title)
             precondition(draft.title == title && draft.emoji.isEmpty)
             precondition(draft.note.isEmpty && draft.subtasks.isEmpty)
@@ -379,7 +387,7 @@ enum UIChecks {
             precondition((event.note ?? "").isEmpty && event.subtasks.isEmpty)
             precondition(editorCanSave(
                 title: draft.title, note: draft.note, date: day,
-                emoji: draft.emoji, today: civilDay(2026, 10, 3)
+                emoji: draft.emoji, today: day
             ))
         }
 
@@ -438,8 +446,11 @@ enum UIChecks {
         var existing = EventEditorDraft(item: Countdown(title: "Custom event", date: monday, emoji: "🚀"))
         existing.updateDayTitle(for: tuesday)
         precondition(existing.title == "Custom event" && existing.emoji == "🚀")
-        precondition(!editorCanSave(
+        precondition(editorCanSave(
             title: "Понедельник", note: "", date: monday, emoji: "📅", today: monday
+        ))
+        precondition(!editorCanSave(
+            title: "Понедельник", note: "", date: monday, emoji: "📅", today: tuesday
         ))
     }
 
@@ -725,6 +736,54 @@ enum UIChecks {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         return Day(calendar.date(from: DateComponents(year: year, month: month, day: day))!, calendar: calendar)
+    }
+
+    @MainActor
+    private static func testTodaySaveAndMidnightBoundary(in directory: URL) async throws {
+        let fileURL = directory.appendingPathComponent("countdowns.json")
+        let suiteName = "CountdownManagerTodaySave.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let initialDay = Day(Date())
+        var currentDate = initialDay.date()
+        let store = Store(
+            fileURL: fileURL,
+            disclosureDefaults: defaults,
+            now: { currentDate },
+            loginItemManagementIsAvailable: false
+        )
+        while store.isLoading { await Task.yield() }
+
+        let event = Countdown(
+            title: "Today",
+            date: initialDay,
+            emoji: "",
+            subtasks: [try Subtask(text: "Unfinished")]
+        )
+        let created = await store.save(event, primary: false)
+        precondition(created && store.data.items == [event] && store.data.primaryID == nil)
+        let repository = CountdownRepository(fileURL: fileURL)
+        let initialDisk = try await repository.load()
+        precondition(initialDisk == store.data)
+
+        let nextDay = futureDay(1, from: initialDay)
+        currentDate = nextDay.date()
+        let staleDraft = Countdown(title: "Unsaved yesterday", date: initialDay, emoji: "")
+        let rejectedDraft = await store.save(staleDraft, primary: false)
+        precondition(!rejectedDraft)
+        var expiredEdit = event
+        expiredEdit.date = futureDay(1, from: nextDay)
+        let rejectedEdit = await store.save(expiredEdit, primary: true, requireExisting: true)
+        precondition(!rejectedEdit)
+        precondition(store.data == initialDisk)
+        let unchangedDisk = try await repository.load()
+        precondition(unchangedDisk == initialDisk)
+
+        let nextEvent = Countdown(title: "New today", date: nextDay, emoji: "")
+        let nextCreated = await store.save(nextEvent, primary: false)
+        precondition(nextCreated && store.data.items == [nextEvent])
+        let finalDisk = try await repository.load()
+        precondition(finalDisk == store.data && !finalDisk.items.contains { $0.id == event.id })
     }
 
     @MainActor

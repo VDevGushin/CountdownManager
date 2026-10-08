@@ -173,7 +173,8 @@ copy_capture_evidence() {
         25-timer-completion-dark \
         26-timer-completion-light \
         27-timer-completion-dark-high-contrast \
-        28-timer-completion-light-high-contrast; do
+        28-timer-completion-light-high-contrast \
+        29-today-day-editor; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
             return 1

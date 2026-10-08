@@ -104,9 +104,12 @@ Real UI Smoke cover the 180-millisecond motion policy, immediate reduced-motion 
 selection, rapid last-tap-wins behaviour and the final value consumed by Play.
 An isolated today-dated primary and short secondary event add a full-panel capture of the date and
 `Сегодня` badge. The fixture is removed before the other capture scenarios run.
-Two day-creation captures show the inline `Завтра` / `Выбрать дату` choices and the default
-`Новый день` editor. Real UI Smoke separately exercises the native date field, weekday title
-updates and manual override, Save/Cancel data boundaries and retained day drafts through hide/show.
+Three day-creation captures show the inline `Сегодня` / `Завтра` / `Выбрать дату` choices, the
+default tomorrow `Новый день` editor and today's editor with the end-of-day expiry notice.
+Real UI Smoke separately exercises the native date field for today and future dates, weekday title
+updates and manual override, expiry notice visibility, Save/Cancel data boundaries and retained day
+drafts through hide/show. Deterministic Store checks cover saving against a changed calendar day,
+including rejection of stale drafts and prevention of expired-event recreation.
 A fifteenth capture records a collapsed checklist under Reduce Motion. The capture scenario also
 checks that hidden checklist controls reject input and that reopening restores the completion groups
 without changing event JSON. The collapse regression exercises interrupted repeated requests, final
@@ -179,7 +182,7 @@ preset, catalog and clear-button interaction. Captures prove settled layouts; th
 perceived animation smoothness or precise wall-clock duration.
 
 Captures 25–28 record the actual timer completion alert window in Dark and Light appearances,
-including both Increase Contrast variants. The full set requires 28 images. The manifest records
+including both Increase Contrast variants. With the today editor capture, the full set requires 29 images. The manifest records
 the source window and appearance for each capture. Appearance is overridden only on isolated test
 windows; global macOS display settings are unchanged. Real UI Smoke checks shared palette colors,
 appearance changes on the reused alert, title/background click dismissal, unchanged finished timer

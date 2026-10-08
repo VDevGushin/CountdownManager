@@ -568,6 +568,7 @@ final class UISmokeRuntime {
         try await press("day.add")
         try await waitForElement("creation.day.chooseDate")
         try await settleLayout()
+        try requireDayCreationLayout()
         try capture(name: "13-day-choices")
         try await press("creation.day.tomorrow")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(Day(store.tomorrow)))
@@ -575,6 +576,13 @@ final class UISmokeRuntime {
         try capture(name: "14-day-editor")
         try await press("editor.cancel")
         try await waitFor("list restored after day capture") { self.controls.entries["editor.new"] == nil }
+        try await press("day.add")
+        try await press("creation.day.today")
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await settleLayout()
+        try capture(name: "29-today-day-editor")
+        try await press("editor.cancel")
+        try await waitFor("list restored after today day capture") { self.controls.entries["editor.new"] == nil }
         visualEnvironment.colorSchemeOverride = .light
         try await settleLayout()
         try requireNonOverlappingCardFrames(minimumCount: 4)
@@ -857,7 +865,7 @@ final class UISmokeRuntime {
     }
 
     private func writeCaptureManifest() throws {
-        try require(captures.count == 28, "capture set is incomplete")
+        try require(captures.count == 29, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifest = CaptureManifest(version: 3, captures: captures.sorted { $0.name < $1.name })
@@ -1222,6 +1230,7 @@ final class UISmokeRuntime {
         pass("diagnostics remain free of private editor input")
         try await verifyDayCreation()
         try await verifyOptionalIconsAndFavorites()
+        try await verifyTodayCreation()
     }
 
     private func verifyDayCreation() async throws {
@@ -1229,6 +1238,9 @@ final class UISmokeRuntime {
         let initialJSON = try Data(contentsOf: configuration.dataURL)
         let tomorrow = Day(store.tomorrow)
         try await press("day.add")
+        try await waitForElement("creation.day.today")
+        try await settleLayout()
+        try requireDayCreationLayout()
         try await press("creation.day.tomorrow")
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
@@ -1281,6 +1293,7 @@ final class UISmokeRuntime {
         try await press("creation.day.chooseDate")
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try require(controls.value("editor.date") == dateValue(tomorrow), "choose-date default is not tomorrow")
         try require(controls.value("editor.note")?.isEmpty == true && controls.value("editor.emoji")?.isEmpty == true
                     && editorSubtaskFieldIDs().isEmpty,
                     "choose-date day inherited the previously saved plan")
@@ -1294,6 +1307,102 @@ final class UISmokeRuntime {
         try require(Data(contentsOf: configuration.dataURL) == savedJSON, "day Cancel wrote JSON")
         pass("choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged")
         try verifyDiagnosticsPrivacy(forbidden: ["Personal day plan", "Synthetic day note", "Sport"])
+    }
+
+    private func verifyTodayCreation() async throws {
+        let initialData = store.data
+        let today = store.today
+        let tomorrow = Day(store.tomorrow)
+        try await press("event.add")
+        try await waitForElement("editor.new")
+        try require(controls.value("editor.date") == dateValue(tomorrow), "ordinary creation default is not tomorrow")
+        try await focusAndReplace("editor.title", with: "Ordinary today event")
+        try await selectEditorDate(today)
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await press("editor.save")
+        try await waitFor("ordinary today event saved") {
+            self.controls.entries["editor.new"] == nil && self.store.active.count == initialData.items.count + 1
+        }
+        let ordinary = try requireValue(store.active.first(where: { $0.title == "Ordinary today event" }), "ordinary today event")
+        try require(ordinary.date == today && store.data.primaryID == nil && store.statusTitle == "📅 Сегодня",
+                    "ordinary today event did not retain today semantics")
+        let savedData = store.data
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
+
+        try await press("day.add")
+        try await press("creation.day.today")
+        try await waitForElement("editor.new")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try require(controls.value("editor.date") == dateValue(today)
+                    && controls.value("editor.note")?.isEmpty == true
+                    && controls.value("editor.emoji")?.isEmpty == true && editorSubtaskFieldIDs().isEmpty,
+                    "today day shortcut inherited fields or the wrong date")
+        try await selectEditorDate(tomorrow)
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try require(controls.value("editor.date.help") != EventUIStrings.todayExpiryNotice,
+                    "today expiry notice remained on a future date")
+        try await selectEditorDate(today)
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await focusAndReplace("editor.note", with: "Today draft note")
+        let field = try await addEditorSubtaskAndWait()
+        try await waitForFirstResponder(field)
+        try insertText("Today checklist")
+        try await waitForValue(field, equals: "Today checklist")
+        let owner = controls.entries["editor.new"]?.ownerID
+        try require(!controls.press("creation.day.today"), "today shortcut accepted input over an open editor")
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.new"]?.ownerID == owner
+                    && controls.value("editor.date") == dateValue(today)
+                    && controls.value("editor.title") == russianWeekdayTitle(today)
+                    && controls.value("editor.note") == "Today draft note"
+                    && controls.value(field) == "Today checklist",
+                    "today day draft changed during hide/show")
+        try require(store.data == savedData && Data(contentsOf: configuration.dataURL) == savedJSON,
+                    "opening or editing a today day persisted the draft")
+        try await press("editor.save")
+        try await waitFor("today day saved") {
+            self.controls.entries["editor.new"] == nil && self.store.active.count == savedData.items.count + 1
+        }
+        let day = try requireValue(store.active.first(where: { $0.note == "Today draft note" }), "saved today day")
+        try require(day.date == today && day.title == russianWeekdayTitle(today) && day.emoji.isEmpty
+                    && day.subtasks.count == 1 && day.subtasks[0].text == "Today checklist"
+                    && !day.subtasks[0].isCompleted && store.data.primaryID == nil,
+                    "today day Save changed its date, fields or favorite")
+        let future = try requireValue(initialData.items.first(where: { $0.date > today }), "future edit fixture")
+        try await press("event.edit.\(future.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await selectEditorDate(today)
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await press("editor.save")
+        try await waitFor("future event moved to today") {
+            self.controls.entries["editor.edit"] == nil && self.store.active.contains { $0.id == future.id && $0.date == today }
+        }
+        let persisted = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        try require(persisted == store.data, "today creation and editing were not durable")
+        let persistedJSON = try Data(contentsOf: configuration.dataURL)
+        try await press("event.edit.\(ordinary.id.uuidString)")
+        try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await press("editor.cancel")
+        try await waitFor("today editor cancelled") { self.controls.entries["editor.edit"] == nil }
+        try require(store.data == persisted && Data(contentsOf: configuration.dataURL) == persistedJSON,
+                    "today editor Cancel changed durable data")
+        try verifyDiagnosticsPrivacy(forbidden: ["Ordinary today event", "Today draft note", "Today checklist"])
+        pass("today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save")
+    }
+
+    private func requireDayCreationLayout() throws {
+        let root = try requireValue(controls.frame("root.window"), "day choices panel frame")
+        let ids = ["creation.day.label", "creation.day.today", "creation.day.tomorrow", "creation.day.chooseDate"]
+        let frames = try ids.map { try requireValue(controls.frame($0), "day creation control \($0)") }
+        for frame in frames {
+            try require(frame.width > 0 && frame.minX >= root.minX && frame.maxX <= root.maxX,
+                        "day creation control escaped panel bounds")
+        }
+        for (left, right) in zip(frames, frames.dropFirst()) {
+            try require(left.maxX <= right.minX, "day creation controls overlap")
+        }
     }
 
     private func verifyOptionalIconsAndFavorites() async throws {

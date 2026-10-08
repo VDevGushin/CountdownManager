@@ -173,7 +173,7 @@ public enum CountdownError: LocalizedError {
         switch self {
         case .title: return "Укажите название события."
         case .note: return "Заметка должна быть не длиннее 280 символов."
-        case .date: return "Дата события недопустима. Выберите будущую дату."
+        case .date: return "Дата события недопустима. Выберите сегодня или будущую дату."
         case .emoji: return "Выберите один emoji или оставьте значок пустым."
         case .eventNotFound: return "Событие больше недоступно."
         case .subtaskNotFound: return "Подзадача больше недоступна."
@@ -214,9 +214,7 @@ public struct CountdownData: Codable, Equatable {
         }
         guard !cleaned.title.isEmpty else { throw CountdownError.title }
         guard (cleaned.note?.count ?? 0) <= 280 else { throw CountdownError.note }
-        let existing = items.first(where: { $0.id == item.id })
-        let keepsToday = existing?.date == today && cleaned.date == today
-        guard cleaned.date > today || keepsToday else { throw CountdownError.date }
+        guard cleaned.date >= today else { throw CountdownError.date }
         guard cleaned.emoji.isEmpty || Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         guard cleaned.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
         normalize(today: today)
