@@ -67,6 +67,7 @@ Key files:
 
 - `Application.swift`
 - `CountdownTimer.swift`
+- `ApplicationUpdates.swift`
 - `TimerCompletionAlert.swift`
 - `Store.swift`
 - `Presentation.swift`
@@ -219,6 +220,44 @@ It owns:
 - a one-shot completion event when a running deadline is crossed.
 
 A persisted deadline in the past represents the finished state until the user deletes the timer. It does not replay the completion alert on launch. A stored future deadline beyond the longest two-hour preset is treated as invalid and cleared rather than converted into overflowing display seconds. Deleting removes the local deadline and dismisses a visible completion alert.
+
+## Application updates
+
+`ApplicationUpdates.swift` owns one `SPUStandardUpdaterController` from pinned Sparkle 2.10.0.
+It starts only when the bundle has a valid HTTPS feed, a 32-byte public key and signed-feed/archive
+verification enabled. Sparkle owns scheduling, preferences, download, installer and update UI.
+The application uses `automaticallyChecksForUpdates` directly rather than maintaining another
+update preference. System profiling and silent automatic installation are disabled.
+
+The same owner implements `SPUStandardUserDriverDelegate`. `standardUserDriverWillHandleShowingUpdate`
+and `standardUserDriverWillShowModalAlert` synchronously ask `AppDelegate` to hide the retained panel
+and temporarily set its level to `.normal`. Manual check/refocus and deferred-install entry points
+do this before invoking Sparkle because their progress windows have no before-show delegate hook.
+Explicit panel reopening keeps the retained hierarchy and ordinary level during that session.
+`standardUserDriverWillFinishUpdateSession` restores `.popUpMenu` on the next main-queue turn after
+Sparkle's window-closing callback unwinds, without showing the panel. No Sparkle window is inspected,
+reordered or assigned another level. The application-owned deferred-install modal uses the same
+hide boundary and returns to the retained panel through an explicit button; it never retries itself.
+
+`AppDelegate` owns `EventEditorSession`, the single observable owner of editor visibility shared
+with `ManagerView`. Draft fields remain owned by the existing editor. The updater reads that session,
+the timer phase and `Store.hasPendingPersistence` through an explicit main-actor safety closure.
+It stores Sparkle's native postponement continuation while blocked. Explicit Install rechecks
+safety before consuming the continuation once. `willInstallUpdate` marks update termination;
+`applicationShouldTerminate` cancels it if activity appears in the remaining installation window.
+Explicit application Quit clears that update-specific flag before its normal termination request.
+
+SwiftPM and the Xcode project link Sparkle; application bundles embed the complete framework.
+`build.sh` stages, configures and signs nested components inside-out before replacing its build
+output. `scripts/update_tools.py` validates release configuration and key matching, creates a
+symlink-preserving ZIP, and uses Sparkle's tools to sign/verify the archive and appcast.
+No production private key is present in source or application bundles.
+
+An explicit update-test bundle uses `local.countdownmanager.update-test`, a separate Sparkle defaults
+domain, and a marked isolated home baked into both bundle plists. `UISmokeConfiguration` validates
+that home before Store, timer or diagnostics start; test defaults and logs use it after relaunch too.
+It keeps normal shell lifecycle callbacks. Only this validated test configuration accepts loopback
+HTTP; production channels require HTTPS. Fixtures exercise the standard Sparkle controller.
 
 ## UI preference state
 

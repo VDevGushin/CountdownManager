@@ -5,8 +5,10 @@ import CountdownCore
 
 struct ManagerView: View {
     @ObservedObject var store: Store
+    @ObservedObject var updates: ApplicationUpdates
+    @ObservedObject var editorSession: EventEditorSession
     @State private var editing: Countdown?
-    @State private var showingEditor = false
+    private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
     @State private var dayPreset: DayCreationPreset?
     @State private var selectDayDate = false
@@ -348,6 +350,24 @@ struct ManagerView: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if updates.isAvailable {
+                HStack {
+                    Button("Проверить обновления…") { updates.checkForUpdates(nil) }
+                        .disabled(!updates.canCheckForUpdates)
+                        .accessibilityIdentifier("updates.check")
+                    Spacer()
+                    Toggle("Автопроверка", isOn: Binding(
+                        get: { updates.automaticallyChecksForUpdates },
+                        set: { updates.automaticallyChecksForUpdates = $0 }
+                    ))
+                    .toggleStyle(.checkbox)
+                    .accessibilityIdentifier("updates.automatic-checks")
+                }
+            }
+            if updates.isInstallationDeferred {
+                Button("Обновление готово · установить…") { updates.installDeferredUpdate(nil) }
+                    .accessibilityIdentifier("updates.install")
+            }
             Toggle("Запускать при входе в macOS", isOn: Binding(
                 get: { store.loginStatus == .enabled || store.loginStatus == .requiresApproval },
                 set: { store.setLogin($0) }
@@ -363,7 +383,7 @@ struct ManagerView: View {
                 Text("Хранится на этом Mac").font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 Spacer()
                 Button("Диагностика…") { store.openDiagnostics() }
-                Button("Выйти") { NSApp.terminate(nil) }
+                Button("Выйти") { updates.quitApplication(nil) }
             }
         }
         .font(.system(size: 11))
@@ -374,7 +394,7 @@ struct ManagerView: View {
     }
 
     private func finishEditor() {
-        showingEditor = false
+        editorSession.isPresented = false
         editing = nil
         dayPreset = nil
         selectDayDate = false
@@ -387,7 +407,7 @@ struct ManagerView: View {
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
-        showingEditor = true
+        editorSession.isPresented = true
     }
 
     private func toggleDayChoices() {
@@ -402,7 +422,7 @@ struct ManagerView: View {
         dayPreset = preset
         selectDayDate = selectDate
         showingDayChoices = false
-        showingEditor = true
+        editorSession.isPresented = true
     }
 
     private func edit(_ item: Countdown) {
@@ -412,7 +432,7 @@ struct ManagerView: View {
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
-        showingEditor = true
+        editorSession.isPresented = true
     }
 }
 

@@ -128,6 +128,10 @@ package final class Store: ObservableObject {
     var statusTitle: String { statusBarTitle(data: data, today: today) }
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
 
+    package var hasPendingPersistence: Bool {
+        isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
+    }
+
     func subtasksAreExpanded(for eventID: UUID) -> Bool {
         disclosureState(for: eventID).isExpanded
     }

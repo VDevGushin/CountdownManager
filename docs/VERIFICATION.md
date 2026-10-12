@@ -17,6 +17,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Hook regression checks | `python3 -B Tests/test_swift_harness.py` | Deterministic Python hook checks; no application data or Swift builds |
 | Eval runner checks | `python3 -B Tests/test_agent_evals.py` | Deterministic checks of fixtures, grading and execution; no model calls |
 | Native transport checks | `python3 -B Tests/test_native_hooks.py` | Local protocol/cleanup regression checks; no Codex process or model calls |
+| Update packaging checks | `python3 -B Tests/test_update_tools.py` | Feed/key/output/isolation boundaries; no production keys, application data or publication |
 | Agent behaviour evals | `python3 -B evals/run.py run --model <supported-cli-model> --output evals/artifacts/<new-run>` | Opt-in isolated Codex runs plus independent checks and rubric review |
 | Native Codex hooks | `python3 -B evals/native_hooks.py --model <supported-cli-model> --output evals/artifacts/<new-native-run>` | Opt-in real app-server delivery, trusted hooks, lint/fast failures and automatic repair; CLI 0.157.1 |
 
@@ -140,6 +141,48 @@ home, including the production-path overlap rejection used by the other runtime 
 Unlike UI Smoke and XCUITest, visual preview preserves normal application deactivation, occlusion
 and Space callbacks so that panel visibility behaves as it does in production. It is a manual
 inspection surface, not automated verification evidence.
+
+## Sparkle update verification
+
+UIChecks covers configuration validation, native-continuation deferral and single consumption,
+timer/editor/write blockers appearing after an update check, and final termination safety.
+Controlled repository tests prove `Store.hasPendingPersistence` stays true until overlapping
+success/failure and recovery operations finish. Real UI Smoke additionally opens an actual editor,
+retains draft text through hide/show, blocks the update continuation with that editor and a running
+timer, and resumes only once after Cancel and timer deletion. These checks use a disabled updater;
+they prove application guards, not archive download/replacement or native Sparkle UI.
+The public modal/session delegate callbacks additionally exercise retained-panel hiding, ordinary
+level on explicit reopen, unchanged editor hierarchy/draft and timer deadline, delayed level
+restoration, and no implicit reopen. Calling these callbacks in process proves the shell response;
+actual Sparkle delivery and window accessibility require the signed-feed acceptance below.
+
+`python3 -B scripts/prepare_update_test.py --output /private/tmp/<fresh-directory>` builds two
+separate ad-hoc bundles with increasing build numbers, a disposable file-based Ed25519 key,
+a signed ZIP/appcast, and local feed/launch scripts. Preparation alone is not an update PASS.
+Both bundle plists embed a marked isolated home and the dedicated update-test bundle identifier;
+the relaunched process requires the same isolation even when LaunchServices drops env/argv.
+Missing/invalid test isolation exits before production Store, timer or diagnostics can start.
+Production configuration refuses HTTP; explicit test bundles allow only `127.0.0.1` HTTP.
+
+For actual acceptance, launch the older fixture and use ordinary Sparkle UI to find/download/install
+the newer archive. Open an editor and start a timer after the check begins; confirm installation
+waits and draft text remains. Cancel/Save and end the running timer, explicitly install, then verify
+the running process path, new CFBundleVersion, preserved fixture JSON, timer/disclosure preferences,
+and logs in the isolated home. Also test rejection of a damaged archive/signature and offline
+manual checks. Verify nested code signatures, symlinks and executable modes after ZIP extraction.
+Record exact bundle/feed provenance and distinguish completed update from a prepared fixture.
+
+For updater window ordering, begin with the host panel open and invoke the footer or application-menu
+check. Observe accessible checking and found-update controls with the panel hidden. Explicitly reopen
+the panel during downloading, then verify Ready to Install remains accessible. Exercise manual
+refocus, scheduled-found presentation, no-update and offline-error alerts. With a retained editor or
+running timer, press Install, use `Вернуться к работе`, confirm draft/deadline continuity, then retry
+from the ready-update footer after Save/Cancel and timer completion/deletion. No dismissal or return
+to work may loop into installation. Keep external clicks and production callbacks enabled in these
+isolated update-test bundles; internal delegate calls alone cannot close this acceptance gap.
+
+The test does not certify a public HTTPS deployment, Gatekeeper first-install behavior, Intel,
+or every supported macOS release. These require their own evidence when released or changed.
 
 ## XCUITest
 

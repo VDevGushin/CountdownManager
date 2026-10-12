@@ -40,6 +40,7 @@ enum UIChecks {
         precondition(EventUIStrings.emptyTitle == "Пока нет событий")
         precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
         testDayCreationDefaultsAndCalendarBoundaries()
+        testApplicationUpdateSafety()
         try testPlannerCalendarPresentation()
         try testOptionalIconDrafts()
         try testOptionalFavoritePresentation()
@@ -844,14 +845,17 @@ enum UIChecks {
             )
             while store.isLoading { await Task.yield() }
             precondition(store.data == baselineData)
+            precondition(!store.hasPendingPersistence)
 
             let first = Countdown(title: "First", date: futureDay(2, from: today), emoji: "1️⃣")
             let second = Countdown(title: "Second", date: futureDay(3, from: today), emoji: "2️⃣")
             let firstSave = Task { @MainActor in await store.save(first, primary: false) }
             await gate.waitForRequestCount(1)
+            precondition(store.hasPendingPersistence)
             let firstSnapshot = store.data
             let secondSave = Task { @MainActor in await store.save(second, primary: false) }
             await gate.waitForRequestCount(2)
+            precondition(store.hasPendingPersistence)
             let secondSnapshot = store.data
 
             for completion in scenario.completions {
@@ -863,6 +867,7 @@ enum UIChecks {
 
             _ = await firstSave.value
             _ = await secondSave.value
+            precondition(!store.hasPendingPersistence)
             let expected = scenario.expectedRevision == 0
                 ? baselineData
                 : (scenario.expectedRevision == 1 ? firstSnapshot : secondSnapshot)

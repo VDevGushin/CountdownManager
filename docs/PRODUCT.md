@@ -293,6 +293,40 @@ Newer successfully accepted event state must not be replaced later by an older d
 
 The technical persistence design belongs in the relevant architecture decision.
 
+## Application updates
+
+An update-enabled distribution uses Sparkle to check a public HTTPS update feed periodically.
+The interface provides `Проверить обновления…` and an `Автопроверка` preference; disabling
+automatic checks leaves manual checks available. Event and timer use remain available offline.
+Updates do not send event content, timer state or a system profile to the update server.
+
+Sparkle presents available updates and manages download, signature verification, installation
+and relaunch using its standard interface. The user chooses whether to install; silent automatic
+installation is disabled. Both the update archive and the appcast must carry valid Ed25519 signatures.
+
+Before interactive update UI opens, the application hides its retained status panel so update
+controls remain accessible. Explicitly reopening the panel during an update returns to the same
+editor and running timer; its temporary ordinary window level allows later native update windows
+to appear above it. Ending the update session restores the normal panel level without reopening it.
+
+An update restart waits while any event editor is open, event persistence is loading/writing/recovering,
+or the timer is running. Downloading does not authorize discarding a later-opened draft or interrupting
+a later-started timer. A blocked update remains ready; `Обновление готово · установить…` resumes it
+only after a fresh safety check. Safety is checked again when Sparkle requests application termination.
+Hiding the panel does not remove an editor's protection. Save/Cancel end the editor session.
+A blocked installation explains the current reason and offers `Вернуться к работе`, reopening the
+same panel. Finishing that work never retries installation automatically; the ready-update action
+is still explicit.
+
+A finished timer can survive update restart with its deadline and finished state intact, without
+replaying its sound or completion alert. Explicit user Quit retains its established semantics.
+Updates preserve the production bundle identifier and the existing event, timer and preference locations.
+
+Development builds without an explicitly configured feed and public key do not start the updater
+or contact a placeholder feed. An updater-enabled first version still needs manual installation;
+older versions without Sparkle cannot acquire it automatically. Ad-hoc signing does not provide
+Apple notarization or change macOS first-install Gatekeeper trust.
+
 ## Privacy
 
 Countdown Manager does not require cloud storage or an online account for normal product behaviour.
