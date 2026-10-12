@@ -6,7 +6,7 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 
 - Swift, SwiftUI, or AppKit implementation and non-trivial code review: read `.agents/skills/swift-code-quality/SKILL.md`.
 - Product acceptance for a feature or fix that changes Countdown Manager's user-visible behaviour: after automated checks are green, read `.agents/skills/product-qa/SKILL.md`.
-- Agent-harness, tooling and documentation-only changes: use their focused checks from `docs/VERIFICATION.md`. Do not apply `product-qa` or run application UI checks when product behaviour is unchanged.
+- Agent-harness, tooling and documentation-only changes: use their focused checks from `docs/VERIFICATION.md`. Do not apply `product-qa` or run application UI checks when product behaviour is unchanged. Explicit screenshot requests may use isolated capture mode to generate and inspect current images; do not rerun unrelated regression suites for them.
 - A technical direction that depends on uncertain macOS, SwiftUI, or AppKit behaviour: read `.agents/skills/macos-platform-research/SKILL.md`.
 - Codex hooks enforce mechanical SwiftLint and fast regression gates. They do not replace product-risk judgment or manual-only macOS acceptance.
 
@@ -24,6 +24,8 @@ Product truth takes precedence over current code and tests. Accepted decisions c
 - Work only within the requested scope. Report unrelated findings without fixing them.
 - Do not ask the Product Owner to choose implementation details. Surface only genuinely unresolved product decisions.
 - Never mutate production Countdown Manager data as a test fixture.
+- Before completing every task, review `README.md` and update the descriptions, instructions, version references and links affected by the change. Keep it aligned with the sources of truth.
+- For a release or a user-visible UI change, refresh the screenshots in the main README from the current application using isolated demonstration data. Store them under the matching version in `docs/images/`, preserve historical release images, and verify every referenced image. If README content or screenshots need no change, state that briefly; if fresh captures are unavailable, report the concrete limitation rather than presenting old images as current.
 - New features and bug fixes normally require focused automated regression coverage. Use explicit manual acceptance only when the real scenario cannot be automated reliably without changing it or adding a flaky driver.
 - Choose evidence from `docs/VERIFICATION.md`; run Real UI or XCUITest only when the change actually reaches the corresponding SwiftUI, AppKit, lifecycle, accessibility, or external-interaction surface.
 
