@@ -25,7 +25,12 @@
 		100000000000000000000011 /* TimerCompletionAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* TimerCompletionAlert.swift */; };
 		100000000000000000000012 /* TimerFinished.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* TimerFinished.mp3 */; };
 		100000000000000000000013 /* AuroraInstrument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* AuroraInstrument.swift */; };
+		100000000000000000000014 /* ApplicationUpdates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016; };
+		100000000000000000000015 /* Sparkle in UI Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000001; };
+		100000000000000000000016 /* Sparkle in App Frameworks */ = {isa = PBXBuildFile; productRef = D00000000000000000000001; };
 /* End PBXBuildFile section */
+
+
 
 /* Begin PBXContainerItemProxy section */
 		400000000000000000000001 = {isa = PBXContainerItemProxy; containerPortal = 900000000000000000000001 /* Project object */; proxyType = 1; remoteGlobalIDString = 300000000000000000000001; remoteInfo = CountdownCore; };
@@ -55,12 +60,13 @@
 		200000000000000000000013 /* TimerCompletionAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownManager/TimerCompletionAlert.swift; sourceTree = SOURCE_ROOT; };
 		200000000000000000000014 /* TimerFinished.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Resources/TimerFinished.mp3; sourceTree = SOURCE_ROOT; };
 		200000000000000000000015 /* AuroraInstrument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownManager/AuroraInstrument.swift; sourceTree = SOURCE_ROOT; };
+		200000000000000000000016 /* ApplicationUpdates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownManager/ApplicationUpdates.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		500000000000000000000001 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		500000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000C /* libCountdownCore.a in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
-		500000000000000000000003 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000D /* libCountdownCore.a in Frameworks */, 10000000000000000000000E /* libCountdownManagerUI.a in Frameworks */,); runOnlyForDeploymentPostprocessing = 0; };
+		500000000000000000000002 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000C /* libCountdownCore.a in Frameworks */, 100000000000000000000015,); runOnlyForDeploymentPostprocessing = 0; };
+		500000000000000000000003 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000D /* libCountdownCore.a in Frameworks */, 10000000000000000000000E /* libCountdownManagerUI.a in Frameworks */, 100000000000000000000016,); runOnlyForDeploymentPostprocessing = 0; };
 		500000000000000000000004 = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXFrameworksBuildPhase section */
 
@@ -69,20 +75,20 @@
 		600000000000000000000002 /* Products */ = {isa = PBXGroup; children = (20000000000000000000000D, 20000000000000000000000E, 20000000000000000000000F, 200000000000000000000010,); name = Products; sourceTree = "<group>"; };
 		600000000000000000000003 /* Sources */ = {isa = PBXGroup; children = (600000000000000000000004 /* CountdownCore */, 600000000000000000000005 /* CountdownManager */, 20000000000000000000000A /* App.swift */,); name = Sources; sourceTree = "<group>"; };
 		600000000000000000000004 /* CountdownCore */ = {isa = PBXGroup; children = (200000000000000000000001, 200000000000000000000002,); name = CountdownCore; sourceTree = "<group>"; };
-		600000000000000000000005 /* CountdownManager */ = {isa = PBXGroup; children = (200000000000000000000003, 200000000000000000000015, 200000000000000000000012, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000013, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009,); name = CountdownManager; sourceTree = "<group>"; };
+		600000000000000000000005 /* CountdownManager */ = {isa = PBXGroup; children = (200000000000000000000003, 200000000000000000000016, 200000000000000000000015, 200000000000000000000012, 200000000000000000000004, 200000000000000000000005, 200000000000000000000006, 200000000000000000000013, 200000000000000000000007, 200000000000000000000008, 200000000000000000000009,); name = CountdownManager; sourceTree = "<group>"; };
 		600000000000000000000006 /* XCUITests */ = {isa = PBXGroup; children = (20000000000000000000000C,); name = XCUITests; sourceTree = "<group>"; };
 		600000000000000000000007 /* Resources */ = {isa = PBXGroup; children = (20000000000000000000000B, 200000000000000000000011, 200000000000000000000014,); name = Resources; sourceTree = "<group>"; };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		300000000000000000000001 /* CountdownCore */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000002; buildPhases = (700000000000000000000001, 500000000000000000000001,); buildRules = (); dependencies = (); name = CountdownCore; productName = CountdownCore; productReference = 20000000000000000000000D; productType = "com.apple.product-type.library.static"; };
-		300000000000000000000002 /* CountdownManagerUI */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000003; buildPhases = (700000000000000000000002, 500000000000000000000002,); buildRules = (); dependencies = (A00000000000000000000001,); name = CountdownManagerUI; productName = CountdownManagerUI; productReference = 20000000000000000000000E; productType = "com.apple.product-type.library.static"; };
-		300000000000000000000003 /* CountdownManager */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000004; buildPhases = (700000000000000000000003, 500000000000000000000003, 710000000000000000000001,); buildRules = (); dependencies = (A00000000000000000000002, A00000000000000000000003,); name = CountdownManager; productName = "Countdown Manager"; productReference = 20000000000000000000000F; productType = "com.apple.product-type.application"; };
+		300000000000000000000002 /* CountdownManagerUI */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000003; buildPhases = (700000000000000000000002, 500000000000000000000002,); buildRules = (); dependencies = (A00000000000000000000001,); name = CountdownManagerUI; packageProductDependencies = (D00000000000000000000001,); productName = CountdownManagerUI; productReference = 20000000000000000000000E; productType = "com.apple.product-type.library.static"; };
+		300000000000000000000003 /* CountdownManager */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000004; buildPhases = (700000000000000000000003, 500000000000000000000003, 710000000000000000000001,); buildRules = (); dependencies = (A00000000000000000000002, A00000000000000000000003,); name = CountdownManager; packageProductDependencies = (D00000000000000000000001,); productName = "Countdown Manager"; productReference = 20000000000000000000000F; productType = "com.apple.product-type.application"; };
 		300000000000000000000004 /* CountdownManagerXCUITests */ = {isa = PBXNativeTarget; buildConfigurationList = 800000000000000000000005; buildPhases = (700000000000000000000004, 500000000000000000000004,); buildRules = (); dependencies = (A00000000000000000000004,); name = CountdownManagerXCUITests; productName = CountdownManagerXCUITests; productReference = 200000000000000000000010; productType = "com.apple.product-type.bundle.ui-testing"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		900000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = {300000000000000000000004 = {TestTargetID = 300000000000000000000003; }; }; }; buildConfigurationList = 800000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = ru; hasScannedForEncodings = 0; knownRegions = (ru, Base,); mainGroup = 600000000000000000000001; productRefGroup = 600000000000000000000002; projectDirPath = ""; projectRoot = ""; targets = (300000000000000000000001, 300000000000000000000002, 300000000000000000000003, 300000000000000000000004,); };
+		900000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = {300000000000000000000004 = {TestTargetID = 300000000000000000000003; }; }; }; buildConfigurationList = 800000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = ru; hasScannedForEncodings = 0; knownRegions = (ru, Base,); mainGroup = 600000000000000000000001; productRefGroup = 600000000000000000000002; packageReferences = (C00000000000000000000001,); projectDirPath = ""; projectRoot = ""; targets = (300000000000000000000001, 300000000000000000000002, 300000000000000000000003, 300000000000000000000004,); };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -91,7 +97,7 @@
 
 /* Begin PBXSourcesBuildPhase section */
 		700000000000000000000001 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000001, 100000000000000000000002,); runOnlyForDeploymentPostprocessing = 0; };
-		700000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000003, 100000000000000000000013, 100000000000000000000010, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000011, 100000000000000000000007, 100000000000000000000008, 100000000000000000000009,); runOnlyForDeploymentPostprocessing = 0; };
+		700000000000000000000002 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (100000000000000000000014, 100000000000000000000003, 100000000000000000000013, 100000000000000000000010, 100000000000000000000004, 100000000000000000000005, 100000000000000000000006, 100000000000000000000011, 100000000000000000000007, 100000000000000000000008, 100000000000000000000009,); runOnlyForDeploymentPostprocessing = 0; };
 		700000000000000000000003 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000A,); runOnlyForDeploymentPostprocessing = 0; };
 		700000000000000000000004 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (10000000000000000000000B,); runOnlyForDeploymentPostprocessing = 0; };
 /* End PBXSourcesBuildPhase section */
@@ -110,11 +116,19 @@
 		B00000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; }; name = Release; };
 		B00000000000000000000005 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
 		B00000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
-		B00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = Resources/Info.plist; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
-		B00000000000000000000008 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = Resources/Info.plist; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
+		B00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = Resources/Info.plist; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
+		B00000000000000000000008 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = Resources/Info.plist; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
 		B00000000000000000000009 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.xcuitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TEST_TARGET_NAME = CountdownManager; }; name = Debug; };
 		B0000000000000000000000A = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.xcuitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TEST_TARGET_NAME = CountdownManager; }; name = Release; };
 /* End XCBuildConfiguration section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		C00000000000000000000001 /* Sparkle */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/sparkle-project/Sparkle"; requirement = {kind = exactVersion; version = 2.10.0; }; };
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D00000000000000000000001 /* Sparkle */ = {isa = XCSwiftPackageProductDependency; package = C00000000000000000000001; productName = Sparkle; };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCConfigurationList section */
 		800000000000000000000001 = {isa = XCConfigurationList; buildConfigurations = (B00000000000000000000001, B00000000000000000000002,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };

@@ -143,6 +143,8 @@ package func countdownTimerLabel(_ totalSeconds: Int) -> String {
 struct CountdownManagerRootView: View {
     @ObservedObject var timer: CountdownTimer
     let store: Store
+    let updates: ApplicationUpdates
+    let editorSession: EventEditorSession
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
     @Environment(\.colorScheme) private var systemColorScheme
@@ -150,7 +152,7 @@ struct CountdownManagerRootView: View {
     var body: some View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
-            ManagerView(store: store)
+            ManagerView(store: store, updates: updates, editorSession: editorSession)
         }
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())

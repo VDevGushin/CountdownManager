@@ -119,13 +119,8 @@ run_ui_checks() {
     local bin_path
     bin_path=$(swift build --disable-sandbox -c release --scratch-path "$scratch_path" --show-bin-path)
     app_path="$verify_root/Countdown Manager.app"
-    mkdir -p "$app_path/Contents/MacOS" "$app_path/Contents/Resources"
-    cp "$bin_path/CountdownManager" "$app_path/Contents/MacOS/CountdownManager"
-    cp Resources/Info.plist "$app_path/Contents/Info.plist"
-    cp Resources/AppIcon.icns "$app_path/Contents/Resources/AppIcon.icns"
-    cp Resources/TimerFinished.mp3 "$app_path/Contents/Resources/TimerFinished.mp3"
-    /usr/bin/codesign --force --sign - "$app_path"
-    /usr/bin/codesign --verify --deep --strict "$app_path"
+    BUILD_DIR="$scratch_path" APP_OUTPUT_PATH="$app_path" COUNTDOWN_UPDATE_MODE=disabled \
+        COUNTDOWN_UPDATE_FEED_URL= COUNTDOWN_UPDATE_PUBLIC_KEY= ./build.sh
     echo "Verification: full Real UI Smoke"
     run_smoke full-ui-smoke --ui-smoke
     echo "Verification: collapse/freeze regression"

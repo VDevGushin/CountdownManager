@@ -8,7 +8,7 @@ final class DiagnosticLog: @unchecked Sendable {
 
     static var directoryURL: URL {
         if UISmokeConfiguration.requiresIsolatedTestHome,
-           let testHome = ProcessInfo.processInfo.environment["COUNTDOWN_MANAGER_TEST_HOME"] {
+           let testHome = UISmokeConfiguration.requestedTestHome {
             return URL(fileURLWithPath: testHome, isDirectory: true)
                 .appendingPathComponent("Application Support/CountdownManager/Logs", isDirectory: true)
         }

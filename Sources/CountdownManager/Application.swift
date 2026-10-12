@@ -88,6 +88,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var hostingController: NSHostingController<CountdownManagerRootView>!
     private var store: Store!
     private var timer: CountdownTimer!
+    private var updates: ApplicationUpdates!
+    private let editorSession = EventEditorSession()
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
@@ -120,6 +122,29 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             loginItemManagementIsAvailable: uiSmokeConfiguration == nil
         )
         timer = CountdownTimer(defaults: defaults)
+        updates = ApplicationUpdates(
+            enabled: uiSmokeConfiguration == nil || UISmokeConfiguration.updateTestWasRequested,
+            isolatedUpdateTest: UISmokeConfiguration.updateTestWasRequested,
+            willPresentUpdateUI: { [weak self] in self?.preparePanelForUpdateUI() },
+            didFinishUpdateUI: { [weak self] in
+                // Sparkle calls its finish hook before closing its windows. Restore only
+                // the level after that callback unwinds; never reopen the panel implicitly.
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, !self.updates.isPresentingUpdateUI else { return }
+                    self.panel.level = .popUpMenu
+                }
+            },
+            returnToApplication: { [weak self] in self?.showPanel() }
+        ) { [weak self] in
+            guard let self else { return "Приложение завершает работу." }
+            let timerIsRunning: Bool
+            if case .running = self.timer.phase { timerIsRunning = true } else { timerIsRunning = false }
+            return updateRestartBlockReason(
+                editorIsPresented: self.editorSession.isPresented,
+                persistenceIsBusy: self.store.hasPendingPersistence,
+                timerIsRunning: timerIsRunning
+            )
+        }
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
             button.target = self
@@ -130,6 +155,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             rootView: CountdownManagerRootView(
                 timer: timer,
                 store: store,
+                updates: updates,
+                editorSession: editorSession,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment
             )
@@ -198,6 +225,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 isSurfaceShown: { [weak self] in self?.panel.isVisible == true },
                 pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
                 timer: timer,
+                updates: updates,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment
             )
@@ -209,7 +237,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPanel()
             }
-        } else if uiSmokeConfiguration != nil, UISmokeConfiguration.visualPreviewWasRequested {
+        } else if uiSmokeConfiguration != nil,
+                  UISmokeConfiguration.visualPreviewWasRequested || UISmokeConfiguration.updateTestWasRequested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.showPanel()
             }
@@ -336,6 +365,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         panel.orderOut(nil)
     }
 
+    private func preparePanelForUpdateUI() {
+        guard let panel else { return }
+        hidePanel(source: "update-ui")
+        // Explicit reopening still reaches the retained draft/timer while downloading
+        // or postponing. Its ordinary level lets subsequent native updater UI take focus.
+        panel.level = .normal
+    }
+
     @objc private func hidePanelFromCommand() {
         hidePanel(source: "command-w")
     }
@@ -359,6 +396,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         hidePanel(source: "application-deactivation")
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard updates?.shouldCancelUpdateTermination == true else { return .terminateNow }
+        DiagnosticLog.shared.record("updates.termination cancelled-active-work")
+        DiagnosticLog.shared.flush()
+        return .terminateCancel
+    }
+
     private func activeSpaceDidChange() {
         recordShellLifecycle("active-space-did-change")
         guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
@@ -380,7 +424,25 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private func installApplicationMenu() {
         let menu = NSMenu()
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "Выйти из Countdown Manager", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        let checkItem = appMenu.addItem(
+            withTitle: "Проверить обновления…", action: #selector(ApplicationUpdates.checkForUpdates(_:)), keyEquivalent: ""
+        )
+        checkItem.target = updates
+        let automaticItem = appMenu.addItem(
+            withTitle: "Проверять обновления автоматически",
+            action: #selector(ApplicationUpdates.toggleAutomaticChecks(_:)), keyEquivalent: ""
+        )
+        automaticItem.target = updates
+        let installItem = appMenu.addItem(
+            withTitle: "Установить готовое обновление…",
+            action: #selector(ApplicationUpdates.installDeferredUpdate(_:)), keyEquivalent: ""
+        )
+        installItem.target = updates
+        appMenu.addItem(.separator())
+        let quitItem = appMenu.addItem(
+            withTitle: "Выйти из Countdown Manager", action: #selector(ApplicationUpdates.quitApplication(_:)), keyEquivalent: "q"
+        )
+        quitItem.target = updates
         let appItem = NSMenuItem()
         appItem.submenu = appMenu
         menu.addItem(appItem)

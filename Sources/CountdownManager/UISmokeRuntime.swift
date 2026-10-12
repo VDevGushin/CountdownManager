@@ -20,6 +20,17 @@ struct UISmokeConfiguration {
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
     static let visualPreviewLaunchArgument = "--visual-preview"
     static let visualPreviewMarkerName = ".countdown-visual-preview-environment"
+    static let updateTestMarkerName = ".countdown-update-test-environment"
+
+    static var updateTestWasRequested: Bool {
+        Bundle.main.object(forInfoDictionaryKey: "CountdownUpdateTestMode") as? Bool == true
+    }
+
+    static var requestedTestHome: String? {
+        updateTestWasRequested
+            ? Bundle.main.object(forInfoDictionaryKey: "CountdownUpdateTestHome") as? String
+            : ProcessInfo.processInfo.environment["COUNTDOWN_MANAGER_TEST_HOME"]
+    }
 
     let homeURL: URL
     let resultURL: URL
@@ -42,7 +53,8 @@ struct UISmokeConfiguration {
     }
 
     static var requiresIsolatedTestHome: Bool {
-        wasRequested || xcuiTestWasRequested || visualPreviewWasRequested
+        wasRequested || xcuiTestWasRequested || visualPreviewWasRequested || updateTestWasRequested
+            || Bundle.main.bundleIdentifier == "local.countdownmanager.update-test"
     }
 
     // Visual preview isolates data but deliberately keeps production shell lifecycle callbacks.
@@ -64,6 +76,9 @@ struct UISmokeConfiguration {
 
     static func load() throws -> UISmokeConfiguration? {
         guard requiresIsolatedTestHome else { return nil }
+        guard Bundle.main.bundleIdentifier != "local.countdownmanager.update-test" || updateTestWasRequested else {
+            throw Failure("update-test bundle is missing its mandatory isolated configuration")
+        }
         let smokeArguments = [
             launchArgument,
             collapseRegressionLaunchArgument,
@@ -77,14 +92,20 @@ struct UISmokeConfiguration {
         guard !(visualPreviewWasRequested && (wasRequested || xcuiTestWasRequested)) else {
             throw Failure("visual preview cannot be combined with UI smoke or XCUITest arguments")
         }
-        let environment = ProcessInfo.processInfo.environment
-        guard let rawHome = environment["COUNTDOWN_MANAGER_TEST_HOME"], !rawHome.isEmpty else {
+        guard let rawHome = requestedTestHome, !rawHome.isEmpty, rawHome.hasPrefix("/") else {
             throw Failure("COUNTDOWN_MANAGER_TEST_HOME is required")
+        }
+        if updateTestWasRequested {
+            guard Bundle.main.bundleIdentifier == "local.countdownmanager.update-test" else {
+                throw Failure("update test requires its separate bundle identifier")
+            }
         }
         let homeURL = URL(fileURLWithPath: rawHome, isDirectory: true)
             .standardizedFileURL.resolvingSymlinksInPath()
         let requiredMarker: String
-        if visualPreviewWasRequested {
+        if updateTestWasRequested {
+            requiredMarker = updateTestMarkerName
+        } else if visualPreviewWasRequested {
             requiredMarker = visualPreviewMarkerName
         } else if xcuiTestWasRequested {
             requiredMarker = xcuiTestMarkerName
@@ -180,6 +201,7 @@ final class UISmokeRuntime {
     private let isSurfaceShown: () -> Bool
     private let pressStatusItem: () -> Void
     private let timer: CountdownTimer
+    private let updates: ApplicationUpdates
     private let accessibilitySettings: AuroraAccessibilitySettings
     private let visualEnvironment: UISmokeVisualEnvironment
     private let controls = UISmokeControlRegistry.shared
@@ -193,6 +215,7 @@ final class UISmokeRuntime {
          isSurfaceShown: @escaping () -> Bool,
          pressStatusItem: @escaping () -> Void,
          timer: CountdownTimer,
+         updates: ApplicationUpdates,
          accessibilitySettings: AuroraAccessibilitySettings,
          visualEnvironment: UISmokeVisualEnvironment) {
         self.configuration = configuration
@@ -203,6 +226,7 @@ final class UISmokeRuntime {
         self.isSurfaceShown = isSurfaceShown
         self.pressStatusItem = pressStatusItem
         self.timer = timer
+        self.updates = updates
         self.accessibilitySettings = accessibilitySettings
         self.visualEnvironment = visualEnvironment
     }
@@ -1089,8 +1113,57 @@ final class UISmokeRuntime {
         for id in ids { try require(controls.entries[id]?.isEnabled == true, "visible emoji column rejects input") }
     }
 
+    private func verifyUpdateRestartSafety() async throws {
+        try require(!updates.isAvailable, "ordinary UI smoke must not access an update feed")
+        try await press("event.add")
+        try await waitForElement("editor.new")
+        try await waitForFirstResponder("editor.title")
+        try insertText("Retained update draft")
+        let retainedWindow = try requireValue(window(), "retained update host")
+        let retainedContent = retainedWindow.contentView
+        timer.start(minutes: 5)
+        let retainedDeadline = timer.deadline
+        // Invoke the public callback on the production delegate and observe the actual
+        // shell. Signed-feed acceptance separately proves Sparkle delivers the callback.
+        updates.standardUserDriverWillShowModalAlert()
+        try require(!retainedWindow.isVisible && retainedWindow.level == .normal,
+                    "update callback left the popup panel above native updater windows")
+        showSurface()
+        try await waitForValue("editor.title", equals: "Retained update draft")
+        try require(window() === retainedWindow && retainedWindow.contentView === retainedContent,
+                    "update UI reconstructed the retained editor hierarchy")
+        try require(retainedWindow.level == .normal && timer.deadline == retainedDeadline,
+                    "reopening during update UI raised the panel or interrupted the timer")
+        hideSurface()
+        updates.standardUserDriverWillFinishUpdateSession()
+        try await waitFor("update session restores shell level") { retainedWindow.level == .popUpMenu }
+        try require(!retainedWindow.isVisible, "finishing update UI reopened the host implicitly")
+        showSurface()
+        try await waitForValue("editor.title", equals: "Retained update draft")
+        timer.delete()
+        var resumed = false
+        try require(updates.postponeInstallation { resumed = true }, "open editor did not postpone update")
+        try require(!updates.resumeDeferredInstallation() && !resumed, "update discarded open draft")
+        try await hideAndShow()
+        try await waitForValue("editor.title", equals: "Retained update draft")
+        try require(!updates.resumeDeferredInstallation(), "hidden/reopened draft stopped blocking update")
+        try await press("editor.cancel")
+        try await waitFor("editor closed for update") { self.controls.entries["editor.new"] == nil }
+        timer.start(minutes: 5)
+        try require(!updates.resumeDeferredInstallation(), "running timer did not postpone update")
+        timer.delete()
+        try require(updates.resumeDeferredInstallation() && resumed, "safe update continuation did not resume")
+        try require(!updates.resumeDeferredInstallation(), "update continuation ran twice")
+        try require(store.active.isEmpty, "update safety check persisted a draft")
+        updates.standardUserDriverWillFinishUpdateSession()
+        try await waitFor("simulated installation restores shell level") { retainedWindow.level == .popUpMenu }
+        showSurface()
+        pass("real retained editor and running timer postpone update; explicit safe continuation resumes once")
+    }
+
     private func run() async throws {
         try require(store.active.isEmpty, "fixture must be isolated and empty")
+        try await verifyUpdateRestartSafety()
         try await waitForValue("timer.duration", equals: "30")
         try await settleLayout()
         try requireTimerPresetLayout()
