@@ -190,7 +190,7 @@ package final class ApplicationUpdates: NSObject, ObservableObject, SPUUpdaterDe
         prepareForUpdateUI(source: "deferred-modal")
         let alert = NSAlert()
         alert.messageText = "Обновление готово. Перезапуск отложен."
-        alert.informativeText = reason + " Затем нажмите «Обновление готово · установить…»."
+        alert.informativeText = reason + " Затем в настройках нажмите «Обновление готово · установить…»."
         alert.addButton(withTitle: "Вернуться к работе")
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()

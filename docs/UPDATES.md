@@ -1,9 +1,10 @@
 # Preparing signed updates
 
 The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
-The repository's release version is **1.7.0 / build 13**. Release artifacts use an Ed25519-signed
+The current release version is **1.8.0 / build 14**.
+Release artifacts use an Ed25519-signed
 ZIP and appcast; preparation, publication and public HTTPS verification are separate operations.
-Existing releases without Sparkle, including 1.6.0, require one manual installation of 1.7.0
+Existing releases without Sparkle, including 1.6.0, require one manual installation of 1.8.0
 to enter the updater-enabled release channel.
 
 ## Channel and signing key
@@ -11,8 +12,8 @@ to enter the updater-enabled release channel.
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL for this release is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.7.0/CountdownManager-1.7.0-13.zip`.
-Publish the archive and signed `appcast.xml` as assets of the same public release, with v1.7.0
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.8.0/CountdownManager-1.8.0-14.zip`.
+Publish the archive and signed `appcast.xml` as assets of the same public release, with v1.8.0
 selected as GitHub's latest release. Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -71,7 +72,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.7.0 COUNTDOWN_BUILD_NUMBER=13 \
+  COUNTDOWN_VERSION=1.8.0 COUNTDOWN_BUILD_NUMBER=14 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -81,14 +82,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.7.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.8.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above produce the 1.7.0 release build. For subsequent releases, change the version,
+The numbers above prepare the 1.8.0 release artifacts locally; its archive URL becomes available only after
+separately authorized publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. Releases following 1.7.0 use a build number above 13. Keep `local.countdownmanager.app`
+build. Releases following 1.8.0 use a build number above 14. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.

@@ -306,6 +306,23 @@ final class UISmokeRuntime {
         let list = try requireValue(rootListScrollView(), "list")
         try await scrollRootList()
         let position = list.contentView.bounds.origin
+        try await press("settings.open")
+        try await waitForElement("settings.screen")
+        let settingsOwner = controls.entries["settings.screen"]?.ownerID
+        try require(controls.entries["event.add"]?.isEnabled == false,
+                    "inactive list can open an editor from settings")
+        try require(controls.value("settings.keep-awake") == "off", "new process starts with keep-awake enabled")
+        try await hideAndShow()
+        try require(controls.entries["settings.screen"]?.ownerID == settingsOwner,
+                    "hide/show reconstructed settings")
+        try require(!updates.isInstallationDeferred, "settings changed update state")
+        try await press("settings.back")
+        try await waitFor("settings returns retained list") {
+            self.controls.entries["settings.screen"] == nil && self.controls.entries["event.add"]?.isEnabled == true
+        }
+        try require(rootListScrollView() === list && abs(list.contentView.bounds.origin.y - position.y) < 1,
+                    "settings navigation reset the list or scroll position")
+        pass("settings retain navigation through hide/show, leave the list inactive and restore its scroll position")
         for _ in 0..<3 {
             try await hideAndShow()
             try require(rootListScrollView() === list, "list was replaced")
@@ -559,6 +576,7 @@ final class UISmokeRuntime {
         try await settleLayout()
         try requireNonOverlappingCardFrames(minimumCount: 4)
         try capture(name: "01-idle-list")
+        try await captureSettings(name: "30-settings-dark")
 
         try await scrollRootList()
         let promoted = try requireValue(secondary.last, "below-fold capture fixture")
@@ -611,6 +629,7 @@ final class UISmokeRuntime {
         try await settleLayout()
         try requireNonOverlappingCardFrames(minimumCount: 4)
         try capture(name: "07-light-list")
+        try await captureSettings(name: "31-settings-light")
 
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
         try await settleLayout()
@@ -711,11 +730,21 @@ final class UISmokeRuntime {
             || (visualEnvironment.colorSchemeOverride == nil
                 && panel.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua)
         let canvas = NSColor(AuroraInstrument.canvas(for: isDark ? .dark : .light))
-        try requireRetainedPanelCoverage(
-            bitmap: sourceBitmap,
-            canvas: canvas,
-            captureName: name
-        )
+        do {
+            try requireRetainedPanelCoverage(
+                bitmap: sourceBitmap,
+                canvas: canvas,
+                captureName: name
+            )
+        } catch {
+            // Preserve the actual rejected bitmap for diagnosis; it is not accepted capture evidence.
+            if let png = sourceBitmap.representation(using: .png, properties: [:]) {
+                let failureDirectory = configuration.homeURL.appendingPathComponent("FailedCaptures", isDirectory: true)
+                try FileManager.default.createDirectory(at: failureDirectory, withIntermediateDirectories: true)
+                try png.write(to: failureDirectory.appendingPathComponent("\(name)-raw.png"), options: .atomic)
+            }
+            throw error
+        }
         guard let sourceImage = sourceBitmap.cgImage,
               let context = CGContext(
                   data: nil,
@@ -774,6 +803,7 @@ final class UISmokeRuntime {
     ) throws {
         let width = bitmap.pixelsWide
         let height = bitmap.pixelsHigh
+        let isSettingsCapture = captureName == "30-settings-dark" || captureName == "31-settings-light"
         let regions = [
             (name: "footer", y: Int(Double(height) * 0.02)..<Int(Double(height) * 0.16)),
             (name: "body", y: Int(Double(height) * 0.20)..<Int(Double(height) * 0.78)),
@@ -809,11 +839,54 @@ final class UISmokeRuntime {
                 Double(opaqueSamples) / Double(samples) >= 0.9,
                 "capture \(captureName) retained \(region.name) is incomplete"
             )
-            try require(
-                nonCanvasSamples >= max(8, samples / 1_000),
-                "capture \(captureName) retained \(region.name) has no visible content"
-            )
+            if !isSettingsCapture || region.name != "header" {
+                try require(
+                    nonCanvasSamples >= max(8, samples / 1_000),
+                    "capture \(captureName) retained \(region.name) has no visible content"
+                )
+            }
         }
+        if isSettingsCapture {
+            // Settings intentionally leaves its lower area empty. Verify actual controls,
+            // while the same three full-panel bands above still require opaque coverage.
+            try require(controls.entries["settings.screen"] != nil,
+                        "capture \(captureName) did not open settings")
+            for id in ["settings.back", "settings.keep-awake", "updates.check"] {
+                try requireCapturedControlContent(id, bitmap: bitmap, captureName: captureName)
+            }
+        }
+    }
+
+    private func requireCapturedControlContent(
+        _ id: String, bitmap: NSBitmapImageRep, captureName: String
+    ) throws {
+        let frame = try requireValue(controls.frame(id), "capture \(captureName) control \(id)")
+        let panel = try requireValue(window()?.contentView, "captured control panel")
+        let scale = Double(bitmap.pixelsWide) / Double(panel.bounds.width)
+        let minX = Int(floor(frame.minX * scale))
+        let maxX = Int(ceil(frame.maxX * scale))
+        let minY = Int(floor(frame.minY * scale))
+        let maxY = Int(ceil(frame.maxY * scale))
+        try require(minX >= 0 && minY >= 0 && maxX <= bitmap.pixelsWide && maxY <= bitmap.pixelsHigh,
+                    "capture \(captureName) control \(id) is outside the panel")
+        var minimum = SIMD3<Double>(repeating: 1)
+        var maximum = SIMD3<Double>(repeating: 0)
+        var samples = 0
+        for y in stride(from: minY, to: maxY, by: max(1, Int(scale))) {
+            for x in stride(from: minX, to: maxX, by: max(1, Int(scale))) {
+                guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                      color.alphaComponent >= 0.9 else { continue }
+                let value = SIMD3(Double(color.redComponent), Double(color.greenComponent), Double(color.blueComponent))
+                for component in 0..<3 {
+                    minimum[component] = min(minimum[component], value[component])
+                    maximum[component] = max(maximum[component], value[component])
+                }
+                samples += 1
+            }
+        }
+        let variation = maximum - minimum
+        try require(samples >= 8 && variation.x + variation.y + variation.z >= 0.08,
+                    "capture \(captureName) control \(id) has no visible content")
     }
 
     private func captureGroupedEditors() async throws {
@@ -888,8 +961,24 @@ final class UISmokeRuntime {
         try require(pagination.maxY - grid.minY <= viewport.height, "catalogue is taller than the editor viewport")
     }
 
+    private func captureSettings(name: String) async throws {
+        let list = try requireValue(rootListScrollView(), "retained list before settings capture")
+        let position = list.contentView.bounds.origin
+        try await press("settings.open")
+        try await waitForElement("settings.screen")
+        try await waitForValue("settings.keep-awake", equals: "off")
+        try await settleLayout()
+        try capture(name: name)
+        try await press("settings.back")
+        try await waitFor("list restored after settings capture") {
+            self.controls.entries["settings.screen"] == nil && self.controls.entries["event.add"]?.isEnabled == true
+        }
+        try require(rootListScrollView() === list && abs(list.contentView.bounds.origin.y - position.y) < 1,
+                    "settings capture changed the retained list or its scroll position")
+    }
+
     private func writeCaptureManifest() throws {
-        try require(captures.count == 29, "capture set is incomplete")
+        try require(captures.count == 31, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifest = CaptureManifest(version: 3, captures: captures.sorted { $0.name < $1.name })

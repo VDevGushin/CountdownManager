@@ -172,17 +172,61 @@ and logs in the isolated home. Also test rejection of a damaged archive/signatur
 manual checks. Verify nested code signatures, symlinks and executable modes after ZIP extraction.
 Record exact bundle/feed provenance and distinguish completed update from a prepared fixture.
 
-For updater window ordering, begin with the host panel open and invoke the footer or application-menu
+For updater window ordering, begin with the host panel open and invoke the settings or application-menu
 check. Observe accessible checking and found-update controls with the panel hidden. Explicitly reopen
 the panel during downloading, then verify Ready to Install remains accessible. Exercise manual
 refocus, scheduled-found presentation, no-update and offline-error alerts. With a retained editor or
 running timer, press Install, use `Вернуться к работе`, confirm draft/deadline continuity, then retry
-from the ready-update footer after Save/Cancel and timer completion/deletion. No dismissal or return
+from the ready-update settings action after Save/Cancel and timer completion/deletion. No dismissal or return
 to work may loop into installation. Keep external clicks and production callbacks enabled in these
 isolated update-test bundles; internal delegate calls alone cannot close this acceptance gap.
 
 The test does not certify a public HTTPS deployment, Gatekeeper first-install behavior, Intel,
 or every supported macOS release. These require their own evidence when released or changed.
+
+## Settings and keep-awake verification
+
+Run full SwiftLint and `./verify.sh fast` before product QA. Focused deterministic checks must
+exercise the keep-awake owner through a fake create/release boundary: initially disabled state,
+successful enable/disable, repeated requests without duplicate assertions, create and release
+failures with unchanged accepted state, retry, termination cleanup and a fresh disabled owner.
+These checks must not hold real IOPM assertions or change global power settings. Include settings
+navigation and confirm that settings alone never becomes an updater editor blocker.
+
+After those checks are green, use isolated Real UI Smoke and current-source panel captures for
+the changed SwiftUI surface. Check the following observable contracts:
+
+- one retained 390 × 600 panel with the timer above both list and settings;
+- one-row storage/gear/Quit footer, a 14-point gear before Quit, and unchanged calendar/`+` header controls;
+- three checkboxes above manual-update and diagnostics buttons, without action navigation arrows;
+- Back returns to the same list scroll position; hide/show retains settings navigation;
+- settings entry cannot replace an open editor or lose a draft, and hidden screens reject input
+  and are absent from interactive accessibility content;
+- immediate checkbox changes without Save/Cancel, visible errors, disabled unconfigured-update
+  controls, and the login `requiresApproval` affordance without mutating production login registration;
+- ready/deferred installation replaces manual check and retains explicit retry and current
+  timer/editor/persistence restart guards;
+- keep-awake checkbox/accent and the gear state dot agree with the accepted owner state; Back,
+  hide/show and timer actions leave that state unchanged.
+
+Capture settings off/on, the compact list footer, and relevant Light/Dark and Increase Contrast
+states. Record actual bundle provenance and capture overrides. A capture demonstrates layout;
+fake-adapter tests and UI state do not establish macOS power assertion delivery or actual idle
+sleep behaviour.
+
+For a bounded native acceptance check, enable keep-awake only in an isolated current-source app
+and inspect the assertion attributed to that process with `pmset -g assertions`. Confirm one
+`PreventUserIdleDisplaySleep` assertion, repeated enable without duplicates, retention through
+panel hide/show and timer changes, removal on disable and termination, and disabled state after
+a new launch. Always turn the mode off or terminate that isolated process in cleanup; do not
+leave sleep-prevention assertions running after QA. Use no system-wide power-setting changes.
+
+Seeing the process assertion proves native registration, not a complete real-idle experiment.
+If actual idle display/system sleep is not observed over the configured idle interval, report
+that remaining limit explicitly. Screen saver, security lock, lid close, manual sleep and
+low-battery sleep are outside this feature's prevention contract. Normal app-switch and Space
+continuity still require the existing manual macOS acceptance where the driver cannot reproduce
+them faithfully.
 
 ## XCUITest
 
@@ -225,12 +269,22 @@ preset, catalog and clear-button interaction. Captures prove settled layouts; th
 perceived animation smoothness or precise wall-clock duration.
 
 Captures 25–28 record the actual timer completion alert window in Dark and Light appearances,
-including both Increase Contrast variants. With the today editor capture, the full set requires 29 images. The manifest records
+including both Increase Contrast variants. With the today editor and Settings captures, the full set requires 31 images. The manifest records
 the source window and appearance for each capture. Appearance is overridden only on isolated test
 windows; global macOS display settings are unchanged. Real UI Smoke checks shared palette colors,
 appearance changes on the reused alert, title/background click dismissal, unchanged finished timer
 state and app focus, and the five-second automatic dismissal. In-process mouse delivery remains
 distinct from a physical first click while another application is active.
+
+Captures 30–31 record the internal Settings screen in Dark and Light appearances through the
+ordinary `settings.open` and `settings.back` controls. Both require Keep awake to remain OFF;
+capture mode does not acquire a sleep-prevention assertion. Returning preserves the list hierarchy
+and scroll position. These images show native settled layout, not actual prevention of idle sleep.
+Settings captures retain the full-panel opacity checks and the existing top/middle content checks.
+The bottom bitmap band may be blank by design; visible content is additionally checked in the actual
+registered Back, Keep awake and update-action frames. Other capture layouts retain every existing
+band check. Rejected raw bitmaps are saved separately under the isolated home's `FailedCaptures`;
+they are diagnostic evidence only, and the ordinary verification wrapper still cleans its temporary home.
 
 Completion-icon motion checks exercise the native image layer's animation key, fresh cycle timing,
 live Reduce Motion, hidden/dismissing-state suppression, interrupted dismissal/re-presentation,

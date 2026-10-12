@@ -57,6 +57,7 @@ Key responsibilities:
 - AppKit application and menu-bar integration;
 - application state and persistence coordination;
 - the single timer, its local preference state, ticking and completion presentation;
+- session-only prevention of idle system/display sleep;
 - deterministic presentation logic;
 - SwiftUI views and transient view state;
 - UI preference state;
@@ -67,6 +68,7 @@ Key files:
 
 - `Application.swift`
 - `CountdownTimer.swift`
+- `KeepAwakeController.swift`
 - `ApplicationUpdates.swift`
 - `TimerCompletionAlert.swift`
 - `Store.swift`
@@ -95,24 +97,31 @@ NSApplication / AppDelegate
 ├── NSStatusItem
 ├── Store → CountdownData / CountdownRepository → countdowns.json
 ├── CountdownTimer → UserDefaults
+├── KeepAwakeController → one process-owned IOPM assertion
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
             ├── single timer strip
             └── ManagerView
                 ├── retained list hierarchy
+                ├── internal settings navigation
                 └── one internal editing session and its draft
 ```
 
 Create the panel and hosting hierarchy once. On every explicit show, calculate the panel origin from the current status-item button's screen rectangle, then activate and order that same panel front. Hide it with `orderOut` and route the close command through the same path. Do not assign a new hosting controller/root on hide, close, reopen or ordinary store/timer updates.
 
-SwiftUI view-value recomputation is normal and is not root reconstruction. Keep the list structurally alive while the editor is active; retaining only the hosting controller does not preserve a list removed by a conditional branch. A draft belongs to an explicit editing session, not to window visibility. Save success or Cancel ends that session; hiding does not.
+SwiftUI view-value recomputation is normal and is not root reconstruction. Keep the list structurally alive while the editor or settings is active; retaining only the hosting controller does not preserve a list removed by a conditional branch. A draft belongs to an explicit editing session, not to window visibility. Save success or Cancel ends that session; hiding does not.
 
 Panel positioning and visibility are shell responsibilities. The borderless panel has no arrow, title bar or traffic-light controls; it is not movable, uses no ordering animation and moves to the active Space only during an explicit show. A synchronous requested-visible flag makes every status-item action resolve immediately: hide only when the panel is visibly presented on the active Space, otherwise show it there. When a requested-visible panel becomes fully occluded during a Space transition, its native occlusion callback clears that request and calls `orderOut`; application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` use the same path as fallbacks. These signals are independent of list/editor/timer state and first responder. Returning to an old Space cannot restore the panel; only a later status-item action can show and reposition it. There is no mouse monitor, responder teardown/restoration machine, persisted scroll offset, draft restoration or per-OS shell abstraction. Existing domain, persistence, disclosure preferences, date refresh, login integration and privacy-safe diagnostics retain their responsibilities.
 
 ## Runtime responsibilities
 
-`AppDelegate` owns the status item, panel, hosting controller, `Store` and `CountdownTimer`. `CountdownManagerRootView` keeps the timer strip alongside the retained `ManagerView`; `ManagerView` keeps the list mounted and conditionally presents one internal event editor. Hidden list content is disabled, excluded from hit testing and hidden from accessibility.
+`AppDelegate` owns the status item, panel, hosting controller, `Store`, `CountdownTimer` and
+`KeepAwakeController` for the application session. `CountdownManagerRootView` keeps the timer strip
+above the retained `ManagerView`; `ManagerView` keeps the list mounted and presents settings or one
+internal event editor. Hidden screen content is disabled, excluded from hit testing and hidden
+from accessibility. Settings navigation is separate from `EventEditorSession` and cannot become
+an updater editor blocker.
 
 Views route event mutations through `Store`. `Store` coordinates domain state and asynchronous event persistence; `CountdownData` owns validation/mutations, and `CountdownRepository` owns serialized filesystem access.
 
@@ -185,7 +194,38 @@ It owns or exposes:
 
 Date-sensitive event state is refreshed from timers and relevant macOS lifecycle, clock, time-zone, calendar-day, and wake notifications.
 
-Launch at login is integrated through `SMAppService.mainApp`.
+Launch at login is integrated through `SMAppService.mainApp`. Settings binds to the existing
+`Store.loginStatus` and actions, including the `requiresApproval` System Settings route; it does
+not maintain another login preference.
+
+## Keep-awake state
+
+File: `Sources/CountdownManager/KeepAwake.swift`
+
+`KeepAwakeController` is the single `@MainActor` owner of the session's sleep-prevention state
+and IOPM assertion identifier. `AppDelegate` creates it once and supplies it to the retained UI.
+Settings reads its accepted state and requests enable/disable; view rendering and panel visibility
+do not acquire or release assertions. Neither event persistence nor `UserDefaults` stores this
+mode, so a new process always begins disabled.
+
+The native boundary uses `IOPMAssertionCreateWithName` with
+`kIOPMAssertionTypePreventUserIdleDisplaySleep` at `kIOPMAssertionLevelOn`. This assertion prevents
+display idle sleep and also prevents system idle sleep while it keeps the display awake; a second
+system-sleep assertion is unnecessary. Its scope follows Apple's
+[IOPM assertion contract](https://developer.apple.com/documentation/iokit/kiopmassertiontypepreventuseridledisplaysleep),
+not screen-saver suppression, security-lock prevention, lid-close or manual-sleep control.
+
+Create/release return codes are checked. State changes only after a successful native operation;
+a failed create does not expose an active state, and a failed release retains the identifier and
+active state for retry with a visible error. Repeated requests for the accepted state are no-ops
+and cannot create duplicate assertions. Explicit disable and actual application termination
+release the assertion; cancelling an update termination retains the running session and its
+assertion. The OS assertion belongs to the process and cannot survive its exit. Timer mutations,
+Back, panel hide/show, application deactivation and Space changes are independent of this owner.
+
+A narrow injectable create/release boundary allows deterministic failure, duplicate-request and
+lifetime checks without preventing real sleep. Runtime verification may exercise the real native
+boundary only for a bounded interval and must release any assertion it creates.
 
 ## Timer state
 
@@ -306,7 +346,19 @@ Files:
 
 An event surface groups the row and its checklist as one block. Checklist disclosure continues to use the cached `SubtaskDisclosureState` as its sole owner; standard SwiftUI layout and opacity transitions animate its presentation without storing a second expanded state or introducing timer-based animation control.
 
-`ManagerView` owns the current internal editor presentation; `EditorView` owns its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as that event.
+`ManagerView` owns internal settings navigation and keeps the list alive beneath settings and
+the editor. `EventEditorSession` remains the sole owner of editor visibility; `EditorView` owns
+its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends
+editing; hiding the panel does not. An unavailable event retains its draft and cannot be saved as
+that event. Settings entry is guarded to the list, and Back preserves the list's existing scroll
+view without storing or reconstructing a second browsing state.
+
+The list's one-row footer contains the storage label, a 14-point gear before Quit and Quit.
+Settings groups the existing login and Sparkle automatic-check bindings with the session keep-awake
+checkbox, then manual update and diagnostics actions. A deferred update replaces the manual-check
+action with the existing explicit install entry point. Login approval and operation errors remain
+visible. There is no settings draft or Save/Cancel; accepted owner state is shown immediately.
+The timer strip stays outside this screen navigation at the top of the same 390 × 600 panel.
 
 The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: today's date for `Сегодня`, tomorrow's date for the other routes, no additional emoji, a Russian weekday title and empty note/subtasks. Ordinary event creation also initially selects tomorrow. The date field allows today and future dates; selecting today reveals an inline explanation of end-of-day expiry, including unfinished subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary, checking against the current calendar day at the mutation boundary; no template library, week state or schema field is introduced.
 
@@ -324,7 +376,10 @@ focusing. Typing does not change the identity array and therefore does not anima
 
 File: `Sources/CountdownManager/Application.swift`
 
-`CountdownManagerApplication.run()` configures `NSApplication` as an accessory application. `AppDelegate` creates one status item, one borderless key-capable `NSPanel`, one `Store`, one `CountdownTimer` and one hosting controller at startup. It retains them through the session, starts diagnostics and supplies isolated test defaults/data when requested.
+`CountdownManagerApplication.run()` configures `NSApplication` as an accessory application.
+`AppDelegate` creates one status item, one borderless key-capable `NSPanel`, one `Store`, one
+`CountdownTimer`, one `KeepAwakeController` and one hosting controller at startup. It retains them
+through the session, starts diagnostics and supplies isolated test defaults/data when requested.
 
 `AppDelegate` merges Store and timer change notifications to update the status item. A running or finished timer temporarily overrides the normal event status title and shows the `alarm.fill` SF Symbol next to the remaining time; the finished state shows the symbol alone. While the timer runs, the status item breathes with a gentle repeating opacity pulse. The finished alarm receives a repeating Core Animation rock — each tilt pivots on its own bottom corner with a tiny lift, so it hops from foot to foot — until deletion, or an opacity pulse when Reduce Motion is enabled. It subscribes to the timer's one-shot completion event so the five-second application-owned alert and sound are presented while the accessory app is active.
 

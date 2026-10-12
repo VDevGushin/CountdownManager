@@ -39,7 +39,53 @@ Use ordinary controls inside the panel. The event interface uses a warm ivory pa
 
 Each event and its checklist form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
 
-Opening the internal editor must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
+Opening the internal editor or settings must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
+
+## Settings
+
+Settings is an internal screen in the same retained 390 × 600 panel. The 60-point timer strip
+remains above the 540-point manager area on both the list and settings screens; timer actions
+remain available. Settings does not open another window, sheet or popover.
+
+The list footer remains a single compact row: `Хранится на этом Mac`, a small settings gear
+immediately before `Выйти`, and `Выйти`. The gear has a 14-point visible symbol and a 22-point
+activation area. The header retains its existing calendar and `+` creation controls.
+
+Settings groups three checkboxes above two ordinary action buttons, in this order:
+
+1. `Запускать при входе в macOS`;
+2. `Автопроверка` updates;
+3. `Не спать`;
+4. `Проверить обновления…`, replaced by `Обновление готово · установить…` while installation is deferred;
+5. `Диагностика…`.
+
+The action buttons perform their named actions and do not use navigation arrows. An unconfigured
+updater leaves update controls unavailable; settings does not start a placeholder feed. A login
+item that requires macOS approval retains the explicit `Разрешить в настройках macOS…` affordance.
+Failures remain visible and must not report an operation as successful.
+
+Settings changes apply immediately without Save/Cancel. `Назад` returns to the same list and its
+browsing position. Hiding and showing the panel retains the current settings screen. Entry is
+available only from the list; it cannot replace an open editor or discard its draft. Settings is
+not an event editor and does not itself block an update restart. Existing timer, editor and
+persistence restart guards still apply to the ready-update action.
+
+### Keep awake
+
+`Не спать` prevents automatic idle sleep of the computer and display while Countdown Manager is
+running and the mode is enabled. The checkbox and accent indicate the active mode in settings;
+a small state dot on the gear indicates it on the list without adding another footer row.
+
+Each new application process starts with this mode off, including after an update restart or
+launch at login. The mode is session-only and independent of the timer. Opening settings, going
+Back, hiding the panel, changing Spaces, and starting, completing or deleting a timer do not turn
+it off. Explicitly turning it off or terminating the application releases the sleep prevention.
+
+The control changes its displayed state only after macOS accepts the requested change. A failed
+enable leaves it off; a failed disable leaves the existing active state visible and reports an
+error so the user can retry. The mode does not promise to prevent a screen saver, security lock,
+lid-close sleep, manual sleep, low-battery sleep or other system sleep reasons. It does not wake
+an already sleeping display or change the Mac's global power or security settings.
 
 ## Timer
 
@@ -269,7 +315,9 @@ Countdown Manager may be configured to launch automatically when the user signs 
 
 Launch at login is disabled by default.
 
-The user may enable or disable it from the application interface.
+The user may enable or disable it from settings. If macOS requires approval, settings provides
+the existing route to Login Items in System Settings rather than claiming launch at login is
+already authorized.
 
 ## Persistence
 
@@ -296,7 +344,7 @@ The technical persistence design belongs in the relevant architecture decision.
 ## Application updates
 
 An update-enabled distribution uses Sparkle to check a public HTTPS update feed periodically.
-The interface provides `Проверить обновления…` and an `Автопроверка` preference; disabling
+Settings provides `Проверить обновления…` and an `Автопроверка` preference; disabling
 automatic checks leaves manual checks available. Event and timer use remain available offline.
 Updates do not send event content, timer state or a system profile to the update server.
 

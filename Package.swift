@@ -12,7 +12,10 @@ let package = Package(
             name: "CountdownManagerUI",
             dependencies: ["CountdownCore", .product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/CountdownManager",
-            linkerSettings: [.unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])]
+            linkerSettings: [
+                .linkedFramework("IOKit"),
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
+            ]
         ),
         .executableTarget(
             name: "CountdownManager",

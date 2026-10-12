@@ -90,6 +90,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var timer: CountdownTimer!
     private var updates: ApplicationUpdates!
     private let editorSession = EventEditorSession()
+    private let keepAwake = KeepAwakeController()
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
@@ -157,6 +158,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 store: store,
                 updates: updates,
                 editorSession: editorSession,
+                keepAwake: keepAwake,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment
             )
@@ -474,6 +476,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        keepAwake.releaseForTermination()
         statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
         statusItem.button?.layer?.removeAnimation(forKey: timerRunningPulseKey)
         timerCompletionAlert.dismiss()
