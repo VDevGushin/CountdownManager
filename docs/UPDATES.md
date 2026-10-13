@@ -1,7 +1,15 @@
 # Preparing signed updates
 
 The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
-The current release version is **1.8.1 / build 15**.
+Version **1.9.0 / build 16** is prepared for its user-authorized release. Implementation, full SwiftLint and fast
+CoreChecks/UIChecks have passed. Focused isolated native weather scenarios and the eight-image
+gallery are accepted. One user-authorized native adapter attempt returned unavailable;
+no coordinates or weather HTTP resulted, and no system permission dialog was observed.
+AUTO success, permission-dialog ordering, VPN and external physical interaction remain
+unconfirmed surfaces. Local ZIP packaging has passed. The release ZIP and appcast have now
+been created, Ed25519-signed and verified. Publication and installation are authorized but
+their results are still pending. The temporary private-key export was removed after signing.
+The published and installed release remains **1.8.1 / build 15**.
 Release artifacts use an Ed25519-signed
 ZIP and appcast; preparation, publication and public HTTPS verification are separate operations.
 Existing releases without Sparkle, including 1.6.0, require one manual installation of 1.8.1
@@ -11,10 +19,12 @@ to enter the updater-enabled release channel.
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The version-specific archive URL for this release is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.8.1/CountdownManager-1.8.1-15.zip`.
+The planned version-specific archive URL for 1.9.0 is
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.9.0/CountdownManager-1.9.0-16.zip`.
+This is a publication target, not evidence that the archive is available.
 Publish the archive and signed `appcast.xml`
-as assets of the same release, with v1.8.1 selected as GitHub's latest release.
+as assets of the same release, with v1.9.0 selected as GitHub's latest release only after
+separately authorized publication and verification.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -73,7 +83,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.8.1 COUNTDOWN_BUILD_NUMBER=15 \
+  COUNTDOWN_VERSION=1.9.0 COUNTDOWN_BUILD_NUMBER=16 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -83,18 +93,24 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.8.1/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.9.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above prepare the 1.8.1 release artifacts locally; its archive URL becomes available only after
+The numbers above prepare the 1.9.0 candidate artifacts locally; its archive URL becomes available only after
 separately authorized publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. Releases following 1.8.1 use a build number above 15. Keep `local.countdownmanager.app`
+build. The 1.9.0 candidate uses build 16, above distributed build 15. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
+
+Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until enabled by the user.
+Account-free weather does not require an Apple Developer membership or a weather API key.
+First-install location permission, native AUTO location and VPN behaviour are separate acceptance
+surfaces; a successful public forecast request for Moscow coordinates does not establish them.
+Candidate status and remaining evidence are recorded in [releases/v1.9.0.md](releases/v1.9.0.md).
 
 The bundle contains the complete Sparkle framework, copied with symlinks and permissions preserved.
 Nested XPC services, helper executable and Updater app are signed inside-out, preserving Downloader

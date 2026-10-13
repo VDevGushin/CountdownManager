@@ -8,7 +8,8 @@ The product is intentionally small and quiet. The central concept is an event da
 
 Countdown Manager is not a task manager or calendar replacement. Outside the single timer completion alert, it does not provide event or subtask reminder workflows.
 
-The application does not require an account or internet connection.
+The application does not require an account or internet connection for event and timer use.
+Optional weather forecasts require a network connection.
 
 ## Primary interface
 
@@ -51,13 +52,17 @@ The list footer remains a single compact row: `Хранится на этом Ma
 immediately before `Выйти`, and `Выйти`. The gear has a 14-point visible symbol and a 22-point
 activation area. The header retains its existing calendar and `+` creation controls.
 
-Settings groups three checkboxes above two ordinary action buttons, in this order:
+Settings retains the three existing checkboxes above the ordinary update and diagnostics actions:
 
 1. `Запускать при входе в macOS`;
 2. `Автопроверка` updates;
 3. `Не спать`;
 4. `Проверить обновления…`, replaced by `Обновление готово · установить…` while installation is deferred;
 5. `Диагностика…`.
+
+The weather section adds `Показывать погоду в днях` and a location choice. The location choice is
+unavailable while weather is off. Settings includes compact Open-Meteo and CC BY 4.0 source/license
+links and a short privacy explanation about coordinates sent to the service.
 
 The action buttons perform their named actions and do not use navigation arrows. An unconfigured
 updater leaves update controls unavailable; settings does not start a placeholder feed. A login
@@ -127,7 +132,8 @@ An event contains:
 - an optional note;
 - a calendar date;
 - an optional additional emoji;
-- zero to ten subtasks.
+- zero to ten subtasks;
+- an optional weather-display choice.
 
 Multiple events may use the same date.
 
@@ -149,7 +155,7 @@ Changes entered in the editor do not become event data until the user explicitly
 
 The header calendar control, labelled `Создать день`, reveals inline `Сегодня`, `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
 
-All day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks.
+All day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
 
 While the title has not been manually edited, changing the date updates the weekday title. After a manual title edit, later date changes preserve that custom title. All ordinary event fields remain editable.
 
@@ -164,6 +170,12 @@ An existing event may be edited while it is scheduled for today.
 An active event may be moved to today's date or a future date. An event occurring today may also remain on today's date.
 
 Editing does not change durable event data until the user explicitly saves.
+
+`Показывать погоду для этого дня` is available in the editor for new and existing events. Save
+persists this choice; Cancel keeps the previously saved value. Changing a title or date does not
+infer or reset the choice. Existing events, including weekday-titled events, remain opted out
+unless the user explicitly changes them. No title-based migration or separate persisted day type
+is introduced.
 
 ### Today
 
@@ -184,6 +196,59 @@ Expired events are removed rather than moved into an archive.
 There is no overdue state and no automatic rollover.
 
 Incomplete subtasks do not prevent event expiry.
+
+## Weather in days
+
+Weather is globally off on the first launch of a version supporting it. The global switch and
+location selection apply immediately and persist across launches. The initial location selection
+is `Автоматически`. Turning global weather off leaves each event's saved weather choice intact.
+
+An event shows weather only when global weather is on, its saved weather choice is on and a valid
+forecast exists for its calendar date and current location. A compact native weather symbol and
+the rounded daily maximum temperature in signed Celsius form, such as `+14°`, `−3°` or `0°`, appear
+beside the actual date. Weather does not change event ordering, favorite selection, the calendar
+leaf, expiry, timer state or the menu-bar representation.
+
+The forecast comes from [Open-Meteo](https://open-meteo.com/en/docs), requesting up to sixteen
+daily forecasts for the selected location. Its date is the location's calendar date and its
+temperature is the day's maximum, not a current observation. Forecast availability is not
+guaranteed for every date or location.
+
+The weather badge is a link to Open-Meteo so attribution stays beside the displayed data. Its
+short native tooltip and accessibility description identify the source and maximum, for example
+`до +14°C`; settings also links the [CC BY 4.0 licence](https://open-meteo.com/en/licence).
+Temperatures are rounded and provider condition codes are converted to native symbols.
+
+If no valid forecast is available, both symbol and temperature are absent. Cards and weather
+settings have no forecast-loading indicator, fetch error, retry, placeholder or weather detail
+popover. Settings retain only static source/privacy information and native-location/manual-city
+guidance. The illustrative
+feels-like temperature, precipitation and wind popup in the design mockup is not part of this
+implementation. A distant event can remain without weather until its date enters the forecast
+window. Offline event and timer workflows remain available.
+
+`Автоматически` uses native macOS location services with the user's permission. Weather is not
+located by IP address, VPN exit point, event text or calendar title. Automatic coordinates are
+kept only in application memory and are not written to event JSON, preferences or diagnostic logs. When
+permission is denied or location is unavailable, no automatic forecast appears; the user may
+choose a manual city in settings. Isolated verification modes do not request
+native location permission.
+
+An undetermined permission is requested only after an explicit foreground enable, selection
+of Automatic, or successful editor Save with weather selected, with eligible weather events.
+Saving a weather-enabled day after enabling global weather with no eligible events allows the
+permission request immediately, even after a passive permission check. Restoring saved enabled/Automatic settings on launch
+does not itself show a permission dialog. If permission is already granted, normal restoration
+may request a location; otherwise settings explains how to explicitly enable Automatic or choose
+a city. Weather off and an empty eligible-event set make no location request.
+
+The fixed manual fallback contains exactly ten cities: Москва, Санкт-Петербург, Казань, Грозный,
+Нижний Новгород, Екатеринбург, Новосибирск, Самара, Ростов-на-Дону and Краснодар. Manual selection
+uses that city's forecast location without requiring device-location permission. City/location
+choices do not create an event or modify its content.
+
+Turning weather off cancels outstanding work and removes visible forecasts immediately. A late
+response for an old location, disabled weather or an outdated request must not restore that data.
 
 ## Favorite and automatic event
 
@@ -339,6 +404,11 @@ Stored data must preserve existing supported event content across normal applica
 
 Existing compatible data from older supported schema versions must remain readable unless an explicit future migration changes that contract.
 
+The optional JSON `showsWeather` boolean defaults to false when absent. True is encoded explicitly;
+false is omitted to preserve legacy-compatible ordinary-event files. Saved event content and
+identities are retained without assigning weather based on title or migrating existing days.
+Weather forecasts and automatic coordinates are not event data.
+
 Invalid or corrupted user data must fail safely.
 
 The application must not silently overwrite invalid user data merely to recover from a read failure.
@@ -386,6 +456,16 @@ Apple notarization or change macOS first-install Gatekeeper trust.
 Countdown Manager does not require cloud storage or an online account for normal product behaviour.
 
 User event content and timer state remain local to the Mac.
+
+Optional weather requests disclose the selected forecast coordinates to the forecast service,
+not event titles, notes, emoji, subtasks, identities or timer state. Automatic device coordinates
+are never persisted or logged by Countdown Manager; the manual city selection and global weather switch are local
+preferences. Location permission is requested through macOS only when enabled automatic weather
+has an eligible event to serve; disabling weather or using a manual city does not request it.
+Request coordinates are rounded to two decimal places, roughly an area at kilometre scale.
+The service also sees the network IP. [Open-Meteo's privacy terms](https://open-meteo.com/en/terms)
+allow server logs containing coordinates and IP information, with deletion after ninety days;
+the application's no-coordinate-log rule does not describe the provider's storage.
 
 Diagnostics must not contain private event content such as:
 

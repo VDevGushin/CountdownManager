@@ -8,6 +8,7 @@ struct ManagerView: View {
     @ObservedObject var updates: ApplicationUpdates
     @ObservedObject var editorSession: EventEditorSession
     @ObservedObject var keepAwake: KeepAwakeController
+    @ObservedObject var weather: WeatherController
     @State private var editing: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
@@ -42,7 +43,7 @@ struct ManagerView: View {
                     .allowsHitTesting(!showingEditor && !showingSettings)
                     .accessibilityHidden(showingEditor || showingSettings)
                 if showingSettings {
-                    SettingsView(store: store, updates: updates, keepAwake: keepAwake) {
+                    SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather) {
                         showingSettings = false
                     }
                 }
@@ -52,6 +53,13 @@ struct ManagerView: View {
                         item: editing,
                         dayPreset: dayPreset,
                         selectDayDate: selectDayDate,
+                        didSave: { event in
+                            if NSApp.isActive {
+                                weather.didSaveEvent(event, activeEvents: store.active)
+                            } else {
+                                weather.updateEvents(store.active)
+                            }
+                        },
                         done: finishEditor
                     )
                 }
@@ -232,9 +240,7 @@ struct ManagerView: View {
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Text(presentation.dateLabel)
-                        .font(.system(size: 11))
-                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    eventDate(item, label: presentation.dateLabel)
                 }
                 calendarTile(item, isFeatured: true)
             }
@@ -277,9 +283,7 @@ struct ManagerView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     eventActions(item, presentation: presentation)
                 }
-                Text(presentation.dateLabel)
-                    .font(.system(size: 11))
-                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                eventDate(item, label: presentation.dateLabel)
                 Text(presentation.remainingLabel)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(presentation.isToday
@@ -295,6 +299,28 @@ struct ManagerView: View {
         PlannerCalendarDateTile(day: item.date, isFeatured: isFeatured)
             .accessibilityHidden(true)
             .uiSmokeControl(id: "event.calendar.\(item.id.uuidString)", value: { humanDateLabel(item.date) })
+    }
+
+    private func eventDate(_ item: Countdown, label: String) -> some View {
+        HStack(spacing: 6) {
+            Text(label)
+                .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { label })
+            if item.showsWeather, let forecast = weather.forecast(for: item.date) {
+                let description = "Прогноз Open-Meteo · до \(forecast.temperatureLabel)C · \(forecast.conditionDescription) · \(weather.locationTitle)"
+                Link(destination: URL(string: "https://open-meteo.com/")!) {
+                    HStack(spacing: 3) {
+                        Image(systemName: forecast.symbolName).accessibilityHidden(true)
+                        Text(forecast.temperatureLabel).monospacedDigit()
+                    }
+                }
+                .help(description)
+                .accessibilityLabel(description)
+                .accessibilityIdentifier("event.weather.\(item.id.uuidString)")
+                .uiSmokeControl(id: "event.weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
+            }
+        }
+        .font(.system(size: 11))
+        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
     }
 
     @ViewBuilder
@@ -615,6 +641,7 @@ private struct SubtaskChecklistView: View {
 struct EditorView: View {
     @ObservedObject var store: Store
     let item: Countdown?
+    let didSave: (Countdown) -> Void
     let done: () -> Void
     private let isNewDay: Bool
     private let selectDayDate: Bool
@@ -657,9 +684,11 @@ struct EditorView: View {
         item: Countdown?,
         dayPreset: DayCreationPreset? = nil,
         selectDayDate: Bool = false,
+        didSave: @escaping (Countdown) -> Void,
         done: @escaping () -> Void
     ) {
         self.store = store; self.item = item; self.done = done
+        self.didSave = didSave
         isNewDay = item == nil && dayPreset != nil
         self.selectDayDate = isNewDay && selectDayDate
         if item == nil, let dayPreset {
@@ -758,6 +787,13 @@ struct EditorView: View {
                                         .font(.caption).foregroundStyle(validDate ? Color.secondary : Color.red)
                                         .accessibilityIdentifier("editor.date.help")
                                         .uiSmokeControl(id: "editor.date.help", value: { dateHelp })
+                                    Toggle("Показывать погоду для этого дня", isOn: $draft.showsWeather)
+                                        .toggleStyle(.checkbox)
+                                        .accessibilityIdentifier("editor.weather")
+                                        .uiSmokeControl(
+                                            id: "editor.weather", action: { draft.showsWeather.toggle() },
+                                            value: { draft.showsWeather ? "on" : "off" }
+                                        )
                                 }
                             }
                         }
@@ -1384,7 +1420,10 @@ struct EditorView: View {
         let countdown = draft.countdown(id: item?.id ?? UUID(), date: Day(date))
         isSaving = true
         Task {
-            if await store.save(countdown, primary: primary, requireExisting: item != nil) { done() }
+            if await store.save(countdown, primary: primary, requireExisting: item != nil) {
+                didSave(countdown)
+                done()
+            }
             isSaving = false
         }
     }

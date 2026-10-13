@@ -15,6 +15,8 @@ struct UISmokeConfiguration {
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
     static let captureLaunchArgument = "--ui-smoke-captures"
+    static let weatherLaunchArgument = "--ui-smoke-weather"
+    static let weatherCaptureLaunchArgument = "--ui-smoke-weather-captures"
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
@@ -42,6 +44,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
+            || weatherWasRequested
     }
 
     static var xcuiTestWasRequested: Bool {
@@ -71,7 +74,15 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested
+    }
+
+    static var weatherWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(weatherLaunchArgument) || weatherCaptureWasRequested
+    }
+
+    static var weatherCaptureWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(weatherCaptureLaunchArgument)
     }
 
     static func load() throws -> UISmokeConfiguration? {
@@ -84,6 +95,8 @@ struct UISmokeConfiguration {
             collapseRegressionLaunchArgument,
             editorScrollRegressionLaunchArgument,
             captureLaunchArgument,
+            weatherLaunchArgument,
+            weatherCaptureLaunchArgument,
         ]
         .filter { ProcessInfo.processInfo.arguments.contains($0) }
         guard smokeArguments.count <= 1 else {
@@ -137,7 +150,7 @@ struct UISmokeConfiguration {
             defaults: defaults,
             defaultsSuiteName: suiteName
         )
-        if captureWasRequested {
+        if captureWasRequested && !weatherCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -190,6 +203,7 @@ final class UISmokeRuntime {
 
     private struct CaptureManifest: Codable {
         let version: Int
+        let weatherForecastSource: String?
         let captures: [CaptureRecord]
     }
 
@@ -202,6 +216,7 @@ final class UISmokeRuntime {
     private let pressStatusItem: () -> Void
     private let timer: CountdownTimer
     private let updates: ApplicationUpdates
+    private let weather: WeatherController
     private let accessibilitySettings: AuroraAccessibilitySettings
     private let visualEnvironment: UISmokeVisualEnvironment
     private let controls = UISmokeControlRegistry.shared
@@ -216,6 +231,7 @@ final class UISmokeRuntime {
          pressStatusItem: @escaping () -> Void,
          timer: CountdownTimer,
          updates: ApplicationUpdates,
+         weather: WeatherController,
          accessibilitySettings: AuroraAccessibilitySettings,
          visualEnvironment: UISmokeVisualEnvironment) {
         self.configuration = configuration
@@ -227,6 +243,7 @@ final class UISmokeRuntime {
         self.pressStatusItem = pressStatusItem
         self.timer = timer
         self.updates = updates
+        self.weather = weather
         self.accessibilitySettings = accessibilitySettings
         self.visualEnvironment = visualEnvironment
     }
@@ -240,7 +257,10 @@ final class UISmokeRuntime {
                         && self.controls.value("root.window") != nil
                         && self.controls.entries["event.add"]?.isEnabled == true
                 }
-                if UISmokeConfiguration.captureWasRequested {
+                if UISmokeConfiguration.weatherWasRequested {
+                    try await runWeatherRegression()
+                    if UISmokeConfiguration.weatherCaptureWasRequested { try writeCaptureManifest() }
+                } else if UISmokeConfiguration.captureWasRequested {
                     try await runVisualCaptures()
                 } else if UISmokeConfiguration.collapseRegressionWasRequested {
                     try await runCollapseRegression()
@@ -495,6 +515,143 @@ final class UISmokeRuntime {
         for (upper, lower) in zip(frames, frames.dropFirst()) {
             try require(upper.maxY <= lower.minY + 0.5, "checklist does not preserve active/completed group order")
         }
+    }
+
+    private func runWeatherRegression() async throws {
+        timer.delete()
+        weather.setEnabled(false)
+        for event in store.active {
+            let removed = await store.delete(event.id)
+            try require(removed, "weather fixture cleanup failed")
+        }
+        let missingDate = Day(try requireValue(
+            Day.calendar.date(byAdding: .day, value: 2, to: store.today.date()), "weather missing date"
+        ))
+        let primary = Countdown(title: "Завтра: прогулка", date: Day(store.tomorrow), emoji: "", showsWeather: true)
+        let ordinary = Countdown(title: "Сегодня: встреча", date: store.today, emoji: "", showsWeather: true)
+        let legacy = Countdown(title: "Событие без погоды", date: Day(store.tomorrow), emoji: "")
+        let missing = Countdown(title: "День без прогноза", date: missingDate, emoji: "", showsWeather: true)
+        for event in [primary, ordinary, legacy, missing] {
+            let saved = await store.save(event, primary: event.id == primary.id)
+            try require(saved, "weather fixture save failed")
+        }
+        weather.updateEvents(store.active)
+        try await waitFor("weather fixtures rendered") { self.controls.entries["event.card.\(primary.id.uuidString)"] != nil }
+        try require(controls.ids(withPrefix: "event.weather.").isEmpty, "OFF weather exposed a badge")
+        try await press("settings.open")
+        try await waitForValue("settings.weather.enabled", equals: "off")
+        try await waitFor("disabled OFF location picker") { self.controls.entries["settings.weather.location"]?.isEnabled == false }
+        try require(!weatherCityPicker().isEnabled, "native OFF city picker accepts input")
+        try await press("settings.weather.enabled")
+        try await waitForValue("settings.weather.enabled", equals: "on")
+        try await waitFor("enabled weather picker") { self.controls.entries["settings.weather.location"]?.isEnabled == true }
+        let picker = try weatherCityPicker()
+        try require(picker.isEnabled, "native ON city picker is disabled")
+        let expectedCities = ["Автоматически"] + WeatherCity.allCases.map(\.title)
+        try require(picker.itemTitles == expectedCities, "native weather menu differs from Auto and ten cities: \(picker.itemTitles)")
+        let cityMenu = try requireValue(picker.menu, "native city menu")
+        let cityIndex = picker.indexOfItem(withTitle: "Москва")
+        picker.selectItem(at: cityIndex)
+        cityMenu.performActionForItem(at: cityIndex)
+        try await waitForValue("settings.weather.location", equals: "Москва")
+        try require(weather.location == .city(.moscow), "native city selection did not reach weather owner")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+            try await settleLayout()
+            try captureWeatherIfRequested("weather-settings-\(scheme == .dark ? "dark" : "light")")
+        }
+        try await press("settings.back")
+        try await waitForValue("event.weather.\(primary.id.uuidString)", equals: "+14°")
+        try await waitForValue("event.weather.\(ordinary.id.uuidString)", equals: "+14°")
+        try require(controls.entries["event.weather.\(legacy.id.uuidString)"] == nil,
+                    "legacy event displayed another event's same-date forecast")
+        try require(controls.entries["event.weather.\(missing.id.uuidString)"] == nil,
+                    "missing eligible-date forecast rendered a placeholder")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await settleLayout()
+            try requireWeatherBesideDate(primary)
+            try requireWeatherBesideDate(ordinary)
+            try captureWeatherIfRequested("weather-list-\(scheme == .dark ? "dark" : "light")")
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await settleLayout()
+        try captureWeatherIfRequested("weather-list-light-high-contrast")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        pass("weather appears beside featured/ordinary dates; OFF, legacy false and missing eligible data expose no badge")
+
+        let durable = try Data(contentsOf: configuration.dataURL)
+        try await press("event.edit.\(legacy.id.uuidString)")
+        try await waitForValue("editor.weather", equals: "off")
+        try await press("editor.weather")
+        try await waitForValue("editor.weather", equals: "on")
+        let owner = controls.entries["editor.edit"]?.ownerID
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.edit"]?.ownerID == owner && controls.value("editor.weather") == "on",
+                    "weather checkbox draft was lost during hide/show")
+        try await press("editor.cancel")
+        try await waitFor("cancelled weather edit") { self.controls.entries["editor.edit"] == nil }
+        try require(Data(contentsOf: configuration.dataURL) == durable, "weather Cancel changed durable JSON")
+        try await press("event.edit.\(legacy.id.uuidString)")
+        try await waitForValue("editor.weather", equals: "off")
+        try await press("editor.weather")
+        try await press("editor.save")
+        try await waitFor("saved weather opt-in") {
+            self.controls.entries["editor.edit"] == nil
+                && self.store.active.first(where: { $0.id == legacy.id })?.showsWeather == true
+        }
+        try await waitForValue("event.weather.\(legacy.id.uuidString)", equals: "+14°")
+        let persisted = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        try require(persisted == store.data, "weather opt-in did not persist")
+        try await press("event.add")
+        try await waitForValue("editor.weather", equals: "off")
+        try await press("editor.cancel")
+        try await waitFor("ordinary weather editor closed") { self.controls.entries["editor.new"] == nil }
+        try await press("day.add")
+        try await press("creation.day.tomorrow")
+        try await waitForValue("editor.weather", equals: "on")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await settleLayout()
+            try captureWeatherIfRequested("weather-editor-\(scheme == .dark ? "dark" : "light")")
+        }
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.value("editor.weather") == "on", "new-day weather default lost during hide/show")
+        try await press("editor.cancel")
+        try await waitFor("new-day weather editor closed") { self.controls.entries["editor.new"] == nil }
+        try require(store.data == persisted, "new-day Cancel changed events")
+        pass("native Auto/ten-city picker, ordinary/legacy false and new-day true, weather draft continuity and Save/Cancel persistence")
+
+        try await press("settings.open")
+        try await press("settings.weather.enabled")
+        try await waitForValue("settings.weather.enabled", equals: "off")
+        try await press("settings.back")
+        try await waitFor("weather cleared after OFF") { self.controls.ids(withPrefix: "event.weather.").isEmpty }
+        visualEnvironment.colorSchemeOverride = .dark
+        try await settleLayout()
+        try captureWeatherIfRequested("weather-list-off-dark")
+        try require(store.data == persisted, "global weather OFF changed event choices")
+        pass("weather OFF clears all native badges while retaining saved per-event choices")
+    }
+
+    private func weatherCityPicker() throws -> NSPopUpButton {
+        let content = try requireValue(window()?.contentView, "weather settings content")
+        let pickers = allSubviews(of: content).compactMap { $0 as? NSPopUpButton }
+        return try requireValue(pickers.first { $0.itemTitles.contains("Грозный") },
+                                "native weather city menu; found menus: \(pickers.map(\.itemTitles))")
+    }
+
+    private func requireWeatherBesideDate(_ event: Countdown) throws {
+        let badge = try requireValue(controls.frame("event.weather.\(event.id.uuidString)"), "weather badge frame")
+        let card = try requireValue(controls.frame("event.card.\(event.id.uuidString)"), "weather card frame")
+        let date = try requireValue(controls.frame("event.date.\(event.id.uuidString)"), "weather date frame")
+        try require(badge.width > 20 && badge.height > 0 && card.contains(badge), "weather badge escaped its card")
+        try require(badge.minX >= date.maxX && abs(badge.midY - date.midY) < 3, "weather badge is not beside its date")
+    }
+
+    private func captureWeatherIfRequested(_ name: String) throws {
+        if UISmokeConfiguration.weatherCaptureWasRequested { try capture(name: name) }
     }
 
     private func runVisualCaptures() async throws {
@@ -803,7 +960,9 @@ final class UISmokeRuntime {
     ) throws {
         let width = bitmap.pixelsWide
         let height = bitmap.pixelsHigh
+        let isWeatherSettingsCapture = captureName.hasPrefix("weather-settings-")
         let isSettingsCapture = captureName == "30-settings-dark" || captureName == "31-settings-light"
+            || isWeatherSettingsCapture
         let regions = [
             (name: "footer", y: Int(Double(height) * 0.02)..<Int(Double(height) * 0.16)),
             (name: "body", y: Int(Double(height) * 0.20)..<Int(Double(height) * 0.78)),
@@ -851,7 +1010,10 @@ final class UISmokeRuntime {
             // while the same three full-panel bands above still require opaque coverage.
             try require(controls.entries["settings.screen"] != nil,
                         "capture \(captureName) did not open settings")
-            for id in ["settings.back", "settings.keep-awake", "updates.check"] {
+            let requiredControls = isWeatherSettingsCapture
+                ? ["settings.back", "settings.weather.enabled", "settings.weather.location"]
+                : ["settings.back", "settings.keep-awake", "updates.check"]
+            for id in requiredControls {
                 try requireCapturedControlContent(id, bitmap: bitmap, captureName: captureName)
             }
         }
@@ -978,10 +1140,15 @@ final class UISmokeRuntime {
     }
 
     private func writeCaptureManifest() throws {
-        try require(captures.count == 31, "capture set is incomplete")
+        let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
+        try require(captures.count == (isWeather ? 8 : 31), "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        let manifest = CaptureManifest(version: 3, captures: captures.sorted { $0.name < $1.name })
+        let manifest = CaptureManifest(
+            version: 4,
+            weatherForecastSource: isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil,
+            captures: captures.sorted { $0.name < $1.name }
+        )
         let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
         try encoder.encode(manifest).write(
             to: directory.appendingPathComponent("manifest.json"),

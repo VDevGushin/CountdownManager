@@ -14,6 +14,7 @@ let package = Package(
             path: "Sources/CountdownManager",
             linkerSettings: [
                 .linkedFramework("IOKit"),
+                .linkedFramework("CoreLocation"),
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
             ]
         ),

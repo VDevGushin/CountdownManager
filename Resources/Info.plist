@@ -7,12 +7,14 @@
 <key>CFBundleDisplayName</key><string>Countdown Manager</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleIconFile</key><string>AppIcon.icns</string>
-<key>CFBundleShortVersionString</key><string>1.8.1</string>
-<key>CFBundleVersion</key><string>15</string>
+<key>CFBundleShortVersionString</key><string>1.9.0</string>
+<key>CFBundleVersion</key><string>16</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 <key>CFBundleDevelopmentRegion</key><string>ru</string>
+<key>NSLocationUsageDescription</key><string>После включения погоды Countdown определяет примерное местоположение и отправляет округлённые координаты Open-Meteo для прогноза. Можно выбрать город вручную.</string>
+<key>NSLocationWhenInUseUsageDescription</key><string>После включения погоды Countdown определяет примерное местоположение и отправляет округлённые координаты Open-Meteo для прогноза. Можно выбрать город вручную.</string>
 <key>SUEnableAutomaticChecks</key><true/>
 <key>SUAutomaticallyUpdate</key><false/>
 <key>SUAllowsAutomaticUpdates</key><false/>

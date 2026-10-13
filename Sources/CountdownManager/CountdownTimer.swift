@@ -146,6 +146,7 @@ struct CountdownManagerRootView: View {
     let updates: ApplicationUpdates
     let editorSession: EventEditorSession
     let keepAwake: KeepAwakeController
+    let weather: WeatherController
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
     @Environment(\.colorScheme) private var systemColorScheme
@@ -153,7 +154,7 @@ struct CountdownManagerRootView: View {
     var body: some View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
-            ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake)
+            ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake, weather: weather)
         }
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())

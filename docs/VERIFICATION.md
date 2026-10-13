@@ -12,6 +12,8 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
+| Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
+| Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather scenarios plus eight synthetic-weather PNGs; no general UI rerun |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Hook regression checks | `python3 -B Tests/test_swift_harness.py` | Deterministic Python hook checks; no application data or Swift builds |
@@ -58,6 +60,7 @@ review, isolation and limitations. A successful machine check alone is `REVIEW_R
 - date calculations and expiry;
 - event and subtask ordering;
 - JSON backward compatibility;
+- optional weather-flag legacy decoding and true/false encoding;
 - repository behaviour and persistence revision handling.
 
 It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility interaction, or window behaviour.
@@ -68,6 +71,7 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 
 - menu-bar and human-readable date formatting;
 - editor validity, drafts, grouping, and disclosure state;
+- ordinary/day/existing weather-draft defaults and explicit Save/Cancel state;
 - presentation state transitions;
 - persistence coordination visible to the UI layer.
 
@@ -198,7 +202,8 @@ the changed SwiftUI surface. Check the following observable contracts:
 
 - one retained 390 × 600 panel with the timer above both list and settings;
 - one-row storage/gear/Quit footer, a 14-point gear before Quit, and unchanged calendar/`+` header controls;
-- three checkboxes above manual-update and diagnostics buttons, without action navigation arrows;
+- the three existing checkboxes and the weather section retain grouping above ordinary
+  manual-update and diagnostics actions, without action navigation arrows;
 - Back returns to the same list scroll position; hide/show retains settings navigation;
 - settings entry cannot replace an open editor or lose a draft, and hidden screens reject input
   and are absent from interactive accessibility content;
@@ -227,6 +232,84 @@ that remaining limit explicitly. Screen saver, security lock, lid close, manual 
 low-battery sleep are outside this feature's prevention contract. Normal app-switch and Space
 continuity still require the existing manual macOS acceptance where the driver cannot reproduce
 them faithfully.
+
+## Weather verification
+
+Run full SwiftLint and `./verify.sh fast` before weather product QA. CoreChecks must cover legacy
+JSON without `showsWeather`, explicit true/false decoding, invalid non-boolean values, omission
+of false during encoding, true round-trip, and unchanged identity/event content. Draft checks
+cover ordinary false, all day-preset true, existing value preservation, date/title changes and
+the explicit Save/Cancel boundary without title-based migration.
+
+Deterministic controller/provider checks use isolated preferences, fake location, fake forecast
+responses and a controlled clock/session. Exercise first-launch off/Automatic defaults, persisted
+global/location choices, manual selection without a native request, denied/unavailable location,
+quiet restored Automatic state with undetermined permission versus explicit foreground prompt
+allowance, authorized restoration and off/no-demand request suppression,
+empty-demand global enable followed by a saved weather-enabled day, immediate permission allowance
+after a passive permission-required response, and superseded passive location callbacks,
+off cancellation and immediate clearing, changed location/day demand, superseded responses,
+missing/invalid dates or values, WMO condition mapping, signed rounded daily-maximum temperature,
+bounded cache freshness/eviction and failure backoff.
+An injected one-shot scheduler and controlled clock additionally exercise observable expiry
+without a Store publication, autonomous TTL refetch and failed-fetch retry, cache-hit deadline
+reuse, and ignored cancelled callbacks after OFF, location changes and shutdown.
+No real permission dialog, service call or
+production data is needed for these checks; off and late-response scenarios must show that stale
+data cannot reappear.
+
+After deterministic checks pass, use isolated Real UI Smoke and current-source captures with
+explicit fake forecast data. Verify the editor checkbox defaults and retained draft, persisted
+Save versus Cancel, global off/on, disabled location choice while off, the exact ten-city menu,
+and compact source/license/privacy information in settings. Settings may show only native-location
+guidance, with no forecast loading/fetch-error/retry status. Compare eligible/non-eligible events
+on the same date,
+available/missing forecasts, featured/ordinary cards and signed temperature widths. Weather
+belongs beside the actual date and must not add a loading/error/retry/placeholder control
+or details popover. The weather badge itself links Open-Meteo and has only the short maximum/source
+tooltip and accessible attribution. Hide/show and returning from settings preserve browsing and drafts;
+weather changes do not affect timer, favorites, ordering or expiry.
+
+`./verify.sh weather` selects `--ui-smoke-weather` in a marked isolated home and builds the current
+application. It uses in-process controls for global enable/OFF, existing-event Save/Cancel and
+ordinary/day creation; the city choice is inspected and selected through its native `NSPopUpButton`
+menu/action. The menu must contain Automatic followed by exactly the ten prescribed cities.
+The run checks featured and ordinary badge/date frames, no badge for a legacy false choice or an
+eligible date with no forecast, retained checkbox drafts through hide/show, and durable Save versus
+Cancel. These actions prove in-process native/view integration, not external physical clicks.
+
+`./verify.sh weather-capture <marked-output-directory>` selects `--ui-smoke-weather-captures` and
+runs the same focused scenarios without the general smoke/continuity suite. Like the ordinary
+capture command, the destination must contain `.countdown-ui-capture-output`. After PASS it copies
+eight required PNGs and a version-4 manifest: `weather-list-dark`, `weather-list-light`,
+`weather-list-light-high-contrast`, `weather-list-off-dark`, `weather-settings-dark`,
+`weather-settings-light`, `weather-editor-dark` and `weather-editor-light`. The ordinary capture
+set remains 31 images. The manifest labels the weather as synthetic: +14°C daily maxima, with
+day +2 intentionally omitted to exercise the real missing-data layout. Every isolated app mode
+keeps the synthetic provider and disables native location requests; neither command obtains
+device coordinates or contacts Open-Meteo. Settings capture checks use the actual weather-control
+frames; ordinary Settings captures retain their existing checks.
+
+Capture weather present and absent in the related Light/Dark and Increase Contrast states,
+including settings and the editor choice. Record actual source/bundle provenance and label
+injected forecasts as fixtures. These images prove native layout with demonstration data, not
+current weather, real location permission or provider coverage.
+
+For a real-service acceptance, use an explicitly authorized isolated bundle with native location
+requests enabled. Observe the normal macOS permission flow for Automatic and separately denied
+permission/manual fallback; confirm that restored enabled state does not prompt for undetermined
+permission. Then check one ordinary asynchronous forecast request, missing days,
+offline handling and global disable during an outstanding request. Do not enable real permission
+requests in development or routine smoke/capture modes. If this acceptance has not run, report
+the exact unverified native-location/network path; fake callbacks and sample JSON are not proof
+of native permission delivery or live service availability. Device coordinates must not appear
+in logs, saved preferences or event fixtures.
+
+Validate the request/decode contract against [official Open-Meteo API documentation](https://open-meteo.com/en/docs)
+and keep data attribution aligned with its [licence](https://open-meteo.com/en/licence) and
+[service/privacy terms](https://open-meteo.com/en/terms). A successful public-coordinate HTTP probe
+supports endpoint/schema compatibility only; it does not prove native permissions, application
+integration or all city/date coverage.
 
 ## XCUITest
 

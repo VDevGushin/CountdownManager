@@ -58,6 +58,7 @@ Key responsibilities:
 - application state and persistence coordination;
 - the single timer, its local preference state, ticking and completion presentation;
 - session-only prevention of idle system/display sleep;
+- optional forecast requests, native location and independent weather settings/cache state;
 - deterministic presentation logic;
 - SwiftUI views and transient view state;
 - UI preference state;
@@ -69,6 +70,8 @@ Key files:
 - `Application.swift`
 - `CountdownTimer.swift`
 - `KeepAwakeController.swift`
+- `Weather.swift`
+- `WeatherLocation.swift`
 - `ApplicationUpdates.swift`
 - `TimerCompletionAlert.swift`
 - `Store.swift`
@@ -98,6 +101,7 @@ NSApplication / AppDelegate
 ├── Store → CountdownData / CountdownRepository → countdowns.json
 ├── CountdownTimer → UserDefaults
 ├── KeepAwakeController → one process-owned IOPM assertion
+├── WeatherController → location/provider requests and bounded memory cache
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -137,7 +141,9 @@ Represents a civil Gregorian date as year, month, and day rather than an absolut
 
 ### `Countdown`
 
-Persisted event model containing stable identity, title, optional note, date, emoji, and subtasks.
+Persisted event model containing stable identity, title, optional note, date, emoji, subtasks and
+the optional `showsWeather` choice. Absent JSON defaults to false; true is encoded, false is omitted.
+The flag is an event option, not a separate persisted day type.
 
 ### `Subtask`
 
@@ -158,6 +164,10 @@ It owns operations including:
 It stores the optional explicit favorite in `primaryID`. Normalization clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
 
 The timer deliberately does not belong to `CountdownData`: events use civil-day semantics, while the timer uses an absolute deadline.
+
+Forecast values and location coordinates also remain outside `CountdownData`. Weather reads
+active eligible event dates; event validation, CRUD, normalization and repository saves do not
+perform network or location work.
 
 ## Persistence boundary
 
@@ -311,6 +321,78 @@ Subtask disclosure state is separate from `CountdownData`.
 `SubtaskDisclosurePersistence` stores per-event values in `UserDefaults` and `SubtaskDisclosureCache` supplies observable per-event state to the SwiftUI layer.
 
 The timer also uses `UserDefaults`, but its deadline is durable timer state rather than an event or checklist preference.
+
+Global weather enablement and the selected automatic/manual location are local preferences owned
+by `WeatherController`. They are independent of each event's persisted `showsWeather` flag.
+Fresh defaults disable weather and select Automatic. Device coordinates and forecasts are memory-only.
+
+## Weather state and requests
+
+Files:
+
+- `Sources/CountdownManager/Weather.swift`
+- `Sources/CountdownManager/WeatherLocation.swift`
+
+`AppDelegate` owns one `@MainActor` `WeatherController` for the application session and supplies
+read-only snapshots of active events whose `showsWeather` flag is true. The controller owns
+preferences, request lifetime, cancellation, generation checks and forecast publication. Views
+read the published forecast for an event's day; rendering does not start requests. `Store` retains
+its existing domain/persistence ownership and no weather side effects.
+
+`WeatherLocationSelection` represents Automatic or one of the ten fixed `WeatherCity` values.
+`NativeWeatherLocationProvider` creates `CLLocationManager` only for an enabled, eligible Automatic
+demand. It requests coarse native location with permission, checks authorization and result validity,
+and releases its manager after completion/cancellation. Coordinates are rounded to an area before
+forecast requests and remain in memory. A manual city supplies fixed coordinates without device
+permission. No IP-geolocation endpoint or coordinates in preferences/diagnostics are introduced.
+Isolated runtime construction disables native requests through
+`allowLocationRequests: false`; fake providers cover permission/result transitions without dialogs.
+The controller passes an explicit prompt allowance only for foreground enable/Automatic selection
+or a successfully saved eligible weather-enabled event. The editor invokes `didSaveEvent` only
+after `Store.save` succeeds while the application is active; otherwise it updates demand passively.
+Cancel, rejected persistence and passive event updates cannot prompt.
+That explicit Save replaces a pending passive location check and clears location-attempt backoff
+so enabling weather before creating a day still permits the first permission request.
+Restored enabled Automatic state may use already granted authorization but cannot turn an
+undetermined permission into a startup prompt. Off/no-demand states make no location request.
+
+`OpenMeteoWeatherProvider` in `Weather.swift` uses HTTPS `/v1/forecast` with daily
+`weather_code,temperature_2m_max`, `forecast_days=16` and `timezone=auto`. Dates stay as validated
+ISO calendar-day keys; WMO codes map to SF Symbols, and finite Celsius daily maxima are rounded
+for display. Missing or invalid per-day values are omitted rather than rendered as zero. This
+follows [Open-Meteo's API contract](https://open-meteo.com/en/docs), which provides up to sixteen
+days rather than guaranteeing a complete forecast for every event.
+
+The free endpoint's [terms](https://open-meteo.com/en/terms) restrict it to non-commercial use.
+Its data [licence](https://open-meteo.com/en/licence) requires attribution beside displayed data:
+the native badge links Open-Meteo with credit in tooltip/accessibility; settings adds provider and
+CC BY 4.0 links. Commercial distribution
+requires reconsidering service access under those terms. Request coordinates are rounded to two
+decimal places; no request URL/coordinate is logged by the app, while provider server logging
+remains governed by its own terms.
+
+Forecast requests run asynchronously through a URLSession provider boundary, outside view
+construction, event writes and synchronous UI work. Cached batches are keyed by location, with
+forecast entries keyed by calendar day.
+The memory cache has a 30-minute freshness window and bounds of four locations and sixteen days
+per location; failures use a bounded retry backoff rather than a request loop.
+One cancellable main-actor one-shot wakes at forecast expiry or failed-fetch backoff, publishes
+expired forecast removal and refreshes without requiring a Store change. Cache hits reuse their
+deadline; controller and schedule generations reject cancelled or superseded callbacks. The
+refresh boundary also drops dates that have left the eligible calendar window. No periodic
+short-interval polling is used.
+Disabling clears
+visible forecasts and cancels work. Location changes or removing all demand invalidate the request
+generation; forecast access also requires a currently demanded day. Late completion from cancelled
+or superseded work cannot publish forecasts for the new state.
+
+`EventEditorDraft` carries `showsWeather`: existing items preserve their flag, ordinary drafts
+start false and day presets start true. The editor's checkbox commits through the existing Save
+boundary. Title/date mutations do not infer eligibility or reset the flag. The list composes a
+native condition symbol and signed rounded daily-maximum Celsius temperature beside the actual
+date only when global state, event flag and valid current forecast agree. Missing data adds no
+card placeholder, error, retry or popover. The badge link's short tooltip identifies the daily
+maximum and provider; settings provides source/license and privacy context.
 
 ## Presentation layer
 

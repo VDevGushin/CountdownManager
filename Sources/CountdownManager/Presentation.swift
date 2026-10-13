@@ -226,6 +226,7 @@ package struct EventEditorDraft: Equatable {
     package var note: String
     package var emoji: String
     package var subtasks: [Subtask]
+    package var showsWeather: Bool
     private var followsDayDate = false
 
     package init(item: Countdown?) {
@@ -233,6 +234,7 @@ package struct EventEditorDraft: Equatable {
         note = item?.note ?? ""
         emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
+        showsWeather = item?.showsWeather ?? false
     }
 
     package init(day: Day) {
@@ -240,6 +242,7 @@ package struct EventEditorDraft: Equatable {
         note = ""
         emoji = ""
         subtasks = []
+        showsWeather = true
         followsDayDate = true
     }
 
@@ -281,7 +284,8 @@ package struct EventEditorDraft: Equatable {
             note: note,
             date: date,
             emoji: emoji,
-            subtasks: subtasks
+            subtasks: subtasks,
+            showsWeather: showsWeather
         )
     }
 }

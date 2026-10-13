@@ -41,6 +41,8 @@ enum UIChecks {
         precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
         testDayCreationDefaultsAndCalendarBoundaries()
         testApplicationUpdateSafety()
+        try testWeatherEditorDraftBoundaries()
+        try await testWeatherLifecycle()
         testKeepAwakeLifecycle()
         try testPlannerCalendarPresentation()
         try testOptionalIconDrafts()

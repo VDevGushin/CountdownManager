@@ -124,6 +124,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var date: Day
     public var emoji: String
     public var subtasks: [Subtask]
+    public var showsWeather: Bool
 
     public init(
         id: UUID = UUID(),
@@ -131,7 +132,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         note: String? = nil,
         date: Day,
         emoji: String,
-        subtasks: [Subtask] = []
+        subtasks: [Subtask] = [],
+        showsWeather: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -139,9 +141,10 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.date = date
         self.emoji = emoji
         self.subtasks = subtasks
+        self.showsWeather = showsWeather
     }
 
-    private enum CodingKeys: String, CodingKey { case id, title, note, date, emoji, subtasks }
+    private enum CodingKeys: String, CodingKey { case id, title, note, date, emoji, subtasks, showsWeather }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -151,6 +154,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         date = try values.decode(Day.self, forKey: .date)
         emoji = try values.decode(String.self, forKey: .emoji)
         subtasks = try values.decodeIfPresent([Subtask].self, forKey: .subtasks) ?? []
+        showsWeather = values.contains(.showsWeather) ? try values.decode(Bool.self, forKey: .showsWeather) : false
         guard subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
     }
 
@@ -162,6 +166,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         try values.encode(date, forKey: .date)
         try values.encode(emoji, forKey: .emoji)
         try values.encode(subtasks, forKey: .subtasks)
+        if showsWeather { try values.encode(true, forKey: .showsWeather) }
     }
 }
 

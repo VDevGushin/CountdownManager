@@ -6,10 +6,10 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full) ;;
-    capture)
+    fast|ui|full|weather) ;;
+    capture|weather-capture)
         if [[ $# -ne 2 ]]; then
-            echo "Usage: ./verify.sh capture <marked-output-directory>" >&2
+            echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
         fi
         capture_output_dir=$(cd "$2" && pwd -P)
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|capture <directory>|weather-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -113,7 +113,7 @@ run_smoke() {
     fi
 }
 
-run_ui_checks() {
+build_ui_app() {
     echo "Verification: release build"
     swift build --disable-sandbox -c release --scratch-path "$scratch_path"
     local bin_path
@@ -121,6 +121,10 @@ run_ui_checks() {
     app_path="$verify_root/Countdown Manager.app"
     BUILD_DIR="$scratch_path" APP_OUTPUT_PATH="$app_path" COUNTDOWN_UPDATE_MODE=disabled \
         COUNTDOWN_UPDATE_FEED_URL= COUNTDOWN_UPDATE_PUBLIC_KEY= ./build.sh
+}
+
+run_ui_checks() {
+    build_ui_app
     echo "Verification: full Real UI Smoke"
     run_smoke full-ui-smoke --ui-smoke
     echo "Verification: collapse/freeze regression"
@@ -140,7 +144,7 @@ copy_capture_evidence() {
         echo "UISmoke capture manifest is missing" >&2
         return 1
     }
-    for required_file in \
+    local required_files=(
         01-idle-list \
         02-promoted-settled \
         03-timer-running \
@@ -171,7 +175,14 @@ copy_capture_evidence() {
         28-timer-completion-light-high-contrast \
         29-today-day-editor \
         30-settings-dark \
-        31-settings-light; do
+        31-settings-light
+    )
+    if [[ "$mode" == "weather-capture" ]]; then
+        required_files=(weather-list-dark weather-list-light weather-list-light-high-contrast
+                        weather-list-off-dark weather-settings-dark weather-settings-light
+                        weather-editor-dark weather-editor-light)
+    fi
+    for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
             return 1
@@ -199,5 +210,16 @@ case "$mode" in
         ;;
     capture)
         run_capture_checks
+        ;;
+    weather)
+        build_ui_app
+        run_smoke weather --ui-smoke-weather
+        echo "PASS: focused weather Real UI Smoke"
+        ;;
+    weather-capture)
+        build_ui_app
+        run_smoke visual-captures --ui-smoke-weather-captures
+        copy_capture_evidence
+        echo "PASS: focused weather Real UI Smoke and eight captures"
         ;;
 esac

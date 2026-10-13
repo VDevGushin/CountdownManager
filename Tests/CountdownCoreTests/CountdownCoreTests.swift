@@ -449,6 +449,7 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try checks.testRejectInvalidStoredDatesAndSubtasks()
         try await checks.testLegacyJSONMigrationAndNewModelRoundTrip()
         try await checks.testRepositoryRoundTripAndRevisionOrdering()
+        try await testWeatherFlagPersistence()
         print("PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today creation/editing, midnight rejection and expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
     }
 }

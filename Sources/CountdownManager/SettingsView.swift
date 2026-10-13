@@ -5,6 +5,7 @@ struct SettingsView: View {
     @ObservedObject var store: Store
     @ObservedObject var updates: ApplicationUpdates
     @ObservedObject var keepAwake: KeepAwakeController
+    @ObservedObject var weather: WeatherController
     let back: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -69,6 +70,39 @@ struct SettingsView: View {
                                 .foregroundStyle(.red).textSelection(.enabled)
                                 .accessibilityIdentifier("settings.keep-awake.error")
                         }
+                    }
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Toggle("Показывать погоду в днях", isOn: Binding(
+                            get: { weather.enabled }, set: { weather.setEnabled($0) }
+                        ))
+                        .accessibilityIdentifier("settings.weather.enabled")
+                        .uiSmokeControl(
+                            id: "settings.weather.enabled", action: { weather.setEnabled(!weather.enabled) },
+                            value: { weather.enabled ? "on" : "off" }
+                        )
+                        Picker("Город", selection: Binding(
+                            get: { weather.location }, set: { weather.selectLocation($0) }
+                        )) {
+                            Text("Автоматически").tag(WeatherLocationSelection.automatic)
+                            ForEach(WeatherCity.allCases, id: \.self) { city in
+                                Text(city.title).tag(WeatherLocationSelection.city(city))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .accessibilityIdentifier("settings.weather.location")
+                        .uiSmokeControl(id: "settings.weather.location", value: { weather.locationTitle })
+                        .disabled(!weather.enabled)
+                        hint("После включения координаты округляются и отправляются Open-Meteo для прогноза. Можно выбрать город вручную.")
+                        if weather.enabled, weather.location == .automatic, let message = weather.locationHelp {
+                            hint(message).accessibilityIdentifier("settings.weather.location-help")
+                        }
+                        HStack(spacing: 6) {
+                            Link("Open-Meteo", destination: URL(string: "https://open-meteo.com/")!)
+                            Text("·")
+                            Link("CC BY 4.0", destination: URL(string: "https://creativecommons.org/licenses/by/4.0/")!)
+                        }
+                        .font(.system(size: 11))
                     }
 
                     VStack(alignment: .leading, spacing: 14) {

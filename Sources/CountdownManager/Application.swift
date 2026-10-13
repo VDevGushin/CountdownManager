@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import CountdownCore
 import QuartzCore
 import SwiftUI
 
@@ -89,12 +90,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var store: Store!
     private var timer: CountdownTimer!
     private var updates: ApplicationUpdates!
+    private var weather: WeatherController!
     private let editorSession = EventEditorSession()
     private let keepAwake = KeepAwakeController()
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
+    private var weatherSubscription: AnyCancellable?
     private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
@@ -123,6 +126,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             loginItemManagementIsAvailable: uiSmokeConfiguration == nil
         )
         timer = CountdownTimer(defaults: defaults)
+        if uiSmokeConfiguration != nil {
+            weather = WeatherController(
+                defaults: defaults,
+                provider: { Self.isolatedWeatherForecasts($0) },
+                allowLocationRequests: false
+            )
+        } else {
+            weather = WeatherController(defaults: defaults)
+        }
         updates = ApplicationUpdates(
             enabled: uiSmokeConfiguration == nil || UISmokeConfiguration.updateTestWasRequested,
             isolatedUpdateTest: UISmokeConfiguration.updateTestWasRequested,
@@ -159,6 +171,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 updates: updates,
                 editorSession: editorSession,
                 keepAwake: keepAwake,
+                weather: weather,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment
             )
@@ -212,6 +225,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             .sink { [weak self] _ in
                 DispatchQueue.main.async { self?.updateTitle() }
             }
+        weatherSubscription = store.objectWillChange.sink { [weak self] _ in
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.weather.updateEvents(self.store.active)
+            }
+        }
+        weather.updateEvents(store.active)
         timerCompletionSubscription = timer.completionPublisher
             .sink { [weak self] in
                 self?.timerCompletionAlert.present()
@@ -228,6 +248,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
                 timer: timer,
                 updates: updates,
+                weather: weather,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment
             )
@@ -336,6 +357,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         isPanelRequestedVisible = true
         recordShellLifecycle("show-begin")
         store.refresh()
+        weather.updateEvents(store.active)
         NSApp.activate(ignoringOtherApps: true)
         recordShellLifecycle("show-after-activate")
         panel.makeKeyAndOrderFront(nil)
@@ -476,6 +498,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        weather.shutdown()
         keepAwake.releaseForTermination()
         statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
         statusItem.button?.layer?.removeAnimation(forKey: timerRunningPulseKey)
@@ -491,6 +514,20 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         MainThreadWatchdog.shared.stop()
         DiagnosticLog.shared.record("app.terminate")
         DiagnosticLog.shared.flush()
+    }
+
+    // Every explicitly isolated runtime uses demonstration data and never contacts a weather server.
+    nonisolated private static func isolatedWeatherForecasts(_ coordinates: WeatherCoordinates) -> [String: DailyWeatherForecast] {
+        let today = Day(Date())
+        var result: [String: DailyWeatherForecast] = [:]
+        for offset in 0..<16 {
+            // The weather runtime checks the ordinary missing-forecast state at an eligible date.
+            if offset == 2 { continue }
+            guard let date = Day.calendar.date(byAdding: .day, value: offset, to: today.date()),
+                  let forecast = DailyWeatherForecast(weatherCode: offset.isMultiple(of: 2) ? 2 : 3, maximumTemperature: 14) else { continue }
+            result[weatherDayKey(Day(date))] = forecast
+        }
+        return result
     }
 
 }
