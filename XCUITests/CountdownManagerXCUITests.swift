@@ -316,6 +316,39 @@ final class CountdownManagerXCUITests: XCTestCase {
         String(format: "90000000-0000-0000-0000-%012d", number)
     }
 
+    func testWholeSubtaskRowHitAreasAndDisclosureIsolation() throws {
+        app.launch()
+        let toggle = app.checkBoxes["subtask.toggle.\(activeSubtaskID)"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+        var completed = false
+        for x in [0.02, 0.25, 0.95, 0.95, 0.25, 0.02] {
+            XCTAssertGreaterThan(toggle.frame.width, 260, "Checkbox accessibility/hit area must include the full row")
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: x, dy: 0.5)).click()
+            completed.toggle()
+            XCTAssertTrue(waitForSubtaskCompletion(activeSubtaskID, equals: completed),
+                          "Row click at \(x) did not persist exactly one completion change")
+            let tasks = try XCTUnwrap(try persistedItems().first?["subtasks"] as? [[String: Any]])
+            XCTAssertEqual(tasks.first { $0["id"] as? String == completedSubtaskID }?["isCompleted"] as? Bool, true)
+        }
+        let beforeDisclosure = try Data(contentsOf: dataURL)
+        let disclosure = app.buttons["subtasks.disclosure.\(eventID)"]
+        disclosure.click()
+        XCTAssertTrue(waitForLabel(disclosure, containing: "раскрыть"))
+        XCTAssertFalse(toggle.isHittable)
+        XCTAssertEqual(try Data(contentsOf: dataURL), beforeDisclosure)
+        disclosure.click()
+        XCTAssertTrue(waitForLabel(disclosure, containing: "свернуть"))
+        XCTAssertEqual(try Data(contentsOf: dataURL), beforeDisclosure)
+    }
+
+    private func waitForSubtaskCompletion(_ id: String, equals completed: Bool) -> Bool {
+        let condition = NSPredicate { _, _ in
+            guard let tasks = try? self.persistedItems().first?["subtasks"] as? [[String: Any]] else { return false }
+            return tasks.first { $0["id"] as? String == id }?["isCompleted"] as? Bool == completed
+        }
+        return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: condition, object: nil)], timeout: 3) == .completed
+    }
+
     func testSubtaskEditCancelSaveAndCompletion() throws {
         app.launch()
         let disclosure = app.buttons["subtasks.disclosure.\(eventID)"]

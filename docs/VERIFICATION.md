@@ -234,6 +234,15 @@ them faithfully.
 
 Current reliable capabilities include keyboard entry, normal application buttons, and Command-W after the application is active.
 
+Focused subtask-row XCUITests click the known checkbox element at its checkbox, label and trailing
+empty regions, then check durable completion/reopening and unchanged sibling state. Disclosure
+collapse/reopen must leave event JSON unchanged. The existing subtask editor case protects normal
+text entry/Save/Cancel. Keyboard activation retains the native checkbox control. A Space request
+immediately after a mouse toggle/reorder does not establish keyboard focus: that diagnostic failed
+on both the baseline and changed implementation and is not an acceptance test. Verify Space only
+after the checkbox has actually received keyboard focus through normal keyboard navigation.
+These within-control coordinates do not establish status-item, app-switch or Spaces interaction.
+
 Do not treat Finder anchoring, coordinate clicks, repeated timing loops, or custom driver machinery as reliable proof of status-item activation, application switching, or Spaces lifecycle. Those approaches can change the lifecycle under test and remain diagnostic only.
 
 ## Manual-only macOS acceptance

@@ -233,6 +233,12 @@ content.
 
 A subtask may be completed and later reopened.
 
+In an event card, the checkbox, its text and the remaining width of the same subtask row form
+one completion control. A click anywhere in that row changes that subtask exactly once; reopening
+a completed row uses the same control. Checkbox accessibility and keyboard activation remain
+native. Other rows and the checklist disclosure header do not share its activation area. Subtask
+text fields in the event editor remain editable and do not become row-completion controls.
+
 Completed subtasks remain visible.
 
 Incomplete subtasks are displayed before completed subtasks.

@@ -346,6 +346,12 @@ Files:
 
 An event surface groups the row and its checklist as one block. Checklist disclosure continues to use the cached `SubtaskDisclosureState` as its sole owner; standard SwiftUI layout and opacity transitions animate its presentation without storing a second expanded state or introducing timer-based animation control.
 
+Each checklist row uses one native checkbox `Toggle` with the actual subtask text as its label.
+The label expands to the available row width and defines a rectangular content shape, including
+its trailing empty area and vertical row spacing. The binding routes one activation to
+`Store.toggleSubtask`; no outer tap gesture duplicates the checkbox action. Completed grouping,
+stable identifiers, persistence and editor text bindings retain their existing owners.
+
 `ManagerView` owns internal settings navigation and keeps the list alive beneath settings and
 the editor. `EventEditorSession` remains the sole owner of editor visibility; `EditorView` owns
 its draft, date, primary selection and inline deletion confirmation. Save success or Cancel ends

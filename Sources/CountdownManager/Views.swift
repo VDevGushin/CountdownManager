@@ -565,12 +565,23 @@ private struct SubtaskChecklistView: View {
     @ViewBuilder
     private func subtaskRows(_ subtasks: [Subtask]) -> some View {
         ForEach(subtasks) { subtask in
-            HStack(spacing: 6) {
-                Toggle("", isOn: Binding(
+            HStack(spacing: 0) {
+                Toggle(isOn: Binding(
                     get: { subtask.isCompleted },
                     set: { _ in Task { await store.toggleSubtask(eventID: item.id, subtaskID: subtask.id) } }
-                ))
-                .labelsHidden()
+                )) {
+                    Text(subtask.text)
+                        .font(.system(size: 13))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .strikethrough(subtask.isCompleted)
+                        .foregroundStyle(subtask.isCompleted
+                            ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
+                        .help(subtask.text)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 7)
+                        .contentShape(Rectangle())
+                }
                 .toggleStyle(.checkbox)
                 .tint(subtask.isCompleted
                     ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
@@ -589,18 +600,7 @@ private struct SubtaskChecklistView: View {
                     }
                 )
 
-                Text(subtask.text)
-                    .font(.system(size: 13))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .strikethrough(subtask.isCompleted)
-                    .foregroundStyle(subtask.isCompleted
-                        ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
-                    .help(subtask.text)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
             }
-            .padding(.vertical, 7)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
         }
