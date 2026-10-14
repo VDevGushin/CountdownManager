@@ -221,6 +221,22 @@ package struct DayCreationPreset: Equatable {
     }
 }
 
+package func currentDayHeaderLabel(_ day: Day) -> String {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.calendar = Day.calendar
+    formatter.timeZone = Day.calendar.timeZone
+    formatter.dateFormat = "EEE, d MMMM"
+    let label = formatter.string(from: day.date())
+    return label.prefix(1).uppercased() + label.dropFirst()
+}
+
+package func applicationVersionLabel(bundle: Bundle = .main) -> String? {
+    guard let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+          !version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+    return "Версия \(version)"
+}
+
 package struct EventEditorDraft: Equatable {
     package var title: String
     package var note: String

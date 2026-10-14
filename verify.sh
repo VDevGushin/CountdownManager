@@ -180,7 +180,8 @@ copy_capture_evidence() {
     if [[ "$mode" == "weather-capture" ]]; then
         required_files=(weather-list-dark weather-list-light weather-list-light-high-contrast
                         weather-list-off-dark weather-settings-dark weather-settings-light
-                        weather-editor-dark weather-editor-light)
+                        weather-editor-dark weather-editor-light
+                        weather-header-before-midnight weather-header-midnight-empty)
     fi
     for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
@@ -220,6 +221,6 @@ case "$mode" in
         build_ui_app
         run_smoke visual-captures --ui-smoke-weather-captures
         copy_capture_evidence
-        echo "PASS: focused weather Real UI Smoke and eight captures"
+        echo "PASS: focused weather Real UI Smoke and ten captures"
         ;;
 esac

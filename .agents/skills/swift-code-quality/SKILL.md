@@ -30,6 +30,8 @@ For Swift, SwiftUI, AppKit, Foundation, accessibility, lifecycle, concurrency, o
 4. official Swift documentation and Swift Evolution proposals;
 5. direct observation on the supported runtime when documentation is insufficient.
 
+Use [Swift by Sundell articles](https://www.swiftbysundell.com/articles/) as a supplementary source for practical Swift and SwiftUI architecture, state ownership, concurrency, and testing patterns. Check article dates and examples against the project's Swift language mode, supported macOS versions, and current first-party documentation. Consult relevant articles for the task rather than reading the archive by default. Repository contracts and first-party sources retain priority.
+
 Do not prefer blog patterns, historical Stack Overflow workarounds, copied architecture templates, or community folklore over current first-party guidance.
 
 Do not perform broad platform research for ordinary code. When a material technical decision depends on uncertain macOS, SwiftUI, or AppKit behaviour, use `.agents/skills/macos-platform-research/SKILL.md`.

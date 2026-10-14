@@ -13,7 +13,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
-| Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather scenarios plus eight synthetic-weather PNGs; no general UI rerun |
+| Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Hook regression checks | `python3 -B Tests/test_swift_harness.py` | Deterministic Python hook checks; no application data or Swift builds |
@@ -193,7 +193,8 @@ or every supported macOS release. These require their own evidence when released
 Run full SwiftLint and `./verify.sh fast` before product QA. Focused deterministic checks must
 exercise the keep-awake owner through a fake create/release boundary: initially disabled state,
 successful enable/disable, repeated requests without duplicate assertions, create and release
-failures with unchanged accepted state, retry, termination cleanup and a fresh disabled owner.
+failures with unchanged accepted state, retry, termination cleanup, fresh-owner restoration of saved
+ON, and persisted explicit OFF. A restore failure retains intent while reporting inactive/error.
 These checks must not hold real IOPM assertions or change global power settings. Include settings
 navigation and confirm that settings alone never becomes an updater editor blocker.
 
@@ -222,8 +223,9 @@ sleep behaviour.
 For a bounded native acceptance check, enable keep-awake only in an isolated current-source app
 and inspect the assertion attributed to that process with `pmset -g assertions`. Confirm one
 `PreventUserIdleDisplaySleep` assertion, repeated enable without duplicates, retention through
-panel hide/show and timer changes, removal on disable and termination, and disabled state after
-a new launch. Always turn the mode off or terminate that isolated process in cleanup; do not
+panel hide/show and timer changes, removal on disable and termination, restored ON after a new
+launch with saved ON, and persisted OFF after explicit disable. Always turn the mode off or
+terminate that isolated process in cleanup; do not
 leave sleep-prevention assertions running after QA. Use no system-wide power-setting changes.
 
 Seeing the process assertion proves native registration, not a complete real-idle experiment.
@@ -235,60 +237,60 @@ them faithfully.
 
 ## Weather verification
 
-Run full SwiftLint and `./verify.sh fast` before weather product QA. CoreChecks must cover legacy
-JSON without `showsWeather`, explicit true/false decoding, invalid non-boolean values, omission
-of false during encoding, true round-trip, and unchanged identity/event content. Draft checks
-cover ordinary false, all day-preset true, existing value preservation, date/title changes and
-the explicit Save/Cancel boundary without title-based migration.
+Run full SwiftLint and `./verify.sh fast` before product QA. Existing flag/draft tests retain legacy
+JSON false, Save/Cancel and no title migration. New deterministic normalization checks cover all
+three services, median 1/2/3, categorical majority/wet ties, distinct source votes, invalid units and
+missing values, exact intervals and DST. MET tests cover non-overlapping 1/6/12-hour periods, interval
+maxima, dense Celsius hourly fallback versus sparse/incomplete/invalid grids, and frozen-thunder
+symbol aliases. Wttr tests require exactly eight unique accumulated 3-hour amounts, never *3, and
+suppress mixed/frozen/unknown liquid totals. Open-Meteo checks explicit timezone/date bounds and
+actual fixed 24-hour periods; no clipping of sums or maxima.
 
-Deterministic controller/provider checks use isolated preferences, fake location, fake forecast
-responses and a controlled clock/session. Exercise first-launch off/Automatic defaults, persisted
-global/location choices, manual selection without a native request, denied/unavailable location,
-quiet restored Automatic state with undetermined permission versus explicit foreground prompt
-allowance, authorized restoration and off/no-demand request suppression,
-empty-demand global enable followed by a saved weather-enabled day, immediate permission allowance
-after a passive permission-required response, and superseded passive location callbacks,
-off cancellation and immediate clearing, changed location/day demand, superseded responses,
-missing/invalid dates or values, WMO condition mapping, signed rounded daily-maximum temperature,
-bounded cache freshness/eviction and failure backoff.
-An injected one-shot scheduler and controlled clock additionally exercise observable expiry
-without a Store publication, autonomous TTL refetch and failed-fetch retry, cache-hit deadline
-reuse, and ignored cancelled callbacks after OFF, location changes and shutdown.
-No real permission dialog, service call or
-production data is needed for these checks; off and late-response scenarios must show that stale
-data cannot reappear.
+Controller fake-clock/scheduler/source tests cover one parallel request per source/range, progressive
+1/2/3 results, duplicate event demand, independent failures/Expires/429 Retry-After/304 Last-Modified,
+fresh sources during another request, autonomous expiry, bounded contexts and OFF/location/shutdown
+late callback rejection. Only full-day consensus reaches the compact badge; partial records do not
+pretend to be daily maxima. All tests use isolated preferences and no real forecast/location requests.
+Deletion cases cover two distinct days and two events sharing one date: deleting one retains useful
+requests, deleting the last cancels all three children and leaves no scheduler; late replies cannot
+repopulate the cache. Paused, deliberately noncooperating computations test subset-deletion and newer
+provider outcomes against the separate computation revision. Decoder/consensus cancellation wins
+before malformed-data handling. JSON decoding itself is not preemptible inside Foundation's call.
+Keep-awake tests use fake adapters and isolated suites, including fresh defaults objects across
+simulated bundle replacement, restoration/retry failures, failed release and termination. Weather
+enablement/city also survive a new controller/defaults object; no standard preferences are fixtures.
+Version formatting reads distinct temporary Bundle Info dictionaries instead of hardcoded releases.
+The focused native fixture injects a failing keep-awake adapter: Settings shows inactive state,
+checkbox retry preserves saved ON after failure, and `Не включать при запуске` clears intent/error
+and removes itself. No native assertion is created in that recovery scenario.
 
-After deterministic checks pass, use isolated Real UI Smoke and current-source captures with
-explicit fake forecast data. Verify the editor checkbox defaults and retained draft, persisted
-Save versus Cancel, global off/on, disabled location choice while off, the exact ten-city menu,
-and compact source/license/privacy information in settings. Settings may show only native-location
-guidance, with no forecast loading/fetch-error/retry status. Compare eligible/non-eligible events
-on the same date,
-available/missing forecasts, featured/ordinary cards and signed temperature widths. Weather
-belongs beside the actual date and must not add a loading/error/retry/placeholder control
-or details popover. The weather badge itself links Open-Meteo and has only the short maximum/source
-tooltip and accessible attribution. Hide/show and returning from settings preserve browsing and drafts;
-weather changes do not affect timer, favorites, ordering or expiry.
+Header formatter checks retain `<count> активных · сегодня и позже` and exercise Russian weekday,
+month/year boundaries and no-year date formatting. A controlled Store clock tests midnight publication.
+The focused native runtime observes `header.today` and the count through 1 -> 0 events across an
+injected midnight, without exposing Store.today, adding a view timer or changing the system clock.
 
-`./verify.sh weather` selects `--ui-smoke-weather` in a marked isolated home and builds the current
-application. It uses in-process controls for global enable/OFF, existing-event Save/Cancel and
-ordinary/day creation; the city choice is inspected and selected through its native `NSPopUpButton`
-menu/action. The menu must contain Automatic followed by exactly the ten prescribed cities.
-The run checks featured and ordinary badge/date frames, no badge for a legacy false choice or an
-eligible date with no forecast, retained checkbox drafts through hide/show, and durable Save versus
-Cancel. These actions prove in-process native/view integration, not external physical clicks.
+`./verify.sh weather` builds an isolated current-source app and runs only focused weather/header
+scenarios. Native NSPopUpButton enabled OFF/ON and its Auto/ten-city menu are inspected; the public
+NSMenu item action selects Moscow and updates its binding. Real view frames verify a badge beside
+featured/ordinary dates and a system-14-medium header date above the unchanged count line at width 390.
+Editor defaults, hide/show, durable Save/Cancel, OFF, false per-event flag and missing forecasts are
+checked. Weather has no links/tooltips/privacy/licence/info/loading/error text in app UI. These
+in-process actions do not claim physical popup clicks, external keyboard or real CoreLocation.
 
-`./verify.sh weather-capture <marked-output-directory>` selects `--ui-smoke-weather-captures` and
-runs the same focused scenarios without the general smoke/continuity suite. Like the ordinary
-capture command, the destination must contain `.countdown-ui-capture-output`. After PASS it copies
-eight required PNGs and a version-4 manifest: `weather-list-dark`, `weather-list-light`,
-`weather-list-light-high-contrast`, `weather-list-off-dark`, `weather-settings-dark`,
-`weather-settings-light`, `weather-editor-dark` and `weather-editor-light`. The ordinary capture
-set remains 31 images. The manifest labels the weather as synthetic: +14°C daily maxima, with
-day +2 intentionally omitted to exercise the real missing-data layout. Every isolated app mode
-keeps the synthetic provider and disables native location requests; neither command obtains
-device coordinates or contacts Open-Meteo. Settings capture checks use the actual weather-control
-frames; ordinary Settings captures retain their existing checks.
+`./verify.sh weather-capture <marked-output-directory>` uses the same focused scenarios without
+rerunning the general smoke/continuity suite. The destination must contain `.countdown-ui-capture-output`.
+After PASS it copies ten PNGs plus a version-5 manifest: weather list Dark/Light/Light Increase Contrast,
+OFF Dark, settings Dark/Light, editor Dark/Light, and `weather-header-before-midnight` /
+`weather-header-midnight-empty`. The ordinary capture set remains 31 images. The manifest records
+exercised bundle version/build, executable SHA256, injected header dates and synthetic forecast source,
+alongside appearance/geometry/color-profile fields. Every isolated app mode uses synthetic +14°C
+forecasts with day +2 deliberately absent, and disables native location and forecast HTTP.
+
+Live acceptance is a separate authorized command using the actual three WeatherTransport clients,
+a public named city and isolated synthetic event demand. Record each service HTTP/decoder result and
+available numeric/category dates; a stored fixture or browser-side probe is not a live client PASS.
+Do not claim the reported second Mac's failure is reproduced if that Mac was not accessed. Manual
+city/global ON/per-event ON/date/cache gates are inspected independently of native geolocation.
 
 Capture weather present and absent in the related Light/Dark and Increase Contrast states,
 including settings and the editor choice. Record actual source/bundle provenance and label

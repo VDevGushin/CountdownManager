@@ -52,7 +52,7 @@ The list footer remains a single compact row: `Хранится на этом Ma
 immediately before `Выйти`, and `Выйти`. The gear has a 14-point visible symbol and a 22-point
 activation area. The header retains its existing calendar and `+` creation controls.
 
-Settings retains the three existing checkboxes above the ordinary update and diagnostics actions:
+Settings retains the existing checkboxes above the ordinary update and diagnostics actions:
 
 1. `Запускать при входе в macOS`;
 2. `Автопроверка` updates;
@@ -61,13 +61,19 @@ Settings retains the three existing checkboxes above the ordinary update and dia
 5. `Диагностика…`.
 
 The weather section adds `Показывать погоду в днях` and a location choice. The location choice is
-unavailable while weather is off. Settings includes compact Open-Meteo and CC BY 4.0 source/license
-links and a short privacy explanation about coordinates sent to the service.
+unavailable while weather is off. Provider, licence, privacy, loading and error explanations are
+absent from the weather UI. A small secondary `Версия <version>` at the bottom reads the running
+bundle's short version; no hardcoded version or build details are shown.
 
 The action buttons perform their named actions and do not use navigation arrows. An unconfigured
 updater leaves update controls unavailable; settings does not start a placeholder feed. A login
 item that requires macOS approval retains the explicit `Разрешить в настройках macOS…` affordance.
 Failures remain visible and must not report an operation as successful.
+
+Settings choices persist across launches and app updates in their existing owners: login registration
+in macOS, automatic update checks in Sparkle, and weather/keep-awake preferences in the unchanged
+`local.countdownmanager.app` defaults domain. Updating the bundle does not reset preferences or
+event data. No defaults migration or production-data reset is introduced.
 
 Settings changes apply immediately without Save/Cancel. `Назад` returns to the same list and its
 browsing position. Hiding and showing the panel retains the current settings screen. Entry is
@@ -81,14 +87,18 @@ persistence restart guards still apply to the ready-update action.
 running and the mode is enabled. The checkbox and accent indicate the active mode in settings;
 a small state dot on the gear indicates it on the list without adding another footer row.
 
-Each new application process starts with this mode off, including after an update restart or
-launch at login. The mode is session-only and independent of the timer. Opening settings, going
-Back, hiding the panel, changing Spaces, and starting, completing or deleting a timer do not turn
-it off. Explicitly turning it off or terminating the application releases the sleep prevention.
+The choice persists across launches and updates. Without a saved choice it starts off; a saved ON
+requests sleep prevention during startup, including after an update restart or launch at login.
+Termination releases the process assertion without clearing the saved choice. Explicit OFF releases
+it and saves OFF. Opening settings, going Back, hiding the panel, changing Spaces, and starting,
+completing or deleting a timer do not turn it off; the feature remains independent of the timer.
 
 The control changes its displayed state only after macOS accepts the requested change. A failed
 enable leaves it off; a failed disable leaves the existing active state visible and reports an
-error so the user can retry. The mode does not promise to prevent a screen saver, security lock,
+error so the user can retry. If startup restoration fails, the checkbox shows inactive with an error,
+but the saved ON is retained for the next launch. The user can retry the checkbox, or use the
+conditional `Не включать при запуске` action to clear that saved intent while the mode is inactive.
+The mode does not promise to prevent a screen saver, security lock,
 lid-close sleep, manual sleep, low-battery sleep or other system sleep reasons. It does not wake
 an already sleeping display or change the Mac's global power or security settings.
 
@@ -199,56 +209,70 @@ Incomplete subtasks do not prevent event expiry.
 
 ## Weather in days
 
-Weather is globally off on the first launch of a version supporting it. The global switch and
-location selection apply immediately and persist across launches. The initial location selection
-is `Автоматически`. Turning global weather off leaves each event's saved weather choice intact.
+Weather is globally off on first launch. Enablement and Automatic/manual city persist independently
+of each event's saved `showsWeather` choice. New day drafts default true; ordinary and legacy events
+remain false. Save commits that choice and Cancel leaves it unchanged; titles never classify events.
 
-An event shows weather only when global weather is on, its saved weather choice is on and a valid
-forecast exists for its calendar date and current location. A compact native weather symbol and
-the rounded daily maximum temperature in signed Celsius form, such as `+14°`, `−3°` or `0°`, appear
-beside the actual date. Weather does not change event ordering, favorite selection, the calendar
-leaf, expiry, timer state or the menu-bar representation.
+An eligible event shows only a native condition symbol and signed rounded Celsius temperature beside
+its date when usable forecast data exists. The element is plain text/symbol, without a link, tooltip,
+source/license/privacy text, info button, loading/error/retry or placeholder. Weather settings contain
+only the global switch and the Automatic/ten-city choice. No weather diagnostics are added to logs.
+The existing storage footer, event ordering, favorites, expiry and timer behavior stay unchanged.
 
-The forecast comes from [Open-Meteo](https://open-meteo.com/en/docs), requesting up to sixteen
-daily forecasts for the selected location. Its date is the location's calendar date and its
-temperature is the day's maximum, not a current observation. Forecast availability is not
-guaranteed for every date or location.
+Three keyless services are queried independently: [Open-Meteo](https://open-meteo.com/en/docs),
+[MET Norway](https://api.met.no/weatherapi/locationforecast/2.0/documentation), and
+[wttr.is](https://github.com/chubin/wttr.in). Their horizons differ (up to sixteen days, roughly nine,
+and three respectively); a service failure cannot block useful results from another. Distinct services
+may share weather models, so the combination is a heuristic, not a claim of independent evidence or
+improved accuracy. No registration, weather key, credential form or secret is required.
 
-The weather badge is a link to Open-Meteo so attribution stays beside the displayed data. Its
-short native tooltip and accessibility description identify the source and maximum, for example
-`до +14°C`; settings also links the [CC BY 4.0 licence](https://open-meteo.com/en/licence).
-Temperatures are rounded and provider condition codes are converted to native symbols.
+Numeric fields use matching local Gregorian days and actual covered periods. Full days and remaining
+hours are never averaged together. The temperature is the median of available full-day maxima (one
+value directly, two averaged, three median), then rounded. MET prefers valid interval maxima; a full,
+valid hourly forecast may instead contribute its sampled-hourly maximum without guessing peaks
+between hours. A badge requires a full-day temperature and category; partial-day results stay internal.
+Liquid rainfall is the raw median of comparable complete totals in mm, remains optional and is not
+shown. Missing/invalid amounts are not zero; snow depth and mixed/frozen precipitation are not liquid
+rain. Categories get one vote per service; the majority wins, with a wet category preferred on ties.
 
-If no valid forecast is available, both symbol and temperature are absent. Cards and weather
-settings have no forecast-loading indicator, fetch error, retry, placeholder or weather detail
-popover. Settings retain only static source/privacy information and native-location/manual-city
-guidance. The illustrative
-feels-like temperature, precipitation and wind popup in the design mockup is not part of this
-implementation. A distant event can remain without weather until its date enters the forecast
-window. Offline event and timer workflows remain available.
+Manual cities use their known IANA zones. Automatic currently uses the Mac's configured time zone
+for all services; that is not proof of the coordinate area's time zone if the Mac zone is set incorrectly.
+DST intervals have their actual 23/24/25-hour length. A source's fixed 24-hour aggregates are not clipped
+to pretend to cover different local hours. Missing or incompatible values yield no badge.
 
-`Автоматически` uses native macOS location services with the user's permission. Weather is not
-located by IP address, VPN exit point, event text or calendar title. Automatic coordinates are
-kept only in application memory and are not written to event JSON, preferences or diagnostic logs. When
-permission is denied or location is unavailable, no automatic forecast appears; the user may
-choose a manual city in settings. Isolated verification modes do not request
-native location permission.
+One batch per source/location/date range serves every eligible event. Responses publish progressively.
+A fresh source cache remains usable during other requests; expired data disappears autonomously.
+The base request interval is thirty minutes, deferred further by service Expires or Retry-After.
+If a server expiry is shorter than that interval, its data is hidden at expiry but the request floor still
+applies. Failures back off for at least five minutes. OFF, location changes, empty demand and shutdown
+cancel work; old completions cannot resurrect badges. Memory is bounded to four area/range contexts
+with at most three source batches of sixteen requested dates each.
 
-An undetermined permission is requested only after an explicit foreground enable, selection
-of Automatic, or successful editor Save with weather selected, with eligible weather events.
-Saving a weather-enabled day after enabling global weather with no eligible events allows the
-permission request immediately, even after a passive permission check. Restoring saved enabled/Automatic settings on launch
-does not itself show a permission dialog. If permission is already granted, normal restoration
-may request a location; otherwise settings explains how to explicitly enable Automatic or choose
-a city. Weather off and an empty eligible-event set make no location request.
+Network requests, decoding and consensus normalization do not occupy the UI actor. Deleting an
+eligible event immediately removes its weather demand. Shared work continues while other eligible
+events still need it; deleting the last one cancels requests, location and scheduled refreshes.
+Superseded computations cannot publish after demand or source results change. Cancellation is
+cooperative: Foundation JSON decoding is checked immediately before/after, not interrupted mid-call.
 
-The fixed manual fallback contains exactly ten cities: Москва, Санкт-Петербург, Казань, Грозный,
-Нижний Новгород, Екатеринбург, Новосибирск, Самара, Ростов-на-Дону and Краснодар. Manual selection
-uses that city's forecast location without requiring device-location permission. City/location
-choices do not create an event or modify its content.
+Automatic uses native CoreLocation, never IP geolocation. Coordinates are coarse and rounded to two
+decimals before HTTPS requests; manual cities need no device-location permission. An undetermined
+permission is allowed only by explicit enable/AUTO or a successful foreground Save of an eligible
+weather-enabled event. Restore, Cancel and failed saves cannot prompt. No eligible demand or weather
+OFF means no forecast/location request. Isolated app runtimes keep synthetic providers and disable
+native location and weather HTTP; authorized public-city probes are separate evidence.
 
-Turning weather off cancels outstanding work and removes visible forecasts immediately. A late
-response for an old location, disabled weather or an outdated request must not restore that data.
+The fixed manual list is Москва, Санкт-Петербург, Казань, Грозный, Нижний Новгород, Екатеринбург,
+Новосибирск, Самара, Ростов-на-Дону and Краснодар. Weather choices do not mutate event content.
+
+## Current date in the list header
+
+The app name is removed from the list header. A compact Russian date, such as `Ср, 14 октября`,
+comes first in system 14-point medium type, without a year. The original
+`<count> активных · сегодня и позже` subtitle follows in secondary 11-point type, with a 3-point gap.
+The existing 31 × 31 calendar and add buttons remain centered beside the two lines. Horizontal
+18-point, top 14-point and bottom 12-point padding remain unchanged. The date reads `Store.today` and
+updates through existing midnight, wake, clock/calendar changes and reopening refresh boundaries.
+No timer or duplicate date owner is added to the view. Both lines remain visible at panel width 390.
 
 ## Favorite and automatic event
 

@@ -63,12 +63,14 @@ private final class WeatherScheduleRecorder {
 }
 
 @MainActor
-private func waitForWeather(_ condition: () async -> Bool) async {
+private func waitForWeather(
+    _ condition: () async -> Bool, file: StaticString = #fileID, line: UInt = #line
+) async {
     for _ in 0..<1_000 {
         if await condition() { return }
         await Task.yield()
     }
-    preconditionFailure("Weather fixture did not reach its expected state")
+    preconditionFailure("Weather fixture did not reach its expected state", file: file, line: line)
 }
 
 private func requireWeatherRequests(_ provider: WeatherRequestRecorder, count: Int) async {
@@ -78,7 +80,7 @@ private func requireWeatherRequests(_ provider: WeatherRequestRecorder, count: I
 
 @MainActor
 func testWeatherLifecycle() async throws {
-    try testWeatherDecoding()
+    testWeatherDecoding()
     let suite = "local.countdownmanager.weather-checks.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suite)!
     defer { defaults.removePersistentDomain(forName: suite) }
@@ -139,7 +141,7 @@ func testWeatherLifecycle() async throws {
     await provider.complete(1, result: .success([weatherDayKey(tomorrow): sunny]))
     await waitForWeather { controller.forecast(for: tomorrow) == sunny }
     controller.selectLocation(.city(.moscow))
-    precondition(controller.forecast(for: tomorrow) == rain)
+    await waitForWeather { controller.forecast(for: tomorrow) == rain }
     await requireWeatherRequests(provider, count: 2)
 
     controller.selectLocation(.city(.grozny))
@@ -153,7 +155,7 @@ func testWeatherLifecycle() async throws {
     await requireWeatherRequests(provider, count: 3)
     precondition(location.callbacks.isEmpty)
     controller.setEnabled(true)
-    precondition(controller.forecast(for: tomorrow) == rain)
+    await waitForWeather { controller.forecast(for: tomorrow) == rain }
 
     // A cancelled, non-cooperating provider cannot publish into the replacement location.
     controller.selectLocation(.city(.grozny))
@@ -162,7 +164,7 @@ func testWeatherLifecycle() async throws {
     await waitForWeather { await provider.cancelled.contains(3) }
     await provider.complete(3, result: .success([weatherDayKey(tomorrow): rain]))
     await Task.yield()
-    precondition(controller.forecast(for: tomorrow) == sunny)
+    await waitForWeather { controller.forecast(for: tomorrow) == sunny }
 
     controller.selectLocation(.city(.samara))
     await waitForWeather { await provider.requests.count == 5 }
@@ -392,24 +394,12 @@ private func testWeatherCacheBound() async throws {
     precondition(controller.forecast(for: event.date) == nil)
 }
 
-private func testWeatherDecoding() throws {
+private func testWeatherDecoding() {
     precondition(WeatherCity.allCases.count == 10)
     precondition(WeatherCoordinates(latitude: .nan, longitude: 0) == nil)
     precondition(WeatherCoordinates(latitude: 91, longitude: 0) == nil)
     let coordinates = WeatherCoordinates(latitude: 55.7558, longitude: 37.6173)!
     precondition(coordinates.latitude == 55.76 && coordinates.longitude == 37.62)
-    let request = try OpenMeteoWeatherProvider.makeRequest(coordinates)
-    let query = URLComponents(url: request.url!, resolvingAgainstBaseURL: false)!.queryItems!
-    precondition(query.contains { $0.name == "forecast_days" && $0.value == "16" })
-    precondition(query.contains { $0.name == "timezone" && $0.value == "auto" })
-    precondition(query.contains { $0.name == "daily" && $0.value == "weather_code,temperature_2m_max" })
-    precondition(request.url?.scheme == "https")
-    let data = Data("""
-        {"daily":{"time":["2026-10-13","2026-10-14","2026-10-15"],
-        "weather_code":[0,999,63],"temperature_2m_max":[14.4,20,null]}}
-        """.utf8)
-    let decoded = try OpenMeteoWeatherProvider.decode(data)
-    precondition(decoded.count == 1 && decoded["2026-10-13"]?.temperatureLabel == "+14°")
     precondition(DailyWeatherForecast(weatherCode: 0, maximumTemperature: .infinity) == nil)
     precondition(DailyWeatherForecast(weatherCode: 0, maximumTemperature: 1_000) == nil)
     precondition(DailyWeatherForecast(weatherCode: 999, maximumTemperature: 10) == nil)
@@ -418,25 +408,4 @@ private func testWeatherDecoding() throws {
         precondition(DailyWeatherForecast(weatherCode: code, maximumTemperature: 1)?.symbolName == "cloud.sleet.fill")
     }
     precondition(DailyWeatherForecast(weatherCode: 3, maximumTemperature: -0.2)?.temperatureLabel == "0°")
-    for json in [
-        "{\"daily\":{\"time\":[\"2026-02-30\"],\"weather_code\":[0],\"temperature_2m_max\":[10]}}",
-        "{\"daily\":{\"time\":[\"2026-10-13\"],\"weather_code\":[],\"temperature_2m_max\":[10]}}",
-        "{\"daily\":{\"time\":[\"2026-10-13\",\"2026-10-13\"],\"weather_code\":[0,0],\"temperature_2m_max\":[10,10]}}",
-    ] {
-        do {
-            _ = try OpenMeteoWeatherProvider.decode(Data(json.utf8))
-            preconditionFailure("Invalid weather payload was accepted")
-        } catch { precondition(!(error is CancellationError)) }
-    }
-    let excessive = try JSONSerialization.data(withJSONObject: ["daily": [
-        "time": Array(repeating: "2026-10-13", count: 17),
-        "weather_code": Array(repeating: 0, count: 17),
-        "temperature_2m_max": Array(repeating: 10, count: 17),
-    ]])
-    for invalid in [excessive, Data(repeating: 32, count: 128_001)] {
-        do {
-            _ = try OpenMeteoWeatherProvider.decode(invalid)
-            preconditionFailure("Unbounded weather payload was accepted")
-        } catch { precondition(!(error is CancellationError)) }
-    }
 }

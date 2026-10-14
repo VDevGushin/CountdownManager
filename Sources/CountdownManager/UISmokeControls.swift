@@ -4,7 +4,7 @@ import SwiftUI
 final class UISmokeControlRegistry {
     struct Entry {
         let action: (() -> Void)?
-        let value: (() -> String?)?
+        var value: (() -> String?)?
         var frame: CGRect?
         var isEnabled: Bool
         let ownerID: ObjectIdentifier?
@@ -38,6 +38,18 @@ final class UISmokeControlRegistry {
         frames[id] = frame
         guard var entry = entries[id] else { return }
         entry.frame = frame
+        entries[id] = entry
+    }
+
+    func updateValue(_ value: String?, id: String, owner: AnyObject) {
+        guard var entry = entries[id], entry.ownerID == ObjectIdentifier(owner) else { return }
+        entry.value = { value }
+        entries[id] = entry
+    }
+
+    func updateEnabled(_ enabled: Bool, id: String, owner: AnyObject) {
+        guard var entry = entries[id], entry.ownerID == ObjectIdentifier(owner) else { return }
+        entry.isEnabled = enabled
         entries[id] = entry
     }
 
@@ -110,8 +122,13 @@ private struct UISmokeControlModifier: ViewModifier {
             )
             .onAppear { register(enabled: isEnabled) }
             .onDisappear { UISmokeControlRegistry.shared.remove(id: id, owner: owner) }
-            .onChange(of: isEnabled) { enabled in register(enabled: enabled) }
-            .onChange(of: currentValue) { _ in register(enabled: isEnabled) }
+            .onChange(of: isEnabled) { enabled in
+                UISmokeControlRegistry.shared.updateEnabled(enabled, id: id, owner: owner)
+            }
+            .onChange(of: currentValue) { changedValue in
+                // Legacy onChange captures the previous modifier; use its supplied new value.
+                UISmokeControlRegistry.shared.updateValue(changedValue, id: id, owner: owner)
+            }
             .onPreferenceChange(UISmokeFramePreference.self) { frames in
                 if let frame = frames[id] {
                     UISmokeControlRegistry.shared.updateFrame(frame, id: id)

@@ -1,9 +1,17 @@
 import AppKit
 import CountdownCore
+import CryptoKit
 import Darwin
 import Foundation
+import IOKit.pwr_mgt
 import QuartzCore
 import SwiftUI
+
+@MainActor
+private final class UISmokeFailedKeepAwakeAdapter: KeepAwakeAssertionAdapter {
+    func create() -> (status: IOReturn, id: IOPMAssertionID) { (kIOReturnError, 0) }
+    func release(_ id: IOPMAssertionID) -> IOReturn { kIOReturnSuccess }
+}
 
 @MainActor
 final class UISmokeVisualEnvironment: ObservableObject {
@@ -203,6 +211,10 @@ final class UISmokeRuntime {
 
     private struct CaptureManifest: Codable {
         let version: Int
+        let applicationVersion: String?
+        let applicationBuild: String?
+        let executableSHA256: String?
+        let headerSyntheticDays: [String: String]?
         let weatherForecastSource: String?
         let captures: [CaptureRecord]
     }
@@ -520,6 +532,7 @@ final class UISmokeRuntime {
     private func runWeatherRegression() async throws {
         timer.delete()
         weather.setEnabled(false)
+        try await verifyHeaderDayBoundary()
         for event in store.active {
             let removed = await store.delete(event.id)
             try require(removed, "weather fixture cleanup failed")
@@ -537,9 +550,14 @@ final class UISmokeRuntime {
         }
         weather.updateEvents(store.active)
         try await waitFor("weather fixtures rendered") { self.controls.entries["event.card.\(primary.id.uuidString)"] != nil }
+        try await waitForValue("header.active-count", equals: "4 активных · сегодня и позже")
+        try await waitForValue("header.today", equals: currentDayHeaderLabel(store.today))
+        try requireHeaderDateLayout()
         try require(controls.ids(withPrefix: "event.weather.").isEmpty, "OFF weather exposed a badge")
         try await press("settings.open")
         try await waitForValue("settings.weather.enabled", equals: "off")
+        let versionLabel = try requireValue(applicationVersionLabel(), "running bundle short version")
+        try await waitForValue("settings.version", equals: versionLabel)
         try await waitFor("disabled OFF location picker") { self.controls.entries["settings.weather.location"]?.isEnabled == false }
         try require(!weatherCityPicker().isEnabled, "native OFF city picker accepts input")
         try await press("settings.weather.enabled")
@@ -640,6 +658,109 @@ final class UISmokeRuntime {
         let pickers = allSubviews(of: content).compactMap { $0 as? NSPopUpButton }
         return try requireValue(pickers.first { $0.itemTitles.contains("Грозный") },
                                 "native weather city menu; found menus: \(pickers.map(\.itemTitles))")
+    }
+
+    private func verifyHeaderDayBoundary() async throws {
+        let panel = try requireValue(window(), "header test panel")
+        let retained = try requireValue(panel.contentViewController, "retained root host")
+        let retainedRootIdentity = try requireValue(controls.value("root.window"), "retained root identity")
+        let retainedRootOwner = controls.entries["root.window"]?.ownerID
+        let retainedCountOwner = controls.entries["header.active-count"]?.ownerID
+        let retainedDateOwner = controls.entries["header.today"]?.ownerID
+        let suite = "local.countdownmanager.header-runtime.\(UUID().uuidString)"
+        let defaults = try requireValue(UserDefaults(suiteName: suite), "header defaults")
+        var clock = try requireValue(Day.calendar.date(from: DateComponents(
+            year: 2026, month: 10, day: 14, hour: 23, minute: 59, second: 59
+        )), "header fixture clock")
+        let fixtureStore = Store(
+            fileURL: configuration.homeURL.appendingPathComponent("Header/events.json"),
+            disclosureDefaults: defaults, now: { clock }, loginItemManagementIsAvailable: false
+        )
+        let fixtureWeather = WeatherController(defaults: defaults, provider: { _ in [:] }, allowLocationRequests: false)
+        defaults.set(true, forKey: "keepAwake.enabled")
+        let fixtureKeepAwake = KeepAwakeController(defaults: defaults, adapter: UISmokeFailedKeepAwakeAdapter())
+        let fixtureRoot = CountdownManagerRootView(
+            timer: timer, store: fixtureStore, updates: updates, editorSession: EventEditorSession(),
+            keepAwake: fixtureKeepAwake, weather: fixtureWeather,
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment
+        )
+        let fixtureHost = NSHostingController(rootView: fixtureRoot)
+        panel.contentViewController = fixtureHost
+        defer {
+            fixtureWeather.shutdown()
+            fixtureKeepAwake.releaseForTermination()
+            panel.contentViewController = retained
+            defaults.removePersistentDomain(forName: suite)
+        }
+        do {
+            try await waitFor("replacement header host appeared") {
+                panel.contentViewController === fixtureHost
+                    && self.controls.value("root.window") != nil
+                    && self.controls.value("root.window") != retainedRootIdentity
+                    && self.controls.entries["root.window"]?.ownerID != nil
+                    && self.controls.entries["root.window"]?.ownerID != retainedRootOwner
+                    && self.controls.entries["header.active-count"]?.ownerID != nil
+                    && self.controls.entries["header.active-count"]?.ownerID != retainedCountOwner
+                    && self.controls.entries["header.today"]?.ownerID != nil
+                    && self.controls.entries["header.today"]?.ownerID != retainedDateOwner
+            }
+            try await waitFor("header fixture load") { !fixtureStore.isLoading }
+            try await waitForValue("header.active-count", equals: "0 активных · сегодня и позже")
+            try await waitForValue("header.today", equals: "Ср, 14 октября")
+            let event = Countdown(title: "Synthetic midnight header", date: fixtureStore.today, emoji: "")
+            let saved = await fixtureStore.save(event, primary: false)
+            try require(saved, "header fixture save failed")
+            try await waitForValue("header.active-count", equals: "1 активных · сегодня и позже")
+            try await settleLayout()
+            try requireHeaderDateLayout()
+            try captureWeatherIfRequested("weather-header-before-midnight")
+            clock = clock.addingTimeInterval(2)
+            fixtureStore.refresh()
+            try await waitForValue("header.today", equals: "Чт, 15 октября")
+            try await waitForValue("header.active-count", equals: "0 активных · сегодня и позже")
+            try await settleLayout()
+            try requireHeaderDateLayout()
+            try captureWeatherIfRequested("weather-header-midnight-empty")
+            pass("current date precedes the count line, observes Store midnight/expiry and zero events in a native 390-point panel")
+            try await verifyFailedKeepAwakeRestoration(fixtureKeepAwake, defaults: defaults)
+        } catch {
+            // Capture the failed fixture before defer restores the original hosting graph.
+            let context = "fixture active=\(fixtureStore.active.count) items=\(fixtureStore.data.items.count) "
+                + "day=\(weatherDayKey(fixtureStore.today)) loading=\(fixtureStore.isLoading) "
+                + "replacementInstalled=\(panel.contentViewController === fixtureHost) "
+                + "root=\(controls.value("root.window") ?? "nil") retainedRoot=\(retainedRootIdentity) "
+                + "rootOwner=\(String(describing: controls.entries["root.window"]?.ownerID)) "
+                + "count=\(controls.value("header.active-count") ?? "nil") "
+                + "countOwner=\(String(describing: controls.entries["header.active-count"]?.ownerID)) "
+                + "retainedCountOwner=\(String(describing: retainedCountOwner)) "
+                + "date=\(controls.value("header.today") ?? "nil") "
+                + "dateOwner=\(String(describing: controls.entries["header.today"]?.ownerID))"
+            throw Failure("\(error.localizedDescription); \(context)")
+        }
+    }
+
+    private func requireHeaderDateLayout() throws {
+        let date = try requireValue(controls.frame("header.today"), "header date frame")
+        let count = try requireValue(controls.frame("header.active-count"), "header count frame")
+        try require(date.maxY <= count.minY && date.minX >= 0 && date.maxX <= 390 && date.width > 50,
+                    "current date is clipped or replaced the existing count line")
+    }
+
+    private func verifyFailedKeepAwakeRestoration(_ controller: KeepAwakeController, defaults: UserDefaults) async throws {
+        try await press("settings.open")
+        try await waitForValue("settings.keep-awake", equals: "off")
+        try await waitForElement("settings.keep-awake.cancel-restoration")
+        try await press("settings.keep-awake")
+        try require(!controller.isEnabled && controller.canDisableRestoration,
+                    "failed restore retry lost inactive state or saved intent")
+        try await press("settings.keep-awake.cancel-restoration")
+        try await waitFor("failed restore recovery removed") {
+            self.controls.entries["settings.keep-awake.cancel-restoration"] == nil
+        }
+        try require(!controller.isEnabled && controller.error == nil && !defaults.bool(forKey: "keepAwake.enabled"),
+                    "visible recovery action did not clear failed saved ON")
+        try await press("settings.back")
+        pass("failed keep-awake restoration offers reachable retry and explicit saved-ON cancellation without native assertions")
     }
 
     private func requireWeatherBesideDate(_ event: Countdown) throws {
@@ -1141,11 +1262,16 @@ final class UISmokeRuntime {
 
     private func writeCaptureManifest() throws {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
-        try require(captures.count == (isWeather ? 8 : 31), "capture set is incomplete")
+        try require(captures.count == (isWeather ? 10 : 31), "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let executable = Bundle.main.executableURL.flatMap { try? Data(contentsOf: $0) }
         let manifest = CaptureManifest(
-            version: 4,
+            version: 5,
+            applicationVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+            applicationBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+            executableSHA256: executable.map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() },
+            headerSyntheticDays: isWeather ? ["weather-header-before-midnight": "2026-10-14", "weather-header-midnight-empty": "2026-10-15"] : nil,
             weatherForecastSource: isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil,
             captures: captures.sorted { $0.name < $1.name }
         )

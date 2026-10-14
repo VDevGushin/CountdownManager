@@ -63,6 +63,9 @@ package struct DailyWeatherForecast: Equatable, Sendable {
 }
 
 package typealias WeatherForecastProvider = @Sendable (WeatherCoordinates) async throws -> [String: DailyWeatherForecast]
+package typealias WeatherConsensusComputation = @Sendable (
+    [WeatherSource: WeatherSourceBatch], WeatherQuery, Set<String>
+) async throws -> [String: WeatherConsensus]
 package typealias WeatherRefreshScheduler = @MainActor (
     TimeInterval, @escaping @MainActor () -> Void
 ) -> (() -> Void)
@@ -70,7 +73,7 @@ package typealias WeatherRefreshScheduler = @MainActor (
 @MainActor
 private func scheduleWeatherRefresh(after delay: TimeInterval, action: @escaping @MainActor () -> Void) -> () -> Void {
     let task = Task { @MainActor in
-        do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+        do { try await Task.sleep(for: .seconds(min(delay, 86_400))) } catch { return }
         guard !Task.isCancelled else { return }
         action()
     }
@@ -81,98 +84,18 @@ package enum WeatherProviderFailure: Error {
     case response, invalidData
 }
 
-package enum OpenMeteoWeatherProvider {
-    package static func fetch(_ coordinates: WeatherCoordinates) async throws -> [String: DailyWeatherForecast] {
-        let request = try makeRequest(coordinates)
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.urlCache = nil
-        configuration.httpCookieStorage = nil
-        configuration.urlCredentialStorage = nil
-        configuration.httpShouldSetCookies = false
-        configuration.timeoutIntervalForRequest = 15
-        configuration.timeoutIntervalForResource = 20
-        let session = URLSession(configuration: configuration)
-        defer { session.finishTasksAndInvalidate() }
-        let (data, response) = try await session.data(for: request)
-        guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
-            throw WeatherProviderFailure.response
-        }
-        return try decode(data)
-    }
-
-    package static func makeRequest(_ coordinates: WeatherCoordinates) throws -> URLRequest {
-        var components = URLComponents()
-        components.scheme = "https"
-        components.host = "api.open-meteo.com"
-        components.path = "/v1/forecast"
-        components.queryItems = [
-            URLQueryItem(name: "latitude", value: String(coordinates.latitude)),
-            URLQueryItem(name: "longitude", value: String(coordinates.longitude)),
-            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max"),
-            URLQueryItem(name: "temperature_unit", value: "celsius"),
-            URLQueryItem(name: "forecast_days", value: "16"),
-            URLQueryItem(name: "timezone", value: "auto"),
-        ]
-        guard let url = components.url else { throw WeatherProviderFailure.invalidData }
-        return URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
-    }
-
-    package static func decode(_ data: Data) throws -> [String: DailyWeatherForecast] {
-        guard data.count <= 128_000 else { throw WeatherProviderFailure.invalidData }
-        let response = try JSONDecoder().decode(Response.self, from: data)
-        let daily = response.daily
-        guard daily.time.count <= 16, daily.time.count == daily.weatherCode.count,
-              daily.time.count == daily.maximumTemperature.count else { throw WeatherProviderFailure.invalidData }
-        var forecasts: [String: DailyWeatherForecast] = [:]
-        var seen = Set<String>()
-        for index in daily.time.indices {
-            let key = daily.time[index]
-            guard validDayKey(key), seen.insert(key).inserted else { throw WeatherProviderFailure.invalidData }
-            guard let code = daily.weatherCode[index], let temperature = daily.maximumTemperature[index],
-                  let forecast = DailyWeatherForecast(weatherCode: code, maximumTemperature: temperature) else { continue }
-            forecasts[key] = forecast
-        }
-        return forecasts
-    }
-
-    private static func validDayKey(_ key: String) -> Bool {
-        guard key.count == 10 else { return false }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(secondsFromGMT: 0)
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.isLenient = false
-        guard let date = formatter.date(from: key) else { return false }
-        return formatter.string(from: date) == key
-    }
-
-    private struct Response: Decodable {
-        let daily: Daily
-        struct Daily: Decodable {
-            let time: [String]
-            let weatherCode: [Int?]
-            let maximumTemperature: [Double?]
-            enum CodingKeys: String, CodingKey {
-                case time
-                case weatherCode = "weather_code"
-                case maximumTemperature = "temperature_2m_max"
-            }
-        }
-    }
-}
-
-/// One bounded daily batch serves all weather-enabled events in the selected area.
+/// One source batch per area serves every eligible day; providers fail independently.
 @MainActor
 package final class WeatherController: ObservableObject {
     @Published package private(set) var enabled: Bool
     @Published package private(set) var location: WeatherLocationSelection
     @Published package private(set) var settingsStatus: String?
-    @Published package private(set) var locationHelp: String?
     @Published private var forecasts: [String: DailyWeatherForecast] = [:]
 
     private let defaults: UserDefaults
-    private let provider: WeatherForecastProvider
+    private let provider: WeatherSourceProvider
+    private let computeConsensus: WeatherConsensusComputation
+    private let sources: [WeatherSource]
     private let locationProvider: any WeatherLocationProviding
     private let allowLocationRequests: Bool
     private let now: () -> Date
@@ -180,8 +103,13 @@ package final class WeatherController: ObservableObject {
     private var demand: Set<String> = []
     private var coordinates: WeatherCoordinates?
     private var coordinateDate: Date?
-    private var cache: [String: CacheEntry] = [:]
+    private var cache: [String: AreaCache] = [:]
     private var fetchTask: Task<Void, Never>?
+    private var computationTask: Task<Void, Never>?
+    private var computationRevision = 0
+    private var computationInput: ComputationInput?
+    private var activeKey: String?
+    private var activeQuery: WeatherQuery?
     private var locationIsPending = false
     private var locationAttemptDate: Date?
     private var generation = 0
@@ -195,22 +123,60 @@ package final class WeatherController: ObservableObject {
     private static let enabledKey = "weather.enabled"
     private static let locationKey = "weather.location"
 
-    private struct CacheEntry {
-        let date: Date
-        let forecasts: [String: DailyWeatherForecast]
-        let failed: Bool
+    private struct SourceCache {
+        var batch: WeatherSourceBatch?
+        var freshUntil: Date
+        var nextRequest: Date
+        var failed: Bool
+    }
+
+    private struct AreaCache {
+        var updatedAt: Date
+        var entries: [WeatherSource: SourceCache]
+    }
+
+    private struct SourceOutcome: Sendable {
+        let source: WeatherSource
+        let result: Result<WeatherSourceBatch, Error>
+    }
+
+    private struct ComputationInput: Equatable, Sendable {
+        let key: String
+        let query: WeatherQuery
+        let demand: Set<String>
+        let batches: [WeatherSource: WeatherSourceBatch]
+        let expiry: Date?
     }
 
     package init(
         defaults: UserDefaults,
-        provider: @escaping WeatherForecastProvider = { try await OpenMeteoWeatherProvider.fetch($0) },
+        provider legacyProvider: WeatherForecastProvider? = nil,
+        sourceProvider: WeatherSourceProvider? = nil,
+        sources: [WeatherSource] = WeatherSource.allCases,
         locationProvider: (any WeatherLocationProviding)? = nil,
         allowLocationRequests: Bool = true,
         now: @escaping () -> Date = Date.init,
-        scheduler: WeatherRefreshScheduler? = nil
+        scheduler: WeatherRefreshScheduler? = nil,
+        consensusComputation: WeatherConsensusComputation? = nil
     ) {
         self.defaults = defaults
-        self.provider = provider
+        computeConsensus = consensusComputation ?? { try await WeatherNormalizer.aggregateDemanded($0, query: $1, demandedDayKeys: $2) }
+        if let legacyProvider {
+            self.sources = [.openMeteo]
+            self.provider = { _, query, _ in
+                let raw = try await legacyProvider(query.coordinates)
+                var days: [String: WeatherDailySample] = [:]
+                for (key, value) in raw {
+                    guard let period = query.interval(for: key), let condition = WeatherCategory(weatherCode: value.weatherCode) else { continue }
+                    days[key] = WeatherDailySample(dayKey: key, period: period,
+                                                  maximumTemperature: value.maximumTemperature, condition: condition)
+                }
+                return WeatherSourceBatch(forecasts: days)
+            }
+        } else {
+            self.sources = WeatherSource.allCases.filter { sources.contains($0) }
+            self.provider = sourceProvider ?? { try await WeatherTransport.fetch($0, query: $1, lastModified: $2) }
+        }
         self.locationProvider = locationProvider ?? NativeWeatherLocationProvider()
         self.allowLocationRequests = allowLocationRequests
         self.now = now
@@ -220,6 +186,14 @@ package final class WeatherController: ObservableObject {
     }
 
     package var locationTitle: String { location.title }
+
+    private var localCalendar: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = location.timeZone
+        return calendar
+    }
+
+    private var localToday: Day { Day(now(), calendar: localCalendar) }
 
     package func setEnabled(_ enabled: Bool) {
         guard !stopped, self.enabled != enabled else { return }
@@ -248,14 +222,11 @@ package final class WeatherController: ObservableObject {
         refresh(allowLocationPrompt: location == .automatic)
     }
 
-    package func updateEvents(_ events: [Countdown]) {
-        updateEvents(events, allowLocationPrompt: false)
-    }
+    package func updateEvents(_ events: [Countdown]) { updateEvents(events, allowLocationPrompt: false) }
 
     package func didSaveEvent(_ event: Countdown, activeEvents: [Countdown]) {
-        let eligible = event.showsWeather && (0..<16).contains(event.date.days(from: Day(now())))
+        let eligible = event.showsWeather && (0..<16).contains(event.date.days(from: localToday, calendar: localCalendar))
         if enabled, location == .automatic, eligible {
-            // A passive permission check must not block an explicit saved weather choice.
             if locationIsPending { invalidateRequests() }
             locationAttemptDate = nil
         }
@@ -263,9 +234,9 @@ package final class WeatherController: ObservableObject {
     }
 
     private func updateEvents(_ events: [Countdown], allowLocationPrompt: Bool) {
-        let today = Day(now())
-        let updated = Set(events.filter { $0.showsWeather && (0..<16).contains($0.date.days(from: today)) }
-            .map { weatherDayKey($0.date) })
+        let updated = Set(events.filter {
+            $0.showsWeather && (0..<16).contains($0.date.days(from: localToday, calendar: localCalendar))
+        }.map { weatherDayKey($0.date) })
         if updated.isEmpty, !demand.isEmpty { invalidateRequests() }
         demand = updated
         refresh(allowLocationPrompt: allowLocationPrompt)
@@ -273,33 +244,29 @@ package final class WeatherController: ObservableObject {
 
     package func forecast(for day: Day) -> DailyWeatherForecast? {
         guard enabled, !stopped, demand.contains(weatherDayKey(day)),
-              (0..<16).contains(day.days(from: Day(now()))),
+              (0..<16).contains(day.days(from: localToday, calendar: localCalendar)),
               let forecastExpiry, forecastExpiry > now() else { return nil }
         return forecasts[weatherDayKey(day)]
     }
 
-    package func refresh() {
-        refresh(allowLocationPrompt: false)
-    }
+    package func refresh() { refresh(allowLocationPrompt: false) }
 
     private func refresh(allowLocationPrompt: Bool) {
         if enabled, !stopped, !demand.isEmpty {
             demand.formIntersection(availableDayKeys())
             if demand.isEmpty { invalidateRequests() }
         }
-        guard enabled, !stopped, !demand.isEmpty else {
+        guard enabled, !stopped, !demand.isEmpty, !sources.isEmpty else {
             settingsStatus = nil
-            locationHelp = nil
             return
         }
+        if let key = activeKey, let query = activeQuery { publishFreshForecasts(key: key, query: query) }
         switch location {
         case let .city(city): loadForecasts(at: city.coordinates)
         case .automatic:
             if let coordinates, let coordinateDate, now().timeIntervalSince(coordinateDate) < Self.cacheLifetime {
                 loadForecasts(at: coordinates)
-            } else {
-                requestLocation(allowPrompt: allowLocationPrompt)
-            }
+            } else { requestLocation(allowPrompt: allowLocationPrompt) }
         }
     }
 
@@ -314,101 +281,221 @@ package final class WeatherController: ObservableObject {
         cancelScheduledRefresh()
         fetchTask?.cancel()
         fetchTask = nil
+        cancelComputation()
+        activeKey = nil
+        activeQuery = nil
         locationProvider.cancel()
         if locationIsPending { locationAttemptDate = nil }
         locationIsPending = false
         forecasts = [:]
         forecastExpiry = nil
-        locationHelp = nil
     }
 
     private func requestLocation(allowPrompt: Bool) {
         guard allowLocationRequests else {
             settingsStatus = "Для прогноза выберите город вручную."
-            locationHelp = settingsStatus
             return
         }
         guard !locationIsPending else { return }
-        if let locationAttemptDate, now().timeIntervalSince(locationAttemptDate) < Self.failureBackoff { return }
+        if let locationAttemptDate, now().timeIntervalSince(locationAttemptDate) < Self.failureBackoff {
+            scheduleRefresh(at: locationAttemptDate.addingTimeInterval(Self.failureBackoff))
+            return
+        }
         locationIsPending = true
         locationAttemptDate = now()
         settingsStatus = "Определяем местоположение…"
         let expectedGeneration = generation
         locationProvider.request(allowPrompt: allowPrompt) { [weak self] result in
-            guard let self, self.generation == expectedGeneration, self.enabled,
-                  !self.stopped, !self.demand.isEmpty else { return }
+            guard let self, self.generation == expectedGeneration, self.enabled, !self.stopped, !self.demand.isEmpty else { return }
             self.locationIsPending = false
             switch result {
             case let .success(coordinates):
-                self.locationHelp = nil
                 self.coordinates = coordinates
                 self.coordinateDate = self.now()
                 self.loadForecasts(at: coordinates)
             case .failure(.permissionRequired):
                 self.settingsStatus = "Для геолокации включите погоду или выберите «Автоматически» в настройках."
-                self.locationHelp = self.settingsStatus
             case .failure:
                 self.settingsStatus = "Местоположение недоступно. Выберите город вручную."
-                self.locationHelp = self.settingsStatus
+                self.scheduleRefresh(at: self.now().addingTimeInterval(Self.failureBackoff))
             }
         }
     }
 
     private func loadForecasts(at coordinates: WeatherCoordinates) {
-        guard fetchTask == nil else { return }
-        let identity = coordinates.cacheIdentity
-        if let entry = cache[identity] {
-            let lifetime = entry.failed ? Self.failureBackoff : Self.cacheLifetime
-            if now().timeIntervalSince(entry.date) < lifetime {
-                forecasts = entry.forecasts
-                forecastExpiry = entry.failed ? nil : entry.date.addingTimeInterval(lifetime)
-                if entry.failed {
-                    settingsStatus = "Прогноз недоступен. Попробуем позже."
-                } else {
-                    settingsStatus = entry.forecasts.isEmpty ? "Прогноз недоступен для выбранных дат." : nil
-                }
-                scheduleRefresh(at: entry.date.addingTimeInterval(lifetime))
-                return
-            }
+        guard let query = WeatherQuery(coordinates: coordinates, timeZone: location.timeZone, startDay: localToday) else { return }
+        let key = "\(coordinates.cacheIdentity)|\(query.timeZone.identifier)|\(weatherDayKey(query.startDay))"
+        if activeKey != key {
+            generation += 1
+            fetchTask?.cancel()
+            fetchTask = nil
+            cancelComputation()
+            forecasts = [:]
+            forecastExpiry = nil
+            cancelScheduledRefresh()
+            activeKey = key
+            activeQuery = query
         }
-        cancelScheduledRefresh()
-        settingsStatus = "Получаем прогноз…"
+        publishFreshForecasts(key: key, query: query)
+        guard fetchTask == nil else {
+            scheduleNextRefresh(key: key)
+            return
+        }
+        let requestedAt = now()
+        let dueSources = sources.filter { (cache[key]?.entries[$0]?.nextRequest ?? .distantPast) <= requestedAt }
+        guard !dueSources.isEmpty else {
+            scheduleNextRefresh(key: key)
+            return
+        }
+        if forecasts.isEmpty { settingsStatus = "Получаем прогноз…" }
         let expectedGeneration = generation
         let provider = provider
+        let modifications = cache[key]?.entries.compactMapValues { $0.batch?.lastModified } ?? [:]
         fetchTask = Task { [weak self] in
-            guard !Task.isCancelled else { return }
+            await withTaskGroup(of: SourceOutcome.self) { group in
+                for source in dueSources {
+                    let modified = modifications[source]
+                    group.addTask {
+                        do {
+                            try Task.checkCancellation()
+                            let result = try await provider(source, query, modified)
+                            try Task.checkCancellation()
+                            return SourceOutcome(source: source, result: .success(result))
+                        } catch { return SourceOutcome(source: source, result: .failure(error)) }
+                    }
+                }
+                for await outcome in group {
+                    guard let self, !Task.isCancelled, self.generation == expectedGeneration,
+                          self.enabled, !self.stopped, self.activeKey == key else {
+                        group.cancelAll()
+                        return
+                    }
+                    self.receive(outcome, key: key)
+                    self.publishFreshForecasts(key: key, query: query)
+                    self.scheduleNextRefresh(key: key)
+                }
+            }
+            guard let self, !Task.isCancelled, self.generation == expectedGeneration, self.activeKey == key else { return }
+            self.fetchTask = nil
+            // A clock/expiry action can run after publication but before the task group drains.
+            // Revisit a now-due source rather than losing that coalesced refresh.
+            if self.sources.contains(where: { (self.cache[key]?.entries[$0]?.nextRequest ?? .distantPast) <= self.now() }) {
+                self.refresh()
+            } else { self.scheduleNextRefresh(key: key) }
+        }
+        scheduleNextRefresh(key: key)
+    }
+
+    private func receive(_ outcome: SourceOutcome, key: String) {
+        let timestamp = now()
+        var area = cache[key] ?? AreaCache(updatedAt: timestamp, entries: [:])
+        let previous = area.entries[outcome.source]
+        switch outcome.result {
+        case let .success(batch):
+            let fresh = validDate(batch.expiresAt) ?? timestamp.addingTimeInterval(Self.cacheLifetime)
+            area.entries[outcome.source] = SourceCache(batch: batch, freshUntil: fresh,
+                                                       nextRequest: max(timestamp.addingTimeInterval(Self.cacheLifetime), fresh), failed: false)
+        case let .failure(error):
+            if case let WeatherTransportFailure.notModified(expiresAt, lastModified) = error,
+               var batch = previous?.batch {
+                batch.expiresAt = expiresAt
+                batch.lastModified = lastModified ?? batch.lastModified
+                let fresh = validDate(expiresAt) ?? timestamp.addingTimeInterval(Self.cacheLifetime)
+                area.entries[outcome.source] = SourceCache(batch: batch, freshUntil: fresh,
+                                                           nextRequest: max(timestamp.addingTimeInterval(Self.cacheLifetime), fresh), failed: false)
+            } else {
+                var next = timestamp.addingTimeInterval(Self.failureBackoff)
+                if case let WeatherTransportFailure.http(_, retryAfter) = error, let retryAfter = validDate(retryAfter) { next = max(next, retryAfter) }
+                area.entries[outcome.source] = SourceCache(batch: previous?.batch,
+                                                           freshUntil: previous?.freshUntil ?? .distantPast,
+                                                           nextRequest: next, failed: true)
+            }
+        }
+        area.updatedAt = timestamp
+        cache[key] = area
+        if cache.count > 4, let oldest = cache.min(by: { $0.value.updatedAt < $1.value.updatedAt })?.key { cache.removeValue(forKey: oldest) }
+    }
+
+    private func publishFreshForecasts(key: String, query: WeatherQuery) {
+        let timestamp = now()
+        let entries = cache[key]?.entries ?? [:]
+        let fresh = entries.filter { $0.value.freshUntil > timestamp && $0.value.batch != nil }
+        let input = ComputationInput(key: key, query: query, demand: demand,
+                                     batches: fresh.compactMapValues(\.batch), expiry: fresh.values.map(\.freshUntil).min())
+        // Withdraw expired/deleted values immediately, before any off-actor computation.
+        if forecastExpiry.map({ $0 <= timestamp }) == true { forecasts = [:]; forecastExpiry = nil }
+        forecasts = forecasts.filter { demand.contains($0.key) }
+        if !forecasts.isEmpty { settingsStatus = nil }
+        else if entries.values.contains(where: \.failed) { settingsStatus = "Прогноз недоступен. Попробуем позже." }
+        else if !entries.isEmpty { settingsStatus = "Прогноз недоступен для выбранных дат." }
+        guard computationInput != input else { return }
+        cancelComputation()
+        computationInput = input
+        guard !input.batches.isEmpty, !input.demand.isEmpty else {
+            forecasts = [:]
+            forecastExpiry = nil
+            return
+        }
+        let expectedRevision = computationRevision
+        let expectedGeneration = generation
+        let compute = computeConsensus
+        computationTask = Task { [weak self] in
             do {
-                let result = try await provider(coordinates)
-                guard let self, !Task.isCancelled, self.generation == expectedGeneration,
-                      self.enabled, !self.stopped, !self.demand.isEmpty else { return }
-                let allowedKeys = self.availableDayKeys()
-                let bounded = result.filter { allowedKeys.contains($0.key) }
-                let receivedAt = self.now()
-                self.storeCache(CacheEntry(date: receivedAt, forecasts: bounded, failed: false), identity: identity)
-                self.forecasts = bounded
-                self.forecastExpiry = receivedAt.addingTimeInterval(Self.cacheLifetime)
-                self.settingsStatus = bounded.isEmpty ? "Прогноз недоступен для выбранных дат." : nil
-                self.fetchTask = nil
-                self.scheduleRefresh(at: receivedAt.addingTimeInterval(Self.cacheLifetime))
+                let consensus = try await compute(input.batches, input.query, input.demand)
+                guard let self, !Task.isCancelled, self.computationRevision == expectedRevision,
+                      self.generation == expectedGeneration, self.computationInput == input,
+                      self.activeKey == key, self.demand == input.demand, self.enabled, !self.stopped else { return }
+                self.computationTask = nil
+                guard let expiry = input.expiry, expiry > self.now() else {
+                    self.publishFreshForecasts(key: key, query: query)
+                    return
+                }
+                self.applyConsensus(consensus, input: input, expiry: expiry)
             } catch {
-                guard let self, !Task.isCancelled, self.generation == expectedGeneration,
-                      self.enabled, !self.stopped else { return }
-                let failedAt = self.now()
-                self.storeCache(CacheEntry(date: failedAt, forecasts: [:], failed: true), identity: identity)
-                self.forecasts = [:]
-                self.forecastExpiry = nil
+                guard let self, !Task.isCancelled, self.computationRevision == expectedRevision else { return }
+                self.computationTask = nil
                 self.settingsStatus = "Прогноз недоступен. Попробуем позже."
-                self.fetchTask = nil
-                self.scheduleRefresh(at: failedAt.addingTimeInterval(Self.failureBackoff))
             }
         }
     }
 
+    private func applyConsensus(_ consensus: [String: WeatherConsensus], input: ComputationInput, expiry: Date) {
+        forecasts = consensus.reduce(into: [:]) { result, item in
+            // The compact badge promises a daily maximum, so a remaining-hours maximum cannot replace it.
+            guard input.demand.contains(item.key), item.value.period == input.query.interval(for: item.key),
+                  let forecast = DailyWeatherForecast(weatherCode: item.value.weatherCode, maximumTemperature: item.value.maximumTemperature) else { return }
+            result[item.key] = forecast
+        }
+        forecastExpiry = expiry
+        if !forecasts.isEmpty { settingsStatus = nil }
+    }
+
+    private func cancelComputation() {
+        computationRevision += 1
+        computationTask?.cancel()
+        computationTask = nil
+        computationInput = nil
+    }
+
+    private func validDate(_ date: Date?) -> Date? {
+        date.flatMap { $0.timeIntervalSince1970.isFinite ? $0 : nil }
+    }
+
+    private func scheduleNextRefresh(key: String) {
+        let timestamp = now()
+        let entries = cache[key]?.entries.values
+        let dates = entries?.flatMap { entry -> [Date] in
+            var dates = [entry.nextRequest]
+            if entry.batch != nil, entry.freshUntil > timestamp { dates.append(entry.freshUntil) }
+            return dates
+        } ?? []
+        guard let date = dates.filter({ $0 > timestamp }).min() else { return }
+        scheduleRefresh(at: date)
+    }
+
     private func availableDayKeys() -> Set<String> {
-        let today = Day(now())
-        return Set((0..<16).compactMap { offset in
-            Day.calendar.date(byAdding: .day, value: offset, to: today.date()).map { weatherDayKey(Day($0)) }
-        })
+        let coordinates = self.coordinates ?? WeatherCity.moscow.coordinates
+        return Set(WeatherQuery(coordinates: coordinates, timeZone: location.timeZone, startDay: localToday)?.dayKeys ?? [])
     }
 
     private func cancelScheduledRefresh() {
@@ -429,20 +516,8 @@ package final class WeatherController: ObservableObject {
                   self.enabled, !self.stopped, !self.demand.isEmpty else { return }
             self.refreshCancellation = nil
             self.refreshDate = nil
-            if self.now() < date {
-                self.scheduleRefresh(at: date)
-                return
-            }
-            self.forecasts = [:]
-            self.forecastExpiry = nil
+            if self.now() < date { self.scheduleRefresh(at: date); return }
             self.refresh()
-        }
-    }
-
-    private func storeCache(_ entry: CacheEntry, identity: String) {
-        cache[identity] = entry
-        if cache.count > 4, let oldest = cache.min(by: { $0.value.date < $1.value.date })?.key {
-            cache.removeValue(forKey: oldest)
         }
     }
 }

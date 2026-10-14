@@ -24,6 +24,17 @@ package enum WeatherCity: String, CaseIterable, Identifiable, Sendable {
 
     package var id: String { rawValue }
 
+    package var timeZone: TimeZone {
+        let identifier: String
+        switch self {
+        case .yekaterinburg: identifier = "Asia/Yekaterinburg"
+        case .novosibirsk: identifier = "Asia/Novosibirsk"
+        case .samara: identifier = "Europe/Samara"
+        default: identifier = "Europe/Moscow"
+        }
+        return TimeZone(identifier: identifier)!
+    }
+
     package var title: String {
         switch self {
         case .moscow: return "Москва"
@@ -60,6 +71,13 @@ package enum WeatherCity: String, CaseIterable, Identifiable, Sendable {
 package enum WeatherLocationSelection: Equatable, Hashable, Sendable {
     case automatic
     case city(WeatherCity)
+
+    package var timeZone: TimeZone {
+        switch self {
+        case .automatic: return .autoupdatingCurrent
+        case let .city(city): return city.timeZone
+        }
+    }
 
     package var title: String {
         switch self {

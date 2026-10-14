@@ -57,7 +57,7 @@ Key responsibilities:
 - AppKit application and menu-bar integration;
 - application state and persistence coordination;
 - the single timer, its local preference state, ticking and completion presentation;
-- session-only prevention of idle system/display sleep;
+- persisted keep-awake intent and process-owned prevention of idle system/display sleep;
 - optional forecast requests, native location and independent weather settings/cache state;
 - deterministic presentation logic;
 - SwiftUI views and transient view state;
@@ -72,6 +72,11 @@ Key files:
 - `KeepAwakeController.swift`
 - `Weather.swift`
 - `WeatherLocation.swift`
+- `WeatherForecasts.swift`
+- `WeatherOpenMeteo.swift`
+- `WeatherMETNorway.swift`
+- `WeatherWttr.swift`
+- `WeatherTransport.swift`
 - `ApplicationUpdates.swift`
 - `TimerCompletionAlert.swift`
 - `Store.swift`
@@ -212,11 +217,14 @@ not maintain another login preference.
 
 File: `Sources/CountdownManager/KeepAwake.swift`
 
-`KeepAwakeController` is the single `@MainActor` owner of the session's sleep-prevention state
-and IOPM assertion identifier. `AppDelegate` creates it once and supplies it to the retained UI.
+`KeepAwakeController` is the single `@MainActor` owner of sleep-prevention state
+and the process's IOPM assertion identifier. `AppDelegate` creates it once after resolving production
+or isolated defaults, and supplies it to the retained UI.
 Settings reads its accepted state and requests enable/disable; view rendering and panel visibility
-do not acquire or release assertions. Neither event persistence nor `UserDefaults` stores this
-mode, so a new process always begins disabled.
+do not acquire or release assertions. `keepAwake.enabled` in the injected defaults stores intent,
+independently of the live assertion. Init restores saved ON without rewriting the preference.
+Without a preference it starts disabled. The bundle ID/defaults domain remains
+`local.countdownmanager.app` across app updates; event persistence is unaffected.
 
 The native boundary uses `IOPMAssertionCreateWithName` with
 `kIOPMAssertionTypePreventUserIdleDisplaySleep` at `kIOPMAssertionLevelOn`. This assertion prevents
@@ -229,7 +237,11 @@ Create/release return codes are checked. State changes only after a successful n
 a failed create does not expose an active state, and a failed release retains the identifier and
 active state for retry with a visible error. Repeated requests for the accepted state are no-ops
 and cannot create duplicate assertions. Explicit disable and actual application termination
-release the assertion; cancelling an update termination retains the running session and its
+release the assertion; explicit disable saves OFF, whereas termination preserves saved intent.
+A failed startup restore keeps saved ON and reports inactive/error; explicit ON retries and OFF
+clears the failed intent. `canDisableRestoration` derives the error/inactive/saved-ON condition from
+the owner; Settings then exposes `Не включать при запуске`, without storing another preference.
+Cancelling an update termination retains the running session and its
 assertion. The OS assertion belongs to the process and cannot survive its exit. Timer mutations,
 Back, panel hide/show, application deactivation and Space changes are independent of this owner.
 
@@ -328,71 +340,76 @@ Fresh defaults disable weather and select Automatic. Device coordinates and fore
 
 ## Weather state and requests
 
-Files:
+`AppDelegate` owns one main-actor `WeatherController`; Store retains event/persistence ownership.
+Views only read weather snapshots. Event demand and explicit successful editor Save are separate
+boundaries, preserving no-prompt restoration and foreground first-use permission behavior.
 
-- `Sources/CountdownManager/Weather.swift`
-- `Sources/CountdownManager/WeatherLocation.swift`
+- `Weather.swift`: global preferences, native location boundary, parallel source lifetimes, progressive
+  publication, per-source cache freshness and cancellation/generations. The injected legacy forecast
+  closure remains the synthetic-provider boundary for isolated runtimes; production uses three sources.
+- `WeatherForecasts.swift`: query/calendar intervals, optional metrics, categories and pure normalization.
+- `WeatherOpenMeteo.swift`: explicit timezone/date range, Celsius daily max, WMO and liquid `rain_sum`.
+- `WeatherMETNorway.swift`: identified complete Locationforecast; non-overlapping periods, unit checks,
+  interval maxima and complete hourly-forecast max fallback, liquid-only precipitation and symbols.
+- `WeatherWttr.swift`: keyless j1 response; supplied civil dates/maxtempC and exactly eight 3-hour
+  accumulated precipitation slots summed once. Frozen/mixed/unknown phase leaves rain missing.
+- `WeatherTransport.swift`: ephemeral HTTPS session, optional conditional Last-Modified request,
+  Expires/Retry-After parsing and 304 revalidation. Cookies, credentials and disk cache are disabled.
+- `WeatherLocation.swift`: coarse native location and ten fixed cities with IANA zones. No IP lookup.
 
-`AppDelegate` owns one `@MainActor` `WeatherController` for the application session and supplies
-read-only snapshots of active events whose `showsWeather` flag is true. The controller owns
-preferences, request lifetime, cancellation, generation checks and forecast publication. Views
-read the published forecast for an event's day; rendering does not start requests. `Store` retains
-its existing domain/persistence ownership and no weather side effects.
+A stable Gregorian query captures the selected zone and sixteen local dates. Manual zones come from
+cities; Automatic currently uses the device zone, with the corresponding limitation documented in
+PRODUCT. Normalization records actual coverage. MET one/six/twelve-hour periods cannot double-count;
+full-day hourly fallback requires every valid hourly slot, with no sparse interpolation or intra-hour
+peak claim. Source fixed 24-hour days are not relabeled as complete DST 23/25-hour days.
 
-`WeatherLocationSelection` represents Automatic or one of the ten fixed `WeatherCity` values.
-`NativeWeatherLocationProvider` creates `CLLocationManager` only for an enabled, eligible Automatic
-demand. It requests coarse native location with permission, checks authorization and result validity,
-and releases its manager after completion/cancellation. Coordinates are rounded to an area before
-forecast requests and remain in memory. A manual city supplies fixed coordinates without device
-permission. No IP-geolocation endpoint or coordinates in preferences/diagnostics are introduced.
-Isolated runtime construction disables native requests through
-`allowLocationRequests: false`; fake providers cover permission/result transitions without dialogs.
-The controller passes an explicit prompt allowance only for foreground enable/Automatic selection
-or a successfully saved eligible weather-enabled event. The editor invokes `didSaveEvent` only
-after `Store.save` succeeds while the application is active; otherwise it updates demand passively.
-Cancel, rejected persistence and passive event updates cannot prompt.
-That explicit Save replaces a pending passive location check and clears location-attempt backoff
-so enabling weather before creating a day still permits the first permission request.
-Restored enabled Automatic state may use already granted authorization but cannot turn an
-undetermined permission into a startup prompt. Off/no-demand states make no location request.
+The pure aggregator prefers full-day records, otherwise compares only identical partial periods.
+Numeric medians ignore missing values; category majority has a deterministic wet tie preference.
+The controller's plain badge only publishes full-day consensus. Three sources are separately hosted
+APIs, not guaranteed independent models. Rain is optional liquid mm, not probability or snow depth.
 
-`OpenMeteoWeatherProvider` in `Weather.swift` uses HTTPS `/v1/forecast` with daily
-`weather_code,temperature_2m_max`, `forecast_days=16` and `timezone=auto`. Dates stay as validated
-ISO calendar-day keys; WMO codes map to SF Symbols, and finite Celsius daily maxima are rounded
-for display. Missing or invalid per-day values are omitted rather than rendered as zero. This
-follows [Open-Meteo's API contract](https://open-meteo.com/en/docs), which provides up to sixteen
-days rather than guaranteeing a complete forecast for every event.
+Cache identity includes rounded coordinates, stable zone and requested start day. Four contexts hold
+at most one bounded batch per source. Each source has its own freshness and next-request deadline;
+304 reuses only an existing matching-context batch. Source failure retains still-fresh previous data.
+One parent task with a structured task group coalesces a location/range request and publishes each
+completion without waiting for other services. One cancellable scheduler wakes at the next freshness
+or retry boundary; generation and schedule identity reject late callbacks after OFF/location/stop.
+Deleting the last eligible event also cancels provider children, location and the scheduler.
+Deleting one of several events/days retains the useful shared request. Current demand gates every
+badge and publication; late responses from a cancelled generation cannot repopulate the cache.
 
-The free endpoint's [terms](https://open-meteo.com/en/terms) restrict it to non-commercial use.
-Its data [licence](https://open-meteo.com/en/licence) requires attribution beside displayed data:
-the native badge links Open-Meteo with credit in tooltip/accessibility; settings adds provider and
-CC BY 4.0 links. Commercial distribution
-requires reconsidering service access under those terms. Request coordinates are rounded to two
-decimal places; no request URL/coordinate is logged by the app, while provider server logging
-remains governed by its own terms.
+Transport and synchronous decoding inside its nonisolated async function execute on the generic
+executor in the project's Swift 5 mode, following
+[SE-0338](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0338-clarify-execution-non-actor-async.md).
+The MainActor controller snapshots Sendable fresh batches, query and demanded day keys for
+`WeatherNormalizer.aggregateDemanded`. That nonisolated async helper computes only demanded dates,
+checking cancellation between dates; cache and UI publication remain on MainActor.
+A separate computation revision/input snapshot rejects paused work after subset deletion or a newer
+provider outcome, even when the shared request generation remains unchanged. Superseded tasks cancel.
+Expired/deleted values are withdrawn synchronously before awaiting a replacement computation.
+Adapters check cancellation before/after JSON decoding and between substantial normalization loops;
+MET coverage recursion also checks. JSONDecoder/JSONSerialization cannot be preempted within a call;
+payload limits and checkpoints bound the remaining work. No detached tasks or new actors are added.
+The base request floor is thirty minutes; Expires/Retry-After may defer requests further, with expired
+entries hidden independently. Failed sources wait at least five minutes. Long scheduler delays are
+woken in at most daily slices without violating the retained server deadline. Nonfinite metadata is
+ignored. No continuous short-interval polling or new weather log record is introduced.
 
-Forecast requests run asynchronously through a URLSession provider boundary, outside view
-construction, event writes and synchronous UI work. Cached batches are keyed by location, with
-forecast entries keyed by calendar day.
-The memory cache has a 30-minute freshness window and bounds of four locations and sixteen days
-per location; failures use a bounded retry backoff rather than a request loop.
-One cancellable main-actor one-shot wakes at forecast expiry or failed-fetch backoff, publishes
-expired forecast removal and refreshes without requiring a Store change. Cache hits reuse their
-deadline; controller and schedule generations reject cancelled or superseded callbacks. The
-refresh boundary also drops dates that have left the eligible calendar window. No periodic
-short-interval polling is used.
-Disabling clears
-visible forecasts and cancels work. Location changes or removing all demand invalidate the request
-generation; forecast access also requires a currently demanded day. Late completion from cancelled
-or superseded work cannot publish forecasts for the new state.
+The app's weather UI consists of the switch, location menu, editor checkbox and plain symbol/temp.
+Source, licence and privacy documentation stays here and in README rather than app controls. The
+personal-use scope does not imply provider terms have disappeared: see
+[Open-Meteo terms](https://open-meteo.com/en/terms), [MET terms](https://api.met.no/doc/TermsOfService),
+[MET JSON format](https://api.met.no/doc/ForecastJSON), and
+[wttr/WWO schema](https://www.worldweatheronline.com/weather-api/api/docs/local-city-town-weather-api.aspx).
+Any later distribution requires checking the applicable source attribution/licensing requirements.
 
-`EventEditorDraft` carries `showsWeather`: existing items preserve their flag, ordinary drafts
-start false and day presets start true. The editor's checkbox commits through the existing Save
-boundary. Title/date mutations do not infer eligibility or reset the flag. The list composes a
-native condition symbol and signed rounded daily-maximum Celsius temperature beside the actual
-date only when global state, event flag and valid current forecast agree. Missing data adds no
-card placeholder, error, retry or popover. The badge link's short tooltip identifies the daily
-maximum and provider; settings provides source/license and privacy context.
+`currentDayHeaderLabel` formats the existing published `Store.today`; the view removes the app name
+and shows a system-14-medium date above the unchanged secondary-11 count subtitle, separated by 3 pt.
+Existing Store refresh boundaries drive midnight/wake/reopen. `applicationVersionLabel` reads the
+running bundle's short version for the small secondary Settings footer; it has no version literal.
+The isolated header scenario substitutes a fresh synthetic Store into the actual retained panel's
+hosting surface, observes its caption/count across midnight and restores the original host; production
+clock/state and public Store access control are unchanged.
 
 ## Presentation layer
 
@@ -442,7 +459,7 @@ that event. Settings entry is guarded to the list, and Back preserves the list's
 view without storing or reconstructing a second browsing state.
 
 The list's one-row footer contains the storage label, a 14-point gear before Quit and Quit.
-Settings groups the existing login and Sparkle automatic-check bindings with the session keep-awake
+Settings groups the existing login and Sparkle automatic-check bindings with the persisted keep-awake
 checkbox, then manual update and diagnostics actions. A deferred update replaces the manual-check
 action with the existing explicit install entry point. Login approval and operation errors remain
 visible. There is no settings draft or Save/Cancel; accepted owner state is shown immediately.

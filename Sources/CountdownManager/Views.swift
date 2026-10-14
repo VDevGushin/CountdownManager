@@ -120,11 +120,14 @@ struct ManagerView: View {
     private func header(activeCount: Int) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text("Countdown Manager").font(.custom("Georgia", size: 22))
-                    .tracking(-0.8)
+                Text(currentDayHeaderLabel(store.today))
+                    .font(.system(size: 14, weight: .medium))
+                    .accessibilityIdentifier("header.today")
+                    .uiSmokeControl(id: "header.today", value: { currentDayHeaderLabel(store.today) })
                 Text("\(activeCount) активных · сегодня и позже")
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .uiSmokeControl(id: "header.active-count", value: { "\(activeCount) активных · сегодня и позже" })
             }
             Spacer()
             Button(action: toggleDayChoices) {
@@ -306,15 +309,12 @@ struct ManagerView: View {
             Text(label)
                 .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { label })
             if item.showsWeather, let forecast = weather.forecast(for: item.date) {
-                let description = "Прогноз Open-Meteo · до \(forecast.temperatureLabel)C · \(forecast.conditionDescription) · \(weather.locationTitle)"
-                Link(destination: URL(string: "https://open-meteo.com/")!) {
-                    HStack(spacing: 3) {
-                        Image(systemName: forecast.symbolName).accessibilityHidden(true)
-                        Text(forecast.temperatureLabel).monospacedDigit()
-                    }
+                HStack(spacing: 3) {
+                    Image(systemName: forecast.symbolName).accessibilityHidden(true)
+                    Text(forecast.temperatureLabel).monospacedDigit()
                 }
-                .help(description)
-                .accessibilityLabel(description)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(forecast.conditionDescription), \(forecast.temperatureLabel)")
                 .accessibilityIdentifier("event.weather.\(item.id.uuidString)")
                 .uiSmokeControl(id: "event.weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
             }

@@ -92,7 +92,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var updates: ApplicationUpdates!
     private var weather: WeatherController!
     private let editorSession = EventEditorSession()
-    private let keepAwake = KeepAwakeController()
+    private var keepAwake: KeepAwakeController!
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
     private var subscription: AnyCancellable?
@@ -116,6 +116,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         DiagnosticLog.shared.record("app.launch version=\(version) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
+        keepAwake = KeepAwakeController(defaults: defaults)
         if UISmokeConfiguration.captureWasRequested {
             defaults.set(Date().addingTimeInterval(-1).timeIntervalSince1970,
                          forKey: CountdownTimer.deadlineKey)
@@ -499,7 +500,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     func applicationWillTerminate(_ notification: Notification) {
         weather.shutdown()
-        keepAwake.releaseForTermination()
+        keepAwake?.releaseForTermination()
         statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)
         statusItem.button?.layer?.removeAnimation(forKey: timerRunningPulseKey)
         timerCompletionAlert.dismiss()

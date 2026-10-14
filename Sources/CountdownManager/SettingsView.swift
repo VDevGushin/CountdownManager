@@ -64,11 +64,17 @@ struct SettingsView: View {
                             action: { keepAwake.setEnabled(!keepAwake.isEnabled) },
                             value: { keepAwake.isEnabled ? "on" : "off" }
                         )
-                        hint("До выключения режима или выхода из Countdown. Новый запуск выключает режим.")
+                        hint("Выбор сохраняется. При следующем запуске включённый режим восстановится.")
                         if let error = keepAwake.error {
                             Text(error).font(.system(size: 12))
                                 .foregroundStyle(.red).textSelection(.enabled)
                                 .accessibilityIdentifier("settings.keep-awake.error")
+                        }
+                        if keepAwake.canDisableRestoration {
+                            Button("Не включать при запуске") { keepAwake.setEnabled(false) }
+                                .font(.system(size: 12))
+                                .accessibilityIdentifier("settings.keep-awake.cancel-restoration")
+                                .uiSmokeControl(id: "settings.keep-awake.cancel-restoration", action: { keepAwake.setEnabled(false) })
                         }
                     }
 
@@ -93,16 +99,6 @@ struct SettingsView: View {
                         .accessibilityIdentifier("settings.weather.location")
                         .uiSmokeControl(id: "settings.weather.location", value: { weather.locationTitle })
                         .disabled(!weather.enabled)
-                        hint("После включения координаты округляются и отправляются Open-Meteo для прогноза. Можно выбрать город вручную.")
-                        if weather.enabled, weather.location == .automatic, let message = weather.locationHelp {
-                            hint(message).accessibilityIdentifier("settings.weather.location-help")
-                        }
-                        HStack(spacing: 6) {
-                            Link("Open-Meteo", destination: URL(string: "https://open-meteo.com/")!)
-                            Text("·")
-                            Link("CC BY 4.0", destination: URL(string: "https://creativecommons.org/licenses/by/4.0/")!)
-                        }
-                        .font(.system(size: 11))
                     }
 
                     VStack(alignment: .leading, spacing: 14) {
@@ -119,7 +115,13 @@ struct SettingsView: View {
                         Button("Диагностика…") { store.openDiagnostics() }
                             .accessibilityIdentifier("settings.diagnostics")
                     }
-                    hint("Настройки применяются сразу.")
+                    if let version = applicationVersionLabel() {
+                        Text(version)
+                            .font(.system(size: 11))
+                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                            .accessibilityIdentifier("settings.version")
+                            .uiSmokeControl(id: "settings.version", value: { version })
+                    }
                 }
                 .toggleStyle(.checkbox)
                 .font(.system(size: 13))
