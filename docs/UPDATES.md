@@ -1,13 +1,14 @@
 # Preparing signed updates
 
 The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
-Version **1.10.0 / build 18** is prepared for its user-authorized release. The final package
+Version **1.10.0 / build 18** is published as GitHub's latest release. The final package
 passed ad-hoc strict verification and its ZIP/appcast were Ed25519-signed and verified.
 The same executable was exercised by isolated native weather/header/settings scenarios;
-all ten current screenshots are accepted. Publication and installation remain unconfirmed.
+all ten current screenshots are accepted. Anonymous ZIP and version-specific/latest appcast downloads
+match the locally signed files. Installation of 1.10.0 in `/Applications` was not performed.
 The temporary private-key export was removed after signing.
 
-The published and installed release remains **1.9.0 / build 16**; its verified publication
+The previous release **1.9.0 / build 16** remains in the maintainer's `/Applications`; its publication
 and manual installation history is in [releases/v1.9.0.md](releases/v1.9.0.md).
 Current behavior, evidence and meaningful limits are in [releases/v1.10.0.md](releases/v1.10.0.md).
 Release artifacts use an Ed25519-signed ZIP and appcast; preparation, publication,
@@ -18,13 +19,11 @@ Existing releases without Sparkle require one manual installation of a published
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The published version-specific archive URL for 1.9.0 is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.9.0/CountdownManager-1.9.0-16.zip`.
-The archive and signed `appcast.xml` are assets of the same release, with v1.9.0 selected
-as GitHub's latest release. Anonymous HTTPS access was verified after publication.
-The candidate publication target is
+The published version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.0/CountdownManager-1.10.0-18.zip`.
-This target does not establish an available release or archive.
+The archive and signed `appcast.xml` are assets of release v1.10.0, selected as GitHub's latest.
+Anonymous HTTPS downloads of the archive, version-specific feed and latest feed matched their
+locally verified SHA-256 hashes; feed build 18, version 1.10.0, URL and length passed.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -98,10 +97,10 @@ the seed contents. Running these commands does not create a permanent backup:
 )
 ```
 
-The numbers above target local preparation of candidate 1.10.0 artifacts, after acceptance;
+The numbers above target local preparation of 1.10.0 artifacts, after acceptance;
 they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The distributed 1.9.0 uses build 16; current candidate 1.10.0 uses build 18. Keep `local.countdownmanager.app`
+build. The current distributed 1.10.0 uses build 18; choose a greater build for the next release. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
