@@ -5,10 +5,13 @@ Version **1.10.0 / build 18** is published as GitHub's latest release. The final
 passed ad-hoc strict verification and its ZIP/appcast were Ed25519-signed and verified.
 The same executable was exercised by isolated native weather/header/settings scenarios;
 all ten current screenshots are accepted. Anonymous ZIP and version-specific/latest appcast downloads
-match the locally signed files. Installation of 1.10.0 in `/Applications` was not performed.
+match the locally signed files. Version 1.10.0 / build 18 was installed in `/Applications` and launched from that bundle.
+The executable matches the published archive; production event JSON stayed byte-identical
+during replacement and startup. Eleven temporary bundles and eight redundant local archives
+were removed; the current signed release archive was retained.
 The temporary private-key export was removed after signing.
 
-The previous release **1.9.0 / build 16** remains in the maintainer's `/Applications`; its publication
+The previous release **1.9.0 / build 16** was replaced locally; its publication
 and manual installation history is in [releases/v1.9.0.md](releases/v1.9.0.md).
 Current behavior, evidence and meaningful limits are in [releases/v1.10.0.md](releases/v1.10.0.md).
 Release artifacts use an Ed25519-signed ZIP and appcast; preparation, publication,
