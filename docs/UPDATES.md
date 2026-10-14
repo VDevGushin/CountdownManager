@@ -1,21 +1,18 @@
 # Preparing signed updates
 
 The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
-Version **1.9.0 / build 16** is published. Implementation, full SwiftLint and fast
-CoreChecks/UIChecks have passed. Focused isolated native weather scenarios and the eight-image
-gallery are accepted. One user-authorized native adapter attempt returned unavailable;
-no coordinates or weather HTTP resulted, and no system permission dialog was observed.
-AUTO success, permission-dialog ordering, VPN and external physical interaction remain
-unconfirmed surfaces. Local ZIP packaging has passed. The release ZIP and appcast have now
-been created, Ed25519-signed and verified. The public archive and latest feed return anonymous
-HTTPS 200 with hashes matching the locally verified release; feed version, URL and length passed.
-Local installation and completed launch of **1.9.0 / build 16** from `/Applications` are confirmed;
-the installed executable matches the public archive and production JSON remained byte-identical during replacement and launch.
+Version **1.10.0 / build 18** is prepared for its user-authorized release. The final package
+passed ad-hoc strict verification and its ZIP/appcast were Ed25519-signed and verified.
+The same executable was exercised by isolated native weather/header/settings scenarios;
+all ten current screenshots are accepted. Publication and installation remain unconfirmed.
 The temporary private-key export was removed after signing.
-Release artifacts use an Ed25519-signed
-ZIP and appcast; preparation, publication and public HTTPS verification are separate operations.
-Existing releases without Sparkle, including 1.6.0, require one manual installation of 1.9.0
-to enter the updater-enabled release channel.
+
+The published and installed release remains **1.9.0 / build 16**; its verified publication
+and manual installation history is in [releases/v1.9.0.md](releases/v1.9.0.md).
+Current behavior, evidence and meaningful limits are in [releases/v1.10.0.md](releases/v1.10.0.md).
+Release artifacts use an Ed25519-signed ZIP and appcast; preparation, publication,
+public HTTPS verification and installation are separate operations.
+Existing releases without Sparkle require one manual installation of a published updater-enabled release.
 
 ## Channel and signing key
 
@@ -25,6 +22,9 @@ The published version-specific archive URL for 1.9.0 is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.9.0/CountdownManager-1.9.0-16.zip`.
 The archive and signed `appcast.xml` are assets of the same release, with v1.9.0 selected
 as GitHub's latest release. Anonymous HTTPS access was verified after publication.
+The candidate publication target is
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.0/CountdownManager-1.10.0-18.zip`.
+This target does not establish an available release or archive.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -83,7 +83,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.9.0 COUNTDOWN_BUILD_NUMBER=16 \
+  COUNTDOWN_VERSION=1.10.0 COUNTDOWN_BUILD_NUMBER=18 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -93,14 +93,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.9.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above describe preparation of the published 1.9.0 artifacts. For subsequent releases, change the version,
+The numbers above target local preparation of candidate 1.10.0 artifacts, after acceptance;
+they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The distributed 1.9.0 uses build 16; following releases need a higher build number. Keep `local.countdownmanager.app`
+build. The distributed 1.9.0 uses build 16; current candidate 1.10.0 uses build 18. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
@@ -109,7 +110,12 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Candidate status and remaining evidence are recorded in [releases/v1.9.0.md](releases/v1.9.0.md).
+Candidate status is recorded in [releases/v1.10.0.md](releases/v1.10.0.md).
+The published weather implementation and acceptance history remain in
+[releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
+The current common transport/controller returned decoded batches from all three services
+and a consensus for an isolated eligible event; this CLI-host evidence does not establish
+GUI HTTP, AUTO location, another Mac, VPN or sustained availability.
 
 The bundle contains the complete Sparkle framework, copied with symlinks and permissions preserved.
 Nested XPC services, helper executable and Updater app are signed inside-out, preserving Downloader
