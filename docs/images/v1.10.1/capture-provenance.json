@@ -1,7 +1,7 @@
 {
   "version": "1.10.1",
   "build": "19",
-  "status": "LOCAL_CANDIDATE_NOT_PUBLISHED",
+  "status": "PUBLISHED_AND_INSTALLED",
   "capture_result": "PASS: 5/5",
   "manifest_schema": 5,
   "manifest_sha256": "6459d2c4d5c1feab1c995b0b701f9d8ac826cd2eddeb8846abac956f3e7f0c4d",
@@ -93,13 +93,47 @@
   "signed_release": {
     "version": "1.10.1",
     "build": "19",
-    "published": false,
-    "installed": false,
+    "published": true,
+    "installed": true,
     "archive_sha256": "cfa8ad4f3ad5f97d7c576b81fd5c23170f72ef185f0a10b4489d3e171c2d2456",
     "feed_sha256": "4665331c9e5788cd4ed977a2a0d4fe53ac658d9120b2d573bf29bcafaf660e0e",
     "executable_sha256": "e2c3787c2f8d987d57a85a42be9b0fceb2e8e76ac926eaf7f5a9c02ca2545d00",
     "strict_bundle_signature_verified": true,
     "archive_and_feed_Ed25519_verified": true,
     "temporary_private_key_removed": true
+  },
+  "publication": {
+    "tag": "v1.10.1",
+    "commit": "a10bbb579ae132e788f064e7d6636219cb3b6c6b",
+    "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.10.1",
+    "anonymous_downloads": {
+      "archive": {
+        "status": 200,
+        "bytes": 4970687,
+        "sha256": "cfa8ad4f3ad5f97d7c576b81fd5c23170f72ef185f0a10b4489d3e171c2d2456"
+      },
+      "version_feed": {
+        "status": 200,
+        "bytes": 1299,
+        "sha256": "4665331c9e5788cd4ed977a2a0d4fe53ac658d9120b2d573bf29bcafaf660e0e"
+      },
+      "latest_feed": {
+        "status": 200,
+        "bytes": 1299,
+        "sha256": "4665331c9e5788cd4ed977a2a0d4fe53ac658d9120b2d573bf29bcafaf660e0e"
+      }
+    }
+  },
+  "installation": {
+    "path": "/Applications/Countdown Manager.app",
+    "executable_matches_capture_and_archive": true,
+    "event_bytes_unchanged": true,
+    "weather_keep_awake_timer_choices_unchanged": true,
+    "startup_weather_journal_records_observed": true
+  },
+  "cleanup": {
+    "removed_generated_directories": 19,
+    "allocated_bytes_removed": 2383994880,
+    "release_archives_source_and_QA_evidence_retained": true
   }
 }

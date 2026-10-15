@@ -1,37 +1,30 @@
 # Preparing signed updates
 
-The source candidate is **1.10.1 / build 19**, adding privacy-limited weather
-diagnostics. Its preparation/verification status is tracked in
-[releases/v1.10.1.md](releases/v1.10.1.md). It has not been published or installed;
-the recorded published release below remains 1.10.0 / build 18.
+Version **1.10.1 / build 19** is published as GitHub's latest release and installed
+in `/Applications`. It adds automatic privacy-limited weather diagnostics. The ad-hoc
+bundle signature and Ed25519 ZIP/appcast signatures passed; anonymous ZIP and both
+version-specific/latest appcast downloads match the locally signed hashes. The installed
+and running executable matches the published archive. Production event JSON stayed
+byte-identical; weather/keep-awake/timer preferences were preserved.
 
-The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
-Version **1.10.0 / build 18** is published as GitHub's latest release. The final package
-passed ad-hoc strict verification and its ZIP/appcast were Ed25519-signed and verified.
-The same executable was exercised by isolated native weather/header/settings scenarios;
-all ten current screenshots are accepted. Anonymous ZIP and version-specific/latest appcast downloads
-match the locally signed files. Version 1.10.0 / build 18 was installed in `/Applications` and launched from that bundle.
-The executable matches the published archive; production event JSON stayed byte-identical
-during replacement and startup. Eleven temporary bundles and eight redundant local archives
-were removed; the current signed release archive was retained.
-The temporary private-key export was removed after signing.
-
-The previous release **1.9.0 / build 16** was replaced locally; its publication
-and manual installation history is in [releases/v1.9.0.md](releases/v1.9.0.md).
-Current behavior, evidence and meaningful limits are in [releases/v1.10.0.md](releases/v1.10.0.md).
-Release artifacts use an Ed25519-signed ZIP and appcast; preparation, publication,
-public HTTPS verification and installation are separate operations.
-Existing releases without Sparkle require one manual installation of a published updater-enabled release.
+The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon build.
+The exact executable retains its accepted ten screenshots and native PASS 5/5 evidence.
+Temporary signing-key export was removed. Nineteen generated build/cache/duplicate
+folders were removed after installation, retaining release archives and QA evidence.
+Current status and limitations are in [releases/v1.10.1.md](releases/v1.10.1.md);
+previous publication/installation history is in [releases/v1.10.0.md](releases/v1.10.0.md).
+Release preparation, publication, public verification and installation remain separate operations.
+Existing versions without Sparkle require one manual installation of an updater-enabled release.
 
 ## Channel and signing key
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.0/CountdownManager-1.10.0-18.zip`.
-The archive and signed `appcast.xml` are assets of release v1.10.0, selected as GitHub's latest.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.1/CountdownManager-1.10.1-19.zip`.
+The archive and signed `appcast.xml` are assets of release v1.10.1, selected as GitHub's latest.
 Anonymous HTTPS downloads of the archive, version-specific feed and latest feed matched their
-locally verified SHA-256 hashes; feed build 18, version 1.10.0, URL and length passed.
+locally verified SHA-256 hashes; feed build 19, version 1.10.1, URL and length passed.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -108,7 +101,7 @@ the seed contents. Running these commands does not create a permanent backup:
 The numbers above target local preparation of 1.10.1 artifacts, after acceptance;
 they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The current distributed 1.10.0 uses build 18; choose a greater build for the next release. Keep `local.countdownmanager.app`
+build. The current distributed 1.10.1 uses build 19; choose a greater build for the next release. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
@@ -117,7 +110,7 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Candidate status is recorded in [releases/v1.10.0.md](releases/v1.10.0.md).
+Current release status is recorded in [releases/v1.10.1.md](releases/v1.10.1.md).
 The published weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 The current common transport/controller returned decoded batches from all three services
