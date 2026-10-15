@@ -1,5 +1,10 @@
 # Preparing signed updates
 
+The source candidate is **1.10.1 / build 19**, adding privacy-limited weather
+diagnostics. Its preparation/verification status is tracked in
+[releases/v1.10.1.md](releases/v1.10.1.md). It has not been published or installed;
+the recorded published release below remains 1.10.0 / build 18.
+
 The source integrates pinned Sparkle 2.10.0 for macOS 13+ and the Apple Silicon release build.
 Version **1.10.0 / build 18** is published as GitHub's latest release. The final package
 passed ad-hoc strict verification and its ZIP/appcast were Ed25519-signed and verified.
@@ -85,7 +90,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.10.0 COUNTDOWN_BUILD_NUMBER=18 \
+  COUNTDOWN_VERSION=1.10.1 COUNTDOWN_BUILD_NUMBER=19 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -95,12 +100,12 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.10.1/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above target local preparation of 1.10.0 artifacts, after acceptance;
+The numbers above target local preparation of 1.10.1 artifacts, after acceptance;
 they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
 build. The current distributed 1.10.0 uses build 18; choose a greater build for the next release. Keep `local.countdownmanager.app`

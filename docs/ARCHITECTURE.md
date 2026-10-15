@@ -77,6 +77,7 @@ Key files:
 - `WeatherMETNorway.swift`
 - `WeatherWttr.swift`
 - `WeatherTransport.swift`
+- `WeatherDiagnostics.swift`
 - `ApplicationUpdates.swift`
 - `TimerCompletionAlert.swift`
 - `Store.swift`
@@ -356,6 +357,8 @@ boundaries, preserving no-prompt restoration and foreground first-use permission
 - `WeatherTransport.swift`: ephemeral HTTPS session, optional conditional Last-Modified request,
   Expires/Retry-After parsing and 304 revalidation. Cookies, credentials and disk cache are disabled.
 - `WeatherLocation.swift`: coarse native location and ten fixed cities with IANA zones. No IP lookup.
+- `WeatherDiagnostics.swift`: fixed technical log formats, safe error classification and full-day
+  usable counts. Its injected sink defaults to no-op; production `AppDelegate` selects `.journal`.
 
 A stable Gregorian query captures the selected zone and sixteen local dates. Manual zones come from
 cities; Automatic currently uses the device zone, with the corresponding limitation documented in
@@ -393,7 +396,8 @@ payload limits and checkpoints bound the remaining work. No detached tasks or ne
 The base request floor is thirty minutes; Expires/Retry-After may defer requests further, with expired
 entries hidden independently. Failed sources wait at least five minutes. Long scheduler delays are
 woken in at most daily slices without violating the retained server deadline. Nonfinite metadata is
-ignored. No continuous short-interval polling or new weather log record is introduced.
+ignored. No continuous short-interval polling is introduced. Privacy-limited weather diagnostics
+observe these existing request and publication boundaries without changing their scheduling.
 
 The app's weather UI consists of the switch, location menu, editor checkbox and plain symbol/temp.
 Source, licence and privacy documentation stays here and in README rather than app controls. The
@@ -499,6 +503,47 @@ Product semantics live in `PRODUCT.md`; accepted rationale lives in `decisions/s
 File: `Sources/CountdownManager/Diagnostics.swift`
 
 `DiagnosticLog` writes privacy-limited technical diagnostics to Unified Logging and a local rotating file journal on a dedicated utility queue.
+
+`WeatherDiagnostics` uses this existing journal through an injected Sendable sink. It records:
+
+- `weather.state`: init/configuration/demand/shutdown reason, enablement, automatic/manual mode and
+  demand/source counts; `weather.location`: fixed request/permission/result categories;
+- paired `weather.request.start` / `weather.request.end`: fixed service identifier and random
+  request UUID, elapsed milliseconds, HTTP status or `none`, received byte count or `unknown`,
+  decode outcome, decoded-day count, full-day count, full days with temperature/condition and
+  their usable intersection;
+- `weather.source`: fixed success/failure/not-modified result, cache state and seconds until
+  freshness/retry boundaries; `weather.schedule`: scheduled delay or cancellation;
+- `weather.publication`: demanded/usable counts; `weather.computation`: classified aggregate error.
+
+`AppDelegate` requests a `.launch` weather snapshot after supplying initial event demand, including
+after Sparkle relaunch. The controller also records bounded snapshots around normal state changes
+and settled work. The Settings diagnostics action requests a `.diagnostics` snapshot before
+`Store.openDiagnostics()`; Store flushes all already-enqueued journal records before revealing the
+folder. `WeatherDiagnosticSnapshotReason` restricts snapshot reasons to launch, diagnostics and
+settled. `weather.snapshot` contains a fixed result (`disabled`, `no_eligible_dates`,
+`location_pending`, `location_unavailable`, `loading`, `available`, `no_usable_data` or `stopped`),
+enablement/mode, eligible demand and usable counts, request/location/computation pending flags,
+and fresh/failed source counts. Usable counts require unexpired published data and current eligible
+demand. Snapshot collection is observational: it reads this state without refreshing providers,
+requesting location or changing permissions, preferences or cache entries.
+
+The controller requests `.settled` snapshots after ordinary refreshes, location completion,
+provider task-group completion, consensus success/error and shutdown. Identical consecutive
+automatic snapshot fields are suppressed, while `.launch` and `.diagnostics` explicitly record
+even unchanged state. Only the last diagnostic fields are retained for this suppression.
+
+Errors use a fixed allowlist; URL failures include only numeric `NSURLErrorDomain` code and a
+timeout/offline/connection/cancelled/other category. Request URLs, coordinates, selected city names,
+event content or day keys, response bodies, headers, NSError userInfo, localized messages and
+arbitrary error descriptions are excluded. Usable source-day counts require an exact full query
+interval with both temperature and condition, matching the badge's completeness requirement.
+
+Records follow actual work and state boundaries, never view rendering, timer ticks or forecast
+getters. Location result and publication count records suppress identical consecutive values;
+configuration/demand records require a change, and scheduling records require a changed deadline
+or an existing schedule to cancel. Diagnostic observation does not own requests, retries, cache
+freshness, location permissions or UI state.
 
 `MainThreadWatchdog` records diagnostic breadcrumbs when the AppKit main thread remains unresponsive beyond its threshold and when responsiveness returns.
 

@@ -449,6 +449,7 @@ package final class Store: ObservableObject {
 
     func openDiagnostics() {
         DiagnosticLog.shared.record("diagnostics.open-folder")
+        DiagnosticLog.shared.flush()
         do {
             try FileManager.default.createDirectory(
                 at: DiagnosticLog.directoryURL,

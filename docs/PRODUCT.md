@@ -216,7 +216,8 @@ remain false. Save commits that choice and Cancel leaves it unchanged; titles ne
 An eligible event shows only a native condition symbol and signed rounded Celsius temperature beside
 its date when usable forecast data exists. The element is plain text/symbol, without a link, tooltip,
 source/license/privacy text, info button, loading/error/retry or placeholder. Weather settings contain
-only the global switch and the Automatic/ten-city choice. No weather diagnostics are added to logs.
+only the global switch and the Automatic/ten-city choice. Privacy-limited technical weather
+diagnostics use the existing local journal and do not add weather status or errors to the UI.
 The existing storage footer, event ordering, favorites, expiry and timer behavior stay unchanged.
 
 Three keyless services are queried independently: [Open-Meteo](https://open-meteo.com/en/docs),
@@ -500,6 +501,10 @@ Diagnostics must not contain private event content such as:
 
 Technical operational information may be recorded when needed for diagnostics.
 
+Weather diagnostics must not contain request URLs, coordinates, selected city names, event content
+or response bodies. Transport errors use numeric URL error codes rather than localized error text
+or arbitrary error descriptions, which can include private request details.
+
 ## Diagnostics
 
 Countdown Manager maintains local diagnostic information for investigating application behaviour and failures.
@@ -512,6 +517,18 @@ Diagnostics may record technical facts such as:
 - timer duration or completion outcome;
 - success or failure;
 - UI-stall detection.
+
+Weather diagnostics may record the fixed service identifier, a bounded technical result category,
+HTTP status, numeric URL error code, elapsed request duration and aggregate counts. Availability
+and suppression diagnostics describe state transitions; unchanged refreshes must not produce
+repeated state records. They do not change forecast requests, retries, cache lifetime or the UI.
+
+A weather diagnostic snapshot is recorded automatically on application launch, including a launch
+after an update, and as normal weather work settles. The user does not need to change weather
+settings to start diagnostic collection. `Диагностика…` records the current snapshot and flushes
+the existing journal before revealing its folder. A snapshot observes current state only: it does
+not force a forecast refresh, retry, location request or permission prompt. Automatic repeated
+snapshots are bounded by state changes; an explicit diagnostics action may record the same state.
 
 Diagnostics are not a user-content log.
 

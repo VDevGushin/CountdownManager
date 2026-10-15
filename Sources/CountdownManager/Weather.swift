@@ -100,6 +100,10 @@ package final class WeatherController: ObservableObject {
     private let allowLocationRequests: Bool
     private let now: () -> Date
     private let schedule: WeatherRefreshScheduler
+    private let diagnostics: WeatherDiagnostics
+    private var lastPublication: String?
+    private var lastLocationDiagnostic: String?
+    private var lastSnapshot: String?
     private var demand: Set<String> = []
     private var coordinates: WeatherCoordinates?
     private var coordinateDate: Date?
@@ -157,9 +161,11 @@ package final class WeatherController: ObservableObject {
         allowLocationRequests: Bool = true,
         now: @escaping () -> Date = Date.init,
         scheduler: WeatherRefreshScheduler? = nil,
-        consensusComputation: WeatherConsensusComputation? = nil
+        consensusComputation: WeatherConsensusComputation? = nil,
+        diagnostics: WeatherDiagnostics = WeatherDiagnostics()
     ) {
         self.defaults = defaults
+        self.diagnostics = diagnostics
         computeConsensus = consensusComputation ?? { try await WeatherNormalizer.aggregateDemanded($0, query: $1, demandedDayKeys: $2) }
         if let legacyProvider {
             self.sources = [.openMeteo]
@@ -175,7 +181,9 @@ package final class WeatherController: ObservableObject {
             }
         } else {
             self.sources = WeatherSource.allCases.filter { sources.contains($0) }
-            self.provider = sourceProvider ?? { try await WeatherTransport.fetch($0, query: $1, lastModified: $2) }
+            self.provider = sourceProvider ?? {
+                try await WeatherTransport.fetch($0, query: $1, lastModified: $2, diagnostics: diagnostics)
+            }
         }
         self.locationProvider = locationProvider ?? NativeWeatherLocationProvider()
         self.allowLocationRequests = allowLocationRequests
@@ -183,6 +191,7 @@ package final class WeatherController: ObservableObject {
         self.schedule = scheduler ?? { scheduleWeatherRefresh(after: $0, action: $1) }
         enabled = defaults.bool(forKey: Self.enabledKey)
         location = WeatherLocationSelection(storedValue: defaults.string(forKey: Self.locationKey))
+        recordState(reason: "init")
     }
 
     package var locationTitle: String { location.title }
@@ -198,6 +207,7 @@ package final class WeatherController: ObservableObject {
     package func setEnabled(_ enabled: Bool) {
         guard !stopped, self.enabled != enabled else { return }
         self.enabled = enabled
+        recordState(reason: "enabled")
         defaults.set(enabled, forKey: Self.enabledKey)
         if enabled { locationAttemptDate = nil }
         invalidateRequests()
@@ -214,6 +224,7 @@ package final class WeatherController: ObservableObject {
             return
         }
         self.location = location
+        recordState(reason: "location")
         defaults.set(location.storedValue, forKey: Self.locationKey)
         coordinates = nil
         coordinateDate = nil
@@ -238,7 +249,10 @@ package final class WeatherController: ObservableObject {
             $0.showsWeather && (0..<16).contains($0.date.days(from: localToday, calendar: localCalendar))
         }.map { weatherDayKey($0.date) })
         if updated.isEmpty, !demand.isEmpty { invalidateRequests() }
+        let changed = demand != updated
         demand = updated
+        if changed { recordState(reason: "demand") }
+        recordPublication()
         refresh(allowLocationPrompt: allowLocationPrompt)
     }
 
@@ -251,9 +265,45 @@ package final class WeatherController: ObservableObject {
 
     package func refresh() { refresh(allowLocationPrompt: false) }
 
+    /// Reads the current state without retrying providers, changing preferences or requesting location.
+    package func recordDiagnosticSnapshot(reason: WeatherDiagnosticSnapshotReason) {
+        let timestamp = now()
+        let eligible = demand.intersection(availableDayKeys())
+        let usable = enabled && !stopped && forecastExpiry.map({ $0 > timestamp }) == true
+            ? forecasts.keys.filter { eligible.contains($0) }.count : 0
+        let entries = activeKey.flatMap { cache[$0]?.entries } ?? [:]
+        let freshSources = entries.values.filter { $0.batch != nil && $0.freshUntil > timestamp }.count
+        let failedSources = entries.values.filter(\.failed).count
+        let locationIsFresh = coordinates != nil && coordinateDate.map {
+            timestamp.timeIntervalSince($0) < Self.cacheLifetime
+        } == true
+        let result: String
+        if stopped { result = "stopped" }
+        else if !enabled { result = "disabled" }
+        else if eligible.isEmpty { result = "no_eligible_dates" }
+        else if usable > 0 { result = "available" }
+        else if locationIsPending { result = "location_pending" }
+        else if fetchTask != nil || computationTask != nil { result = "loading" }
+        else if location == .automatic && !locationIsFresh { result = "location_unavailable" }
+        else { result = "no_usable_data" }
+        let mode = location == .automatic ? "auto" : "manual"
+        let fields = "result=\(result) enabled=\(enabled) mode=\(mode) demanded=\(eligible.count) usable=\(usable) " +
+            "request_pending=\(fetchTask != nil) location_pending=\(locationIsPending) " +
+            "computation_pending=\(computationTask != nil) fresh_sources=\(freshSources) failed_sources=\(failedSources)"
+        guard reason != .settled || lastSnapshot != fields else { return }
+        lastSnapshot = fields
+        diagnostics.emit("weather.snapshot reason=\(reason.rawValue) \(fields)")
+    }
+
     private func refresh(allowLocationPrompt: Bool) {
+        defer { recordDiagnosticSnapshot(reason: .settled) }
         if enabled, !stopped, !demand.isEmpty {
+            let previousDemand = demand
             demand.formIntersection(availableDayKeys())
+            if previousDemand != demand {
+                recordState(reason: "demand")
+                recordPublication()
+            }
             if demand.isEmpty { invalidateRequests() }
         }
         guard enabled, !stopped, !demand.isEmpty, !sources.isEmpty else {
@@ -272,8 +322,10 @@ package final class WeatherController: ObservableObject {
 
     package func shutdown() {
         stopped = true
+        recordState(reason: "shutdown")
         invalidateRequests()
         settingsStatus = nil
+        recordDiagnosticSnapshot(reason: .settled)
     }
 
     private func invalidateRequests() {
@@ -285,14 +337,17 @@ package final class WeatherController: ObservableObject {
         activeKey = nil
         activeQuery = nil
         locationProvider.cancel()
+        if locationIsPending { recordLocation("result=cancelled") }
         if locationIsPending { locationAttemptDate = nil }
         locationIsPending = false
         forecasts = [:]
         forecastExpiry = nil
+        recordPublication()
     }
 
     private func requestLocation(allowPrompt: Bool) {
         guard allowLocationRequests else {
+            recordLocation("result=disabled")
             settingsStatus = "Для прогноза выберите город вручную."
             return
         }
@@ -302,20 +357,29 @@ package final class WeatherController: ObservableObject {
             return
         }
         locationIsPending = true
+        recordLocation("result=requested prompt=\(allowPrompt)")
         locationAttemptDate = now()
         settingsStatus = "Определяем местоположение…"
         let expectedGeneration = generation
         locationProvider.request(allowPrompt: allowPrompt) { [weak self] result in
             guard let self, self.generation == expectedGeneration, self.enabled, !self.stopped, !self.demand.isEmpty else { return }
+            defer { self.recordDiagnosticSnapshot(reason: .settled) }
             self.locationIsPending = false
             switch result {
             case let .success(coordinates):
+                self.recordLocation("result=success")
                 self.coordinates = coordinates
                 self.coordinateDate = self.now()
                 self.loadForecasts(at: coordinates)
             case .failure(.permissionRequired):
+                self.recordLocation("result=permission_required")
                 self.settingsStatus = "Для геолокации включите погоду или выберите «Автоматически» в настройках."
-            case .failure:
+            case let .failure(failure):
+                switch failure {
+                case .denied: self.recordLocation("result=denied")
+                case .unavailable: self.recordLocation("result=unavailable")
+                case .permissionRequired: break
+                }
                 self.settingsStatus = "Местоположение недоступно. Выберите город вручную."
                 self.scheduleRefresh(at: self.now().addingTimeInterval(Self.failureBackoff))
             }
@@ -332,6 +396,7 @@ package final class WeatherController: ObservableObject {
             cancelComputation()
             forecasts = [:]
             forecastExpiry = nil
+            recordPublication()
             cancelScheduledRefresh()
             activeKey = key
             activeQuery = query
@@ -376,6 +441,7 @@ package final class WeatherController: ObservableObject {
                 }
             }
             guard let self, !Task.isCancelled, self.generation == expectedGeneration, self.activeKey == key else { return }
+            defer { self.recordDiagnosticSnapshot(reason: .settled) }
             self.fetchTask = nil
             // A clock/expiry action can run after publication but before the task group drains.
             // Revisit a now-due source rather than losing that coalesced refresh.
@@ -413,6 +479,22 @@ package final class WeatherController: ObservableObject {
         }
         area.updatedAt = timestamp
         cache[key] = area
+        if let entry = area.entries[outcome.source] {
+            let result: String
+            let failure: String
+            switch outcome.result {
+            case .success:
+                result = "success"
+                failure = "error=none"
+            case let .failure(error):
+                result = entry.failed ? "failure" : "not_modified"
+                failure = WeatherDiagnostics.errorFields(error)
+            }
+            let state = entry.batch == nil ? "empty" : (entry.freshUntil > timestamp ? "fresh" : "expired")
+            diagnostics.emit("weather.source source=\(outcome.source.rawValue) result=\(result) cache=\(state) " +
+                             "fresh_for_s=\(WeatherDiagnostics.seconds(entry.freshUntil.timeIntervalSince(timestamp))) " +
+                             "retry_in_s=\(WeatherDiagnostics.seconds(entry.nextRequest.timeIntervalSince(timestamp))) \(failure)")
+        }
         if cache.count > 4, let oldest = cache.min(by: { $0.value.updatedAt < $1.value.updatedAt })?.key { cache.removeValue(forKey: oldest) }
     }
 
@@ -425,6 +507,7 @@ package final class WeatherController: ObservableObject {
         // Withdraw expired/deleted values immediately, before any off-actor computation.
         if forecastExpiry.map({ $0 <= timestamp }) == true { forecasts = [:]; forecastExpiry = nil }
         forecasts = forecasts.filter { demand.contains($0.key) }
+        recordPublication()
         if !forecasts.isEmpty { settingsStatus = nil }
         else if entries.values.contains(where: \.failed) { settingsStatus = "Прогноз недоступен. Попробуем позже." }
         else if !entries.isEmpty { settingsStatus = "Прогноз недоступен для выбранных дат." }
@@ -434,6 +517,7 @@ package final class WeatherController: ObservableObject {
         guard !input.batches.isEmpty, !input.demand.isEmpty else {
             forecasts = [:]
             forecastExpiry = nil
+            recordPublication()
             return
         }
         let expectedRevision = computationRevision
@@ -455,6 +539,8 @@ package final class WeatherController: ObservableObject {
                 guard let self, !Task.isCancelled, self.computationRevision == expectedRevision else { return }
                 self.computationTask = nil
                 self.settingsStatus = "Прогноз недоступен. Попробуем позже."
+                self.diagnostics.emit("weather.computation \(WeatherDiagnostics.errorFields(error))")
+                self.recordDiagnosticSnapshot(reason: .settled)
             }
         }
     }
@@ -467,7 +553,9 @@ package final class WeatherController: ObservableObject {
             result[item.key] = forecast
         }
         forecastExpiry = expiry
+        recordPublication()
         if !forecasts.isEmpty { settingsStatus = nil }
+        recordDiagnosticSnapshot(reason: .settled)
     }
 
     private func cancelComputation() {
@@ -499,6 +587,7 @@ package final class WeatherController: ObservableObject {
     }
 
     private func cancelScheduledRefresh() {
+        if refreshDate != nil { diagnostics.emit("weather.schedule result=cancelled") }
         refreshGeneration += 1
         refreshCancellation?()
         refreshCancellation = nil
@@ -511,7 +600,9 @@ package final class WeatherController: ObservableObject {
         let expectedGeneration = generation
         let expectedRefresh = refreshGeneration
         refreshDate = date
-        refreshCancellation = schedule(max(0, date.timeIntervalSince(now()))) { [weak self] in
+        let delay = max(0, date.timeIntervalSince(now()))
+        diagnostics.emit("weather.schedule result=scheduled delay_s=\(WeatherDiagnostics.seconds(delay))")
+        refreshCancellation = schedule(delay) { [weak self] in
             guard let self, self.generation == expectedGeneration, self.refreshGeneration == expectedRefresh,
                   self.enabled, !self.stopped, !self.demand.isEmpty else { return }
             self.refreshCancellation = nil
@@ -519,5 +610,23 @@ package final class WeatherController: ObservableObject {
             if self.now() < date { self.scheduleRefresh(at: date); return }
             self.refresh()
         }
+    }
+
+    private func recordState(reason: String) {
+        let mode = location == .automatic ? "auto" : "manual"
+        diagnostics.emit("weather.state reason=\(reason) enabled=\(enabled) mode=\(mode) demanded=\(demand.count) sources=\(sources.count)")
+    }
+
+    private func recordLocation(_ fields: String) {
+        guard lastLocationDiagnostic != fields else { return }
+        lastLocationDiagnostic = fields
+        diagnostics.emit("weather.location \(fields)")
+    }
+
+    private func recordPublication() {
+        let fields = "demanded=\(demand.count) usable=\(forecasts.count)"
+        guard lastPublication != fields else { return }
+        lastPublication = fields
+        diagnostics.emit("weather.publication \(fields)")
     }
 }

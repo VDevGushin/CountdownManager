@@ -1,0 +1,137 @@
+{
+  "applicationBuild" : "19",
+  "applicationVersion" : "1.10.1",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "weather-editor-dark.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-editor-dark",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "weather-editor-light.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-editor-light",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "file" : "weather-header-before-midnight.png",
+      "height" : 1200,
+      "name" : "weather-header-before-midnight",
+      "opaqueCorners" : true,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "file" : "weather-header-midnight-empty.png",
+      "height" : 1200,
+      "name" : "weather-header-midnight-empty",
+      "opaqueCorners" : true,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "weather-list-dark.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-list-dark",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "weather-list-light.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-list-light",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "weather-list-light-high-contrast.png",
+      "height" : 1200,
+      "highContrastOverride" : true,
+      "name" : "weather-list-light-high-contrast",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "weather-list-off-dark.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-list-off-dark",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "weather-settings-dark.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-settings-dark",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "weather-settings-light.png",
+      "height" : 1200,
+      "highContrastOverride" : false,
+      "name" : "weather-settings-light",
+      "opaqueCorners" : true,
+      "reduceMotionOverride" : false,
+      "scale" : 2,
+      "width" : 780,
+      "windowIdentifier" : "main.panel"
+    }
+  ],
+  "executableSHA256" : "e2c3787c2f8d987d57a85a42be9b0fceb2e8e76ac926eaf7f5a9c02ca2545d00",
+  "headerSyntheticDays" : {
+    "weather-header-before-midnight" : "2026-10-14",
+    "weather-header-midnight-empty" : "2026-10-15"
+  },
+  "version" : 5,
+  "weatherForecastSource" : "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP\/geolocation"
+}

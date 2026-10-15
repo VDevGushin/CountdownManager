@@ -113,7 +113,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             Darwin.exit(64)
         }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
-        DiagnosticLog.shared.record("app.launch version=\(version) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+        DiagnosticLog.shared.record("app.launch version=\(version) build=\(build) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
         keepAwake = KeepAwakeController(defaults: defaults)
@@ -131,10 +132,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             weather = WeatherController(
                 defaults: defaults,
                 provider: { Self.isolatedWeatherForecasts($0) },
-                allowLocationRequests: false
+                allowLocationRequests: false,
+                diagnostics: .journal
             )
         } else {
-            weather = WeatherController(defaults: defaults)
+            weather = WeatherController(defaults: defaults, diagnostics: .journal)
         }
         updates = ApplicationUpdates(
             enabled: uiSmokeConfiguration == nil || UISmokeConfiguration.updateTestWasRequested,
@@ -233,6 +235,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             }
         }
         weather.updateEvents(store.active)
+        weather.recordDiagnosticSnapshot(reason: .launch)
         timerCompletionSubscription = timer.completionPublisher
             .sink { [weak self] in
                 self?.timerCompletionAlert.present()

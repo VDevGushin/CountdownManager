@@ -237,6 +237,34 @@ them faithfully.
 
 ## Weather verification
 
+For diagnostic-only weather changes, run full SwiftLint and `./verify.sh fast`, with focused
+deterministic transport/controller checks using synthetic responses, isolated preferences and an
+injected diagnostic sink. Check paired request UUIDs, fixed service/result categories, success and
+empty/invalid payloads, HTTP status, numeric URL errors, cancellation, elapsed duration and decoded
+versus full-day/temperature/condition/usable counts. A response that starts with HTTP 200 and
+partial bytes but ends in a URLSession timeout must remain a failure with unknown complete
+response status/size. Exercise availability/suppression changes and repeated unchanged refreshes
+to verify bounded transition records. Use private sentinel URLs, coordinates, city names, event content and response bodies in
+fixtures and assert they do not reach diagnostics; localized/arbitrary error text must not be
+recorded. Exercise one failing source alongside a successful one and a partial-day result that
+does not create a badge. Confirm that adding diagnostics preserves the existing
+request/retry/cache/cancellation behaviour. The injected sink checks emitted records, without
+claiming a physical journal write or rotation test. These checks do not establish live service
+availability, native location delivery or
+the reported failure on another Mac. No application UI or screenshot run is needed when UI,
+network behaviour and data contracts are unchanged. Preparing a release still requires fresh
+README screenshots under that version and provenance verification according to `AGENTS.md`;
+that release requirement is separate from diagnostic-only regression evidence.
+
+Snapshot checks must cover launch with restored weather preferences/demand, automatic settling
+of ordinary work, and an explicit `.diagnostics` snapshot of unchanged state. Confirm bounded
+automatic repeats, the fixed launch/diagnostics/settled reasons and private-field exclusions.
+Compare provider/location/scheduler call counts before and after explicit snapshots: observing
+state must not trigger a refresh, retry, permission prompt or native request. The Settings action
+must enqueue its weather snapshot before opening diagnostics, and the journal must flush before
+Finder reveals the folder. Deterministic snapshot tests do not by themselves establish Finder
+delivery, a real post-update relaunch or journal durability on a different Mac.
+
 Run full SwiftLint and `./verify.sh fast` before product QA. Existing flag/draft tests retain legacy
 JSON false, Save/Cancel and no title migration. New deterministic normalization checks cover all
 three services, median 1/2/3, categorical majority/wet ties, distinct source votes, invalid units and

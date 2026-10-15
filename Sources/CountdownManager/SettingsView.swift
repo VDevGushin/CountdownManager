@@ -112,7 +112,10 @@ struct SettingsView: View {
                                 .accessibilityIdentifier("updates.check")
                                 .uiSmokeControl(id: "updates.check", action: { updates.checkForUpdates(nil) })
                         }
-                        Button("Диагностика…") { store.openDiagnostics() }
+                        Button("Диагностика…") {
+                            weather.recordDiagnosticSnapshot(reason: .diagnostics)
+                            store.openDiagnostics()
+                        }
                             .accessibilityIdentifier("settings.diagnostics")
                     }
                     if let version = applicationVersionLabel() {
