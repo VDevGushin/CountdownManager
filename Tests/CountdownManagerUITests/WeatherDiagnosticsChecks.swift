@@ -282,14 +282,26 @@ func testWeatherControllerDiagnostics() async {
     precondition(records.lines.contains("weather.publication demanded=1 usable=0"))
     precondition(!records.lines.contains("weather.publication demanded=1 usable=1"))
     precondition(controller.forecast(for: day) == nil, "Successful partial-day data must not produce a daily badge")
-    await requests.complete(.metNorway, result: .failure(hostileWeatherError(code: NSURLErrorTimedOut)))
-    await waitForDiagnostic {
-        records.lines.contains { $0.hasPrefix("weather.source source=metNorway result=failure ") && $0.contains("url_kind=timeout") }
-    }
     let sample = WeatherDailySample(dayKey: key, period: full, maximumTemperature: 14, condition: .clear)
     await requests.complete(.openMeteo, result: .success(WeatherSourceBatch(forecasts: [key: sample])))
     await waitForDiagnostic { controller.forecast(for: day)?.maximumTemperature == 14 }
     precondition(records.lines.contains("weather.publication demanded=1 usable=1"))
+    // Forecast publication does not imply that every provider request has settled.
+    // Keep one source pending to prove that distinction before testing cached-refresh deduplication.
+    precondition(containsWeatherSnapshot(records, expected: [
+        "result": "available", "usable": "1", "request_pending": "true",
+    ]))
+    await requests.complete(.metNorway, result: .failure(hostileWeatherError(code: NSURLErrorTimedOut)))
+    await waitForDiagnostic {
+        records.lines.contains { $0.hasPrefix("weather.source source=metNorway result=failure ") && $0.contains("url_kind=timeout") }
+    }
+    await waitForDiagnostic {
+        containsWeatherSnapshot(records, expected: [
+            "reason": "settled", "result": "available", "usable": "1", "failed_sources": "1",
+            "request_pending": "false", "computation_pending": "false",
+        ])
+    }
+    precondition(controller.forecast(for: day)?.maximumTemperature == 14, "A failed source must retain the other provider's usable forecast")
     for source in [WeatherSource.openMeteo, .wttr] {
         precondition(records.lines.contains { $0.hasPrefix("weather.source source=\(source.rawValue) result=success ") })
     }

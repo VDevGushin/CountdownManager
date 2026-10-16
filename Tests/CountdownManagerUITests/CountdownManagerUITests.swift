@@ -50,6 +50,7 @@ enum UIChecks {
         try await testWeatherTransportDiagnostics()
         await testWeatherControllerDiagnostics()
         await testWeatherRestoredDiagnostics()
+        try await testDiagnosticArchiveExport()
         try await testCurrentDayHeaderDate()
         testKeepAwakeLifecycle()
         try testPlannerCalendarPresentation()

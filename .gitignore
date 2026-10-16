@@ -4,3 +4,6 @@
 .DS_Store
 evals/artifacts/
 evals/reports/
+
+# Imported local design references include user-provided screenshots.
+.lavish/

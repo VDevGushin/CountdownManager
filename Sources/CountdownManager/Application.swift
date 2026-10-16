@@ -153,6 +153,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             returnToApplication: { [weak self] in self?.showPanel() }
         ) { [weak self] in
             guard let self else { return "Приложение завершает работу." }
+            if self.store.isExportingDiagnostics { return "Дождитесь сохранения диагностики." }
             let timerIsRunning: Bool
             if case .running = self.timer.phase { timerIsRunning = true } else { timerIsRunning = false }
             return updateRestartBlockReason(
@@ -427,7 +428,6 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard updates?.shouldCancelUpdateTermination == true else { return .terminateNow }
         DiagnosticLog.shared.record("updates.termination cancelled-active-work")
-        DiagnosticLog.shared.flush()
         return .terminateCancel
     }
 
@@ -517,7 +517,6 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
         MainThreadWatchdog.shared.stop()
         DiagnosticLog.shared.record("app.terminate")
-        DiagnosticLog.shared.flush()
     }
 
     // Every explicitly isolated runtime uses demonstration data and never contacts a weather server.

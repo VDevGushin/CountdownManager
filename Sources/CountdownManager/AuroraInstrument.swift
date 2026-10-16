@@ -54,7 +54,7 @@ enum AuroraInstrument {
         if scheme == .dark {
             return highContrast ? Color(red: 1, green: 0.75, blue: 0.63) : Color(red: 0.96, green: 0.61, blue: 0.5)
         }
-        return highContrast ? Color(red: 0.63, green: 0.17, blue: 0.1) : Color(red: 0.82, green: 0.28, blue: 0.18)
+        return highContrast ? Color(red: 0.63, green: 0.17, blue: 0.1) : Color(red: 0.718, green: 0.278, blue: 0.173)
     }
 
     static func ink(for scheme: ColorScheme) -> Color {
@@ -123,6 +123,15 @@ enum AuroraInstrument {
         }
         return Color(red: 0, green: highContrast ? 0.32 : 0.39, blue: 0.23)
     }
+
+    static func warningInk(for scheme: ColorScheme, highContrast: Bool) -> Color {
+        if scheme == .dark {
+            return highContrast ? Color(red: 1, green: 0.84, blue: 0.63)
+                : Color(red: 0.882, green: 0.714, blue: 0.478)
+        }
+        return highContrast ? Color(red: 0.4, green: 0.23, blue: 0.05)
+            : Color(red: 0.506, green: 0.333, blue: 0.11)
+    }
 }
 
 enum AuroraTimerAppearance {
@@ -146,7 +155,7 @@ struct AuroraTimerBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        AuroraInstrument.timerSurface(for: colorScheme)
+        baseColor
             .overlay {
                 if case .finished = appearance {
                     AuroraInstrument.finishedColor(
@@ -164,6 +173,16 @@ struct AuroraTimerBackground: View {
                     .frame(height: 1)
             }
             .accessibilityHidden(true)
+    }
+
+    private var baseColor: Color {
+        switch appearance {
+        case .idle:
+            AuroraInstrument.surface(for: colorScheme, elevated: false,
+                                     highContrast: accessibilitySettings.prefersHighContrast)
+        case .running, .finished:
+            AuroraInstrument.timerSurface(for: colorScheme)
+        }
     }
 }
 
@@ -194,7 +213,7 @@ struct AuroraTimerPresetSelector: View {
             select(minutes)
         } label: {
             Text(minutes == 60 ? "1 ч" : (minutes == 120 ? "2 ч" : "\(minutes)"))
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                 .monospacedDigit()
                 .foregroundStyle(labelColor(isSelected: isSelected))
                 .transaction { transaction in
@@ -234,15 +253,19 @@ struct AuroraTimerPresetSelector: View {
 
     private var selectionBackground: some View {
         RoundedRectangle(cornerRadius: 5)
-            .fill(AuroraInstrument.accent(
+            .fill(AuroraInstrument.accentSurface(
                 for: colorScheme,
                 highContrast: accessibilitySettings.prefersHighContrast
+            ))
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(
+                AuroraInstrument.stroke(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast),
+                lineWidth: 1
             ))
     }
 
     private func labelColor(isSelected: Bool) -> Color {
         guard isSelected else { return AuroraInstrument.secondaryInk(for: colorScheme) }
-        return colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white
+        return AuroraInstrument.accentInk(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
     }
 
     private func select(_ minutes: Int) {
@@ -330,36 +353,5 @@ struct AuroraLoadingPlaceholder: View {
                 lineWidth: 1
             ))
             .frame(height: height)
-    }
-}
-
-struct AuroraInputChrome: ViewModifier {
-    let isFocused: Bool
-
-    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
-    @Environment(\.colorScheme) private var colorScheme
-
-    func body(content: Content) -> some View {
-        content
-            .overlay(
-                RoundedRectangle(cornerRadius: AuroraInstrument.inputCornerRadius)
-                    .stroke(
-                        isFocused ? AuroraInstrument.accent(
-                            for: colorScheme,
-                            highContrast: accessibilitySettings.prefersHighContrast
-                        ) : AuroraInstrument.stroke(
-                            for: colorScheme,
-                            highContrast: accessibilitySettings.prefersHighContrast
-                        ),
-                        lineWidth: isFocused ? 2 : 1
-                    )
-                    .allowsHitTesting(false)
-            )
-    }
-}
-
-extension View {
-    func auroraInputChrome(isFocused: Bool) -> some View {
-        modifier(AuroraInputChrome(isFocused: isFocused))
     }
 }

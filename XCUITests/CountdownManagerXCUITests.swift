@@ -465,6 +465,78 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(try persistedItems().isEmpty)
     }
 
+    func testSettingsDiagnosticArchiveCancelAndSave() throws {
+        let originalEvents = try Data(contentsOf: dataURL)
+        let destination = testHome.appendingPathComponent("Countdown-Diagnostics.zip")
+        app.launch()
+        let settings = app.buttons["settings.open"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 3))
+        settings.click()
+        let export = app.buttons["settings.diagnostics"]
+        XCTAssertTrue(export.waitForExistence(timeout: 3))
+        export.click()
+        let panel = app.sheets.firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 3), "The native save sheet must be accessible")
+        let cancel = panel.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "Отменить", "Отмена"] as NSArray)).firstMatch
+        XCTAssertTrue(cancel.waitForExistence(timeout: 3))
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(panel))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+        let exportEnabled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in export.isEnabled }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [exportEnabled], timeout: 3), .completed)
+
+        export.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 3))
+        let filename = panel.textFields.matching(NSPredicate(format: "value == %@", "Countdown-Diagnostics.zip")).firstMatch
+        XCTAssertTrue(filename.waitForExistence(timeout: 3))
+        filename.click()
+        // Slash invokes the standard Go to Folder sheet without a keyboard-layout-specific letter shortcut.
+        filename.typeText("/")
+        let folder = app.sheets.comboBoxes.firstMatch
+        XCTAssertTrue(folder.waitForExistence(timeout: 3), "The native Go to Folder field must be accessible")
+        replace(folder, with: testHome.path)
+        folder.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(folder))
+        let save = panel.buttons.matching(NSPredicate(format: "label IN %@", ["Save", "Сохранить"] as NSArray)).firstMatch
+        XCTAssertTrue(save.waitForExistence(timeout: 3))
+        XCTAssertTrue(save.isEnabled)
+        save.click()
+        XCTAssertTrue(waitForAbsence(panel))
+        let archiveWritten = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            FileManager.default.fileExists(atPath: destination.path)
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [archiveWritten], timeout: 15), .completed)
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+
+        let unpacked = testHome.appendingPathComponent("Exported-Diagnostics", isDirectory: true)
+        let unzip = Process()
+        unzip.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        unzip.arguments = ["-x", "-k", destination.path, unpacked.path]
+        unzip.standardOutput = FileHandle.nullDevice
+        unzip.standardError = FileHandle.nullDevice
+        let finished = DispatchSemaphore(value: 0)
+        unzip.terminationHandler = { _ in finished.signal() }
+        try unzip.run()
+        guard finished.wait(timeout: .now() + 5) == .success else {
+            unzip.terminate()
+            XCTFail("Diagnostic archive extraction exceeded its bounded wait")
+            return
+        }
+        XCTAssertEqual(unzip.terminationStatus, 0)
+        let payload = unpacked.appendingPathComponent("Countdown-Diagnostics", isDirectory: true)
+        let names = Set(try FileManager.default.contentsOfDirectory(atPath: payload.path))
+        XCTAssertTrue(names.isSuperset(of: ["summary.txt", "countdown.log"]))
+        XCTAssertTrue(names.isSubset(of: ["summary.txt", "countdown.log", "countdown.previous.log"]))
+        for name in names {
+            let text = try String(contentsOf: payload.appendingPathComponent(name), encoding: .utf8)
+            for secret in ["XCUITest Event", "Isolated fixture", "Active fixture subtask", "Completed fixture subtask", testHome.path] {
+                XCTAssertFalse(text.contains(secret), "Private fixture content escaped into \(name)")
+            }
+        }
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+    }
+
     private var root: XCUIElement {
         app.descendants(matching: .any)["root.window"]
     }

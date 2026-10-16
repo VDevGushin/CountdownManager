@@ -108,3 +108,8 @@ custom_rules:
     regex: "\\btry!"
     message: "Handle production errors explicitly instead of using try!."
     severity: error
+  native_field_custom_outline:
+    included: "Sources/.*\\.swift"
+    regex: '(?s)\.textFieldStyle\(\.roundedBorder\)(?:(?!\n[ \t]*\}|\.textFieldStyle\(|\b(?:TextField|TextEditor|DatePicker|Button|Picker|Toggle|Divider|Spacer)\s*\().){0,1200}\.(?:auroraInputChrome|overlay|border)\s*(?:\(|\{)'
+    message: "Native rounded-border fields already own their bezel and focus ring; do not add a second outline."
+    severity: error

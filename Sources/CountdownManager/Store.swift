@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import CountdownCore
 import ServiceManagement
+import UniformTypeIdentifiers
 
 @MainActor
 package final class SubtaskDisclosureState: ObservableObject {
@@ -54,6 +55,7 @@ package final class Store: ObservableObject {
     @Published package private(set) var data = CountdownData()
     @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
+    @Published package private(set) var isExportingDiagnostics = false
     @Published var error: String?
     @Published package private(set) var loginStatus: SMAppService.Status
     package let loginItemManagementIsAvailable: Bool
@@ -61,6 +63,7 @@ package final class Store: ObservableObject {
     private let repository: CountdownRepository
     private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
     private let now: () -> Date
+    private let recordDiagnostic: @Sendable (String) -> Void
     private let disclosureCache: SubtaskDisclosureCache
     private var readFailed = false
     private var revision = 0
@@ -79,7 +82,8 @@ package final class Store: ObservableObject {
         disclosureDefaults: UserDefaults = .standard,
         persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil,
         now: @escaping () -> Date = Date.init,
-        loginItemManagementIsAvailable: Bool = true
+        loginItemManagementIsAvailable: Bool = true,
+        diagnosticRecord: @escaping @Sendable (String) -> Void = { DiagnosticLog.shared.record($0) }
     ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         let resolvedURL = fileURL ?? support.appendingPathComponent("CountdownManager/countdowns.json")
@@ -88,6 +92,7 @@ package final class Store: ObservableObject {
         repository = CountdownRepository(fileURL: resolvedURL)
         self.persistenceSaveOverride = persistenceSaveOverride
         self.now = now
+        self.recordDiagnostic = diagnosticRecord
         self.loginItemManagementIsAvailable = loginItemManagementIsAvailable
         loginStatus = loginItemManagementIsAvailable ? SMAppService.mainApp.status : .notRegistered
         disclosureCache = SubtaskDisclosureCache(
@@ -111,12 +116,12 @@ package final class Store: ObservableObject {
             data = loaded
             durableData = loaded
             isLoading = false
-            DiagnosticLog.shared.record("data.load success items=\(data.items.count)")
+            recordDiagnostic("data.load success items=\(data.items.count)")
             refresh()
         } catch {
             readFailed = true
             isLoading = false
-            DiagnosticLog.shared.record("data.load failure error=\(error.localizedDescription)")
+            recordDiagnostic("data.load failure \(DiagnosticPrivacy.errorFields(error))")
             self.error = "Не удалось прочитать сохранённые события. Файл оставлен без изменений: \(fileURL.path)\n\(error.localizedDescription)"
         }
     }
@@ -152,7 +157,7 @@ package final class Store: ObservableObject {
             updated.normalize(today: today)
             if updated != data {
                 let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
-                DiagnosticLog.shared.record("data.normalize removed=\(data.items.count - updated.items.count)")
+                recordDiagnostic("data.normalize removed=\(data.items.count - updated.items.count)")
                 if isRecoveringPersistence {
                     needsDeferredNormalization = true
                 } else {
@@ -235,7 +240,7 @@ package final class Store: ObservableObject {
                 durableData = updated
             }
             finishPersistenceRevision(writeRevision)
-            DiagnosticLog.shared.record(
+            recordDiagnostic(
                 didWrite
                     ? "data.save success reason=\(reason) revision=\(writeRevision) items=\(updated.items.count) primary=\(updated.primaryID?.uuidString ?? "none")"
                     : "data.save superseded reason=\(reason) revision=\(writeRevision)"
@@ -244,7 +249,7 @@ package final class Store: ObservableObject {
         } catch {
             isRecoveringPersistence = true
             finishPersistenceRevision(writeRevision)
-            DiagnosticLog.shared.record("data.save failure error=\(error.localizedDescription)")
+            recordDiagnostic("data.save failure \(DiagnosticPrivacy.errorFields(error))")
             self.error = "Не удалось сохранить изменения: \(error.localizedDescription)"
             return false
         }
@@ -294,14 +299,14 @@ package final class Store: ObservableObject {
         updated.normalize(today: today)
         guard updated != data else { return }
         let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
-        DiagnosticLog.shared.record("data.normalize deferred removed=\(data.items.count - updated.items.count)")
+        recordDiagnostic("data.normalize deferred removed=\(data.items.count - updated.items.count)")
         stagePersistence(updated, reason: "normalize", disclosureCleanup: removedEventIDs)
     }
 
     package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
+        recordDiagnostic("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         var updated = data
@@ -312,7 +317,7 @@ package final class Store: ObservableObject {
         }
         do { try updated.save(countdown, primary: primary, today: today) }
         catch {
-            DiagnosticLog.shared.record("countdown.save rejected id=\(countdown.id.uuidString) error=\(error.localizedDescription)")
+            recordDiagnostic("countdown.save rejected id=\(countdown.id.uuidString) \(DiagnosticPrivacy.errorFields(error))")
             self.error = error.localizedDescription
             return false
         }
@@ -326,12 +331,12 @@ package final class Store: ObservableObject {
     func addSubtask(to eventID: UUID, text: String) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("subtask.add begin event=\(eventID.uuidString)")
+        recordDiagnostic("subtask.add begin event=\(eventID.uuidString)")
         var updated = data
         do {
             _ = try updated.addSubtask(to: eventID, text: text, today: Day(now()))
         } catch {
-            DiagnosticLog.shared.record("subtask.add rejected event=\(eventID.uuidString) error=\(error.localizedDescription)")
+            recordDiagnostic("subtask.add rejected event=\(eventID.uuidString) \(DiagnosticPrivacy.errorFields(error))")
             self.error = error.localizedDescription
             return false
         }
@@ -339,7 +344,7 @@ package final class Store: ObservableObject {
         let didSave = await commit(updated, reason: "subtask.add")
         if didSave {
             setSubtasksExpanded(true, for: eventID)
-            DiagnosticLog.shared.record("subtask.add success event=\(eventID.uuidString) count=\(count)")
+            recordDiagnostic("subtask.add success event=\(eventID.uuidString) count=\(count)")
         }
         return didSave
     }
@@ -347,12 +352,12 @@ package final class Store: ObservableObject {
     func editSubtask(eventID: UUID, subtaskID: UUID, text: String) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("subtask.edit begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        recordDiagnostic("subtask.edit begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
             try updated.editSubtask(eventID: eventID, subtaskID: subtaskID, text: text, today: Day(now()))
         } catch {
-            DiagnosticLog.shared.record("subtask.edit rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            recordDiagnostic("subtask.edit rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) \(DiagnosticPrivacy.errorFields(error))")
             self.error = error.localizedDescription
             return false
         }
@@ -362,12 +367,12 @@ package final class Store: ObservableObject {
     func deleteSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("subtask.delete begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        recordDiagnostic("subtask.delete begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
             try updated.deleteSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(now()))
         } catch {
-            DiagnosticLog.shared.record("subtask.delete rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            recordDiagnostic("subtask.delete rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) \(DiagnosticPrivacy.errorFields(error))")
             self.error = error.localizedDescription
             return false
         }
@@ -382,12 +387,12 @@ package final class Store: ObservableObject {
     func toggleSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("subtask.toggle begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
+        recordDiagnostic("subtask.toggle begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
             try updated.toggleSubtask(eventID: eventID, subtaskID: subtaskID, today: Day(now()))
         } catch {
-            DiagnosticLog.shared.record("subtask.toggle rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) error=\(error.localizedDescription)")
+            recordDiagnostic("subtask.toggle rejected event=\(eventID.uuidString) id=\(subtaskID.uuidString) \(DiagnosticPrivacy.errorFields(error))")
             self.error = error.localizedDescription
             return false
         }
@@ -410,7 +415,7 @@ package final class Store: ObservableObject {
         var updated = data
         updated.normalize(today: today)
         if let id, !updated.items.contains(where: { $0.id == id }) { return }
-        DiagnosticLog.shared.record("countdown.primary id=\(id?.uuidString ?? "none")")
+        recordDiagnostic("countdown.primary id=\(id?.uuidString ?? "none")")
         updated.primaryID = id
         guard updated != data else { return }
         _ = await commit(updated, reason: "countdown.primary")
@@ -420,7 +425,7 @@ package final class Store: ObservableObject {
     func delete(_ id: UUID) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
-        DiagnosticLog.shared.record("countdown.delete id=\(id.uuidString)")
+        recordDiagnostic("countdown.delete id=\(id.uuidString)")
         var updated = data
         updated.delete(id, today: Day(now()))
         let didDelete = await commit(updated, reason: "countdown.delete")
@@ -430,16 +435,16 @@ package final class Store: ObservableObject {
 
     package func setLogin(_ enabled: Bool) {
         guard loginItemManagementIsAvailable else { return }
-        DiagnosticLog.shared.record("login-item.change requested=\(enabled)")
+        recordDiagnostic("login-item.change requested=\(enabled)")
         do {
             if enabled { try SMAppService.mainApp.register() }
             else { try SMAppService.mainApp.unregister() }
         } catch {
-            DiagnosticLog.shared.record("login-item.change failure error=\(error.localizedDescription)")
+            recordDiagnostic("login-item.change failure \(DiagnosticPrivacy.errorFields(error))")
             self.error = "Не удалось изменить автозапуск: \(error.localizedDescription)"
         }
         loginStatus = SMAppService.mainApp.status
-        DiagnosticLog.shared.record("login-item.status value=\(loginStatus.rawValue)")
+        recordDiagnostic("login-item.status value=\(loginStatus.rawValue)")
     }
 
     package func openLoginItemSettings() {
@@ -448,17 +453,63 @@ package final class Store: ObservableObject {
     }
 
     func openDiagnostics() {
-        DiagnosticLog.shared.record("diagnostics.open-folder")
-        DiagnosticLog.shared.flush()
-        do {
-            try FileManager.default.createDirectory(
-                at: DiagnosticLog.directoryURL,
-                withIntermediateDirectories: true
-            )
-            NSWorkspace.shared.activateFileViewerSelecting([DiagnosticLog.fileURL])
-        } catch {
-            DiagnosticLog.shared.record("diagnostics.open-folder failure error=\(error.localizedDescription)")
-            self.error = "Не удалось открыть папку диагностики: \(error.localizedDescription)"
+        recordDiagnostic("diagnostics.open-folder")
+        Task {
+            do {
+                let url = try await DiagnosticLog.shared.directoryForViewing()
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            } catch {
+                recordDiagnostic("diagnostics.open-folder failure \(DiagnosticPrivacy.errorFields(error))")
+                self.error = "Не удалось открыть папку диагностики: \(error.localizedDescription)"
+            }
         }
+    }
+
+    package func saveDiagnostics(context: @escaping @MainActor () -> DiagnosticExportContext) {
+        guard !isExportingDiagnostics else { return }
+        isExportingDiagnostics = true
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.zip]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = "Countdown-Diagnostics.zip"
+        panel.title = "Сохранить диагностику"
+        panel.message = "Архив содержит техническую сводку и два последних журнала без содержимого событий и файлов настроек."
+        let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            panel.orderOut(nil)
+            guard let self else { return }
+            guard response == .OK, let destination = panel.url else {
+                self.isExportingDiagnostics = false
+                if response == .cancel { self.recordDiagnostic("diagnostics.export cancelled") }
+                else {
+                    self.recordDiagnostic("diagnostics.export failure category=other")
+                    self.error = "Не удалось открыть окно сохранения диагностики. Повторите попытку."
+                }
+                return
+            }
+            let context = context()
+            let state = DiagnosticStoreState(
+                loading: self.isLoading, readFailed: self.readFailed, eventCount: self.data.items.count,
+                subtaskCount: self.data.items.reduce(0) { $0 + $1.subtasks.count },
+                pendingWrites: self.inFlightPersistenceRevisions.count,
+                recovering: self.isRecoveringPersistence || self.recoveryMutationInFlight,
+                revision: self.revision, durableRevision: self.durableRevision
+            )
+            self.recordDiagnostic("diagnostics.export begin")
+            Task {
+                defer { self.isExportingDiagnostics = false }
+                do {
+                    let snapshot = try await DiagnosticLog.shared.snapshot()
+                    try await DiagnosticArchiveExporter().export(snapshot: snapshot, context: context, store: state, destination: destination)
+                    self.recordDiagnostic("diagnostics.export success")
+                } catch {
+                    self.recordDiagnostic("diagnostics.export failure \(DiagnosticPrivacy.errorFields(error))")
+                    self.error = "Не удалось сохранить диагностику. Выберите другую папку и повторите попытку."
+                }
+            }
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        if let host = NSApp.keyWindow, host.isVisible, NSApp.windows.contains(where: { $0 === host }) {
+            panel.beginSheetModal(for: host, completionHandler: completion)
+        } else { panel.begin(completionHandler: completion) }
     }
 }

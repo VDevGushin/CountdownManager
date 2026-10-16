@@ -6,6 +6,14 @@ import Foundation
 @MainActor
 func testCurrentDayHeaderDate() async throws {
     try testApplicationVersionLabel()
+    let countCases = [
+        (0, "0 событий"), (1, "1 событие"), (2, "2 события"), (3, "3 события"),
+        (4, "4 события"), (5, "5 событий"), (10, "10 событий"), (11, "11 событий"),
+        (12, "12 событий"), (14, "14 событий"), (20, "20 событий"), (21, "21 событие"),
+        (22, "22 события"), (25, "25 событий"), (101, "101 событие"), (111, "111 событий"),
+        (114, "114 событий"), (121, "121 событие"),
+    ]
+    for (count, expected) in countCases { precondition(eventCountLabel(count) == expected) }
     let calendar = Day.calendar
     let date = calendar.date(from: DateComponents(year: 2026, month: 10, day: 14, hour: 23, minute: 59, second: 59))!
     let label = currentDayHeaderLabel(Day(date))

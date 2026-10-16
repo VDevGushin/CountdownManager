@@ -517,6 +517,7 @@ final class UISmokeRuntime {
     }
 
     private func requireChecklistOrder(_ event: Countdown) throws {
+        try requireChecklistDisclosureLayout(event)
         let ordered = event.subtasks.filter { !$0.isCompleted } + event.subtasks.filter(\.isCompleted)
         let frames = try ordered.map { subtask in
             let id = "subtask.toggle.\(subtask.id.uuidString)"
@@ -526,6 +527,18 @@ final class UISmokeRuntime {
         }
         for (upper, lower) in zip(frames, frames.dropFirst()) {
             try require(upper.maxY <= lower.minY + 0.5, "checklist does not preserve active/completed group order")
+        }
+    }
+
+    private func requireChecklistDisclosureLayout(_ event: Countdown) throws {
+        let suffix = event.id.uuidString
+        let card = try requireValue(controls.frame("event.card.\(suffix)"), "checklist card")
+        let row = try requireValue(controls.frame("subtasks.disclosure.\(suffix)"), "checklist disclosure row")
+        try require(card.contains(row) && row.width >= card.width - 40 && row.height >= 22,
+                    "checklist disclosure does not span its own full header row")
+        for id in ["event.primary.\(suffix)", "event.edit.\(suffix)"] {
+            let action = try requireValue(controls.frame(id), "separate event action")
+            try require(!row.intersects(action), "checklist disclosure overlaps star or edit action")
         }
     }
 
@@ -550,7 +563,7 @@ final class UISmokeRuntime {
         }
         weather.updateEvents(store.active)
         try await waitFor("weather fixtures rendered") { self.controls.entries["event.card.\(primary.id.uuidString)"] != nil }
-        try await waitForValue("header.active-count", equals: "4 активных · сегодня и позже")
+        try await waitForValue("header.active-count", equals: "4 события")
         try await waitForValue("header.today", equals: currentDayHeaderLabel(store.today))
         try requireHeaderDateLayout()
         try require(controls.ids(withPrefix: "event.weather.").isEmpty, "OFF weather exposed a badge")
@@ -559,15 +572,22 @@ final class UISmokeRuntime {
         let versionLabel = try requireValue(applicationVersionLabel(), "running bundle short version")
         try await waitForValue("settings.version", equals: versionLabel)
         try await waitFor("disabled OFF location picker") { self.controls.entries["settings.weather.location"]?.isEnabled == false }
+        try await settleLayout()
         try require(!weatherCityPicker().isEnabled, "native OFF city picker accepts input")
         try await press("settings.weather.enabled")
         try await waitForValue("settings.weather.enabled", equals: "on")
         try await waitFor("enabled weather picker") { self.controls.entries["settings.weather.location"]?.isEnabled == true }
+        try await settleLayout()
         let picker = try weatherCityPicker()
         try require(picker.isEnabled, "native ON city picker is disabled")
         let expectedCities = ["Автоматически"] + WeatherCity.allCases.map(\.title)
-        try require(picker.itemTitles == expectedCities, "native weather menu differs from Auto and ten cities: \(picker.itemTitles)")
         let cityMenu = try requireValue(picker.menu, "native city menu")
+        // Lazy menu population belongs to the documented pre-tracking delegate callback, before validation.
+        cityMenu.delegate?.menuNeedsUpdate?(cityMenu)
+        cityMenu.update()
+        try require(picker.itemTitles == expectedCities,
+                    "native weather menu differs from Auto and ten cities after pre-tracking update: \(picker.itemTitles); "
+                        + "delegate=\(String(describing: cityMenu.delegate.map { type(of: $0) }))")
         let cityIndex = picker.indexOfItem(withTitle: "Москва")
         picker.selectItem(at: cityIndex)
         cityMenu.performActionForItem(at: cityIndex)
@@ -589,15 +609,17 @@ final class UISmokeRuntime {
         for scheme in [ColorScheme.dark, .light] {
             visualEnvironment.colorSchemeOverride = scheme
             try await settleLayout()
-            try requireWeatherBesideDate(primary)
-            try requireWeatherBesideDate(ordinary)
+            try requireWeatherBadgeLayout(primary, featured: true)
+            try requireWeatherBadgeLayout(ordinary, featured: false)
+            try requireCalendarAndTitleLayout(primary, featured: true)
+            try requireCalendarAndTitleLayout(ordinary, featured: false)
             try captureWeatherIfRequested("weather-list-\(scheme == .dark ? "dark" : "light")")
         }
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
         try await settleLayout()
         try captureWeatherIfRequested("weather-list-light-high-contrast")
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
-        pass("weather appears beside featured/ordinary dates; OFF, legacy false and missing eligible data expose no badge")
+        pass("weather fits the featured countdown row and ordinary date row; OFF, legacy false and missing eligible data expose no badge")
 
         let durable = try Data(contentsOf: configuration.dataURL)
         try await press("event.edit.\(legacy.id.uuidString)")
@@ -656,7 +678,9 @@ final class UISmokeRuntime {
     private func weatherCityPicker() throws -> NSPopUpButton {
         let content = try requireValue(window()?.contentView, "weather settings content")
         let pickers = allSubviews(of: content).compactMap { $0 as? NSPopUpButton }
-        return try requireValue(pickers.first { $0.itemTitles.contains("Грозный") },
+        let identified = pickers.first { $0.accessibilityIdentifier() == "settings.weather.location" }
+        let populated = pickers.first { $0.itemTitles.contains("Грозный") }
+        return try requireValue(identified ?? populated ?? (pickers.count == 1 ? pickers.first : nil),
                                 "native weather city menu; found menus: \(pickers.map(\.itemTitles))")
     }
 
@@ -705,19 +729,19 @@ final class UISmokeRuntime {
                     && self.controls.entries["header.today"]?.ownerID != retainedDateOwner
             }
             try await waitFor("header fixture load") { !fixtureStore.isLoading }
-            try await waitForValue("header.active-count", equals: "0 активных · сегодня и позже")
+            try await waitForValue("header.active-count", equals: "0 событий")
             try await waitForValue("header.today", equals: "Ср, 14 октября")
             let event = Countdown(title: "Synthetic midnight header", date: fixtureStore.today, emoji: "")
             let saved = await fixtureStore.save(event, primary: false)
             try require(saved, "header fixture save failed")
-            try await waitForValue("header.active-count", equals: "1 активных · сегодня и позже")
+            try await waitForValue("header.active-count", equals: "1 событие")
             try await settleLayout()
             try requireHeaderDateLayout()
             try captureWeatherIfRequested("weather-header-before-midnight")
             clock = clock.addingTimeInterval(2)
             fixtureStore.refresh()
             try await waitForValue("header.today", equals: "Чт, 15 октября")
-            try await waitForValue("header.active-count", equals: "0 активных · сегодня и позже")
+            try await waitForValue("header.active-count", equals: "0 событий")
             try await settleLayout()
             try requireHeaderDateLayout()
             try captureWeatherIfRequested("weather-header-midnight-empty")
@@ -742,8 +766,33 @@ final class UISmokeRuntime {
     private func requireHeaderDateLayout() throws {
         let date = try requireValue(controls.frame("header.today"), "header date frame")
         let count = try requireValue(controls.frame("header.active-count"), "header count frame")
-        try require(date.maxY <= count.minY && date.minX >= 0 && date.maxX <= 390 && date.width > 50,
-                    "current date is clipped or replaced the existing count line")
+        try require(date.maxY <= count.minY && date.minX >= 0 && date.maxX <= 390 && date.width > 50
+                    && count.width > 30 && count.minX >= 0 && count.maxX <= 390,
+                    "current date or event count is clipped or no longer forms two header lines")
+        for id in ["day.add", "event.add"] {
+            let button = try requireValue(controls.frame(id), "header creation action")
+            try require(button.minX >= max(date.maxX, count.maxX) && button.maxX <= 390,
+                        "header text overlaps its creation actions")
+        }
+    }
+
+    private func requireCalendarAndTitleLayout(_ event: Countdown, featured: Bool) throws {
+        let suffix = event.id.uuidString
+        let card = try requireValue(controls.frame("event.card.\(suffix)"), "compact event card")
+        let calendar = try requireValue(controls.frame("event.calendar.\(suffix)"), "calendar leaf")
+        let title = try requireValue(controls.frame("event.title.\(suffix)"), "event title")
+        try require(card.contains(calendar) && card.contains(title), "title or calendar escaped the event card")
+        try require(abs(calendar.width - (featured ? 54 : 42)) < 1
+                    && abs(calendar.height - (featured ? 65 : 51)) < 1,
+                    "calendar leaf does not use the compact featured/ordinary size")
+        try require(title.height > 12 && title.height <= (featured ? 60 : 42),
+                    "event title exceeds its compact two-line layout")
+        try require(featured ? title.maxX <= calendar.minX : calendar.maxX <= title.minX,
+                    "event title overlaps its calendar leaf")
+        for id in ["event.primary.\(suffix)", "event.edit.\(suffix)"] {
+            let action = try requireValue(controls.frame(id), "event title action")
+            try require(!title.intersects(action), "event title overlaps star or edit action")
+        }
     }
 
     private func verifyFailedKeepAwakeRestoration(_ controller: KeepAwakeController, defaults: UserDefaults) async throws {
@@ -763,12 +812,19 @@ final class UISmokeRuntime {
         pass("failed keep-awake restoration offers reachable retry and explicit saved-ON cancellation without native assertions")
     }
 
-    private func requireWeatherBesideDate(_ event: Countdown) throws {
+    private func requireWeatherBadgeLayout(_ event: Countdown, featured: Bool) throws {
         let badge = try requireValue(controls.frame("event.weather.\(event.id.uuidString)"), "weather badge frame")
         let card = try requireValue(controls.frame("event.card.\(event.id.uuidString)"), "weather card frame")
         let date = try requireValue(controls.frame("event.date.\(event.id.uuidString)"), "weather date frame")
         try require(badge.width > 20 && badge.height > 0 && card.contains(badge), "weather badge escaped its card")
-        try require(badge.minX >= date.maxX && abs(badge.midY - date.midY) < 3, "weather badge is not beside its date")
+        if featured {
+            let calendar = try requireValue(controls.frame("event.calendar.\(event.id.uuidString)"), "featured calendar leaf")
+            try require(badge.minY >= max(date.maxY, calendar.maxY) - 1 && badge.minX >= date.minX,
+                        "featured weather does not occupy the countdown row below its date and calendar")
+        } else {
+            try require(badge.minX >= date.maxX && abs(badge.midY - date.midY) < 3,
+                        "ordinary weather badge is not beside its date")
+        }
     }
 
     private func captureWeatherIfRequested(_ name: String) throws {
@@ -876,8 +932,15 @@ final class UISmokeRuntime {
 
         try await press("event.edit.\(promoted.id.uuidString)")
         try await waitForElement("editor.edit")
+        try await press("editor.title")
+        try await waitForFirstResponder("editor.title")
+        let editorPanel = try requireValue(window(), "existing editor capture panel")
+        try require(editorPanel.makeFirstResponder(nil), "existing editor could not clear text focus")
+        try await waitFor("unfocused existing editor capture") { !(editorPanel.firstResponder is NSTextView) }
         try await settleLayout()
+        DiagnosticLog.shared.record("ui.capture name=04-editor text_focus=none")
         try capture(name: "04-editor")
+        pass("existing-event editor capture deliberately has no text focus; six separate captures verify native focused fields")
 
         try await press("editor.cancel")
         try await waitFor("list restored after editor capture") {
@@ -1178,13 +1241,14 @@ final class UISmokeRuntime {
             try await press("event.add")
             try await waitForElement("editor.new")
             try await focusAndReplace("editor.title", with: "Поездка на выходные")
-            try await focusAndReplace("editor.note", with: "Забронировать билеты и выбрать маршрут.")
+            try await replaceEditorNote(with: "Забронировать билеты и выбрать маршрут.")
             try await press("editor.subtask.add")
             try await waitFor("capture subtask") { self.editorSubtaskFieldIDs().count == 1 }
             let field = try requireValue(editorSubtaskFieldIDs().first, "capture subtask field")
             try await focusAndReplace(field, with: "Проверить расписание")
             try scrollEditorToTop()
             try await requireEmojiPickerClosed()
+            try await waitForFirstResponder(field)
             try await settleLayout()
             let firstNumber = 17 + index * 4
             let theme = scheme == .dark ? "dark" : "light"
@@ -1192,10 +1256,14 @@ final class UISmokeRuntime {
             try await press("editor.emoji.toggle")
             try await press("editor.emoji.preset.1f680")
             try await requireEmojiPickerClosed()
+            try await press("editor.title")
+            try await waitForFirstResponder("editor.title")
             try await settleLayout()
             try capture(name: "\(firstNumber + 1)-editor-\(theme)-selected")
             try await press("editor.emoji.toggle")
             try await waitForElement("editor.emoji.quick")
+            try await press("editor.note")
+            try await waitForFirstResponder("editor.note")
             try await settleLayout()
             try requireEmojiRowLayout(page: nil)
             try capture(name: "\(firstNumber + 2)-editor-\(theme)-presets")
@@ -1215,6 +1283,7 @@ final class UISmokeRuntime {
             try await waitFor("list restored after grouped editor capture") { self.controls.entries["editor.new"] == nil }
         }
         visualEnvironment.colorSchemeOverride = .dark
+        pass("six native field focus captures cover subtask, title and note in both themes, with the other native fields unfocused")
     }
 
     private func editorScrollView() throws -> NSScrollView {
@@ -1282,6 +1351,168 @@ final class UISmokeRuntime {
         )
     }
 
+    private func verifyNativeDiagnosticSavePanelCancellation() async throws {
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=begin")
+        try require(store.active.isEmpty, "native diagnostic fixture requires an isolated empty store")
+        let host = try requireValue(window(), "native diagnostic host")
+        let fixture = Countdown(title: "Native diagnostic fixture", date: Day(store.tomorrow), emoji: "")
+        let saved = await store.save(fixture, primary: false)
+        try require(saved, "native diagnostic fixture save failed")
+        let originalJSON = try Data(contentsOf: configuration.dataURL)
+        try await press("settings.open")
+        try await waitForElement("settings.screen")
+        let visibleSavePanel: () -> NSSavePanel? = { [weak self] in
+            if let panel = self?.window()?.attachedSheet as? NSSavePanel, panel.isVisible { return panel }
+            return NSApp.windows.compactMap { $0 as? NSSavePanel }.first(where: \.isVisible)
+        }
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=first-press-before")
+        try await press("settings.diagnostics")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=first-press-after")
+        try await waitFor("native diagnostic save sheet") {
+            self.store.isExportingDiagnostics && visibleSavePanel() != nil
+        }
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=first-detected")
+        let cancelledPanel = try requireValue(visibleSavePanel(), "native diagnostic save panel before Cancel")
+        try require(cancelledPanel.sheetParent === host, "diagnostic save panel is not attached to the current host")
+        let cancelledDestination = configuration.homeURL.appendingPathComponent("Cancelled-Diagnostics-\(UUID().uuidString).zip")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-directory-before")
+        cancelledPanel.directoryURL = configuration.homeURL
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-directory-after")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-name-before")
+        cancelledPanel.nameFieldStringValue = cancelledDestination.lastPathComponent
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-name-after")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-before")
+        cancelledPanel.cancel(nil)
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-after")
+        try await waitFor("native save Cancel releases exporting state") {
+            !self.store.isExportingDiagnostics && visibleSavePanel() == nil && host.attachedSheet == nil
+        }
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=cancel-detached")
+        try require(try Data(contentsOf: configuration.dataURL) == originalJSON,
+                    "native save Cancel changed event data")
+        try require(!FileManager.default.fileExists(atPath: cancelledDestination.path), "native save Cancel created an archive")
+        try await settleLayout(waitForAnimation: false)
+
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=second-press-before")
+        try await press("settings.diagnostics")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=second-press-after")
+        try await waitFor("second native diagnostic save sheet") {
+            self.store.isExportingDiagnostics && visibleSavePanel() != nil
+        }
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=second-detected")
+        let reopenedPanel = try requireValue(visibleSavePanel(), "reopened native diagnostic save panel")
+        try require(reopenedPanel.sheetParent === host, "second diagnostic save panel lost its host")
+        let filename = "Cancelled-Diagnostics-Reopened-\(UUID().uuidString).zip"
+        let destination = configuration.homeURL.appendingPathComponent(filename)
+        try require(!FileManager.default.fileExists(atPath: destination.path), "reopened cancellation destination already exists")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-directory-before")
+        reopenedPanel.directoryURL = configuration.homeURL
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-directory-after")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-name-before")
+        reopenedPanel.nameFieldStringValue = filename
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-name-after")
+        try require(store.isExportingDiagnostics, "exporting state ended before reopened Cancel")
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-cancel-before")
+        reopenedPanel.cancel(nil)
+        DiagnosticLog.shared.record("diagnostics.native-save-panel phase=reopen-cancel-after")
+        try await waitFor("reopened native Cancel releases exporting state") {
+            !self.store.isExportingDiagnostics && visibleSavePanel() == nil && host.attachedSheet == nil
+        }
+        try require(!FileManager.default.fileExists(atPath: destination.path), "reopened native Cancel created an archive")
+        try require(try Data(contentsOf: configuration.dataURL) == originalJSON,
+                    "reopened native Cancel changed event data")
+        try await press("settings.back")
+        try await waitFor("native diagnostic acceptance returns to list") { self.controls.entries["settings.screen"] == nil }
+        let deleted = await store.delete(fixture.id)
+        try require(deleted, "native diagnostic fixture cleanup failed")
+        try FileManager.default.removeItem(at: configuration.dataURL)
+        pass("native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events")
+    }
+
+    private func verifyEditorNoteEditing() async throws {
+        try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
+                    "note fixture requires an isolated empty store")
+        try await press("event.empty.add")
+        try await waitForElement("editor.new")
+        try await requireEmptyEditorNoteVisible()
+        let owner = controls.entries["editor.new"]?.ownerID
+        try await hideAndShow()
+        try await requireEmptyEditorNoteVisible()
+        try await focusAndReplace("editor.title", with: "Note editing fixture")
+        try await replaceEditorNote(with: "Unsaved private note")
+        try await settleLayout()
+        try requireEditorActionLayout(includesDelete: false)
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.new"]?.ownerID == owner
+                    && controls.value("editor.note") == "Unsaved private note"
+                    && controls.value("editor.note.count") == "20/280",
+                    "visible note field or draft changed during hide/show")
+        try await press("editor.cancel")
+        try await waitFor("new note draft cancelled") { self.controls.entries["editor.new"] == nil }
+        try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
+                    "cancelling a note persisted event data")
+        try await press("event.empty.add")
+        try await waitForElement("editor.new")
+        try await requireEmptyEditorNoteVisible()
+        try await press("editor.cancel")
+        try await waitFor("cancelled note does not return in a new draft") { self.controls.entries["editor.new"] == nil }
+
+        let fixture = Countdown(title: "Existing note fixture", note: "Original private note",
+                                date: Day(store.tomorrow), emoji: "")
+        let saved = await store.save(fixture, primary: false)
+        try require(saved, "note fixture save failed")
+        let savedJSON = try Data(contentsOf: configuration.dataURL)
+        try await press("event.edit.\(fixture.id.uuidString)")
+        try await waitForValue("editor.note", equals: "Original private note")
+        try await settleLayout()
+        try requireEditorActionLayout(includesDelete: true)
+        try await replaceEditorNote(with: "Cancelled replacement note")
+        try await press("editor.cancel")
+        try await waitFor("existing note edit cancelled") { self.controls.entries["editor.edit"] == nil }
+        try require(try Data(contentsOf: configuration.dataURL) == savedJSON, "note Cancel changed durable data")
+        try await press("event.edit.\(fixture.id.uuidString)")
+        try await waitForValue("editor.note", equals: "Original private note")
+        try await replaceEditorNote(with: "")
+        try await press("editor.save")
+        try await waitFor("cleared note saved") {
+            self.controls.entries["editor.edit"] == nil
+                && self.store.active.contains { $0.id == fixture.id && $0.note == nil }
+        }
+        let persisted = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        let cleared = try requireValue(persisted.items.first(where: { $0.id == fixture.id }), "saved event with cleared note")
+        try require(cleared.note == nil,
+                    "empty note Save did not persist the cleared choice")
+        try await press("event.edit.\(fixture.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await requireEmptyEditorNoteVisible()
+        try await settleLayout()
+        try requireEditorActionLayout(includesDelete: true)
+        try await press("editor.cancel")
+        try await waitFor("cleared note editor cancelled") { self.controls.entries["editor.edit"] == nil }
+        let deleted = await store.delete(fixture.id)
+        try require(deleted, "note fixture cleanup failed")
+        try FileManager.default.removeItem(at: configuration.dataURL)
+        pass("note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable")
+    }
+
+    private func requireEditorActionLayout(includesDelete: Bool) throws {
+        let panel = try requireValue(window()?.contentView, "editor action panel")
+        let viewport = try requireValue(controls.frame("editor.scroll"), "editor scroll viewport")
+        let ids = (includesDelete ? ["event.delete"] : []) + ["editor.cancel", "editor.save"]
+        let frames = try ids.map { id -> CGRect in
+            let frame = try requireValue(controls.frame(id), "editor action \(id)")
+            try require(frame.width >= 28 && frame.height >= 24
+                        && frame.minX >= 0 && frame.maxX <= panel.bounds.width + 1
+                        && frame.minY >= viewport.maxY - 1 && frame.maxY <= panel.bounds.height + 1,
+                        "editor action \(id) is clipped or belongs to the scrolling form: "
+                            + "frame=\(frame) viewport=\(viewport) panelBounds=\(panel.bounds)")
+            return frame
+        }.sorted { $0.minX < $1.minX }
+        for (left, right) in zip(frames, frames.dropFirst()) {
+            try require(left.maxX <= right.minX + 0.5, "editor action areas overlap")
+        }
+    }
+
     private func runEditorEmojiRegression() async throws {
         let fixture = Countdown(
             title: "Emoji regression", note: "Original note", date: Day(store.tomorrow), emoji: "",
@@ -1295,7 +1526,7 @@ final class UISmokeRuntime {
         try await requireEmojiPickerClosed()
         try require(controls.entries["editor.emoji.none"] == nil, "empty emoji exposes a clear action")
         try await focusAndReplace("editor.title", with: "Retained emoji draft")
-        try await focusAndReplace("editor.note", with: "Retained note")
+        try await replaceEditorNote(with: "Retained note")
         let taskID = "editor.subtask.\(fixture.subtasks[0].id.uuidString)"
         try await focusAndReplace(taskID, with: "Retained subtask")
         try await press("editor.primary")
@@ -1566,14 +1797,16 @@ final class UISmokeRuntime {
         try await waitFor("timer returns to idle after preset smoke") { self.timer.phase == .idle }
         pass("timer preset selection reaches both ends, is last-tap-wins and drives Play")
         try await verifyCompletionAlertDismissal()
+        try await verifyNativeDiagnosticSavePanelCancellation()
         try await runEditorEmojiRegression()
+        try await verifyEditorNoteEditing()
         try await verifyEditorSubtaskMotion()
 
         try await press("event.add")
         try await waitForElement("editor.new")
         try await waitForFirstResponder("editor.title")
         try insertText("Window smoke event")
-        try await focusAndReplace("editor.note", with: "Private synthetic note")
+        try await replaceEditorNote(with: "Private synthetic note")
         for text in [
             "Alpha", "Beta", "Gamma", "Delta", "Epsilon",
             "Zeta", "Eta", "Theta", "Iota", "Kappa",
@@ -1700,7 +1933,7 @@ final class UISmokeRuntime {
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
         try await waitForValue("editor.emoji", equals: "")
-        try require(controls.value("editor.note")?.isEmpty == true, "new day has a nonempty note")
+        try await requireEmptyEditorNoteVisible()
         try require(editorSubtaskFieldIDs().isEmpty, "new day inherited subtasks")
         try require(controls.value("editor.date") == dateValue(tomorrow), "new day is not tomorrow")
         try require(store.data == initialData, "opening day editor created event data")
@@ -1713,7 +1946,7 @@ final class UISmokeRuntime {
         let finalDay = Day(Day.calendar.date(byAdding: .day, value: 3, to: store.today.date())!)
         try await selectEditorDate(finalDay)
         try require(controls.value("editor.title") == "Personal day plan", "date overwrote a manual day title")
-        try await focusAndReplace("editor.note", with: "Synthetic day note")
+        try await replaceEditorNote(with: "Synthetic day note")
         try await press("editor.subtask.add")
         try await waitFor("one day subtask") { self.editorSubtaskFieldIDs().count == 1 }
         let field = try requireValue(editorSubtaskFieldIDs().first, "day subtask field")
@@ -1749,7 +1982,8 @@ final class UISmokeRuntime {
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
         try require(controls.value("editor.date") == dateValue(tomorrow), "choose-date default is not tomorrow")
-        try require(controls.value("editor.note")?.isEmpty == true && controls.value("editor.emoji")?.isEmpty == true
+        try await requireEmptyEditorNoteVisible()
+        try require(controls.value("editor.emoji")?.isEmpty == true
                     && editorSubtaskFieldIDs().isEmpty,
                     "choose-date day inherited the previously saved plan")
         let selectedDay = Day(Day.calendar.date(byAdding: .day, value: 4, to: store.today.date())!)
@@ -1789,8 +2023,8 @@ final class UISmokeRuntime {
         try await waitForElement("editor.new")
         try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
         try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+        try await requireEmptyEditorNoteVisible()
         try require(controls.value("editor.date") == dateValue(today)
-                    && controls.value("editor.note")?.isEmpty == true
                     && controls.value("editor.emoji")?.isEmpty == true && editorSubtaskFieldIDs().isEmpty,
                     "today day shortcut inherited fields or the wrong date")
         try await selectEditorDate(tomorrow)
@@ -1800,7 +2034,7 @@ final class UISmokeRuntime {
         try await selectEditorDate(today)
         try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
         try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
-        try await focusAndReplace("editor.note", with: "Today draft note")
+        try await replaceEditorNote(with: "Today draft note")
         let field = try await addEditorSubtaskAndWait()
         try await waitForFirstResponder(field)
         try insertText("Today checklist")
@@ -1914,6 +2148,7 @@ final class UISmokeRuntime {
         let plannedStar = "event.primary.\(plannedDay.id.uuidString)"
         try await press(plannedStar)
         try await waitForValue(plannedStar, equals: "Выбрано")
+        try await settleLayout()
         try require(store.primary?.id == plannedDay.id && store.statusTitle == "📅 3 дня",
                     "explicit favorite did not override the nearest event")
         try await press(plannedStar)
@@ -1987,7 +2222,7 @@ final class UISmokeRuntime {
             try await press("event.add")
             try await waitForElement("editor.new")
             try await focusAndReplace("editor.title", with: "Subtask animation fixture")
-            try await focusAndReplace("editor.note", with: "Keep all other fields")
+            try await replaceEditorNote(with: "Keep all other fields")
             try await waitForValue("editor.subtasks", equals: "0")
             try await settleLayout(waitForAnimation: !reduceMotion)
             let emptyHeight = try requireValue(controls.frame("editor.subtasks"), "empty subtask block").height
@@ -2125,7 +2360,7 @@ final class UISmokeRuntime {
     private func requireTimerPresetLayout() throws {
         let timerFrame = try requireValue(controls.frame("timer"), "timer strip frame")
         let selectorFrame = try requireValue(controls.frame("timer.duration"), "timer preset selector frame")
-        try require(abs(timerFrame.height - 59) < 1, "timer strip height changed")
+        try require(abs(timerFrame.height - 60) < 1, "timer strip height changed")
         let segmentFrames = countdownTimerPresetMinutes.compactMap {
             controls.frame("timer.duration.\($0)")
         }
@@ -2164,6 +2399,22 @@ final class UISmokeRuntime {
         DiagnosticLog.shared.flush()
         let log = (try? String(contentsOf: DiagnosticLog.fileURL, encoding: .utf8)) ?? ""
         try require(!log.contains("ui.stall detected"), "watchdog observed a UI stall")
+    }
+
+    private func requireEmptyEditorNoteVisible() async throws {
+        try await waitForValue("editor.note", equals: "")
+        try await waitForValue("editor.note.count", equals: "0/280")
+        try require(controls.entries["editor.note"]?.isEnabled == true
+                    && controls.entries["editor.note.add"] == nil && controls.entries["editor.note.disclosure"] == nil,
+                    "empty note should remain directly editable without a disclosure action")
+    }
+
+    private func replaceEditorNote(with text: String) async throws {
+        try await waitForElement("editor.note")
+        try await focusAndReplace("editor.note", with: text)
+        try await waitForValue("editor.note.count", equals: "\(text.count)/280")
+        let nativeField = (NSApp.keyWindow?.firstResponder as? NSTextView)?.delegate as? NSTextField
+        try require(nativeField?.placeholderString == "Пара слов о событии", "native note placeholder changed")
     }
 
     private func focusAndReplace(_ id: String, with text: String) async throws {
@@ -2619,7 +2870,38 @@ final class UISmokeRuntime {
     }
 
     private func waitForValue(_ id: String, equals expected: String) async throws {
-        try await waitFor("\(id) = \(expected)") { self.controls.value(id) == expected }
+        do {
+            try await waitFor("\(id) = \(expected)") { self.controls.value(id) == expected }
+        } catch {
+            guard id.hasPrefix("event.primary.") else { throw error }
+            let entries = controls.ids(withPrefix: "event.primary.").map { identifier in
+                let entry = controls.entries[identifier]
+                return "\(identifier): value=\(controls.value(identifier) ?? "nil") "
+                    + "enabled=\(String(describing: entry?.isEnabled)) frame=\(String(describing: entry?.frame)) "
+                    + "owner=\(String(describing: entry?.ownerID))"
+            }.joined(separator: "; ")
+            let nativeButtons = window()?.contentView.map { content in
+                allSubviews(of: content).compactMap { $0 as? NSButton }
+            } ?? []
+            let native = nativeButtons.filter { $0.accessibilityIdentifier().hasPrefix("event.primary.") }.map { button in
+                "\(button.accessibilityIdentifier()): label=\(button.accessibilityLabel() ?? "nil") "
+                    + "value=\(String(describing: button.accessibilityValue())) enabled=\(button.isEnabled)"
+            }.joined(separator: "; ")
+            let cards = controls.ids(withPrefix: "event.card.").map { identifier in
+                "\(identifier): frame=\(String(describing: controls.frame(identifier))) "
+                    + "owner=\(String(describing: controls.entries[identifier]?.ownerID))"
+            }.joined(separator: "; ")
+            let scrolls = window()?.contentView.map { content in
+                allSubviews(of: content).compactMap { $0 as? NSScrollView }.map { scroll in
+                    "viewport=\(scroll.contentView.documentVisibleRect) document=\(String(describing: scroll.documentView?.bounds))"
+                }.joined(separator: "; ")
+            } ?? "none"
+            throw Failure("\(error.localizedDescription); primaryID=\(store.data.primaryID?.uuidString ?? "none") "
+                + "featuredID=\(store.primary?.id.uuidString ?? "none") "
+                + "surfaceShown=\(isSurfaceShown()) cards=[\(cards)] scrolls=[\(scrolls)] "
+                + "primaryControls=[\(entries)] nativeNSButtonCount=\(nativeButtons.count) "
+                + "nativePrimaryButtons=[\(native)]")
+        }
     }
 
     private func waitForFirstResponder(_ description: String) async throws {
@@ -2631,6 +2913,7 @@ final class UISmokeRuntime {
                   nativeField.isEditable, nativeField.isEnabled,
                   let responderWindow = nativeField.window,
                   responderWindow === NSApp.keyWindow,
+                  responderWindow === self.window(), editor.window === responderWindow,
                   let contentView = responderWindow.contentView else { return false }
             let nativeID = nativeField.accessibilityIdentifier()
             if nativeID.hasPrefix("editor."), nativeID != description { return false }
@@ -2641,15 +2924,16 @@ final class UISmokeRuntime {
                 guard description == "editor.title",
                       nativeID == "editor.title" || nativeField.placeholderString == "Например, отпуск" else { return false }
                 self.responderToRegistryOffsets[windowID] = CGPoint(
-                    x: fieldFrame.minX - responderFrame.minX,
-                    y: fieldFrame.minY - responderFrame.minY
+                    x: fieldFrame.midX - responderFrame.midX,
+                    y: fieldFrame.midY - responderFrame.midY
                 )
             }
             guard let offset = self.responderToRegistryOffsets[windowID] else { return false }
-            return abs((responderFrame.minX + offset.x) - fieldFrame.minX) < 2
-                && abs((responderFrame.minY + offset.y) - fieldFrame.minY) < 2
-                && abs(responderFrame.width - fieldFrame.width) < 2
-                && abs(responderFrame.height - fieldFrame.height) < 2
+            let mappedFrame = responderFrame.offsetBy(dx: offset.x, dy: offset.y)
+            return abs(mappedFrame.midX - fieldFrame.midX) < 2
+                && abs(mappedFrame.midY - fieldFrame.midY) < 2
+                && mappedFrame.width > 0 && mappedFrame.height > 0
+                && fieldFrame.insetBy(dx: -2, dy: -2).contains(mappedFrame)
         }
     }
 

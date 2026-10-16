@@ -1,0 +1,741 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T08:04:08.897117+00:00",
+  "title": "Design System: Countdown Manager",
+  "extensions": {
+    "colorMeta": {
+      "terracotta": {
+        "role": "primary",
+        "displayName": "Terracotta",
+        "tonalRamp": [
+          "oklch(15% 0.15140 34.71)",
+          "oklch(26% 0.15140 34.71)",
+          "oklch(38% 0.15140 34.71)",
+          "oklch(49% 0.15140 34.71)",
+          "oklch(61% 0.15140 34.71)",
+          "oklch(72% 0.15140 34.71)",
+          "oklch(84% 0.15140 34.71)",
+          "oklch(95% 0.15140 34.71)"
+        ]
+      },
+      "terracotta-dark": {
+        "role": "primary",
+        "displayName": "Terracotta Dark",
+        "tonalRamp": [
+          "oklch(15% 0.11457 38.21)",
+          "oklch(26% 0.11457 38.21)",
+          "oklch(38% 0.11457 38.21)",
+          "oklch(49% 0.11457 38.21)",
+          "oklch(61% 0.11457 38.21)",
+          "oklch(72% 0.11457 38.21)",
+          "oklch(84% 0.11457 38.21)",
+          "oklch(95% 0.11457 38.21)"
+        ]
+      },
+      "terracotta-contrast": {
+        "role": "primary",
+        "displayName": "Terracotta Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.15644 31.59)",
+          "oklch(26% 0.15644 31.59)",
+          "oklch(38% 0.15644 31.59)",
+          "oklch(49% 0.15644 31.59)",
+          "oklch(61% 0.15644 31.59)",
+          "oklch(72% 0.15644 31.59)",
+          "oklch(84% 0.15644 31.59)",
+          "oklch(95% 0.15644 31.59)"
+        ]
+      },
+      "terracotta-dark-contrast": {
+        "role": "primary",
+        "displayName": "Terracotta Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.08460 46.75)",
+          "oklch(26% 0.08460 46.75)",
+          "oklch(38% 0.08460 46.75)",
+          "oklch(49% 0.08460 46.75)",
+          "oklch(61% 0.08460 46.75)",
+          "oklch(72% 0.08460 46.75)",
+          "oklch(84% 0.08460 46.75)",
+          "oklch(95% 0.08460 46.75)"
+        ]
+      },
+      "ivory-canvas": {
+        "role": "neutral",
+        "displayName": "Ivory Canvas",
+        "tonalRamp": [
+          "oklch(15% 0.01153 78.27)",
+          "oklch(26% 0.01153 78.27)",
+          "oklch(38% 0.01153 78.27)",
+          "oklch(49% 0.01153 78.27)",
+          "oklch(61% 0.01153 78.27)",
+          "oklch(72% 0.01153 78.27)",
+          "oklch(84% 0.01153 78.27)",
+          "oklch(95% 0.01153 78.27)"
+        ]
+      },
+      "warm-dark-canvas": {
+        "role": "neutral",
+        "displayName": "Warm Dark Canvas",
+        "tonalRamp": [
+          "oklch(15% 0.00936 48.30)",
+          "oklch(26% 0.00936 48.30)",
+          "oklch(38% 0.00936 48.30)",
+          "oklch(49% 0.00936 48.30)",
+          "oklch(61% 0.00936 48.30)",
+          "oklch(72% 0.00936 48.30)",
+          "oklch(84% 0.00936 48.30)",
+          "oklch(95% 0.00936 48.30)"
+        ]
+      },
+      "paper-surface": {
+        "role": "neutral",
+        "displayName": "Paper Surface",
+        "tonalRamp": [
+          "oklch(15% 0.01148 78.27)",
+          "oklch(26% 0.01148 78.27)",
+          "oklch(38% 0.01148 78.27)",
+          "oklch(49% 0.01148 78.27)",
+          "oklch(61% 0.01148 78.27)",
+          "oklch(72% 0.01148 78.27)",
+          "oklch(84% 0.01148 78.27)",
+          "oklch(95% 0.01148 78.27)"
+        ]
+      },
+      "warm-dark-surface": {
+        "role": "neutral",
+        "displayName": "Warm Dark Surface",
+        "tonalRamp": [
+          "oklch(15% 0.01503 55.62)",
+          "oklch(26% 0.01503 55.62)",
+          "oklch(38% 0.01503 55.62)",
+          "oklch(49% 0.01503 55.62)",
+          "oklch(61% 0.01503 55.62)",
+          "oklch(72% 0.01503 55.62)",
+          "oklch(84% 0.01503 55.62)",
+          "oklch(95% 0.01503 55.62)"
+        ]
+      },
+      "warm-dark-elevated": {
+        "role": "neutral",
+        "displayName": "Warm Dark Elevated",
+        "tonalRamp": [
+          "oklch(15% 0.02034 58.71)",
+          "oklch(26% 0.02034 58.71)",
+          "oklch(38% 0.02034 58.71)",
+          "oklch(49% 0.02034 58.71)",
+          "oklch(61% 0.02034 58.71)",
+          "oklch(72% 0.02034 58.71)",
+          "oklch(84% 0.02034 58.71)",
+          "oklch(95% 0.02034 58.71)"
+        ]
+      },
+      "contrast-paper": {
+        "role": "neutral",
+        "displayName": "Contrast Paper",
+        "tonalRamp": [
+          "oklch(15% 0.00000 89.88)",
+          "oklch(26% 0.00000 89.88)",
+          "oklch(38% 0.00000 89.88)",
+          "oklch(49% 0.00000 89.88)",
+          "oklch(61% 0.00000 89.88)",
+          "oklch(72% 0.00000 89.88)",
+          "oklch(84% 0.00000 89.88)",
+          "oklch(95% 0.00000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.01797 48.06)",
+          "oklch(26% 0.01797 48.06)",
+          "oklch(38% 0.01797 48.06)",
+          "oklch(49% 0.01797 48.06)",
+          "oklch(61% 0.01797 48.06)",
+          "oklch(72% 0.01797 48.06)",
+          "oklch(84% 0.01797 48.06)",
+          "oklch(95% 0.01797 48.06)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Ink Dark",
+        "tonalRamp": [
+          "oklch(15% 0.02753 76.48)",
+          "oklch(26% 0.02753 76.48)",
+          "oklch(38% 0.02753 76.48)",
+          "oklch(49% 0.02753 76.48)",
+          "oklch(61% 0.02753 76.48)",
+          "oklch(72% 0.02753 76.48)",
+          "oklch(84% 0.02753 76.48)",
+          "oklch(95% 0.02753 76.48)"
+        ]
+      },
+      "secondary-ink": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "tonalRamp": [
+          "oklch(15% 0.04064 59.52)",
+          "oklch(26% 0.04064 59.52)",
+          "oklch(38% 0.04064 59.52)",
+          "oklch(49% 0.04064 59.52)",
+          "oklch(61% 0.04064 59.52)",
+          "oklch(72% 0.04064 59.52)",
+          "oklch(84% 0.04064 59.52)",
+          "oklch(95% 0.04064 59.52)"
+        ]
+      },
+      "secondary-ink-dark": {
+        "role": "neutral",
+        "displayName": "Secondary Ink Dark",
+        "tonalRamp": [
+          "oklch(15% 0.03781 74.11)",
+          "oklch(26% 0.03781 74.11)",
+          "oklch(38% 0.03781 74.11)",
+          "oklch(49% 0.03781 74.11)",
+          "oklch(61% 0.03781 74.11)",
+          "oklch(72% 0.03781 74.11)",
+          "oklch(84% 0.03781 74.11)",
+          "oklch(95% 0.03781 74.11)"
+        ]
+      },
+      "timer-surface": {
+        "role": "neutral",
+        "displayName": "Timer Surface",
+        "tonalRamp": [
+          "oklch(15% 0.01889 80.70)",
+          "oklch(26% 0.01889 80.70)",
+          "oklch(38% 0.01889 80.70)",
+          "oklch(49% 0.01889 80.70)",
+          "oklch(61% 0.01889 80.70)",
+          "oklch(72% 0.01889 80.70)",
+          "oklch(84% 0.01889 80.70)",
+          "oklch(95% 0.01889 80.70)"
+        ]
+      },
+      "timer-surface-dark": {
+        "role": "neutral",
+        "displayName": "Timer Surface Dark",
+        "tonalRamp": [
+          "oklch(15% 0.01778 66.98)",
+          "oklch(26% 0.01778 66.98)",
+          "oklch(38% 0.01778 66.98)",
+          "oklch(49% 0.01778 66.98)",
+          "oklch(61% 0.01778 66.98)",
+          "oklch(72% 0.01778 66.98)",
+          "oklch(84% 0.01778 66.98)",
+          "oklch(95% 0.01778 66.98)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "tonalRamp": [
+          "oklch(15% 0.07657 76.27)",
+          "oklch(26% 0.07657 76.27)",
+          "oklch(38% 0.07657 76.27)",
+          "oklch(49% 0.07657 76.27)",
+          "oklch(61% 0.07657 76.27)",
+          "oklch(72% 0.07657 76.27)",
+          "oklch(84% 0.07657 76.27)",
+          "oklch(95% 0.07657 76.27)"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Rule Dark",
+        "tonalRamp": [
+          "oklch(15% 0.04509 66.58)",
+          "oklch(26% 0.04509 66.58)",
+          "oklch(38% 0.04509 66.58)",
+          "oklch(49% 0.04509 66.58)",
+          "oklch(61% 0.04509 66.58)",
+          "oklch(72% 0.04509 66.58)",
+          "oklch(84% 0.04509 66.58)",
+          "oklch(95% 0.04509 66.58)"
+        ]
+      },
+      "rule-contrast": {
+        "role": "neutral",
+        "displayName": "Rule Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.03707 58.38)",
+          "oklch(26% 0.03707 58.38)",
+          "oklch(38% 0.03707 58.38)",
+          "oklch(49% 0.03707 58.38)",
+          "oklch(61% 0.03707 58.38)",
+          "oklch(72% 0.03707 58.38)",
+          "oklch(84% 0.03707 58.38)",
+          "oklch(95% 0.03707 58.38)"
+        ]
+      },
+      "rule-dark-contrast": {
+        "role": "neutral",
+        "displayName": "Rule Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.03790 74.10)",
+          "oklch(26% 0.03790 74.10)",
+          "oklch(38% 0.03790 74.10)",
+          "oklch(49% 0.03790 74.10)",
+          "oklch(61% 0.03790 74.10)",
+          "oklch(72% 0.03790 74.10)",
+          "oklch(84% 0.03790 74.10)",
+          "oklch(95% 0.03790 74.10)"
+        ]
+      },
+      "accent-ink": {
+        "role": "primary",
+        "displayName": "Accent Ink",
+        "tonalRamp": [
+          "oklch(15% 0.16743 31.84)",
+          "oklch(26% 0.16743 31.84)",
+          "oklch(38% 0.16743 31.84)",
+          "oklch(49% 0.16743 31.84)",
+          "oklch(61% 0.16743 31.84)",
+          "oklch(72% 0.16743 31.84)",
+          "oklch(84% 0.16743 31.84)",
+          "oklch(95% 0.16743 31.84)"
+        ]
+      },
+      "accent-ink-contrast": {
+        "role": "primary",
+        "displayName": "Accent Ink Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.13189 33.82)",
+          "oklch(26% 0.13189 33.82)",
+          "oklch(38% 0.13189 33.82)",
+          "oklch(49% 0.13189 33.82)",
+          "oklch(61% 0.13189 33.82)",
+          "oklch(72% 0.13189 33.82)",
+          "oklch(84% 0.13189 33.82)",
+          "oklch(95% 0.13189 33.82)"
+        ]
+      },
+      "today": {
+        "role": "secondary",
+        "displayName": "Today",
+        "tonalRamp": [
+          "oklch(15% 0.10474 157.16)",
+          "oklch(26% 0.10474 157.16)",
+          "oklch(38% 0.10474 157.16)",
+          "oklch(49% 0.10474 157.16)",
+          "oklch(61% 0.10474 157.16)",
+          "oklch(72% 0.10474 157.16)",
+          "oklch(84% 0.10474 157.16)",
+          "oklch(95% 0.10474 157.16)"
+        ]
+      },
+      "today-dark": {
+        "role": "secondary",
+        "displayName": "Today Dark",
+        "tonalRamp": [
+          "oklch(15% 0.12889 162.24)",
+          "oklch(26% 0.12889 162.24)",
+          "oklch(38% 0.12889 162.24)",
+          "oklch(49% 0.12889 162.24)",
+          "oklch(61% 0.12889 162.24)",
+          "oklch(72% 0.12889 162.24)",
+          "oklch(84% 0.12889 162.24)",
+          "oklch(95% 0.12889 162.24)"
+        ]
+      },
+      "today-contrast": {
+        "role": "secondary",
+        "displayName": "Today Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.08010 166.35)",
+          "oklch(26% 0.08010 166.35)",
+          "oklch(38% 0.08010 166.35)",
+          "oklch(49% 0.08010 166.35)",
+          "oklch(61% 0.08010 166.35)",
+          "oklch(72% 0.08010 166.35)",
+          "oklch(84% 0.08010 166.35)",
+          "oklch(95% 0.08010 166.35)"
+        ]
+      },
+      "today-dark-contrast": {
+        "role": "secondary",
+        "displayName": "Today Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.11674 161.52)",
+          "oklch(26% 0.11674 161.52)",
+          "oklch(38% 0.11674 161.52)",
+          "oklch(49% 0.11674 161.52)",
+          "oklch(61% 0.11674 161.52)",
+          "oklch(72% 0.11674 161.52)",
+          "oklch(84% 0.11674 161.52)",
+          "oklch(95% 0.11674 161.52)"
+        ]
+      },
+      "finished": {
+        "role": "secondary",
+        "displayName": "Finished",
+        "tonalRamp": [
+          "oklch(15% 0.13170 54.32)",
+          "oklch(26% 0.13170 54.32)",
+          "oklch(38% 0.13170 54.32)",
+          "oklch(49% 0.13170 54.32)",
+          "oklch(61% 0.13170 54.32)",
+          "oklch(72% 0.13170 54.32)",
+          "oklch(84% 0.13170 54.32)",
+          "oklch(95% 0.13170 54.32)"
+        ]
+      },
+      "finished-dark": {
+        "role": "secondary",
+        "displayName": "Finished Dark",
+        "tonalRamp": [
+          "oklch(15% 0.13580 67.26)",
+          "oklch(26% 0.13580 67.26)",
+          "oklch(38% 0.13580 67.26)",
+          "oklch(49% 0.13580 67.26)",
+          "oklch(61% 0.13580 67.26)",
+          "oklch(72% 0.13580 67.26)",
+          "oklch(84% 0.13580 67.26)",
+          "oklch(95% 0.13580 67.26)"
+        ]
+      },
+      "finished-contrast": {
+        "role": "secondary",
+        "displayName": "Finished Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.11334 52.34)",
+          "oklch(26% 0.11334 52.34)",
+          "oklch(38% 0.11334 52.34)",
+          "oklch(49% 0.11334 52.34)",
+          "oklch(61% 0.11334 52.34)",
+          "oklch(72% 0.11334 52.34)",
+          "oklch(84% 0.11334 52.34)",
+          "oklch(95% 0.11334 52.34)"
+        ]
+      },
+      "finished-dark-contrast": {
+        "role": "secondary",
+        "displayName": "Finished Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.10300 77.87)",
+          "oklch(26% 0.10300 77.87)",
+          "oklch(38% 0.10300 77.87)",
+          "oklch(49% 0.10300 77.87)",
+          "oklch(61% 0.10300 77.87)",
+          "oklch(72% 0.10300 77.87)",
+          "oklch(84% 0.10300 77.87)",
+          "oklch(95% 0.10300 77.87)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Warning",
+        "tonalRamp": [
+          "oklch(15% 0.09175 68.86)",
+          "oklch(26% 0.09175 68.86)",
+          "oklch(38% 0.09175 68.86)",
+          "oklch(49% 0.09175 68.86)",
+          "oklch(61% 0.09175 68.86)",
+          "oklch(72% 0.09175 68.86)",
+          "oklch(84% 0.09175 68.86)",
+          "oklch(95% 0.09175 68.86)"
+        ]
+      },
+      "warning-dark": {
+        "role": "secondary",
+        "displayName": "Warning Dark",
+        "tonalRamp": [
+          "oklch(15% 0.09184 75.27)",
+          "oklch(26% 0.09184 75.27)",
+          "oklch(38% 0.09184 75.27)",
+          "oklch(49% 0.09184 75.27)",
+          "oklch(61% 0.09184 75.27)",
+          "oklch(72% 0.09184 75.27)",
+          "oklch(84% 0.09184 75.27)",
+          "oklch(95% 0.09184 75.27)"
+        ]
+      },
+      "warning-contrast": {
+        "role": "secondary",
+        "displayName": "Warning Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.08340 61.53)",
+          "oklch(26% 0.08340 61.53)",
+          "oklch(38% 0.08340 61.53)",
+          "oklch(49% 0.08340 61.53)",
+          "oklch(61% 0.08340 61.53)",
+          "oklch(72% 0.08340 61.53)",
+          "oklch(84% 0.08340 61.53)",
+          "oklch(95% 0.08340 61.53)"
+        ]
+      },
+      "warning-dark-contrast": {
+        "role": "secondary",
+        "displayName": "Warning Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.08253 74.00)",
+          "oklch(26% 0.08253 74.00)",
+          "oklch(38% 0.08253 74.00)",
+          "oklch(49% 0.08253 74.00)",
+          "oklch(61% 0.08253 74.00)",
+          "oklch(72% 0.08253 74.00)",
+          "oklch(84% 0.08253 74.00)",
+          "oklch(95% 0.08253 74.00)"
+        ]
+      },
+      "completed": {
+        "role": "neutral",
+        "displayName": "Completed",
+        "tonalRamp": [
+          "oklch(15% 0.02004 67.39)",
+          "oklch(26% 0.02004 67.39)",
+          "oklch(38% 0.02004 67.39)",
+          "oklch(49% 0.02004 67.39)",
+          "oklch(61% 0.02004 67.39)",
+          "oklch(72% 0.02004 67.39)",
+          "oklch(84% 0.02004 67.39)",
+          "oklch(95% 0.02004 67.39)"
+        ]
+      },
+      "completed-dark": {
+        "role": "neutral",
+        "displayName": "Completed Dark",
+        "tonalRamp": [
+          "oklch(15% 0.01989 67.41)",
+          "oklch(26% 0.01989 67.41)",
+          "oklch(38% 0.01989 67.41)",
+          "oklch(49% 0.01989 67.41)",
+          "oklch(61% 0.01989 67.41)",
+          "oklch(72% 0.01989 67.41)",
+          "oklch(84% 0.01989 67.41)",
+          "oklch(95% 0.01989 67.41)"
+        ]
+      },
+      "completed-contrast": {
+        "role": "neutral",
+        "displayName": "Completed Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.01566 67.43)",
+          "oklch(26% 0.01566 67.43)",
+          "oklch(38% 0.01566 67.43)",
+          "oklch(49% 0.01566 67.43)",
+          "oklch(61% 0.01566 67.43)",
+          "oklch(72% 0.01566 67.43)",
+          "oklch(84% 0.01566 67.43)",
+          "oklch(95% 0.01566 67.43)"
+        ]
+      },
+      "completed-dark-contrast": {
+        "role": "neutral",
+        "displayName": "Completed Dark Contrast",
+        "tonalRamp": [
+          "oklch(15% 0.02464 67.32)",
+          "oklch(26% 0.02464 67.32)",
+          "oklch(38% 0.02464 67.32)",
+          "oklch(49% 0.02464 67.32)",
+          "oklch(61% 0.02464 67.32)",
+          "oklch(72% 0.02464 67.32)",
+          "oklch(84% 0.02464 67.32)",
+          "oklch(95% 0.02464 67.32)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Featured calendar numeral."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Featured event title."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Native editor and settings headings."
+      },
+      "countdown": {
+        "displayName": "Countdown",
+        "purpose": "Featured remaining-day count."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Settings and body content."
+      },
+      "event-title": {
+        "displayName": "Event Title",
+        "purpose": "Secondary event title."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Metadata and supporting labels."
+      },
+      "timer": {
+        "displayName": "Timer",
+        "purpose": "Running timer with monospaced digits."
+      }
+    },
+    "shadows": [
+      {
+        "name": "calendar-paper-light",
+        "value": "SwiftUI .shadow(color: .black.opacity(0.08), radius: 2, x: 1, y: 2)",
+        "purpose": "Only calendar leaves; native point units."
+      },
+      {
+        "name": "calendar-paper-dark",
+        "value": "SwiftUI .shadow(color: .black.opacity(0.12), radius: 2, x: 1, y: 2)",
+        "purpose": "Dark calendar leaves; native point units."
+      }
+    ],
+    "motion": [
+      {
+        "name": "timer-preset-selection",
+        "value": "easeInOut 0.18s",
+        "purpose": "Only the shared selected surface moves; labels change immediately."
+      },
+      {
+        "name": "disclosure",
+        "value": "easeInOut 0.2s",
+        "purpose": "Inline catalog/checklist height and opacity."
+      },
+      {
+        "name": "editor-subtask",
+        "value": "easeInOut 0.1s",
+        "purpose": "Add/remove subtask rows; not text entry."
+      },
+      {
+        "name": "icon-value",
+        "value": "easeInOut 0.12s",
+        "purpose": "Selected emoji opacity."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "immediate",
+        "purpose": "System Reduce Motion bypasses those transitions."
+      }
+    ],
+    "breakpoints": [],
+    "platform": {
+      "name": "macOS",
+      "runtime": "SwiftUI + AppKit",
+      "dimensionsUnit": "pt",
+      "panel": {
+        "width": 390,
+        "height": 600,
+        "timerHeight": 60,
+        "managerHeight": 540
+      },
+      "nativeControls": [
+        "TextField",
+        "TextEditor",
+        "DatePicker.field",
+        "Toggle.checkbox",
+        "Picker.menu",
+        "Button.bordered",
+        "Button.borderedProminent"
+      ],
+      "focus": "Native text fields own their bezel and focus ring; no second custom outline. The separate emoji selection control retains its custom border.",
+      "previewLimitations": "HTML/CSS snippets are illustrative light-mode translations using CSS pixels for native points; native control rendering and SwiftUI shadow radius are not pixel-equivalent CSS specifications. They were not separately browser rendered.",
+      "tonalRampPolicy": "Synthesized OKLCH lightness strips for sidecar display only; runtime appearance pairs and Increase Contrast branches in DESIGN.md remain authoritative.",
+      "sourceFiles": [
+        "Sources/CountdownManager/AuroraInstrument.swift",
+        "Sources/CountdownManager/Views.swift",
+        "Sources/CountdownManager/SettingsView.swift",
+        "Sources/CountdownManager/CountdownTimer.swift",
+        "Sources/CountdownManager/Presentation.swift",
+        "docs/PRODUCT.md"
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Creation Button",
+      "kind": "button",
+      "refersTo": "creation-button",
+      "description": "Illustrative translation of the native compact creation action.",
+      "html": "<button class=\"ds-create\" aria-label=\"Добавить событие\"><svg width=\"13\" height=\"13\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"M8 2v12M2 8h12\"/></svg></button>",
+      "css": ".ds-create{width:31px;height:31px;background:rgb(71.8% 27.8% 17.3%);color:white;border:0;border-radius:8px}.ds-create:focus-visible{outline:2px solid rgb(71.8% 27.8% 17.3%);outline-offset:2px}"
+    },
+    {
+      "name": "Service Action",
+      "kind": "button",
+      "description": "Illustrative plain action; native focus and disabled treatment remain authoritative.",
+      "html": "<button class=\"ds-action\">Выйти</button>",
+      "css": ".ds-action{font:11px system-ui;color:rgb(19% 15% 13%);background:transparent;border:0}.ds-action:focus-visible{outline:2px solid rgb(71.8% 27.8% 17.3%);outline-offset:2px}.ds-action:disabled{opacity:.5}"
+    },
+    {
+      "name": "Icon Selection Field",
+      "kind": "input",
+      "refersTo": "icon-selection-field",
+      "description": "Selection control, not editable text; native implementation additionally supplies selected emoji and clear target.",
+      "html": "<button class=\"ds-icon-field\"><span>Значок</span><span class=\"ds-icon-value\">Без значка</span><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"m2 4 4 4 4-4\"/></svg></button>",
+      "css": ".ds-icon-field{display:flex;align-items:center;gap:8px;width:100%;height:38px;padding:0 10px;border:1px solid rgb(68% 55% 36% / 30%);border-radius:4px;background:rgb(98% 96% 93%);color:rgb(19% 15% 13%);font:12px system-ui}.ds-icon-value{margin-left:auto;font-size:11px;color:rgb(45% 36% 29%)}.ds-icon-field:focus-visible{outline:2px solid rgb(71.8% 27.8% 17.3%);outline-offset:-2px}"
+    },
+    {
+      "name": "Featured Calendar Leaf",
+      "kind": "custom",
+      "refersTo": "featured-calendar-leaf",
+      "description": "Illustrative calendar-paper geometry; CSS pixels stand in for native points.",
+      "html": "<div class=\"ds-leaf\"><div class=\"ds-month\">ОКТ</div><div class=\"ds-day\">16</div></div>",
+      "css": ".ds-leaf{width:54px;height:65px;border-radius:5px;overflow:hidden;background:rgb(100% 98% 95%);border:1px solid rgb(68% 55% 36% / 30%);transform:rotate(3deg);box-shadow:1px 2px 2px rgb(0 0 0 / 8%)}.ds-month{padding:3px 0;background:rgb(71.8% 27.8% 17.3%);color:white;text-align:center;font:600 10px system-ui;letter-spacing:.7px}.ds-day{padding:2px 0 4px;text-align:center;font:32px Georgia;color:rgb(19% 15% 13%);letter-spacing:-.5px}"
+    },
+    {
+      "name": "Event Card",
+      "kind": "card",
+      "refersTo": "event-card",
+      "description": "Illustrative tonal event container with actual native title role.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-title\">Поездка</div><div class=\"ds-card-meta\">24 октября · через 8 дней</div></article>",
+      "css": ".ds-card{padding:12px;border-radius:8px;background:rgb(100% 98% 95%);color:rgb(19% 15% 13%)}.ds-card-title{font:23px Georgia;letter-spacing:-.6px}.ds-card-meta{margin-top:7px;font:11px system-ui;color:rgb(45% 36% 29%)}"
+    },
+    {
+      "name": "Timer Preset",
+      "kind": "chip",
+      "description": "Selected preset preview; native implementation animates the shared selection background.",
+      "html": "<button class=\"ds-preset\" aria-pressed=\"true\">30</button>",
+      "css": ".ds-preset{height:32px;min-width:32px;background:rgb(71.8% 27.8% 17.3% / 10%);color:rgb(70% 20% 12%);border:1px solid rgb(68% 55% 36% / 30%);border-radius:5px;font:600 11px system-ui;font-variant-numeric:tabular-nums}.ds-preset:focus-visible{outline:2px solid rgb(70% 20% 12%);outline-offset:-3px}"
+    },
+    {
+      "name": "Settings Navigation",
+      "kind": "nav",
+      "description": "Illustrative back control and Georgia heading; actual native focus is managed by SwiftUI.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Настройки\"><button class=\"ds-back\" aria-label=\"Назад\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 12 12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" aria-hidden=\"true\"><path d=\"m8 2-4 4 4 4\"/></svg></button><span>Настройки</span></nav>",
+      "css": ".ds-nav{height:49px;padding:0 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgb(68% 55% 36% / 30%);background:rgb(98% 96% 93%);color:rgb(19% 15% 13%);font:21px Georgia}.ds-back{width:22px;height:26px;padding:0;border:0;background:transparent;color:inherit}.ds-back:focus-visible{outline:2px solid rgb(71.8% 27.8% 17.3%);outline-offset:1px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Warm Calendar Leaves",
+    "overview": "Countdown Manager uses warm paper and terracotta calendar leaves to make a small dated-event utility feel tangible. Georgia gives event names and dates an editorial character; compact native system text keeps actions, settings, and checklists legible. The warm dark appearance preserves the same hierarchy through related surfaces rather than applying a neutral black theme.\n\nThis is a record of the completed native macOS implementation, adapted from the user-approved imported HTML and corrected icon-field reference. It is not a seed or a web implementation specification. SwiftUI and AppKit remain authoritative for native controls, focus, accessibility, and platform metrics.",
+    "keyCharacteristics": [
+      "Warm ivory, terracotta, and related warm dark surfaces.",
+      "Georgia calendar numerals and event headings with native system controls.",
+      "A compact retained panel with a distinct timer strip and fixed service actions.",
+      "Calendar leaves provide the signature; quiet tonal surfaces group events and checklists."
+    ],
+    "rules": [
+      {
+        "name": "The Calendar Leaf Rule",
+        "body": "Use the leaf to carry the actual month and day; the larger featured leaf sits on the right and secondary leaves on the left.",
+        "section": "typography"
+      },
+      {
+        "name": "The Native Control Rule",
+        "body": "Preserve native text entry, checkbox, date, menu, focus, disabled, and keyboard behavior when extending the interface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Paper Depth Rule",
+        "body": "Use tonal surfaces for event grouping and reserve the small paper shadow and rotation for calendar leaves.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the paired light and dark semantic colors from AuroraInstrument, including Increase Contrast adaptations.",
+      "Do preserve Georgia for featured event titles, calendar numerals, and internal screen headings.",
+      "Do keep focus rings visible within scrolling forms and preserve native checkbox and date controls.",
+      "Do respect Reduce Motion and keep the timer and fixed action rows available while forms scroll.",
+      "Do distinguish the icon selection field from text entry and keep its clear action separate from disclosure."
+    ],
+    "donts": [
+      "Don't replace semantic icons with text glyph approximations in production controls.",
+      "Don't introduce panel motion or forced focus transitions into ordinary navigation.",
+      "Don't make every event equally prominent; retain featured and secondary calendar-leaf sizes.",
+      "Don't promote illustrative HTML previews in the sidecar into native control specifications."
+    ]
+  }
+}

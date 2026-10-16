@@ -26,9 +26,22 @@ The menu-bar entry opens a temporary panel anchored directly below the status it
 
 The single timer is shown as a compact strip above the event interface. There is one event editor inside the primary panel. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, application-owned emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
 
-The editor groups title, optional note and date together, with separate subtle blocks for the additional emoji and subtasks. Blocks use 12-point inner spacing, 8-point corners and 12-point separation. The menu-bar favorite choice is separated below these groups. The timer strip and fixed Save/Cancel action area keep their existing responsibilities; the form scrolls within the panel.
+The editor uses a compact 21-point Georgia heading and a scrolling form. Title, note and subtask text fields
+use one native bezel and the native focus ring, without a second custom border. The native note field is
+always visible, labelled `Заметка · необязательно`, with the `Пара слов о событии` placeholder and
+a live character count starting at `0/280`. Hiding and reopening the panel preserves the note text
+along with the other draft fields. Title and date remain directly
+available, and today's expiry warning retains its exact meaning in a quiet ochre treatment.
 
-The additional emoji is a single full-width selection control labelled `Значок · необязательно`. It displays `Без значка` or the selected emoji, with a disclosure chevron at the right edge. A separate small clear button appears inside the same visual field only when an emoji is selected; clearing must not also open the picker. The field is a selection control, not an editable text input. The picker is initially collapsed. Activating the field reveals eight compact presets and a `Все значки` action; activating it again collapses the picker. Opening or closing it preserves every draft field.
+The additional emoji is an independent, outlined full-width field labelled `Значок`, displaying
+`Без значка` or the selected emoji and a disclosure chevron. A separate small clear button appears
+inside that field only when an emoji is selected; clearing must not also open the picker. The
+weather and favorite native checkboxes form a distinct group below it, separated by 13 points.
+Subtasks follow a separate section, with room prioritized for their editable text. The form scrolls
+while Delete, Cancel and Save share one fixed bottom action row; deletion still requires an inline
+confirmation. The field is a selection control, not an editable text input. The picker is initially
+collapsed. Activating it reveals eight compact presets and a `Все значки` action; activating it
+again collapses the picker. Opening or closing it preserves every draft field.
 
 `Все значки` reveals the larger inline catalog organized into five named sets: `Общие`, `Дети`, `Работа`, `Транспорт` and `Праздники`. Each set is a six-row/eight-column page, fitting the editor's available inner width. The current set name is shown above conventional previous/next controls with page dots; horizontal drag/swipe may also change sets. The first set keeps the compact presets as its top row. Choosing any emoji or clearing the selection resets catalog navigation and collapses the entire picker. New selections come from the provided catalog; an existing stored valid emoji outside that catalog remains displayable and may be preserved until the user selects another one.
 
@@ -36,9 +49,12 @@ Picker disclosure uses a 200-millisecond non-spring height and opacity transitio
 
 Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
 
-Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the favorite star. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
+Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
 
-Each event and its checklist form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
+The featured title uses 23-point Georgia and a compact 54 × 65 calendar leaf; secondary events
+use 14-point titles and 42 × 51 leaves. Secondary date, remaining days and available weather share
+a compact metadata row; featured weather sits beside its countdown. Each event and its checklist
+form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
 
 Opening the internal editor or settings must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
 
@@ -46,19 +62,20 @@ Opening the internal editor or settings must not reset the list underneath it. T
 
 Settings is an internal screen in the same retained 390 × 600 panel. The 60-point timer strip
 remains above the 540-point manager area on both the list and settings screens; timer actions
-remain available. Settings does not open another window, sheet or popover.
+remain available. Settings navigation does not open another window, sheet or popover. The explicit diagnostic
+export action uses the native macOS save dialog.
 
 The list footer remains a single compact row: `Хранится на этом Mac`, a small settings gear
 immediately before `Выйти`, and `Выйти`. The gear has a 14-point visible symbol and a 22-point
 activation area. The header retains its existing calendar and `+` creation controls.
 
-Settings retains the existing checkboxes above the ordinary update and diagnostics actions:
+Settings arranges existing controls into three groups:
 
-1. `Запускать при входе в macOS`;
-2. `Автопроверка` updates;
-3. `Не спать`;
-4. `Проверить обновления…`, replaced by `Обновление готово · установить…` while installation is deferred;
-5. `Диагностика…`.
+1. `Приложение`: launch at login, automatic update checks, and `Не давать Mac и экрану засыпать`,
+   with the existing saved-intent explanation and recovery actions;
+2. `Погода`: `Показывать погоду в днях` and the existing location choice;
+3. `Обслуживание`: `Проверить обновления…`, replaced by `Обновление готово · установить…`
+   while installation is deferred, and `Сохранить диагностику…`.
 
 The weather section adds `Показывать погоду в днях` and a location choice. The location choice is
 unavailable while weather is off. Provider, licence, privacy, loading and error explanations are
@@ -108,7 +125,8 @@ Countdown Manager exposes exactly one timer.
 
 The timer has no user-editable name or task text. Its visual identity is simply `⏰`.
 
-When idle, the user chooses one of seven fixed durations: `5`, `10`, `15`, `30`, `40`, `60`, or `120` minutes, then starts the timer. There is no custom-duration input.
+When idle, the selected duration uses a quiet tinted selection surface; the filled Play action
+remains the stronger accent. The user chooses one of seven fixed durations: `5`, `10`, `15`, `30`, `40`, `60`, or `120` minutes, then starts the timer. There is no custom-duration input.
 
 While running:
 
@@ -214,7 +232,7 @@ of each event's saved `showsWeather` choice. New day drafts default true; ordina
 remain false. Save commits that choice and Cancel leaves it unchanged; titles never classify events.
 
 An eligible event shows only a native condition symbol and signed rounded Celsius temperature beside
-its date when usable forecast data exists. The element is plain text/symbol, without a link, tooltip,
+its date/countdown area when usable forecast data exists. The element is plain text/symbol, without a link, tooltip,
 source/license/privacy text, info button, loading/error/retry or placeholder. Weather settings contain
 only the global switch and the Automatic/ten-city choice. Privacy-limited technical weather
 diagnostics use the existing local journal and do not add weather status or errors to the UI.
@@ -267,12 +285,12 @@ The fixed manual list is Москва, Санкт-Петербург, Казан
 
 ## Current date in the list header
 
-The app name is removed from the list header. A compact Russian date, such as `Ср, 14 октября`,
-comes first in system 14-point medium type, without a year. The original
-`<count> активных · сегодня и позже` subtitle follows in secondary 11-point type, with a 3-point gap.
-The existing 31 × 31 calendar and add buttons remain centered beside the two lines. Horizontal
-18-point, top 14-point and bottom 12-point padding remain unchanged. The date reads `Store.today` and
-updates through existing midnight, wake, clock/calendar changes and reopening refresh boundaries.
+The app name is removed from the list header. A compact Russian date, such as `Пт, 16 октября`,
+comes first in system 15-point semibold type, without a year. A secondary 11-point event count
+follows with a 3-point gap: `1 событие`, `2 события`, `6 событий`, with the corresponding Russian
+endings for other counts. The existing 31 × 31 calendar and add buttons remain beside these lines.
+The header uses horizontal 16-point and vertical 12-point padding. The date reads `Store.today`
+and updates through existing midnight, wake, clock/calendar changes and reopening refresh boundaries.
 No timer or duplicate date owner is added to the view. Both lines remain visible at panel width 390.
 
 ## Favorite and automatic event
@@ -347,7 +365,9 @@ When no subtasks exist, a `0/0` progress state is not shown.
 
 ### Collapse state
 
-The subtask list may be expanded or collapsed independently for each event.
+The subtask list may be expanded or collapsed independently for each event. Its entire disclosure
+row is clickable, with a chevron beside `Подзадачи` on the left and `N из M` on the right. Favorite
+and edit buttons remain separate controls and do not trigger disclosure.
 
 Collapse state is UI preference state rather than event content.
 
@@ -525,10 +545,25 @@ repeated state records. They do not change forecast requests, retries, cache lif
 
 A weather diagnostic snapshot is recorded automatically on application launch, including a launch
 after an update, and as normal weather work settles. The user does not need to change weather
-settings to start diagnostic collection. `Диагностика…` records the current snapshot and flushes
-the existing journal before revealing its folder. A snapshot observes current state only: it does
+settings to start diagnostic collection. `Сохранить диагностику…` records the current snapshot
+and opens a native save dialog for a ZIP archive. A snapshot observes current state only: it does
 not force a forecast refresh, retry, location request or permission prompt. Automatic repeated
 snapshots are bounded by state changes; an explicit diagnostics action may record the same state.
+
+Export is local and explicit; it does not upload or send anything. The ZIP contains redacted current
+and, when present, previous journal generations plus a technical summary of app version/build,
+macOS version, architecture, time/offset, timer phase, updater state, Store counts/persistence state
+and the current weather state. It does not attach event JSON, a preferences dump, filesystem paths,
+request details or arbitrary historical error text. Cancelling the dialog writes no archive;
+failures remain visible and do not replace an existing destination with an incomplete archive.
+The automated native-dialog check currently covers opening, Cancel, reopening and Cancel;
+physical confirmation of Save is not yet established. Archive creation/redaction has separate
+deterministic coverage; see `docs/VERIFICATION.md` for the acceptance boundary.
+
+Journal submission is asynchronous and bounded: it admits at most 512 pending messages with a
+4 KiB UTF-8 input budget per message and may drop records under pressure. Diagnostic availability
+is best effort and must never block normal app interaction. File access, rotation, OSLog and ZIP
+work run on utility queues; production UI paths do not synchronously drain the journal.
 
 Diagnostics are not a user-content log.
 

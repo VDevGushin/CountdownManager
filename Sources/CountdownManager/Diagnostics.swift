@@ -3,7 +3,7 @@ import OSLog
 
 /// A small, dependency-free diagnostic journal that survives app restarts.
 /// User-entered titles and emoji are deliberately not recorded.
-final class DiagnosticLog: @unchecked Sendable {
+package final class DiagnosticLog: @unchecked Sendable {
     static let shared = DiagnosticLog()
 
     static var directoryURL: URL {
@@ -22,51 +22,157 @@ final class DiagnosticLog: @unchecked Sendable {
     private let queue = DispatchQueue(label: "local.countdownmanager.diagnostics", qos: .utility)
     private let formatter = ISO8601DateFormatter()
     private let maximumFileSize = 512 * 1024
+    private let sessionID = UUID().uuidString
+    private let admission = DiagnosticLogAdmission()
+    private let overrideDirectory: URL?
+    private let writesSystemLog: Bool
+    private let beforeWrite: @Sendable () -> Void
+    private var storageDirectory: URL { overrideDirectory ?? Self.directoryURL }
+    private var storageFile: URL { storageDirectory.appendingPathComponent("countdown.log") }
 
     private init() {
+        overrideDirectory = nil
+        writesSystemLog = true
+        beforeWrite = {}
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     }
 
-    func record(_ message: String) {
-        systemLog.info("\(message, privacy: .public)")
+    package init(directoryURL: URL, beforeWrite: @escaping @Sendable () -> Void = {}) {
+        overrideDirectory = directoryURL
+        writesSystemLog = false
+        self.beforeWrite = beforeWrite
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    }
+
+    package func record(_ message: String) {
+        guard admission.accept() else { return }
+        let bounded = String(decoding: message.utf8.prefix(4_096), as: UTF8.self)
         queue.async { [self] in
-            let line = "\(formatter.string(from: Date())) \(message)\n"
-            do {
-                try FileManager.default.createDirectory(
-                    at: Self.directoryURL,
-                    withIntermediateDirectories: true
-                )
-                try rotateIfNeeded(adding: line.utf8.count)
-                if !FileManager.default.fileExists(atPath: Self.fileURL.path) {
-                    FileManager.default.createFile(atPath: Self.fileURL.path, contents: nil)
-                }
-                let handle = try FileHandle(forWritingTo: Self.fileURL)
-                try handle.seekToEnd()
-                try handle.write(contentsOf: Data(line.utf8))
-                try handle.close()
-            } catch {
-                systemLog.error("Cannot write diagnostic log: \(error.localizedDescription, privacy: .public)")
+            beforeWrite()
+            write(bounded)
+            let dropped = admission.finish()
+            if dropped > 0 { write("diagnostics.dropped count=\(dropped)") }
+        }
+    }
+
+    private func write(_ message: String) {
+        if writesSystemLog { systemLog.info("\(message, privacy: .public)") }
+        let line = "\(formatter.string(from: Date())) \(message) session=\(sessionID)\n"
+        do {
+            try FileManager.default.createDirectory(
+                at: storageDirectory,
+                withIntermediateDirectories: true,
+                attributes: [.posixPermissions: 0o700]
+            )
+            try rotateIfNeeded(adding: line.utf8.count)
+            if !FileManager.default.fileExists(atPath: storageFile.path) {
+                FileManager.default.createFile(atPath: storageFile.path, contents: nil, attributes: [.posixPermissions: 0o600])
+            }
+            let handle = try FileHandle(forWritingTo: storageFile)
+            try handle.seekToEnd()
+            try handle.write(contentsOf: Data(line.utf8))
+            try handle.close()
+        } catch {
+            if writesSystemLog {
+                let fields = DiagnosticPrivacy.errorFields(error)
+                systemLog.error("diagnostics.write failure \(fields, privacy: .public)")
             }
         }
     }
 
-    /// Waits until all already-enqueued records have reached disk.
+    /// Isolated runtime-test helper only. Production UI paths use asynchronous queue operations.
     func flush() {
         queue.sync {}
     }
 
+    func flushAsync() async {
+        await withCheckedContinuation { continuation in queue.async { continuation.resume() } }
+    }
+
+    func directoryForViewing() async throws -> URL {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [self] in
+                do {
+                    try FileManager.default.createDirectory(at: storageDirectory, withIntermediateDirectories: true,
+                                                            attributes: [.posixPermissions: 0o700])
+                    continuation.resume(returning: FileManager.default.fileExists(atPath: storageFile.path) ? storageFile : storageDirectory)
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+    }
+
+    /// A single queue operation reads both generations, ordered after all admitted writes.
+    package func snapshot() async throws -> DiagnosticLogSnapshot {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async { [self] in
+                do {
+                    continuation.resume(returning: try DiagnosticLogSnapshot(
+                        current: readBounded(storageFile),
+                        previous: readBounded(storageDirectory.appendingPathComponent("countdown.previous.log"))
+                    ))
+                } catch { continuation.resume(throwing: error) }
+            }
+        }
+    }
+
+    private func readBounded(_ url: URL) throws -> Data? {
+        let values: URLResourceValues
+        do { values = try url.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey]) }
+        catch {
+            let native = error as NSError
+            if native.domain == NSCocoaErrorDomain, [NSFileNoSuchFileError, NSFileReadNoSuchFileError].contains(native.code) { return nil }
+            throw error
+        }
+        guard values.isRegularFile == true, values.isSymbolicLink != true else { throw DiagnosticArchiveError.invalidLog }
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let size = try handle.seekToEnd()
+        let offset = size > maximumFileSize ? size - UInt64(maximumFileSize) : 0
+        try handle.seek(toOffset: offset)
+        var data = try handle.read(upToCount: maximumFileSize) ?? Data()
+        if offset > 0 {
+            if let newline = data.firstIndex(of: 10) { data = Data(data.suffix(from: data.index(after: newline))) }
+            else { data = Data() }
+        }
+        return data
+    }
+
     private func rotateIfNeeded(adding bytes: Int) throws {
-        let attributes = try? FileManager.default.attributesOfItem(atPath: Self.fileURL.path)
+        let attributes = try? FileManager.default.attributesOfItem(atPath: storageFile.path)
         let currentSize = attributes?[.size] as? Int ?? 0
         guard currentSize + bytes > maximumFileSize else { return }
 
-        let archiveURL = Self.directoryURL.appendingPathComponent("countdown.previous.log")
+        let archiveURL = storageDirectory.appendingPathComponent("countdown.previous.log")
         if FileManager.default.fileExists(atPath: archiveURL.path) {
             try FileManager.default.removeItem(at: archiveURL)
         }
-        if FileManager.default.fileExists(atPath: Self.fileURL.path) {
-            try FileManager.default.moveItem(at: Self.fileURL, to: archiveURL)
+        if FileManager.default.fileExists(atPath: storageFile.path) {
+            try FileManager.default.moveItem(at: storageFile, to: archiveURL)
         }
+    }
+}
+
+private final class DiagnosticLogAdmission: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending = 0
+    private var dropped = 0
+
+    func accept() -> Bool {
+        // UI callers never wait for the writer, or even for another admission operation.
+        guard lock.try() else { return false }
+        defer { lock.unlock() }
+        guard pending < 512 else { dropped = min(dropped + 1, Int.max / 2); return false }
+        pending += 1
+        return true
+    }
+
+    func finish() -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        pending -= 1
+        let count = dropped
+        dropped = 0
+        return count
     }
 }
 
@@ -94,7 +200,7 @@ final class MainThreadWatchdog: @unchecked Sendable {
     }
 
     func stop() {
-        queue.sync { [self] in
+        queue.async { [self] in
             timer?.cancel()
             timer = nil
             awaitingSince = nil

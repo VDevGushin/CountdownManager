@@ -265,8 +265,8 @@ package final class WeatherController: ObservableObject {
 
     package func refresh() { refresh(allowLocationPrompt: false) }
 
-    /// Reads the current state without retrying providers, changing preferences or requesting location.
-    package func recordDiagnosticSnapshot(reason: WeatherDiagnosticSnapshotReason) {
+    /// Reads bounded technical fields without starting work or changing preferences.
+    package func diagnosticSnapshotSummary() -> String {
         let timestamp = now()
         let eligible = demand.intersection(availableDayKeys())
         let usable = enabled && !stopped && forecastExpiry.map({ $0 > timestamp }) == true
@@ -287,9 +287,13 @@ package final class WeatherController: ObservableObject {
         else if location == .automatic && !locationIsFresh { result = "location_unavailable" }
         else { result = "no_usable_data" }
         let mode = location == .automatic ? "auto" : "manual"
-        let fields = "result=\(result) enabled=\(enabled) mode=\(mode) demanded=\(eligible.count) usable=\(usable) " +
+        return "result=\(result) enabled=\(enabled) mode=\(mode) demanded=\(eligible.count) usable=\(usable) " +
             "request_pending=\(fetchTask != nil) location_pending=\(locationIsPending) " +
             "computation_pending=\(computationTask != nil) fresh_sources=\(freshSources) failed_sources=\(failedSources)"
+    }
+
+    package func recordDiagnosticSnapshot(reason: WeatherDiagnosticSnapshotReason) {
+        let fields = diagnosticSnapshotSummary()
         guard reason != .settled || lastSnapshot != fields else { return }
         lastSnapshot = fields
         diagnostics.emit("weather.snapshot reason=\(reason.rawValue) \(fields)")

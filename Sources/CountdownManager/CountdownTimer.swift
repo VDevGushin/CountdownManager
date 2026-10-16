@@ -154,12 +154,27 @@ struct CountdownManagerRootView: View {
     var body: some View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
-            ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake, weather: weather)
+            ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake,
+                        weather: weather, diagnosticsContext: makeDiagnosticsContext)
         }
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())
         .environmentObject(accessibilitySettings)
         .environment(\.colorScheme, visualEnvironment.colorSchemeOverride ?? systemColorScheme)
+    }
+
+    private func makeDiagnosticsContext() -> DiagnosticExportContext {
+        let phase: DiagnosticTimerPhase
+        switch timer.phase {
+        case .idle: phase = .idle
+        case .running: phase = .running
+        case .finished: phase = .finished
+        }
+        return DiagnosticExportContext(
+            timerPhase: phase, updaterAvailable: updates.isAvailable, updaterCanCheck: updates.canCheckForUpdates,
+            updaterInstalling: updates.isInstallingUpdate, updaterDeferred: updates.isInstallationDeferred,
+            updaterPresenting: updates.isPresentingUpdateUI, weatherSnapshot: weather.diagnosticSnapshotSummary()
+        )
     }
 }
 
@@ -202,7 +217,7 @@ private struct CountdownTimerStrip: View {
             }
         }
         .padding(.horizontal, 16)
-        .frame(height: 59)
+        .frame(height: 60)
         .background(AuroraTimerBackground(appearance: auroraAppearance))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("timer")

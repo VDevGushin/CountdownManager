@@ -84,6 +84,8 @@ Key files:
 - `Presentation.swift`
 - `Views.swift`
 - `Diagnostics.swift`
+- `DiagnosticPrivacy.swift`
+- `DiagnosticArchive.swift`
 - `UISmokeControls.swift`
 - `UISmokeRuntime.swift`
 
@@ -408,7 +410,8 @@ personal-use scope does not imply provider terms have disappeared: see
 Any later distribution requires checking the applicable source attribution/licensing requirements.
 
 `currentDayHeaderLabel` formats the existing published `Store.today`; the view removes the app name
-and shows a system-14-medium date above the unchanged secondary-11 count subtitle, separated by 3 pt.
+and shows a system-15-semibold date above the secondary-11 `eventCountLabel` count, separated by
+3 pt. The helper applies Russian event-count endings without storing another count or date.
 Existing Store refresh boundaries drive midnight/wake/reopen. `applicationVersionLabel` reads the
 running bundle's short version for the small secondary Settings footer; it has no version literal.
 The isolated header scenario substitutes a fresh synthetic Store into the actual retained panel's
@@ -421,7 +424,7 @@ File: `Sources/CountdownManager/Presentation.swift`
 
 Contains deterministic UI-facing transformations and state that do not require SwiftUI view construction, including:
 
-- user-facing strings;
+- user-facing strings, including Russian event-count endings;
 - compact emoji presets;
 - row presentation values;
 - human-readable dates;
@@ -443,11 +446,23 @@ Files:
 - `Sources/CountdownManager/Views.swift`
 - `Sources/CountdownManager/AuroraInstrument.swift`
 
-`CountdownManagerRootView` is the stable SwiftUI root inside the retained hosting controller. It composes the compact timer strip with `ManagerView`.
+`CountdownManagerRootView` is the stable SwiftUI root inside the retained hosting controller. It
+composes the 60-point timer strip with the 540-point `ManagerView`. The idle timer selector uses a
+quiet accent surface and outline while Play retains a filled accent; the existing selection,
+matched-geometry motion, keyboard focus and deadline owner are unchanged.
 
 `AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the displayed favorite or automatic nearest event and a smaller left-hand leaf for other events. `Store.primary` derives the displayed event without changing the explicit selection. `CountdownRowPresentation` separates `isFeatured` (large presentation) from `isPrimary` (filled star). Menu-bar emoji fallback is `📅`; calendar labels and optional list emoji are derived from `Presentation.swift`; they introduce no separate event state or persisted representation.
 
-An event surface groups the row and its checklist as one block. Checklist disclosure continues to use the cached `SubtaskDisclosureState` as its sole owner; standard SwiftUI layout and opacity transitions animate its presentation without storing a second expanded state or introducing timer-based animation control.
+Event rows use a 23-point Georgia featured title and a 54 × 65 right-hand calendar leaf; secondary
+rows use 14-point titles and 42 × 51 left-hand leaves. Additional emoji is composed with the title;
+favorite/edit actions remain separate. Secondary metadata shares a compact date/remaining/weather
+row, while featured weather is beside the countdown. Empty content includes an explicit create action.
+
+An event surface groups the row and its checklist as one block. The full-width disclosure button
+places a chevron left of `Подзадачи` and the completed/total count at the right; it does not wrap
+the favorite/edit actions. The cached `SubtaskDisclosureState` remains its sole owner. Standard
+SwiftUI layout and opacity transitions animate presentation without another expanded state or
+animation timer.
 
 Each checklist row uses one native checkbox `Toggle` with the actual subtask text as its label.
 The label expands to the available row width and defines a rectangular content shape, including
@@ -463,15 +478,29 @@ that event. Settings entry is guarded to the list, and Back preserves the list's
 view without storing or reconstructing a second browsing state.
 
 The list's one-row footer contains the storage label, a 14-point gear before Quit and Quit.
-Settings groups the existing login and Sparkle automatic-check bindings with the persisted keep-awake
-checkbox, then manual update and diagnostics actions. A deferred update replaces the manual-check
+Settings groups existing owners into `Приложение` (login, Sparkle automatic checks, keep awake),
+`Погода` (enablement/location) and `Обслуживание` (manual update and diagnostic export).
+The export action obtains an on-demand context closure passed from `CountdownManagerRootView`
+through `ManagerView`, rather than adding timer observation to the list or taking snapshots during
+rendering. A deferred update replaces the manual-check
 action with the existing explicit install entry point. Login approval and operation errors remain
 visible. There is no settings draft or Save/Cancel; accepted owner state is shown immediately.
 The timer strip stays outside this screen navigation at the top of the same 390 × 600 panel.
 
 The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: today's date for `Сегодня`, tomorrow's date for the other routes, no additional emoji, a Russian weekday title and empty note/subtasks. Ordinary event creation also initially selects tomorrow. The date field allows today and future dates; selecting today reveals an inline explanation of end-of-day expiry, including unfinished subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary, checking against the current calendar day at the mutation boundary; no template library, week state or schema field is introduced.
 
-The editor groups event fields, additional emoji and subtasks on separate subtle surfaces, followed by the favorite choice. The scrollable form keeps the existing retained draft and fixed action footer. Emoji selection uses a full-width button styled as a selection field, with a disclosure chevron and a separate clear button inside the same visual boundary. Empty selection hides the clear button rather than reserving a disconnected action area.
+The editor uses a 21-point Georgia heading in a 49-point header. Its scrolling form keeps the
+existing retained draft; Delete, Cancel and Save share the 58-point fixed footer, with deletion
+confirmation presented inline above it. The native note field remains visible for empty and filled
+notes, with `Заметка · необязательно`, `Пара слов о событии` and a live `0/280` character count.
+There is no note disclosure state; its text stays in the existing retained draft. The native fields
+retain focus behavior and do not persist edits before Save.
+
+Emoji selection is an independent outlined full-width `Значок` field, with a disclosure chevron
+and a separate clear button inside the same boundary. A 13-point gap separates it from the weather
+and favorite native-checkbox group; subtasks occupy their own following section. Empty selection
+hides the clear button. Compact row spacing prioritizes editable subtask text; character-limit
+feedback remains available while editing or when invalid.
 
 Editor subtask rows use identity-scoped layout/opacity animation for Add/Delete. Their text bindings
 resolve stable UUIDs against the same parent draft and retain an immutable outgoing value while a
@@ -479,7 +508,7 @@ removed row finishes its transition; setters ignore absent UUIDs. Removed rows l
 accessibility eligibility immediately. Deferred Add focus checks membership before scrolling or
 focusing. Typing does not change the identity array and therefore does not animate the block.
 
-`EditorView` owns one transient picker state: closed, compact presets or a catalog page. The selector starts closed; `Все значки` advances from compact presets to the inline catalog. The catalog retains five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`), conventional previous/next controls, page dots and horizontal drag navigation. Grid dimensions fit the grouped editor's inner width. Choosing or clearing an emoji replaces only the draft value and closes the picker, resetting navigation. Native layout/opacity transitions animate disclosure for 200 milliseconds while page changes slide horizontally; both respect live Reduce Motion. The stable picker boundary excludes closed content from hit testing and accessibility, including during removal transitions. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
+`EditorView` owns one transient picker state: closed, compact presets or a catalog page. The selector starts closed; `Все значки` advances from compact presets to the inline catalog. The catalog retains five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`), conventional previous/next controls, page dots and horizontal drag navigation. Grid dimensions fit the scrolling editor's inner width. Choosing or clearing an emoji replaces only the draft value and closes the picker, resetting navigation. Native layout/opacity transitions animate disclosure for 200 milliseconds while page changes slide horizontally; both respect live Reduce Motion. The stable picker boundary excludes closed content from hit testing and accessibility, including during removal transitions. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
 
 ## AppKit application shell
 
@@ -502,7 +531,34 @@ Product semantics live in `PRODUCT.md`; accepted rationale lives in `decisions/s
 
 File: `Sources/CountdownManager/Diagnostics.swift`
 
-`DiagnosticLog` writes privacy-limited technical diagnostics to Unified Logging and a local rotating file journal on a dedicated utility queue.
+`DiagnosticLog` owns a dedicated utility queue for Unified Logging, filesystem access and rotation.
+Callers submit best-effort bounded messages: nonblocking admission accepts at most 512 pending
+records and truncates each message to a 4 KiB UTF-8 input budget; contention or pressure may drop
+records. A later admitted write can report an aggregate `diagnostics.dropped` count. Formatting,
+OSLog and file writes remain off the UI actor. Production paths use asynchronous queue operations;
+`flush()` is retained only as an isolated verification helper, never a normal UI or quit barrier.
+The journal retains current and previous generations with a 512 KiB per-generation bound.
+
+`DiagnosticPrivacy` classifies errors and filters exported historical lines through fixed event,
+field and value allowlists. Unknown/free-form legacy text becomes a redacted marker rather than
+being copied into an archive. `DiagnosticArchiveExporter` owns one explicit export's temporary
+files on a separate utility queue. It writes redacted current and, when present, previous logs and
+`summary.txt`, creates a ZIP with bounded process lifetime and archive size, then commits through
+a sibling staging file and atomic rename. Cancellation and pre-commit failures clean temporary
+files and preserve an existing destination. No event file or defaults dump enters the payload.
+
+`Store.saveDiagnostics(context:)` owns `NSSavePanel` presentation and the exporting UI state.
+Settings requests a weather snapshot first; after a confirmed destination, the on-demand context
+captures only technical timer/updater/weather state and Store aggregate/persistence state.
+The exporter adds safe app version/build, macOS version, architecture, UTC time and offset.
+Journal snapshot reads are serialized after admitted writes without `queue.sync` on production UI
+paths. Cancel writes no archive, concurrent export requests are suppressed, and failure is exposed
+through the existing visible error owner. The explicit save dialog is the only new native dialog;
+settings navigation, event editing and the retained shell keep their existing lifetimes.
+The general in-process runtime check exercises native open/Cancel/reopen/Cancel only. It does not
+invoke the save panel's `ok(nil)`: that programmatic driver hung in an isolated AppKit reproduction
+and is not reliable evidence for the physical Save route. The ZIP worker is checked independently
+below the dialog boundary; physical Save remains a native acceptance limitation.
 
 `WeatherDiagnostics` uses this existing journal through an injected Sendable sink. It records:
 
@@ -518,9 +574,10 @@ File: `Sources/CountdownManager/Diagnostics.swift`
 
 `AppDelegate` requests a `.launch` weather snapshot after supplying initial event demand, including
 after Sparkle relaunch. The controller also records bounded snapshots around normal state changes
-and settled work. The Settings diagnostics action requests a `.diagnostics` snapshot before
-`Store.openDiagnostics()`; Store flushes all already-enqueued journal records before revealing the
-folder. `WeatherDiagnosticSnapshotReason` restricts snapshot reasons to launch, diagnostics and
+and settled work. The Settings `Сохранить диагностику…` action requests a `.diagnostics` snapshot
+before `Store.saveDiagnostics(context:)`. The asynchronous export snapshot is ordered after prior
+admitted records; it does not block the UI while draining the journal.
+`WeatherDiagnosticSnapshotReason` restricts snapshot reasons to launch, diagnostics and
 settled. `weather.snapshot` contains a fixed result (`disabled`, `no_eligible_dates`,
 `location_pending`, `location_unavailable`, `loading`, `available`, `no_usable_data` or `stopped`),
 enablement/mode, eligible demand and usable counts, request/location/computation pending flags,

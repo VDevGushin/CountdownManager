@@ -16,6 +16,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
+| Native field outline guard | `python3 -B Tests/test_native_field_chrome.py` | Exercises actual SwiftLint rejection of a second outline on native rounded-border fields, plus allowed native fields and selection controls |
 | Hook regression checks | `python3 -B Tests/test_swift_harness.py` | Deterministic Python hook checks; no application data or Swift builds |
 | Eval runner checks | `python3 -B Tests/test_agent_evals.py` | Deterministic checks of fixtures, grading and execution; no model calls |
 | Native transport checks | `python3 -B Tests/test_native_hooks.py` | Local protocol/cleanup regression checks; no Codex process or model calls |
@@ -24,6 +25,12 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Native Codex hooks | `python3 -B evals/native_hooks.py --model <supported-cli-model> --output evals/artifacts/<new-native-run>` | Opt-in real app-server delivery, trusted hooks, lint/fast failures and automatic repair; CLI 0.157.1 |
 
 SwiftLint must be available on `PATH`; on macOS install it with `brew install swiftlint`.
+
+SwiftLint also rejects direct extra `overlay`, `border` or the retired `auroraInputChrome` modifier
+on a native `.roundedBorder` text-field modifier chain. The existing edit/Stop hooks enforce
+this rule. Its fixtures cover rejected second outlines and allowed native fields, custom selection
+controls and container borders. This source guard covers the known composition error; the
+focused/unfocused visual matrix below remains necessary for native drawing and other compositions.
 
 Codex hooks run SwiftLint only on changed Swift files after an edit. Before a Swift task completes, they run full SwiftLint and `./verify.sh fast`. Real UI Smoke and XCUITest remain evidence selected for the actual runtime risk; they are not automatic gates for unrelated Swift work.
 
@@ -69,7 +76,7 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 
 `UIChecks` covers deterministic presentation and application-state behaviour:
 
-- menu-bar and human-readable date formatting;
+- menu-bar and human-readable date formatting, including Russian `N событие/события/событий` endings;
 - editor validity, drafts, grouping, and disclosure state;
 - ordinary/day/existing weather-draft defaults and explicit Save/Cancel state;
 - presentation state transitions;
@@ -203,8 +210,8 @@ the changed SwiftUI surface. Check the following observable contracts:
 
 - one retained 390 × 600 panel with the timer above both list and settings;
 - one-row storage/gear/Quit footer, a 14-point gear before Quit, and unchanged calendar/`+` header controls;
-- the three existing checkboxes and the weather section retain grouping above ordinary
-  manual-update and diagnostics actions, without action navigation arrows;
+- three compact settings groups: `Приложение`, `Погода`, `Обслуживание`, with native checkbox/menu
+  controls, the existing manual-update action and `Сохранить диагностику…`, without navigation arrows;
 - Back returns to the same list scroll position; hide/show retains settings navigation;
 - settings entry cannot replace an open editor or lose a draft, and hidden screens reject input
   and are absent from interactive accessibility content;
@@ -235,6 +242,62 @@ low-battery sleep are outside this feature's prevention contract. Normal app-swi
 continuity still require the existing manual macOS acceptance where the driver cannot reproduce
 them faithfully.
 
+## Compact interface and diagnostic export verification
+
+After full SwiftLint and `./verify.sh fast` are green, exercise the redesigned hierarchy through
+isolated Real UI Smoke and capture the actual 390 × 600 panel in Light/Dark and Increase Contrast.
+Compare against the approved list/editor/settings composition, including the later independent
+icon-field correction. Use one initial batched visual inspection and at most one correction batch;
+keep all fixture forecasts and event dates identified as synthetic.
+
+Check the compact featured and secondary title/calendar bounds, separate star/edit hit areas,
+Russian event count, full-width checklist disclosure with left chevron/right progress, empty-state
+create action, native fields and the unchanged retained list/scroll hierarchy. Verify that an empty
+note is immediately editable through `editor.note`, with the ordinary placeholder and live
+`editor.note.count` starting at `0/280`. Empty and filled notes survive panel hide/show; Cancel
+does not restore the discarded text in a new draft, and clearing with Save persists an empty note
+that remains visible on reopening. Keep the outlined
+icon field distinct from the checkbox group with its 13-point separation, and exercise the existing
+eight presets, five 6 × 8 catalog pages, selection/clear, focus and Reduce Motion behavior. Confirm
+Delete/Cancel/Save remain in the fixed footer and deletion still requires inline confirmation.
+Today's ochre warning must preserve the exact expiry text and current-day validation semantics.
+Native rounded-border title, note and subtask fields must show one native frame when unfocused
+and only the native focus treatment when focused, in both Light and Dark appearances. Captures
+17/21 retain subtask focus, 18/22 title focus and 19/23 note focus; the other native fields remain
+unfocused in each image. Inspect all six current images manually for duplicate borders/focus
+outlines, while preserving the independent outlined emoji selector. The native first-responder
+checks establish focus identity; fast PASS and geometry checks do not replace this visual acceptance.
+Capture04 deliberately shows an existing editor with text focus cleared; its log records
+`text_focus=none`. It covers the existing-event form and Delete footer. The six focused-field
+captures remain mandatory. A cache-rendered initial focus halo is not evidence of a settled
+focus appearance or proof of how the transition draws on screen.
+Geometry/state assertions demonstrate settled layout and controls, not perceived animation quality
+or physical external clicks.
+
+`DiagnosticExportChecks.swift` covers the archive boundary using isolated logs, destinations and
+injected failures. Verify known-only redaction with hostile legacy text/URLs/paths/user content,
+current/previous rotation generations, bounded reads and ZIP contents, technical summary fields,
+missing/empty logs, cancellation and write/archive failures. A failed or cancelled export must clean
+its temporary files and preserve an existing destination. Confirm MainActor progress while a slow
+writer/export runs, bounded message admission (512 pending records, 4 KiB input budget), and pressure
+drops without blocking the caller. These checks must never read production logs or event files.
+
+Native save-dialog acceptance is separate: from an isolated current-source app, press
+`Сохранить диагностику…`, inspect the `NSSavePanel` filename/type and normal save/cancel routes,
+choose a temporary destination, then inspect the completed ZIP and visible failure recovery.
+Confirm the panel/editor/timer session survives this dialog and no upload occurs. A direct exporter
+call does not certify `NSSavePanel`, Finder delivery, user-selected file access or production shell
+ordering. Record this native path as unverified until it has actually been exercised.
+
+The general Real UI Smoke scenario currently verifies native open → Cancel → reopen → Cancel,
+sheet detachment, released exporting state, unchanged event JSON and absence of output archives.
+It deliberately does not call `NSSavePanel.ok(nil)`. An isolated AppKit probe completed Cancel and
+immediate reopening but hung on that programmatic Save call; this is a driver limitation, not proof
+that the physical Save control fails. Fast checks exercise the ZIP worker, redaction and archive
+failure/cancellation paths independently. Physical Save is still unconfirmed: the attempted
+XCUITest acceptance timed out entering automation mode, so the added external Save case supplies
+no successful interaction evidence. Preserve this distinction until a real native Save succeeds.
+
 ## Weather verification
 
 For diagnostic-only weather changes, run full SwiftLint and `./verify.sh fast`, with focused
@@ -261,9 +324,11 @@ of ordinary work, and an explicit `.diagnostics` snapshot of unchanged state. Co
 automatic repeats, the fixed launch/diagnostics/settled reasons and private-field exclusions.
 Compare provider/location/scheduler call counts before and after explicit snapshots: observing
 state must not trigger a refresh, retry, permission prompt or native request. The Settings action
-must enqueue its weather snapshot before opening diagnostics, and the journal must flush before
-Finder reveals the folder. Deterministic snapshot tests do not by themselves establish Finder
-delivery, a real post-update relaunch or journal durability on a different Mac.
+must enqueue its weather snapshot before the explicit native export dialog; after a confirmed
+destination, the asynchronous journal snapshot must be ordered after already-admitted records.
+No production UI path may synchronously drain the writer. Deterministic snapshot/export tests do
+not by themselves establish native save-dialog delivery, a real post-update relaunch or journal
+durability on a different Mac.
 
 Run full SwiftLint and `./verify.sh fast` before product QA. Existing flag/draft tests retain legacy
 JSON false, Save/Cancel and no title migration. New deterministic normalization checks cover all
@@ -292,15 +357,16 @@ The focused native fixture injects a failing keep-awake adapter: Settings shows 
 checkbox retry preserves saved ON after failure, and `Не включать при запуске` clears intent/error
 and removes itself. No native assertion is created in that recovery scenario.
 
-Header formatter checks retain `<count> активных · сегодня и позже` and exercise Russian weekday,
-month/year boundaries and no-year date formatting. A controlled Store clock tests midnight publication.
+Header formatter checks exercise Russian event-count endings (`1 событие`, `2 события`,
+`6 событий`, including teen and compound-number cases), weekday/month/year boundaries and no-year
+date formatting. A controlled Store clock tests midnight publication.
 The focused native runtime observes `header.today` and the count through 1 -> 0 events across an
 injected midnight, without exposing Store.today, adding a view timer or changing the system clock.
 
 `./verify.sh weather` builds an isolated current-source app and runs only focused weather/header
 scenarios. Native NSPopUpButton enabled OFF/ON and its Auto/ten-city menu are inspected; the public
-NSMenu item action selects Moscow and updates its binding. Real view frames verify a badge beside
-featured/ordinary dates and a system-14-medium header date above the unchanged count line at width 390.
+NSMenu item action selects Moscow and updates its binding. Real view frames verify the featured badge beside its countdown, ordinary badge in the date/remaining
+metadata row, and a system-15-semibold header date above the compact event-count line at width 390.
 Editor defaults, hide/show, durable Save/Cancel, OFF, false per-event flag and missing forecasts are
 checked. Weather has no links/tooltips/privacy/licence/info/loading/error text in app UI. These
 in-process actions do not claim physical popup clicks, external keyboard or real CoreLocation.
@@ -350,7 +416,8 @@ Current reliable capabilities include keyboard entry, normal application buttons
 Focused subtask-row XCUITests click the known checkbox element at its checkbox, label and trailing
 empty regions, then check durable completion/reopening and unchanged sibling state. Disclosure
 collapse/reopen must leave event JSON unchanged. The existing subtask editor case protects normal
-text entry/Save/Cancel. Keyboard activation retains the native checkbox control. A Space request
+text entry/Save/Cancel. The optional note field is directly visible and editable for both empty and
+filled drafts. Keyboard activation retains the native checkbox control. A Space request
 immediately after a mouse toggle/reorder does not establish keyboard focus: that diagnostic failed
 on both the baseline and changed implementation and is not an acceptance test. Verify Space only
 after the checkbox has actually received keyboard focus through normal keyboard navigation.
@@ -382,7 +449,7 @@ Runtime evidence applies only to the bundle that was built and exercised. `./ver
 
 Optional-icon/favorite coverage includes a sixteenth capture, `16-nearest-today-without-icon`: the Today event has no additional emoji and no explicit favorite, with the nearest-event heading and unfilled star. Real UI Smoke exercises empty-icon Save, draft-only clear/Cancel, menu fallback, explicit favorite select/clear in the list and editor, and a fresh repository read preserving absent selection. External XCUITest adds ordinary button and keyboard cases for these flows; it retains the existing lifecycle limitations.
 
-Grouped-editor coverage adds captures 17–24: empty and selected emoji fields, compact presets and the
+Editor/emoji coverage retains captures 17–24: empty and selected emoji fields, compact presets and the
 full catalog in both Dark and Light appearances. Real UI
 Smoke exercises the selector's closed/presets/catalog states, all eight columns across the five
 catalog pages, selection and clear actions, repeated disclosure requests, isolated live Reduce

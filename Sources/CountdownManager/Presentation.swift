@@ -221,6 +221,20 @@ package struct DayCreationPreset: Equatable {
     }
 }
 
+package func eventCountLabel(_ count: Int) -> String {
+    let noun: String
+    if (11...14).contains(count % 100) {
+        noun = "событий"
+    } else {
+        switch count % 10 {
+        case 1: noun = "событие"
+        case 2...4: noun = "события"
+        default: noun = "событий"
+        }
+    }
+    return "\(count) \(noun)"
+}
+
 package func currentDayHeaderLabel(_ day: Day) -> String {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "ru_RU")
