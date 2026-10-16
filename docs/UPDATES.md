@@ -1,11 +1,19 @@
 # Preparing signed updates
 
-Release **1.11.0 / build 20** adds the approved native redesign, always-visible note,
+Release **1.11.0 / build 20** is published as GitHub's Latest release and installed
+in `/Applications`. It includes the approved native redesign, always-visible note,
 single native text-field borders and manual ZIP diagnostics. The release bundle uses
-pinned Sparkle2.10.0 and the existing production Ed25519 key with the stable feed below.
-Signed ZIP/appcast preparation succeeded. Publication, anonymous verification and local
-installation will be recorded after those operations complete; the preceding public release
-is1.10.1/19. The user approved release, push, installation and removal of older local builds.
+pinned Sparkle 2.10.0 and the existing production Ed25519 key with the stable feed below.
+The signed ZIP and version-specific/latest feeds returned anonymous HTTP 200 and match
+the locally verified hashes. The installed/running executable matches the signed archive;
+production events and preferences are unchanged. Sparkle configuration is enabled and no
+updater startup failure was recorded after this installation.
+
+Authorized cleanup removed 120 generated paths, including old app/ZIP builds and rollbacks.
+Only the current signed release artifacts and compact evidence remain in `.build/releases/1.11.0`;
+the sole unpacked local app is `/Applications/Countdown Manager.app`. Historical screenshots,
+source, local designer references and production data remain intact. Temporary signing export
+was removed; the production Keychain key was preserved.
 
 Current status, evidence and limits: [releases/v1.11.0.md](releases/v1.11.0.md).
 Historical publication/installation: [releases/v1.10.1.md](releases/v1.10.1.md).
@@ -16,8 +24,8 @@ The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.11.0/CountdownManager-1.11.0-20.zip`.
-The signed `appcast.xml` and ZIP must be published together, with1.11.0 selected as Latest.
-Verify anonymous downloads against locally signed SHA-256 values after publication.
+The signed `appcast.xml` and ZIP are published together, with 1.11.0 selected as Latest.
+Anonymous downloads match locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -91,10 +99,10 @@ the seed contents. Running these commands does not create a permanent backup:
 )
 ```
 
-The numbers above target local preparation of1.11.0 artifacts, after acceptance;
+The numbers above target local preparation of 1.11.0 artifacts, after acceptance;
 they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The preceding distributed1.10.1 uses build19; this release uses build20. Keep `local.countdownmanager.app`
+build. The preceding distributed 1.10.1 uses build 19; this release uses build 20. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.

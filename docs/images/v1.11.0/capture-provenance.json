@@ -1,7 +1,7 @@
 {
   "version": "1.11.0",
   "build": "20",
-  "status": "SIGNED_RELEASE_PREPARED",
+  "status": "PUBLISHED_AND_INSTALLED",
   "manifest_sha256": "b8d707b80776ef594848dbe7ec3046b9b62c23fed0081ada8d3f4eabe10248dc",
   "executable_sha256": "b7356eb73255f5ffa8d588c624bb2af112aabca506b6e591fd3cd0c0d2315652",
   "info_plist_sha256": "4b16a002ebcfa1b334b5559457935d2af6162f32048bc9ebeee3e54d3631e6a9",
@@ -124,7 +124,11 @@
     "archive_and_feed_Ed25519_verified": true,
     "temporary_private_seed_removed": true,
     "public_key_fingerprint": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
-    "executable_sha256": "b7356eb73255f5ffa8d588c624bb2af112aabca506b6e591fd3cd0c0d2315652"
+    "executable_sha256": "b7356eb73255f5ffa8d588c624bb2af112aabca506b6e591fd3cd0c0d2315652",
+    "published": true,
+    "installed": true,
+    "archive_sha256": "e88124d6669940d5bca874cff47fc1bb0e90f6d24a742aec2967cf40436ca1a1",
+    "feed_sha256": "9f8f2fa7f59014bb81e23b6bc466c8070a99b4b2f97a17730f080997f524d3fe"
   },
   "limits": [
     "External SavePanel Save and physical city-menu selection remain outside confirmed automation; owner manually tested candidate and authorizedrelease without enumerating every action.",
@@ -132,5 +136,55 @@
     "Rapid favorite select/clear during200ms animation is not confirmed by ordinary sequentialfavorite test.",
     "Static focus captures do not certify all Cocoa focus animations."
   ],
-  "temporary_path_qualification": "Original signing/capture processpaths are temporary. Canonicalcurrentlocalassets and compactevidence are under .build/releases/1.11.0; olderbuilds are scheduled forauthorizedcleanup."
+  "temporary_path_qualification": "Original temporary process paths were retired by authorized cleanup. Current signed ZIP/feed and compact QA evidence remain in .build/releases/1.11.0; the sole unpacked app is /Applications/Countdown Manager.app.",
+  "publication": {
+    "version": "1.11.0",
+    "build": "20",
+    "published": true,
+    "latest": true,
+    "tag": "v1.11.0",
+    "commit": "f14c8cea61a138b7ee6f84134382900317562594",
+    "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.11.0",
+    "anonymous_downloads": {
+      "archive": {
+        "status": 200,
+        "bytes": 5110011,
+        "sha256": "e88124d6669940d5bca874cff47fc1bb0e90f6d24a742aec2967cf40436ca1a1",
+        "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.11.0/CountdownManager-1.11.0-20.zip",
+        "final_host": "release-assets.githubusercontent.com"
+      },
+      "version_feed": {
+        "status": 200,
+        "bytes": 1299,
+        "sha256": "9f8f2fa7f59014bb81e23b6bc466c8070a99b4b2f97a17730f080997f524d3fe",
+        "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.11.0/appcast.xml",
+        "final_host": "release-assets.githubusercontent.com"
+      },
+      "latest_feed": {
+        "status": 200,
+        "bytes": 1299,
+        "sha256": "9f8f2fa7f59014bb81e23b6bc466c8070a99b4b2f97a17730f080997f524d3fe",
+        "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+        "final_host": "release-assets.githubusercontent.com"
+      }
+    },
+    "signed_local_hashes_match_public": true
+  },
+  "installation": {
+    "path": "/Applications/Countdown Manager.app",
+    "version": "1.11.0",
+    "build": "20",
+    "executable_matches_signed_archive": true,
+    "events_unchanged": true,
+    "preferences_unchanged": true,
+    "production_sparkle_feed_enabled": true,
+    "updater_start_failure_observed": false
+  },
+  "cleanup": {
+    "removed_generated_paths": 120,
+    "observed_free_space_delta_bytes": 3409563648,
+    "only_current_release_retained": true,
+    "old_app_bundles_in_build": 0,
+    "historical_images_and_local_design_preserved": true
+  }
 }
