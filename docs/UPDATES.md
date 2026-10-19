@@ -1,9 +1,13 @@
 # Preparing signed updates
 
-Release **1.12.0 / build 21** is prepared for publication. It includes the new empty-state
+Release **1.12.0 / build 21** is published as Latest and installed in `/Applications`.
+It includes the new empty-state
 day creation and weather freshness/retry improvements. Production events and settings retain their
 existing formats and locations. The pinned Sparkle version remains 2.10.0 and the signing key is
-unchanged. Publication, anonymous downloads and installation are recorded only after verification.
+unchanged. Anonymous ZIP, version-specific feed and stable Latest feed returned HTTP200 and match
+the signed local files. The installed/running executable matches the verified archive; events and
+preferences are unchanged. Duplicate local app bundles and older generated ZIP/feed were removed;
+the current signed artifacts and compact evidence remain in `.build/releases/1.12.0`.
 
 Current status, evidence and limits: [releases/v1.12.0.md](releases/v1.12.0.md).
 Previous publication/installation: [releases/v1.11.0.md](releases/v1.11.0.md).
@@ -14,8 +18,8 @@ The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.12.0/CountdownManager-1.12.0-21.zip`.
-The signed `appcast.xml` and ZIP are published together, when 1.12.0 is published as Latest.
-Verify anonymous downloads against the locally signed SHA-256 values.
+The signed `appcast.xml` and ZIP are published together, with 1.12.0 selected as Latest.
+Anonymous downloads match the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
