@@ -93,8 +93,8 @@ the seed contents. Running these commands does not create a permanent backup:
 )
 ```
 
-The numbers above target local preparation of 1.12.0 artifacts, after acceptance;
-they are instructions, not evidence that those artifacts have been prepared. For subsequent releases, change the version,
+The numbers above illustrate the 1.12.0 preparation procedure; publication and verification
+evidence is recorded in the release notes linked above. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
 build. The preceding distributed 1.11.0 uses build 20; this release uses build 21. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
@@ -106,11 +106,12 @@ Account-free weather does not require an Apple Developer membership or a weather
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
 Current release status is recorded in [releases/v1.12.0.md](releases/v1.12.0.md).
-The published weather implementation and acceptance history remain in
+The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
-The current common transport/controller returned decoded batches from all three services
-and a consensus for an isolated eligible event; this CLI-host evidence does not establish
-GUI HTTP, AUTO location, another Mac, VPN or sustained availability.
+An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus
+for an isolated eligible event. That historical CLI result is not a live-service test of the
+1.12.0 transport/controller and does not establish GUI HTTP, AUTO location, another Mac,
+VPN or sustained availability.
 
 The bundle contains the complete Sparkle framework, copied with symlinks and permissions preserved.
 Nested XPC services, helper executable and Updater app are signed inside-out, preserving Downloader
