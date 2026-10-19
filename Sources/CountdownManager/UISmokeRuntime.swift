@@ -25,6 +25,8 @@ struct UISmokeConfiguration {
     static let captureLaunchArgument = "--ui-smoke-captures"
     static let weatherLaunchArgument = "--ui-smoke-weather"
     static let weatherCaptureLaunchArgument = "--ui-smoke-weather-captures"
+    static let emptyStateLaunchArgument = "--ui-smoke-empty-state"
+    static let emptyStateCaptureLaunchArgument = "--ui-smoke-empty-state-captures"
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
@@ -53,6 +55,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
             || weatherWasRequested
+            || emptyStateWasRequested
     }
 
     static var xcuiTestWasRequested: Bool {
@@ -82,7 +85,7 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested
     }
 
     static var weatherWasRequested: Bool {
@@ -91,6 +94,14 @@ struct UISmokeConfiguration {
 
     static var weatherCaptureWasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(weatherCaptureLaunchArgument)
+    }
+
+    static var emptyStateWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(emptyStateLaunchArgument) || emptyStateCaptureWasRequested
+    }
+
+    static var emptyStateCaptureWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(emptyStateCaptureLaunchArgument)
     }
 
     static func load() throws -> UISmokeConfiguration? {
@@ -105,6 +116,8 @@ struct UISmokeConfiguration {
             captureLaunchArgument,
             weatherLaunchArgument,
             weatherCaptureLaunchArgument,
+            emptyStateLaunchArgument,
+            emptyStateCaptureLaunchArgument,
         ]
         .filter { ProcessInfo.processInfo.arguments.contains($0) }
         guard smokeArguments.count <= 1 else {
@@ -158,7 +171,7 @@ struct UISmokeConfiguration {
             defaults: defaults,
             defaultsSuiteName: suiteName
         )
-        if captureWasRequested && !weatherCaptureWasRequested {
+        if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -215,6 +228,7 @@ final class UISmokeRuntime {
         let applicationBuild: String?
         let executableSHA256: String?
         let headerSyntheticDays: [String: String]?
+        let emptyStateSyntheticDays: [String: String]?
         let weatherForecastSource: String?
         let captures: [CaptureRecord]
     }
@@ -267,9 +281,13 @@ final class UISmokeRuntime {
                 try await waitFor("loaded root window") {
                     self.window()?.isVisible == true && !self.store.isLoading
                         && self.controls.value("root.window") != nil
-                        && self.controls.entries["event.add"]?.isEnabled == true
+                        && (self.controls.entries["event.add"]?.isEnabled == true
+                            || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.weatherWasRequested {
+                if UISmokeConfiguration.emptyStateWasRequested {
+                    try await runEmptyStateRegression()
+                    if UISmokeConfiguration.emptyStateCaptureWasRequested { try writeCaptureManifest() }
+                } else if UISmokeConfiguration.weatherWasRequested {
                     try await runWeatherRegression()
                     if UISmokeConfiguration.weatherCaptureWasRequested { try writeCaptureManifest() }
                 } else if UISmokeConfiguration.captureWasRequested {
@@ -319,6 +337,186 @@ final class UISmokeRuntime {
         try require(shown.contentViewController === host && shown.contentView === content,
                     "hosting hierarchy was reconstructed")
         try require(controls.value("root.window") == token, "root State identity changed")
+    }
+
+    private func runEmptyStateRegression() async throws {
+        try require(store.showsEmptyEventList, "empty-state fixture must start empty")
+        timer.delete()
+        try await waitForElement("event.empty.today")
+        let initialData = store.data
+        let initialJSON = try? Data(contentsOf: configuration.dataURL)
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+            try await settleLayout()
+            try requireEmptyStateLayout()
+            try captureEmptyStateIfRequested("empty-state-\(scheme == .dark ? "dark" : "light")")
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        try captureEmptyStateIfRequested("empty-state-light-high-contrast")
+        visualEnvironment.colorSchemeOverride = .dark
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        try captureEmptyStateIfRequested("empty-state-dark-reduced-motion")
+        try await press("timer.start")
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        try captureEmptyStateIfRequested("empty-state-timer-running")
+        timer.delete()
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+
+        let today = store.today
+        let tomorrow = Day(store.tomorrow)
+        for (action, date) in [("today", today), ("tomorrow", tomorrow), ("chooseDate", tomorrow)] {
+            try await press("event.empty.\(action)")
+            try await waitForElement("editor.new")
+            try await waitForFirstResponder("editor.title")
+            try await waitForValue("editor.title", equals: russianWeekdayTitle(date))
+            try await waitForValue("editor.date", equals: dateValue(date))
+            try require(controls.value("editor.emoji")?.isEmpty == true && controls.value("editor.weather") == "on"
+                        && controls.value("editor.primary") == "Не выбрано" && editorSubtaskFieldIDs().isEmpty,
+                        "empty-state creation did not preserve day defaults")
+            try await waitFor("weekday draft can save") { self.controls.entries["editor.save"]?.isEnabled == true }
+            try require(!controls.press("event.empty.tomorrow"), "hidden creation replaced the open draft")
+            try require(store.data == initialData && (try? Data(contentsOf: configuration.dataURL)) == initialJSON,
+                        "opening empty-state creation persisted data")
+            if action == "today" {
+                try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
+                for scheme in [ColorScheme.dark, .light] {
+                    visualEnvironment.colorSchemeOverride = scheme
+                    try await settleLayout()
+                    try captureEmptyStateIfRequested("empty-state-today-editor-\(scheme == .dark ? "dark" : "light")")
+                }
+            }
+            if action == "chooseDate" {
+                let future = Day(Day.calendar.date(byAdding: .day, value: 4, to: today.date())!)
+                try await selectEditorDate(future)
+                try await waitForValue("editor.title", equals: russianWeekdayTitle(future))
+            }
+            try await focusAndReplace("editor.title", with: "Unsaved \(action)")
+            let customDate = Day(Day.calendar.date(byAdding: .day, value: 5, to: today.date())!)
+            try await selectEditorDate(customDate)
+            try require(controls.value("editor.title") == "Unsaved \(action)", "date selection overwrote a manually named day")
+            let editorOwner = controls.entries["editor.new"]?.ownerID
+            try await hideAndShow(usingStatusItem: true)
+            try require(controls.entries["editor.new"]?.ownerID == editorOwner
+                        && controls.value("editor.title") == "Unsaved \(action)", "hide/show discarded the day draft")
+            try await press("editor.cancel")
+            try await waitFor("cancelled empty-state draft") { self.controls.entries["editor.new"] == nil }
+            try await waitForElement("event.empty.today")
+            try require(store.data == initialData && (try? Data(contentsOf: configuration.dataURL)) == initialJSON,
+                        "Cancel persisted an empty-state draft")
+        }
+        try await press("event.empty.today")
+        try await waitForFirstResponder("editor.title")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitFor("day draft can save without typing") { self.controls.entries["editor.save"]?.isEnabled == true }
+        try await press("editor.save")
+        try await waitFor("first saved event restores header") {
+            self.store.active.count == 1 && self.controls.entries["editor.new"] == nil
+                && self.controls.value("header.active-count") == "1 событие"
+        }
+        let first = try requireValue(store.active.first, "first saved event")
+        try require(first.date == today && first.title == russianWeekdayTitle(today) && first.emoji.isEmpty && first.subtasks.isEmpty
+                    && first.showsWeather && store.data.primaryID == nil, "first Save changed day defaults")
+        try require(controls.entries["event.empty"] == nil, "saved event kept the empty state")
+        try await press("event.add")
+        try await waitForValue("editor.date", equals: dateValue(tomorrow))
+        try await waitForValue("editor.title", equals: "")
+        try await press("editor.cancel")
+        try await waitFor("ordinary plus Cancel") { self.controls.entries["editor.new"] == nil }
+        try await press("day.add")
+        try await press("creation.day.today")
+        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.weather", equals: "on")
+        try await press("editor.cancel")
+        try await waitFor("day Cancel") { self.controls.entries["editor.new"] == nil }
+        try await press("event.edit.\(first.id.uuidString)")
+        try await press("event.delete")
+        try await press("event.delete.confirm")
+        try await waitFor("last deletion restores empty state") {
+            self.store.showsEmptyEventList && self.controls.entries["editor.edit"] == nil
+                && self.controls.entries["event.empty.today"] != nil
+        }
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        pass("empty-state dates/defaults, no auto-save, Cancel, retained draft, first Save, last deletion, ordinary plus and day routes")
+        try await verifyEmptyStateMidnight()
+    }
+
+    private func requireEmptyStateLayout() throws {
+        for id in ["header.today", "header.active-count", "day.add", "event.add", "creation.day.today"] {
+            try require(controls.entries[id] == nil, "empty state retained redundant header: \(id)")
+        }
+        let content = try requireValue(controls.frame("event.empty.content"), "empty content")
+        let area = try requireValue(controls.frame("event.empty"), "empty area")
+        let primary = try requireValue(controls.frame("event.empty.today"), "today button")
+        let tomorrow = try requireValue(controls.frame("event.empty.tomorrow"), "tomorrow button")
+        let choose = try requireValue(controls.frame("event.empty.chooseDate"), "choose date button")
+        try require(abs(content.midY - area.midY) < 2 && content.minX >= 0 && content.maxX <= 390,
+                    "empty content is not centered in the available area")
+        try require(abs(primary.width - 260) < 1 && abs(primary.height - 34) < 1
+                    && abs(tomorrow.height - 32) < 1 && abs(choose.height - 32) < 1,
+                    "empty-state button dimensions differ from the accepted design")
+        try require(tomorrow.maxX < choose.minX && primary.maxY < tomorrow.minY
+                    && abs(tomorrow.minY - choose.minY) < 1, "empty-state actions overlap or wrap")
+        let timerFrame = try requireValue(controls.frame("timer"), "retained timer")
+        try require(abs(timerFrame.height - 60) < 1 && controls.entries["settings.open"] != nil,
+                    "empty state removed timer/footer controls")
+    }
+
+    private func captureEmptyStateIfRequested(_ name: String) throws {
+        if UISmokeConfiguration.emptyStateCaptureWasRequested { try capture(name: name) }
+    }
+
+    private func verifyEmptyStateMidnight() async throws {
+        let panel = try requireValue(window(), "empty midnight panel")
+        let retained = try requireValue(panel.contentViewController, "empty retained host")
+        let suite = "local.countdownmanager.empty-midnight.\(UUID().uuidString)"
+        let defaults = try requireValue(UserDefaults(suiteName: suite), "empty midnight defaults")
+        var clock = Day.calendar.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 23, minute: 59, second: 59))!
+        let fixture = Store(fileURL: configuration.homeURL.appendingPathComponent("EmptyMidnight/events.json"),
+                            disclosureDefaults: defaults, now: { clock }, loginItemManagementIsAvailable: false)
+        let fixtureWeather = WeatherController(defaults: defaults, provider: { _ in [:] }, allowLocationRequests: false)
+        let fixtureKeepAwake = KeepAwakeController(defaults: defaults)
+        panel.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
+            timer: timer, store: fixture, updates: updates, editorSession: EventEditorSession(),
+            keepAwake: fixtureKeepAwake, weather: fixtureWeather,
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment
+        ))
+        defer {
+            fixtureWeather.shutdown()
+            fixtureKeepAwake.releaseForTermination()
+            panel.contentViewController = retained
+            defaults.removePersistentDomain(forName: suite)
+        }
+        try await waitForValue("event.empty.date", equals: "Пн, 19 октября")
+        try await press("event.empty.today")
+        try await waitForFirstResponder("editor.title")
+        try await focusAndReplace("editor.title", with: "Stale today draft")
+        try await waitFor("today draft can initially save") { self.controls.entries["editor.save"]?.isEnabled == true }
+        clock = clock.addingTimeInterval(2)
+        fixture.refresh()
+        try await waitFor("midnight disables stale today Save") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(controls.value("editor.title") == "Stale today draft", "midnight discarded the open draft")
+        try await press("editor.cancel")
+        try await waitForValue("event.empty.date", equals: "Вт, 20 октября")
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        try captureEmptyStateIfRequested("empty-state-midnight")
+        let event = Countdown(title: "Expires at next midnight", date: fixture.today, emoji: "")
+        let saved = await fixture.save(event, primary: false)
+        try require(saved, "empty expiry fixture failed to save")
+        try await waitForValue("header.active-count", equals: "1 событие")
+        clock = clock.addingTimeInterval(86_400)
+        fixture.refresh()
+        try await waitForValue("event.empty.date", equals: "Ср, 21 октября")
+        try await settleLayout()
+        try requireEmptyStateLayout()
+        pass("midnight retains stale ordinary draft, rejects Save, updates empty calendar and expires the last saved event")
     }
 
     private func runSessionContinuity() async throws {
@@ -689,8 +887,6 @@ final class UISmokeRuntime {
         let retained = try requireValue(panel.contentViewController, "retained root host")
         let retainedRootIdentity = try requireValue(controls.value("root.window"), "retained root identity")
         let retainedRootOwner = controls.entries["root.window"]?.ownerID
-        let retainedCountOwner = controls.entries["header.active-count"]?.ownerID
-        let retainedDateOwner = controls.entries["header.today"]?.ownerID
         let suite = "local.countdownmanager.header-runtime.\(UUID().uuidString)"
         let defaults = try requireValue(UserDefaults(suiteName: suite), "header defaults")
         var clock = try requireValue(Day.calendar.date(from: DateComponents(
@@ -723,14 +919,10 @@ final class UISmokeRuntime {
                     && self.controls.value("root.window") != retainedRootIdentity
                     && self.controls.entries["root.window"]?.ownerID != nil
                     && self.controls.entries["root.window"]?.ownerID != retainedRootOwner
-                    && self.controls.entries["header.active-count"]?.ownerID != nil
-                    && self.controls.entries["header.active-count"]?.ownerID != retainedCountOwner
-                    && self.controls.entries["header.today"]?.ownerID != nil
-                    && self.controls.entries["header.today"]?.ownerID != retainedDateOwner
+                    && self.controls.entries["event.empty"] != nil
             }
             try await waitFor("header fixture load") { !fixtureStore.isLoading }
-            try await waitForValue("header.active-count", equals: "0 событий")
-            try await waitForValue("header.today", equals: "Ср, 14 октября")
+            try await waitForValue("event.empty.date", equals: "Ср, 14 октября")
             let event = Countdown(title: "Synthetic midnight header", date: fixtureStore.today, emoji: "")
             let saved = await fixtureStore.save(event, primary: false)
             try require(saved, "header fixture save failed")
@@ -740,12 +932,11 @@ final class UISmokeRuntime {
             try captureWeatherIfRequested("weather-header-before-midnight")
             clock = clock.addingTimeInterval(2)
             fixtureStore.refresh()
-            try await waitForValue("header.today", equals: "Чт, 15 октября")
-            try await waitForValue("header.active-count", equals: "0 событий")
+            try await waitForValue("event.empty.date", equals: "Чт, 15 октября")
             try await settleLayout()
-            try requireHeaderDateLayout()
+            try requireEmptyStateLayout()
             try captureWeatherIfRequested("weather-header-midnight-empty")
-            pass("current date precedes the count line, observes Store midnight/expiry and zero events in a native 390-point panel")
+            pass("nonempty header and empty calendar observe Store midnight/expiry in a native 390-point panel")
             try await verifyFailedKeepAwakeRestoration(fixtureKeepAwake, defaults: defaults)
         } catch {
             // Capture the failed fixture before defer restores the original hosting graph.
@@ -756,7 +947,6 @@ final class UISmokeRuntime {
                 + "rootOwner=\(String(describing: controls.entries["root.window"]?.ownerID)) "
                 + "count=\(controls.value("header.active-count") ?? "nil") "
                 + "countOwner=\(String(describing: controls.entries["header.active-count"]?.ownerID)) "
-                + "retainedCountOwner=\(String(describing: retainedCountOwner)) "
                 + "date=\(controls.value("header.today") ?? "nil") "
                 + "dateOwner=\(String(describing: controls.entries["header.today"]?.ownerID))"
             throw Failure("\(error.localizedDescription); \(context)")
@@ -1331,7 +1521,8 @@ final class UISmokeRuntime {
 
     private func writeCaptureManifest() throws {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
-        try require(captures.count == (isWeather ? 10 : 31), "capture set is incomplete")
+        let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
+        try require(captures.count == (isEmptyState ? 8 : (isWeather ? 10 : 31)), "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let executable = Bundle.main.executableURL.flatMap { try? Data(contentsOf: $0) }
@@ -1341,6 +1532,7 @@ final class UISmokeRuntime {
             applicationBuild: Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
             executableSHA256: executable.map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() },
             headerSyntheticDays: isWeather ? ["weather-header-before-midnight": "2026-10-14", "weather-header-midnight-empty": "2026-10-15"] : nil,
+            emptyStateSyntheticDays: isEmptyState ? ["empty-state-midnight": "2026-10-20"] : nil,
             weatherForecastSource: isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil,
             captures: captures.sorted { $0.name < $1.name }
         )
@@ -1432,7 +1624,7 @@ final class UISmokeRuntime {
     private func verifyEditorNoteEditing() async throws {
         try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
                     "note fixture requires an isolated empty store")
-        try await press("event.empty.add")
+        try await press("event.empty.tomorrow")
         try await waitForElement("editor.new")
         try await requireEmptyEditorNoteVisible()
         let owner = controls.entries["editor.new"]?.ownerID
@@ -1451,7 +1643,7 @@ final class UISmokeRuntime {
         try await waitFor("new note draft cancelled") { self.controls.entries["editor.new"] == nil }
         try require(store.active.isEmpty && !FileManager.default.fileExists(atPath: configuration.dataURL.path),
                     "cancelling a note persisted event data")
-        try await press("event.empty.add")
+        try await press("event.empty.tomorrow")
         try await waitForElement("editor.new")
         try await requireEmptyEditorNoteVisible()
         try await press("editor.cancel")
@@ -1728,7 +1920,7 @@ final class UISmokeRuntime {
 
     private func verifyUpdateRestartSafety() async throws {
         try require(!updates.isAvailable, "ordinary UI smoke must not access an update feed")
-        try await press("event.add")
+        try await press("event.empty.tomorrow")
         try await waitForElement("editor.new")
         try await waitForFirstResponder("editor.title")
         try insertText("Retained update draft")
@@ -1802,7 +1994,7 @@ final class UISmokeRuntime {
         try await verifyEditorNoteEditing()
         try await verifyEditorSubtaskMotion()
 
-        try await press("event.add")
+        try await press("event.empty.tomorrow")
         try await waitForElement("editor.new")
         try await waitForFirstResponder("editor.title")
         try insertText("Window smoke event")
@@ -1922,6 +2114,9 @@ final class UISmokeRuntime {
     }
 
     private func verifyDayCreation() async throws {
+        let anchor = Countdown(title: "Day creation header fixture", date: Day(store.tomorrow), emoji: "")
+        let seeded = await store.save(anchor, primary: false)
+        try require(seeded, "day creation header fixture failed")
         let initialData = store.data
         let initialJSON = try Data(contentsOf: configuration.dataURL)
         let tomorrow = Day(store.tomorrow)
@@ -1965,12 +2160,14 @@ final class UISmokeRuntime {
         try require(store.data == initialData, "unsaved day changed event data")
         try require(Data(contentsOf: configuration.dataURL) == initialJSON, "unsaved day wrote JSON")
         try await press("editor.save")
-        try await waitFor("day saved") { self.controls.entries["editor.new"] == nil && self.store.active.count == 1 }
-        let saved = try requireValue(store.active.first, "saved day")
+        try await waitFor("day saved") { self.controls.entries["editor.new"] == nil && self.store.active.count == initialData.items.count + 1 }
+        let saved = try requireValue(store.active.first(where: { $0.title == "Personal day plan" }), "saved day")
         try require(saved.title == "Personal day plan" && saved.date == finalDay && saved.emoji.isEmpty
                     && saved.note == "Synthetic day note" && saved.subtasks.count == 1
                     && saved.subtasks[0].text == "Sport" && !saved.subtasks[0].isCompleted,
                     "day Save did not persist the editor fields")
+        let removedAnchor = await store.delete(anchor.id)
+        try require(removedAnchor, "day creation header fixture cleanup failed")
         let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
         try require(persisted == store.data, "day Save is not durable")
         pass("tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show")
@@ -2219,7 +2416,7 @@ final class UISmokeRuntime {
         for reduceMotion in [false, true] {
             accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: reduceMotion)
             try require(accessibilitySettings.prefersReducedMotion == reduceMotion, "subtask motion override did not apply")
-            try await press("event.add")
+            try await press("event.empty.tomorrow")
             try await waitForElement("editor.new")
             try await focusAndReplace("editor.title", with: "Subtask animation fixture")
             try await replaceEditorNote(with: "Keep all other fields")

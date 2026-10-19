@@ -14,6 +14,8 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
+| Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
+| Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Native field outline guard | `python3 -B Tests/test_native_field_chrome.py` | Exercises actual SwiftLint rejection of a second outline on native rounded-border fields, plus allowed native fields and selection controls |
@@ -85,6 +87,20 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 It does not prove real AppKit event routing, external keyboard delivery, system focus, application switching, or Spaces behaviour.
 
 ## Real UI Smoke
+
+For empty-state changes, run full lint and `fast`, then `empty-state-capture` (which includes the
+focused native scenarios). Deterministic Store checks distinguish loading/read failure/recovery
+from a genuine empty list, and cover first Save, last-event expiry and midnight rejection. Native
+checks exercise all three buttons with weekday titles and day/weather defaults, title updates after
+date selection and preservation after a manual title edit, immediate Save without typing, no auto-save, Cancel, hidden repeated
+actions, title focus, the actual NSDatePicker action, retained drafts through hide/show, return of
+the nonempty header, ordinary plus/day defaults, and inline confirmed deletion. A synthetic clock
+checks stale-today Save disablement, the current leaf after midnight and last-event expiry. Geometry
+checks require no empty header/day row, centered content, 260 × 34 primary/32-point secondary actions,
+and the unchanged timer/footer. Captures include Dark/Light, Light Increase Contrast, Dark Reduce
+Motion, a running timer, today's native editor in both themes and synthetic midnight. The manifest
+records bundle/executable provenance, appearance overrides and `emptyStateSyntheticDays`. These
+in-process actions establish native state/layout, not external keyboard delivery or system Spaces.
 
 `./verify.sh ui` builds a release application bundle from the current source tree in a temporary isolated environment. It exercises the real SwiftUI/AppKit hierarchy in process.
 
@@ -344,6 +360,41 @@ Controller fake-clock/scheduler/source tests cover one parallel request per sour
 fresh sources during another request, autonomous expiry, bounded contexts and OFF/location/shutdown
 late callback rejection. Only full-day consensus reaches the compact badge; partial records do not
 pretend to be daily maxima. All tests use isolated preferences and no real forecast/location requests.
+
+Resilience coverage uses separate wall/monotonic clocks, fixed jitter, source-continuation barriers,
+and snapshot/log barriers with failure deadlines (not sleeps/yield counts as sequencing). It checks
+the exact 10/45/300/900/1800-second cold-timeout sequence at zero jitter and upper jitter bounds;
+permanent invalid-response has no retry at +301 and exactly one at +1801; a 20-second TTL disappears
+at +20 but cannot refetch before +60; the seventh city request waits for the 600-second budget slot.
+Typed HTTP fixtures cover max-age/Date/Age/duration, invalid/conflicting/missing headers, signed
+diagnostic intervals, no-cache/no-store/must-revalidate, all receiver HTTP-date forms and malformed
+or far-future Retry-After. Actual injected URLProtocol transport tests inspect conditional headers
+and ensure 304 carries metadata instead of decoding an empty body. Controller cases validate weak
+ETag/partial304 merges, no heuristic TTL reset, orphan/mismatched304 and bounded unconditional GET.
+
+Network fakes cover unknown/offline, debounced recovery, a satisfied path followed by timeout,
+expensive/constrained/Low Power, and stale monitor callbacks. Provider-wide 429/503 gates survive
+OFF/ON/city changes and wall-clock rollback; an observed late429 still constrains later starts.
+Clock barriers cover doubtful freshness withdrawal, a queued pre-jump response, coalesced wake
+refresh and a new midnight range without old validators. Wall-only rollback preserves ordinary
+404 and slow temporary500 deadlines for cold failures and retained full/partial bodies; no GET
+starts before the original monotonic deadline. Previously fresh success keeps its bounded recheck.
+A synthetic MET alreadyExpired200 plus
+two timeout sequence checks independent recovery and early useful publication. It models allowed
+code paths; it does not establish the original incident's unknown headers. Held source/compute
+continuations allow a MainActor progress marker before release. The prior diagnostic settlement
+race waits for actual request/computation completion; it does not equate badge publication to group
+completion. Existing cancellation/demand/location/DST tests remain in the same fast gate.
+
+No disk relaunch/persistence claim is made. Real NWPathMonitor delivery, sleep/wake, VPN/TCC/AUTO,
+Low Power transitions and public-service availability require separately recorded real evidence.
+After final lint/fast, run focused weather native smoke and the empty-state integration smoke. If a
+native city-menu driver is unsupported on the host, record its exact failing boundary separately;
+do not weaken its assertion, claim that synthetic setup proves selection, or repeat it indefinitely.
+The 2026-10-19 host hit this limitation after two scenarios: pre-tracking SwiftUI city-menu
+inspection returned an empty item array with an AppKitPopUpAdaptor coordinator. That run is
+recorded as a driver failure, not a weather publication PASS. Snapshot reads also check clock
+consistency before refresh, so diagnostic availability cannot contradict the guarded getter.
 Deletion cases cover two distinct days and two events sharing one date: deleting one retains useful
 requests, deleting the last cancels all three children and leaves no scheduler; late replies cannot
 repopulate the cache. Paused, deliberately noncooperating computations test subset-deletion and newer
@@ -360,8 +411,9 @@ and removes itself. No native assertion is created in that recovery scenario.
 Header formatter checks exercise Russian event-count endings (`1 событие`, `2 события`,
 `6 событий`, including teen and compound-number cases), weekday/month/year boundaries and no-year
 date formatting. A controlled Store clock tests midnight publication.
-The focused native runtime observes `header.today` and the count through 1 -> 0 events across an
-injected midnight, without exposing Store.today, adding a view timer or changing the system clock.
+The focused native runtime observes `header.today` and the count with one event, then their absence
+and the updated `event.empty.date` after expiry across an injected midnight, without exposing
+Store.today, adding a view timer or changing the system clock.
 
 `./verify.sh weather` builds an isolated current-source app and runs only focused weather/header
 scenarios. Native NSPopUpButton enabled OFF/ON and its Auto/ten-city menu are inspected; the public

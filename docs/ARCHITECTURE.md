@@ -395,11 +395,35 @@ Expired/deleted values are withdrawn synchronously before awaiting a replacement
 Adapters check cancellation before/after JSON decoding and between substantial normalization loops;
 MET coverage recursion also checks. JSONDecoder/JSONSerialization cannot be preempted within a call;
 payload limits and checkpoints bound the remaining work. No detached tasks or new actors are added.
-The base request floor is thirty minutes; Expires/Retry-After may defer requests further, with expired
-entries hidden independently. Failed sources wait at least five minutes. Long scheduler delays are
-woken in at most daily slices without violating the retained server deadline. Nonfinite metadata is
-ignored. No continuous short-interval polling is introduced. Privacy-limited weather diagnostics
-observe these existing request and publication boundaries without changing their scheduling.
+`WeatherHTTPMetadata` holds parsed Date/Age/Cache-Control/Expires, bounded in-memory validators and
+receipt clocks. Raw headers/validators never enter logs. max-age overrides Expires; age includes
+request duration and resident ContinuousClock time. Field presence survives 304 merges; conflicting
+validators/orphan bodies force a bounded unconditional GET. Missing 304 freshness does not restart
+the local heuristic. no-store discards the body, no-cache has zero reusable lifetime, and stale is
+never published. Legacy provider fields remain only as compatibility for synthetic fixtures.
+
+`WeatherRequestPolicy` is pure value scheduling logic. Its three SourceState records live in the
+controller, outside the four-context LRU: rolling six-start/600-second budgets, consumed rapid slots,
+ordinary/expired backoff stages, serverNotBefore and providerCooldown. OFF/city/context eviction do
+not clear those gates. A quiescent source may reset counters after 1800 seconds without starts;
+ongoing upper-stage failures do not accidentally restart rapid series every 1800 seconds. Admission
+is rechecked immediately before dispatch; blocked/cancelled old-generation tasks cannot clear a
+new fetch owner. A late observed HTTP server gate can extend source-wide timing, but cannot alter
+cache/publication. One parent group still serializes batches and reevaluates overdue work on drain.
+
+Freshness, policy nextRequest, serverNotBefore/providerCooldown and budget deadlines are distinct
+monotonic quantities. One scheduler selects the earliest necessary expiry/admitted attempt, sleeping
+in at most daily slices. NWPathMonitor is a lifecycle-bound signal adapter on one utility queue,
+not another cache/service owner or proof of HTTPS reachability. Its revision rejects stale callbacks.
+Offline preserves expiry scheduling; debounced recovery cannot erase gates or rapid usage. Energy
+and path cost are checked both when selecting rapid backoff and before admission. Wake/clock/day/zone
+notifications enter the existing store/refresh boundary; suspicious clock spans/queued pre-jump
+responses cannot publish fresh data. No new provider, detached task, actor, disk file or UI status.
+
+Diagnostics retain the existing bounded nonblocking writer. Only enum/boolean/bounded numeric
+fields describe header parse/freshness, signed relative times, retry category, admitted attempt index
+and consumed rapid allowances. URLs, city/coordinates, event content, raw errors, ETag/Last-Modified
+and body contents are excluded; no synchronous flush or UI disk I/O is added.
 
 The app's weather UI consists of the switch, location menu, editor checkbox and plain symbol/temp.
 Source, licence and privacy documentation stays here and in README rather than app controls. The
@@ -456,7 +480,18 @@ matched-geometry motion, keyboard focus and deadline owner are unchanged.
 Event rows use a 23-point Georgia featured title and a 54 × 65 right-hand calendar leaf; secondary
 rows use 14-point titles and 42 × 51 left-hand leaves. Additional emoji is composed with the title;
 favorite/edit actions remain separate. Secondary metadata shares a compact date/remaining/weather
-row, while featured weather is beside the countdown. Empty content includes an explicit create action.
+row, while featured weather is beside the countdown.
+
+`Store.showsEmptyEventList` derives genuine empty content from active events and
+`eventCreationIsAvailable` (successful load/read, no persistence recovery). Recovery-state changes
+publish so the UI can leave the guarded state when recovery completes; no second empty-state owner
+or persisted preference is introduced. Empty content replaces the whole header/list area with the
+existing small calendar leaf, copy and three day-creation actions, centered above the
+unchanged footer. The timer remains outside ManagerView. The empty-state buttons reuse `createDay`
+and `dayPreset`, including weekday titles that follow the date until manual editing and weather ON.
+The ordinary plus route retains its blank title and weather OFF.
+Both use the retained internal editor and its normal draft/save boundary. The choose-date route
+reuses the native date field with a prompt; text fields keep only their system bezel/focus.
 
 An event surface groups the row and its checklist as one block. The full-width disclosure button
 places a chevron left of `Подзадачи` and the completed/total count at the right; it does not wrap

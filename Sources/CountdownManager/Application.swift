@@ -98,6 +98,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
     private var weatherSubscription: AnyCancellable?
+    private var weatherEnvironmentSubscriptions = Set<AnyCancellable>()
     private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
     private var uiSmokeRuntime: UISmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
@@ -234,6 +235,17 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 guard let self else { return }
                 self.weather.updateEvents(self.store.active)
             }
+        }
+        let weatherNotifications = [NSApplication.didBecomeActiveNotification,
+            NSNotification.Name.NSSystemClockDidChange, NSNotification.Name.NSSystemTimeZoneDidChange,
+            NSNotification.Name.NSCalendarDayChanged].map { NotificationCenter.default.publisher(for: $0) }
+            + [NSWorkspace.shared.notificationCenter.publisher(for: NSWorkspace.didWakeNotification)]
+        for publisher in weatherNotifications {
+            publisher.receive(on: DispatchQueue.main).sink { [weak self] _ in
+                guard let self else { return }
+                self.store.refresh()
+                self.weather.updateEvents(self.store.active)
+            }.store(in: &weatherEnvironmentSubscriptions)
         }
         weather.updateEvents(store.active)
         weather.recordDiagnosticSnapshot(reason: .launch)

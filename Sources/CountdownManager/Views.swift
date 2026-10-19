@@ -81,50 +81,92 @@ struct ManagerView: View {
         let featuredID = displayed.first?.id
         let primaryID = store.data.primaryID
         return VStack(spacing: 0) {
-            header(activeCount: displayed.count)
-            if showingDayChoices {
-                dayChoices
-            }
-            ScrollView {
-                VStack(spacing: 10) {
-                    if store.isLoading {
-                        VStack(spacing: 12) {
-                            AuroraLoadingPlaceholder()
-                            ProgressView("Загружаем события…")
-                        }
-                    } else if displayed.isEmpty {
-                        VStack(spacing: 16) {
-                            PlannerCalendarDateTile(day: store.today, isFeatured: false)
-                                .accessibilityHidden(true)
-                            Text(EventUIStrings.emptyTitle)
-                                .font(.custom("Georgia", size: 24))
-                            Text(EventUIStrings.emptyMessage)
-                                .font(.system(size: 12))
-                                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                                .multilineTextAlignment(.center)
-                            Button(EventUIStrings.addEvent, action: add)
-                                .buttonStyle(.borderedProminent)
-                                .controlSize(.regular)
-                                .accessibilityIdentifier("event.empty.add")
-                                .uiSmokeControl(id: "event.empty.add", action: add)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 56)
-                    }
-                    ForEach(displayed) { item in row(item, featuredID: featuredID, primaryID: primaryID) }
+            if store.showsEmptyEventList {
+                emptyEventList
+            } else {
+                header(activeCount: displayed.count)
+                if showingDayChoices && !displayed.isEmpty {
+                    dayChoices
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 12)
-                .animation(
-                    accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
-                    value: store.data.primaryID
-                )
+                ScrollView {
+                    VStack(spacing: 10) {
+                        if store.isLoading {
+                            VStack(spacing: 12) {
+                                AuroraLoadingPlaceholder()
+                                ProgressView("Загружаем события…")
+                            }
+                        }
+                        ForEach(displayed) { item in row(item, featuredID: featuredID, primaryID: primaryID) }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+                    .animation(
+                        accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
+                        value: store.data.primaryID
+                    )
+                }
+                .accessibilityIdentifier("event.list")
+                .uiSmokeControl(id: "event.list")
             }
-            .accessibilityIdentifier("event.list")
-            .uiSmokeControl(id: "event.list")
             Divider()
             footer
         }
+    }
+
+    private var emptyEventList: some View {
+        VStack(spacing: 0) {
+            PlannerCalendarDateTile(day: store.today, isFeatured: false)
+                .accessibilityHidden(true)
+                .uiSmokeControl(id: "event.empty.date", value: { currentDayHeaderLabel(store.today) })
+                .padding(.bottom, 16)
+            Text(EventUIStrings.emptyTitle)
+                .font(.custom("Georgia", size: 24)).tracking(-0.5)
+                .padding(.bottom, 16)
+            Text(EventUIStrings.emptyMessage)
+                .font(.system(size: 12))
+                .lineSpacing(3)
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .multilineTextAlignment(.center)
+                .padding(.bottom, 20)
+            VStack(spacing: 8) {
+                Button { createDay(preset: .today(store.today)) } label: {
+                    Text("На сегодня").font(.system(size: 13, weight: .semibold))
+                        .frame(maxWidth: .infinity).frame(height: 34)
+                        .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
+                        .background(plannerAccent, in: RoundedRectangle(cornerRadius: 6))
+                }
+                .accessibilityIdentifier("event.empty.today")
+                .uiSmokeControl(id: "event.empty.today", action: { createDay(preset: .today(store.today)) })
+                HStack(spacing: 8) {
+                    emptySecondaryAction("На завтра", id: "event.empty.tomorrow") { createDay(preset: .tomorrow(after: store.today)) }
+                    emptySecondaryAction("Выбрать дату", id: "event.empty.chooseDate") {
+                        createDay(preset: .tomorrow(after: store.today), selectDate: true)
+                    }
+                }
+            }
+            .frame(width: 260)
+            .buttonStyle(.plain)
+        }
+        .uiSmokeControl(id: "event.empty.content")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 36)
+        .padding(.vertical, 28)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("event.empty")
+        .uiSmokeControl(id: "event.empty")
+    }
+
+    private func emptySecondaryAction(_ title: String, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title).font(.system(size: 12))
+                .frame(maxWidth: .infinity).frame(height: 32)
+                .background(AuroraInstrument.surface(for: colorScheme, elevated: false,
+                                                    highContrast: accessibilitySettings.prefersHighContrast),
+                            in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(plannerRule, lineWidth: 1))
+        }
+        .accessibilityIdentifier(id)
+        .uiSmokeControl(id: id, action: action)
     }
 
     private func header(activeCount: Int) -> some View {
@@ -148,7 +190,7 @@ struct ManagerView: View {
                 .help(EventUIStrings.createDay).accessibilityLabel(EventUIStrings.createDay)
                 .accessibilityIdentifier("day.add")
                 .uiSmokeControl(id: "day.add", action: toggleDayChoices)
-                .disabled(store.isLoading)
+                .disabled(!store.eventCreationIsAvailable)
             Button(action: add) {
                 Image(systemName: "plus")
                     .frame(width: 31, height: 31)
@@ -159,7 +201,7 @@ struct ManagerView: View {
                 .help(EventUIStrings.addEvent).accessibilityLabel(EventUIStrings.addEvent)
                 .accessibilityIdentifier("event.add")
                 .uiSmokeControl(id: "event.add", action: add)
-                .disabled(store.isLoading)
+                .disabled(!store.eventCreationIsAvailable)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -185,7 +227,7 @@ struct ManagerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
-        .disabled(store.isLoading)
+        .disabled(!store.eventCreationIsAvailable)
     }
 
     private var plannerAccent: Color {
@@ -458,7 +500,11 @@ struct ManagerView: View {
     }
 
     private func add() {
-        guard !showingEditor, !showingSettings else { return }
+        createEvent()
+    }
+
+    private func createEvent() {
+        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
         editing = nil
         dayPreset = nil
@@ -468,12 +514,12 @@ struct ManagerView: View {
     }
 
     private func toggleDayChoices() {
-        guard !showingEditor, !showingSettings else { return }
+        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable else { return }
         showingDayChoices.toggle()
     }
 
     private func createDay(preset: DayCreationPreset?, selectDate: Bool = false) {
-        guard !showingEditor, !showingSettings, let preset else { return }
+        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable, let preset else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
         editing = nil
         dayPreset = preset
@@ -726,7 +772,7 @@ struct EditorView: View {
         self.store = store; self.item = item; self.done = done
         self.didSave = didSave
         isNewDay = item == nil && dayPreset != nil
-        self.selectDayDate = isNewDay && selectDayDate
+        self.selectDayDate = item == nil && selectDayDate
         if item == nil, let dayPreset {
             _draft = State(initialValue: EventEditorDraft(day: dayPreset.day))
         } else {
@@ -775,7 +821,7 @@ struct EditorView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         if selectDayDate {
-                            Text("Выберите дату для нового дня.")
+                            Text(isNewDay ? "Выберите дату для нового дня." : "Выберите дату события.")
                                 .font(.caption)
                                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                         }

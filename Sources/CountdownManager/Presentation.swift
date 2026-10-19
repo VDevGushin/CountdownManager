@@ -10,7 +10,7 @@ package enum EventUIStrings {
     package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи."
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
-    package static let emptyMessage = "Добавь событие и выбери дату — приложение покажет, сколько дней до него осталось."
+    package static let emptyMessage = "Выбери день события.\nНазвание и детали можно изменить."
 }
 
 package enum EventEmojiCatalog {

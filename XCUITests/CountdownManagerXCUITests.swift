@@ -139,12 +139,12 @@ final class CountdownManagerXCUITests: XCTestCase {
     func testFirstEventWithoutIconOrFavoriteRemainsNearestAfterRelaunch() throws {
         try writeItems([], primaryID: nil)
         app.launch()
-        let add = app.buttons["event.add"]
+        let add = app.buttons["event.empty.tomorrow"]
         XCTAssertTrue(add.waitForExistence(timeout: 3))
         add.click()
         let title = app.textFields["editor.title"]
         XCTAssertTrue(title.waitForExistence(timeout: 3))
-        title.typeText("Без значка и звезды")
+        replace(title, with: "Без значка и звезды")
         app.scrollViews["editor.scroll"].swipeUp()
         let noIcon = app.buttons["editor.emoji.none"]
         XCTAssertFalse(noIcon.exists)
@@ -460,7 +460,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(title.value as? String, "Черновик перед удалением")
         app.buttons["event.delete"].click()
         app.buttons["event.delete.confirm"].click()
-        XCTAssertTrue(app.buttons["event.add"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["event.empty.today"].waitForExistence(timeout: 3))
         XCTAssertFalse(title.exists)
         XCTAssertTrue(try persistedItems().isEmpty)
     }

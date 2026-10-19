@@ -93,12 +93,23 @@ package final class WeatherController: ObservableObject {
     @Published private var forecasts: [String: DailyWeatherForecast] = [:]
 
     private let defaults: UserDefaults
-    private let provider: WeatherSourceProvider
+    private let provider: WeatherHTTPProvider
     private let computeConsensus: WeatherConsensusComputation
     private let sources: [WeatherSource]
     private let locationProvider: any WeatherLocationProviding
     private let allowLocationRequests: Bool
     private let now: () -> Date
+    private let monotonicNow: () -> TimeInterval
+    private let jitter: () -> Double
+    private let lowPower: () -> Bool
+    private let networkMonitor: (any WeatherNetworkMonitoring)?
+    private var networkState = WeatherNetworkState()
+    private var networkMonitoring = false
+    private var networkGeneration = 0
+    private var offlineSince: TimeInterval?
+    private var recoveryDeadline: TimeInterval = 0
+    private var sourceStates: [WeatherSource: WeatherRequestPolicy.SourceState] = [:]
+    private var clockAnchor: (wall: Date, tick: TimeInterval)?
     private let schedule: WeatherRefreshScheduler
     private let diagnostics: WeatherDiagnostics
     private var lastPublication: String?
@@ -106,7 +117,7 @@ package final class WeatherController: ObservableObject {
     private var lastSnapshot: String?
     private var demand: Set<String> = []
     private var coordinates: WeatherCoordinates?
-    private var coordinateDate: Date?
+    private var coordinateDate: TimeInterval?
     private var cache: [String: AreaCache] = [:]
     private var fetchTask: Task<Void, Never>?
     private var computationTask: Task<Void, Never>?
@@ -115,11 +126,11 @@ package final class WeatherController: ObservableObject {
     private var activeKey: String?
     private var activeQuery: WeatherQuery?
     private var locationIsPending = false
-    private var locationAttemptDate: Date?
+    private var locationAttemptDate: TimeInterval?
     private var generation = 0
-    private var forecastExpiry: Date?
+    private var forecastExpiry: TimeInterval?
     private var refreshCancellation: (() -> Void)?
-    private var refreshDate: Date?
+    private var refreshDate: TimeInterval?
     private var refreshGeneration = 0
     private var stopped = false
     private static let cacheLifetime: TimeInterval = 1_800
@@ -129,13 +140,18 @@ package final class WeatherController: ObservableObject {
 
     private struct SourceCache {
         var batch: WeatherSourceBatch?
-        var freshUntil: Date
-        var nextRequest: Date
+        var freshUntil: TimeInterval
+        var nextRequest: TimeInterval
+        var forceUnconditional = false
+        var lastFailure: WeatherRequestPolicy.Outcome?
+        var rapidRetry = false
+        var lastOutcomeTick: TimeInterval = 0
+        var connectionFailure = false
         var failed: Bool
     }
 
     private struct AreaCache {
-        var updatedAt: Date
+        var updatedAt: TimeInterval
         var entries: [WeatherSource: SourceCache]
     }
 
@@ -149,7 +165,7 @@ package final class WeatherController: ObservableObject {
         let query: WeatherQuery
         let demand: Set<String>
         let batches: [WeatherSource: WeatherSourceBatch]
-        let expiry: Date?
+        let expiry: TimeInterval?
     }
 
     package init(
@@ -160,12 +176,23 @@ package final class WeatherController: ObservableObject {
         locationProvider: (any WeatherLocationProviding)? = nil,
         allowLocationRequests: Bool = true,
         now: @escaping () -> Date = Date.init,
+        monotonicNow: @escaping () -> TimeInterval = WeatherRequestPolicy.continuousSeconds,
+        jitter: @escaping () -> Double = { Double.random(in: 0...1) },
         scheduler: WeatherRefreshScheduler? = nil,
         consensusComputation: WeatherConsensusComputation? = nil,
-        diagnostics: WeatherDiagnostics = WeatherDiagnostics()
+        diagnostics: WeatherDiagnostics = WeatherDiagnostics(),
+        httpProvider: WeatherHTTPProvider? = nil,
+        networkMonitor: (any WeatherNetworkMonitoring)? = nil,
+        lowPower: @escaping () -> Bool = { ProcessInfo.processInfo.isLowPowerModeEnabled }
     ) {
         self.defaults = defaults
         self.diagnostics = diagnostics
+        self.monotonicNow = monotonicNow
+        self.jitter = jitter
+        self.lowPower = lowPower
+        self.networkMonitor = networkMonitor ?? (legacyProvider == nil && sourceProvider == nil && httpProvider == nil
+            ? NativeWeatherNetworkMonitor() : nil)
+        clockAnchor = (now(), monotonicNow())
         computeConsensus = consensusComputation ?? { try await WeatherNormalizer.aggregateDemanded($0, query: $1, demandedDayKeys: $2) }
         if let legacyProvider {
             self.sources = [.openMeteo]
@@ -181,8 +208,10 @@ package final class WeatherController: ObservableObject {
             }
         } else {
             self.sources = WeatherSource.allCases.filter { sources.contains($0) }
-            self.provider = sourceProvider ?? {
-                try await WeatherTransport.fetch($0, query: $1, lastModified: $2, diagnostics: diagnostics)
+            if let sourceProvider {
+                self.provider = { try await sourceProvider($0, $1, $2?.lastModified) }
+            } else {
+                self.provider = httpProvider ?? { try await WeatherTransport.fetch($0, query: $1, diagnostics: diagnostics, validators: $2) }
             }
         }
         self.locationProvider = locationProvider ?? NativeWeatherLocationProvider()
@@ -259,7 +288,7 @@ package final class WeatherController: ObservableObject {
     package func forecast(for day: Day) -> DailyWeatherForecast? {
         guard enabled, !stopped, demand.contains(weatherDayKey(day)),
               (0..<16).contains(day.days(from: localToday, calendar: localCalendar)),
-              let forecastExpiry, forecastExpiry > now() else { return nil }
+              let forecastExpiry, forecastExpiry > monotonicNow(), clockIsConsistent else { return nil }
         return forecasts[weatherDayKey(day)]
     }
 
@@ -267,15 +296,15 @@ package final class WeatherController: ObservableObject {
 
     /// Reads bounded technical fields without starting work or changing preferences.
     package func diagnosticSnapshotSummary() -> String {
-        let timestamp = now()
+        let timestamp = monotonicNow()
         let eligible = demand.intersection(availableDayKeys())
-        let usable = enabled && !stopped && forecastExpiry.map({ $0 > timestamp }) == true
+        let usable = enabled && !stopped && clockIsConsistent && forecastExpiry.map({ $0 > timestamp }) == true
             ? forecasts.keys.filter { eligible.contains($0) }.count : 0
         let entries = activeKey.flatMap { cache[$0]?.entries } ?? [:]
-        let freshSources = entries.values.filter { $0.batch != nil && $0.freshUntil > timestamp }.count
+        let freshSources = clockIsConsistent ? entries.values.filter { $0.batch != nil && $0.freshUntil > timestamp }.count : 0
         let failedSources = entries.values.filter(\.failed).count
         let locationIsFresh = coordinates != nil && coordinateDate.map {
-            timestamp.timeIntervalSince($0) < Self.cacheLifetime
+            timestamp - $0 < Self.cacheLifetime
         } == true
         let result: String
         if stopped { result = "stopped" }
@@ -289,7 +318,8 @@ package final class WeatherController: ObservableObject {
         let mode = location == .automatic ? "auto" : "manual"
         return "result=\(result) enabled=\(enabled) mode=\(mode) demanded=\(eligible.count) usable=\(usable) " +
             "request_pending=\(fetchTask != nil) location_pending=\(locationIsPending) " +
-            "computation_pending=\(computationTask != nil) fresh_sources=\(freshSources) failed_sources=\(failedSources)"
+            "computation_pending=\(computationTask != nil) fresh_sources=\(freshSources) failed_sources=\(failedSources) " +
+            "clock_consistent=\(clockIsConsistent)"
     }
 
     package func recordDiagnosticSnapshot(reason: WeatherDiagnosticSnapshotReason) {
@@ -301,6 +331,8 @@ package final class WeatherController: ObservableObject {
 
     private func refresh(allowLocationPrompt: Bool) {
         defer { recordDiagnosticSnapshot(reason: .settled) }
+        observeClock()
+        updateNetworkMonitoring()
         if enabled, !stopped, !demand.isEmpty {
             let previousDemand = demand
             demand.formIntersection(availableDayKeys())
@@ -318,7 +350,7 @@ package final class WeatherController: ObservableObject {
         switch location {
         case let .city(city): loadForecasts(at: city.coordinates)
         case .automatic:
-            if let coordinates, let coordinateDate, now().timeIntervalSince(coordinateDate) < Self.cacheLifetime {
+            if let coordinates, let coordinateDate, monotonicNow() - coordinateDate < Self.cacheLifetime {
                 loadForecasts(at: coordinates)
             } else { requestLocation(allowPrompt: allowLocationPrompt) }
         }
@@ -340,7 +372,15 @@ package final class WeatherController: ObservableObject {
         cancelComputation()
         activeKey = nil
         activeQuery = nil
+        for key in Array(cache.keys) {
+            for source in sources where cache[key]?.entries[source]?.lastFailure == .cancelled {
+                let deadline = max(monotonicNow(), cache[key]?.entries[source]?.freshUntil ?? 0)
+                cache[key]?.entries[source]?.lastFailure = nil
+                cache[key]?.entries[source]?.nextRequest = deadline
+            }
+        }
         locationProvider.cancel()
+        if !enabled || stopped || demand.isEmpty { stopNetworkMonitoring() }
         if locationIsPending { recordLocation("result=cancelled") }
         if locationIsPending { locationAttemptDate = nil }
         locationIsPending = false
@@ -356,13 +396,13 @@ package final class WeatherController: ObservableObject {
             return
         }
         guard !locationIsPending else { return }
-        if let locationAttemptDate, now().timeIntervalSince(locationAttemptDate) < Self.failureBackoff {
-            scheduleRefresh(at: locationAttemptDate.addingTimeInterval(Self.failureBackoff))
+        if let locationAttemptDate, monotonicNow() - locationAttemptDate < Self.failureBackoff {
+            scheduleRefresh(at: locationAttemptDate + Self.failureBackoff)
             return
         }
         locationIsPending = true
         recordLocation("result=requested prompt=\(allowPrompt)")
-        locationAttemptDate = now()
+        locationAttemptDate = monotonicNow()
         settingsStatus = "Определяем местоположение…"
         let expectedGeneration = generation
         locationProvider.request(allowPrompt: allowPrompt) { [weak self] result in
@@ -373,7 +413,7 @@ package final class WeatherController: ObservableObject {
             case let .success(coordinates):
                 self.recordLocation("result=success")
                 self.coordinates = coordinates
-                self.coordinateDate = self.now()
+                self.coordinateDate = self.monotonicNow()
                 self.loadForecasts(at: coordinates)
             case .failure(.permissionRequired):
                 self.recordLocation("result=permission_required")
@@ -385,7 +425,7 @@ package final class WeatherController: ObservableObject {
                 case .permissionRequired: break
                 }
                 self.settingsStatus = "Местоположение недоступно. Выберите город вручную."
-                self.scheduleRefresh(at: self.now().addingTimeInterval(Self.failureBackoff))
+                self.scheduleRefresh(at: self.monotonicNow() + Self.failureBackoff)
             }
         }
     }
@@ -406,12 +446,13 @@ package final class WeatherController: ObservableObject {
             activeQuery = query
         }
         publishFreshForecasts(key: key, query: query)
+        suppressUnneededRapidRetries(key: key)
         guard fetchTask == nil else {
             scheduleNextRefresh(key: key)
             return
         }
-        let requestedAt = now()
-        let dueSources = sources.filter { (cache[key]?.entries[$0]?.nextRequest ?? .distantPast) <= requestedAt }
+        let requestedAt = monotonicNow()
+        let dueSources = sources.filter { networkState.status != .offline && sourceDeadline($0, key: key, at: requestedAt) <= requestedAt }
         guard !dueSources.isEmpty else {
             scheduleNextRefresh(key: key)
             return
@@ -419,10 +460,23 @@ package final class WeatherController: ObservableObject {
         if forecasts.isEmpty { settingsStatus = "Получаем прогноз…" }
         let expectedGeneration = generation
         let provider = provider
-        let modifications = cache[key]?.entries.compactMapValues { $0.batch?.lastModified } ?? [:]
+        var modifications: [WeatherSource: WeatherHTTPMetadata.Validators] = [:]
+        for source in dueSources {
+            if let entry = cache[key]?.entries[source], !entry.forceUnconditional,
+               let validators = entry.batch?.http?.validators, !validators.isEmpty { modifications[source] = validators }
+        }
         fetchTask = Task { [weak self] in
+            let admitted = self?.startEligibleSources(dueSources, key: key, generation: expectedGeneration) ?? []
+            guard !admitted.isEmpty else {
+                if let self, self.generation == expectedGeneration, self.activeKey == key {
+                    self.fetchTask = nil
+                    self.scheduleNextRefresh(key: key)
+                    self.recordDiagnosticSnapshot(reason: .settled)
+                }
+                return
+            }
             await withTaskGroup(of: SourceOutcome.self) { group in
-                for source in dueSources {
+                for source in admitted {
                     let modified = modifications[source]
                     group.addTask {
                         do {
@@ -430,7 +484,10 @@ package final class WeatherController: ObservableObject {
                             let result = try await provider(source, query, modified)
                             try Task.checkCancellation()
                             return SourceOutcome(source: source, result: .success(result))
-                        } catch { return SourceOutcome(source: source, result: .failure(error)) }
+                        } catch {
+                            await self?.observeServerGate(source: source, error: error)
+                            return SourceOutcome(source: source, result: .failure(error))
+                        }
                     }
                 }
                 for await outcome in group {
@@ -449,7 +506,7 @@ package final class WeatherController: ObservableObject {
             self.fetchTask = nil
             // A clock/expiry action can run after publication but before the task group drains.
             // Revisit a now-due source rather than losing that coalesced refresh.
-            if self.sources.contains(where: { (self.cache[key]?.entries[$0]?.nextRequest ?? .distantPast) <= self.now() }) {
+            if self.sources.contains(where: { self.networkState.status != .offline && self.sourceDeadline($0, key: key, at: self.monotonicNow()) <= self.monotonicNow() }) {
                 self.refresh()
             } else { self.scheduleNextRefresh(key: key) }
         }
@@ -457,58 +514,175 @@ package final class WeatherController: ObservableObject {
     }
 
     private func receive(_ outcome: SourceOutcome, key: String) {
-        let timestamp = now()
-        var area = cache[key] ?? AreaCache(updatedAt: timestamp, entries: [:])
+        let tick = monotonicNow()
+        var area = cache[key] ?? AreaCache(updatedAt: tick, entries: [:])
         let previous = area.entries[outcome.source]
+        var state = sourceStates[outcome.source] ?? WeatherRequestPolicy.SourceState()
+        var entry = previous ?? SourceCache(batch: nil, freshUntil: 0, nextRequest: tick, failed: false)
+        var policyOutcome: WeatherRequestPolicy.Outcome
+        var batch: WeatherSourceBatch?
+        var failure = "error=none"
+        var connectionFailure = false
+        var result = "success"
         switch outcome.result {
-        case let .success(batch):
-            let fresh = validDate(batch.expiresAt) ?? timestamp.addingTimeInterval(Self.cacheLifetime)
-            area.entries[outcome.source] = SourceCache(batch: batch, freshUntil: fresh,
-                                                       nextRequest: max(timestamp.addingTimeInterval(Self.cacheLifetime), fresh), failed: false)
+        case let .success(value): batch = value; policyOutcome = .success
         case let .failure(error):
-            if case let WeatherTransportFailure.notModified(expiresAt, lastModified) = error,
-               var batch = previous?.batch {
-                batch.expiresAt = expiresAt
-                batch.lastModified = lastModified ?? batch.lastModified
-                let fresh = validDate(expiresAt) ?? timestamp.addingTimeInterval(Self.cacheLifetime)
-                area.entries[outcome.source] = SourceCache(batch: batch, freshUntil: fresh,
-                                                           nextRequest: max(timestamp.addingTimeInterval(Self.cacheLifetime), fresh), failed: false)
-            } else {
-                var next = timestamp.addingTimeInterval(Self.failureBackoff)
-                if case let WeatherTransportFailure.http(_, retryAfter) = error, let retryAfter = validDate(retryAfter) { next = max(next, retryAfter) }
-                area.entries[outcome.source] = SourceCache(batch: previous?.batch,
-                                                           freshUntil: previous?.freshUntil ?? .distantPast,
-                                                           nextRequest: next, failed: true)
+            failure = WeatherDiagnostics.errorFields(error)
+            result = "failure"
+            policyOutcome = WeatherRequestPolicy.classify(error)
+            connectionFailure = (error as NSError).domain == NSURLErrorDomain && policyOutcome == .temporary
+            let validation: WeatherHTTPMetadata?
+            switch error {
+            case let WeatherTransportFailure.validated(metadata): validation = metadata
+            case let WeatherTransportFailure.notModified(expiry, modified):
+                validation = WeatherHTTPMetadata.fromLegacyFields(expires: expiry, lastModified: modified, wall: now(), tick: tick)
+            case let WeatherTransportFailure.httpMetadata(_, metadata):
+                validation = nil
+                if let delay = metadata.retryDelay { state.serverNotBefore = max(state.serverNotBefore, metadata.receivedTick + delay) }
+            case let WeatherTransportFailure.http(_, date):
+                validation = nil
+                if let date = validDate(date) { state.serverNotBefore = max(state.serverNotBefore, tick + max(0, date.timeIntervalSince(now()))) }
+            default: validation = nil
+            }
+            if let validation {
+                if var old = previous?.batch, !entry.forceUnconditional, let metadata = old.http,
+                   !metadata.validators.isEmpty, metadata.validators.matches(validation.validators) {
+                    old.http = metadata.revalidated(by: validation)
+                    batch = old
+                    result = "not_modified"
+                } else { entry.forceUnconditional = true }
             }
         }
-        area.updatedAt = timestamp
+        guard policyOutcome != .cancelled else {
+            entry.lastFailure = .cancelled
+            entry.nextRequest = .infinity
+            area.entries[outcome.source] = entry
+            cache[key] = area
+            return
+        }
+        var remaining: TimeInterval = 0
+        var usable = false
+        if var batch {
+            let metadata = batch.http ?? legacyMetadata(batch, tick: tick)
+            if let delay = metadata.retryDelay { state.serverNotBefore = max(state.serverNotBefore, metadata.receivedTick + delay) }
+            batch.http = metadata
+            let clockCompatible = abs(now().timeIntervalSince(metadata.receivedWall) - (tick - metadata.receivedTick)) <= 60
+            remaining = clockCompatible ? max(0, metadata.remaining - max(0, tick - metadata.receivedTick)) : 0
+            if !clockCompatible { diagnostics.emit("weather.clock result=response_discontinuity") }
+            usable = activeQuery.map { WeatherDiagnostics.usableDayCount(batch, query: $0) > 0 } ?? false
+            entry.batch = metadata.allowsStorage ? batch : nil
+            entry.freshUntil = tick + remaining
+            entry.forceUnconditional = false
+            entry.failed = false
+            policyOutcome = remaining > 0 ? .success : .expired
+            diagnostics.emit("weather.freshness source=\(outcome.source.rawValue) \(metadata.diagnosticFields)")
+        } else { entry.failed = true }
+        let fast = fastRetryIsUseful(source: outcome.source, key: key, tick: tick, previous: previous)
+            && networkState.status != .offline && !networkState.expensive && !networkState.constrained && !lowPower()
+        let previousFastUsed = state.fastUsed
+        entry.nextRequest = WeatherRequestPolicy.deadline(outcome: policyOutcome, remaining: remaining,
+            usableSuccess: usable, fastAllowed: fast, now: tick, jitter: jitter(), state: &state) ?? tick
+        entry.rapidRetry = policyOutcome == .temporary && state.fastUsed > previousFastUsed
+        entry.lastOutcomeTick = tick
+        entry.lastFailure = batch == nil ? policyOutcome : nil
+        entry.connectionFailure = batch == nil && connectionFailure
+        sourceStates[outcome.source] = state
+        area.entries[outcome.source] = entry
+        area.updatedAt = tick
         cache[key] = area
-        if let entry = area.entries[outcome.source] {
-            let result: String
-            let failure: String
-            switch outcome.result {
-            case .success:
-                result = "success"
-                failure = "error=none"
-            case let .failure(error):
-                result = entry.failed ? "failure" : "not_modified"
-                failure = WeatherDiagnostics.errorFields(error)
-            }
-            let state = entry.batch == nil ? "empty" : (entry.freshUntil > timestamp ? "fresh" : "expired")
-            diagnostics.emit("weather.source source=\(outcome.source.rawValue) result=\(result) cache=\(state) " +
-                             "fresh_for_s=\(WeatherDiagnostics.seconds(entry.freshUntil.timeIntervalSince(timestamp))) " +
-                             "retry_in_s=\(WeatherDiagnostics.seconds(entry.nextRequest.timeIntervalSince(timestamp))) \(failure)")
-        }
+        let cacheState = entry.batch == nil ? "empty" : (entry.freshUntil > tick ? "fresh" : "expired")
+        diagnostics.emit("weather.source source=\(outcome.source.rawValue) result=\(result) cache=\(cacheState) " +
+                         "fresh_for_s=\(WeatherDiagnostics.seconds(entry.freshUntil - tick)) " +
+                         "retry_in_s=\(WeatherDiagnostics.seconds(sourceDeadline(outcome.source, key: key, at: tick) - tick)) " +
+                         "retry_reason=\(policyOutcome.rawValue) attempt_index=\(state.attemptIndex) fast_used=\(state.fastUsed) \(failure)")
         if cache.count > 4, let oldest = cache.min(by: { $0.value.updatedAt < $1.value.updatedAt })?.key { cache.removeValue(forKey: oldest) }
     }
 
+    private func legacyMetadata(_ batch: WeatherSourceBatch, tick: TimeInterval) -> WeatherHTTPMetadata {
+        WeatherHTTPMetadata.fromLegacyFields(expires: validDate(batch.expiresAt), lastModified: batch.lastModified, wall: now(), tick: tick)
+    }
+
+    private func observeServerGate(source: WeatherSource, error: Error) {
+        let deadline: TimeInterval?
+        let overloaded: Bool
+        switch error {
+        case let WeatherTransportFailure.httpMetadata(status, metadata):
+            deadline = metadata.retryDelay.map { metadata.receivedTick + $0 }
+            overloaded = status == 429 || status == 503
+        case let WeatherTransportFailure.validated(metadata):
+            deadline = metadata.retryDelay.map { metadata.receivedTick + $0 }
+            overloaded = false
+        case let WeatherTransportFailure.http(status, date):
+            deadline = validDate(date).map { monotonicNow() + max(0, $0.timeIntervalSince(now())) }
+            overloaded = status == 429 || status == 503
+        default: deadline = nil; overloaded = false
+        }
+        guard deadline != nil || overloaded else { return }
+        var state = sourceStates[source] ?? WeatherRequestPolicy.SourceState()
+        if let deadline { state.serverNotBefore = max(state.serverNotBefore, deadline) }
+        if overloaded { state.providerCooldown = max(state.providerCooldown, monotonicNow() + 300) }
+        sourceStates[source] = state
+        diagnostics.emit("weather.server_gate source=\(source.rawValue) remaining_s=\(WeatherDiagnostics.seconds(state.admission(at: monotonicNow()) - monotonicNow()))")
+    }
+
+    private func fastRetryIsUseful(source: WeatherSource, key: String, tick: TimeInterval, previous: SourceCache?) -> Bool {
+        if let previous, previous.batch != nil, previous.freshUntil > tick { return false }
+        guard let query = activeQuery else { return false }
+        let horizon = source == .wttr ? 3 : (source == .metNorway ? 10 : 16)
+        return demand.intersection(Set(query.dayKeys.prefix(horizon))).contains { dayKey in
+            if forecastExpiry.map({ $0 > tick }) == true, forecasts[dayKey] != nil { return false }
+            return !(cache[key]?.entries.values.contains { entry in
+                guard entry.freshUntil > tick, let sample = entry.batch?.forecasts[dayKey] else { return false }
+                return sample.period == query.interval(for: dayKey) && sample.maximumTemperature != nil && sample.condition != nil
+            } ?? false)
+        }
+    }
+
+    private func sourceDeadline(_ source: WeatherSource, key: String, at tick: TimeInterval) -> TimeInterval {
+        if cache[key]?.entries[source]?.lastFailure == .cancelled { return .infinity }
+        return max(cache[key]?.entries[source]?.nextRequest ?? tick,
+            sourceStates[source]?.admission(at: tick) ?? tick, recoveryDeadline)
+    }
+
+    private func startEligibleSources(_ planned: [WeatherSource], key: String, generation expected: Int) -> [WeatherSource] {
+        guard !Task.isCancelled, generation == expected, enabled, !stopped, !demand.isEmpty,
+              activeKey == key, networkState.status != .offline else { return [] }
+        suppressUnneededRapidRetries(key: key)
+        let tick = monotonicNow()
+        let admitted = planned.filter { sourceDeadline($0, key: key, at: tick) <= tick }
+        for source in admitted {
+            var state = sourceStates[source] ?? WeatherRequestPolicy.SourceState()
+            state.start(at: tick)
+            sourceStates[source] = state
+        }
+        return admitted
+    }
+
+    private func suppressUnneededRapidRetries(key: String) {
+        for source in sources {
+            guard var entry = cache[key]?.entries[source], entry.rapidRetry else { continue }
+            let needed = fastRetryIsUseful(source: source, key: key, tick: monotonicNow(), previous: entry)
+            guard !needed || networkState.expensive || networkState.constrained || lowPower() else { continue }
+            var state = sourceStates[source] ?? WeatherRequestPolicy.SourceState()
+            entry.nextRequest = WeatherRequestPolicy.deadline(outcome: .temporary, now: entry.lastOutcomeTick,
+                jitter: jitter(), state: &state) ?? entry.nextRequest
+            entry.rapidRetry = false
+            sourceStates[source] = state
+            cache[key]?.entries[source] = entry
+        }
+    }
+
     private func publishFreshForecasts(key: String, query: WeatherQuery) {
-        let timestamp = now()
+        let timestamp = monotonicNow()
         let entries = cache[key]?.entries ?? [:]
         let fresh = entries.filter { $0.value.freshUntil > timestamp && $0.value.batch != nil }
         let input = ComputationInput(key: key, query: query, demand: demand,
                                      batches: fresh.compactMapValues(\.batch), expiry: fresh.values.map(\.freshUntil).min())
         // Withdraw expired/deleted values immediately, before any off-actor computation.
+        if let previous = computationInput, !Set(previous.batches.keys).isSubset(of: Set(input.batches.keys)) {
+            forecasts = [:]
+            forecastExpiry = nil
+        }
         if forecastExpiry.map({ $0 <= timestamp }) == true { forecasts = [:]; forecastExpiry = nil }
         forecasts = forecasts.filter { demand.contains($0.key) }
         recordPublication()
@@ -534,7 +708,7 @@ package final class WeatherController: ObservableObject {
                       self.generation == expectedGeneration, self.computationInput == input,
                       self.activeKey == key, self.demand == input.demand, self.enabled, !self.stopped else { return }
                 self.computationTask = nil
-                guard let expiry = input.expiry, expiry > self.now() else {
+                guard let expiry = input.expiry, expiry > self.monotonicNow(), self.clockIsConsistent else {
                     self.publishFreshForecasts(key: key, query: query)
                     return
                 }
@@ -549,7 +723,7 @@ package final class WeatherController: ObservableObject {
         }
     }
 
-    private func applyConsensus(_ consensus: [String: WeatherConsensus], input: ComputationInput, expiry: Date) {
+    private func applyConsensus(_ consensus: [String: WeatherConsensus], input: ComputationInput, expiry: TimeInterval) {
         forecasts = consensus.reduce(into: [:]) { result, item in
             // The compact badge promises a daily maximum, so a remaining-hours maximum cannot replace it.
             guard input.demand.contains(item.key), item.value.period == input.query.interval(for: item.key),
@@ -574,15 +748,16 @@ package final class WeatherController: ObservableObject {
     }
 
     private func scheduleNextRefresh(key: String) {
-        let timestamp = now()
-        let entries = cache[key]?.entries.values
-        let dates = entries?.flatMap { entry -> [Date] in
-            var dates = [entry.nextRequest]
-            if entry.batch != nil, entry.freshUntil > timestamp { dates.append(entry.freshUntil) }
-            return dates
+        let tick = monotonicNow()
+        var dates: [TimeInterval] = []
+        if networkState.status != .offline {
+            dates = sources.map { sourceDeadline($0, key: key, at: tick) }.filter { $0.isFinite && $0 > tick }
+        }
+        dates += cache[key]?.entries.values.compactMap { entry in
+            entry.batch != nil && entry.freshUntil > tick ? entry.freshUntil : nil
         } ?? []
-        guard let date = dates.filter({ $0 > timestamp }).min() else { return }
-        scheduleRefresh(at: date)
+        if let date = dates.min() { scheduleRefresh(at: date) }
+        else { cancelScheduledRefresh() }
     }
 
     private func availableDayKeys() -> Set<String> {
@@ -598,22 +773,92 @@ package final class WeatherController: ObservableObject {
         refreshDate = nil
     }
 
-    private func scheduleRefresh(at date: Date) {
+    private func scheduleRefresh(at date: TimeInterval) {
         guard refreshDate != date else { return }
         cancelScheduledRefresh()
         let expectedGeneration = generation
         let expectedRefresh = refreshGeneration
         refreshDate = date
-        let delay = max(0, date.timeIntervalSince(now()))
+        let delay = max(0, date - monotonicNow())
         diagnostics.emit("weather.schedule result=scheduled delay_s=\(WeatherDiagnostics.seconds(delay))")
         refreshCancellation = schedule(delay) { [weak self] in
             guard let self, self.generation == expectedGeneration, self.refreshGeneration == expectedRefresh,
                   self.enabled, !self.stopped, !self.demand.isEmpty else { return }
             self.refreshCancellation = nil
             self.refreshDate = nil
-            if self.now() < date { self.scheduleRefresh(at: date); return }
+            if self.monotonicNow() < date { self.scheduleRefresh(at: date); return }
             self.refresh()
         }
+    }
+
+    private var clockIsConsistent: Bool {
+        guard let anchor = clockAnchor else { return true }
+        return abs(now().timeIntervalSince(anchor.wall) - (monotonicNow() - anchor.tick)) <= 60
+    }
+
+    private func observeClock() {
+        let wall = now()
+        let tick = monotonicNow()
+        defer { clockAnchor = (wall, tick) }
+        guard !clockIsConsistent else { return }
+        cancelComputation()
+        forecasts = [:]
+        forecastExpiry = nil
+        for key in Array(cache.keys) {
+            for source in sources {
+                if let entry = cache[key]?.entries[source], entry.freshUntil > tick,
+                   !entry.failed, entry.lastFailure == nil {
+                    // Only doubtful fresh success needs an earlier check; errors keep their monotonic backoff.
+                    cache[key]?.entries[source]?.nextRequest = min(entry.nextRequest, tick + 60)
+                }
+                cache[key]?.entries[source]?.freshUntil = tick
+            }
+        }
+        diagnostics.emit("weather.clock result=discontinuity")
+        recordPublication()
+    }
+
+    private func updateNetworkMonitoring() {
+        guard enabled, !stopped, !demand.isEmpty else { stopNetworkMonitoring(); return }
+        guard !networkMonitoring, let networkMonitor else { return }
+        networkMonitoring = true
+        networkGeneration += 1
+        let expected = networkGeneration
+        networkMonitor.start { [weak self] state in
+            guard let self, self.networkMonitoring, self.networkGeneration == expected,
+                  self.enabled, !self.stopped, !self.demand.isEmpty else { return }
+            let previous = self.networkState
+            self.networkState = state
+            guard previous != state else { return }
+            let path = state.status == .offline ? "offline" : (state.status == .satisfied ? "satisfied" : "unknown")
+            self.diagnostics.emit("weather.path state=\(path) expensive=\(state.expensive) constrained=\(state.constrained)")
+            if state.status == .offline && previous.status != .offline { self.offlineSince = self.monotonicNow() }
+            if previous.status == .offline && state.status != .offline {
+                let prolonged = self.offlineSince.map { self.monotonicNow() - $0 >= 60 } == true
+                self.offlineSince = nil
+                let value = self.jitter()
+                let fraction = value.isFinite ? min(1, max(0, value)) : 0
+                self.recoveryDeadline = self.monotonicNow() + 2 + fraction * 3
+                for key in Array(self.cache.keys) {
+                    for source in self.sources where prolonged && self.cache[key]?.entries[source]?.connectionFailure == true {
+                        if let deadline = self.cache[key]?.entries[source]?.nextRequest {
+                            self.cache[key]?.entries[source]?.nextRequest = min(deadline, self.recoveryDeadline)
+                        }
+                    }
+                }
+                self.scheduleRefresh(at: self.recoveryDeadline)
+            } else if let key = self.activeKey { self.scheduleNextRefresh(key: key) }
+        }
+    }
+
+    private func stopNetworkMonitoring() {
+        for source in sources where sourceStates[source] != nil { sourceStates[source]?.quiescent = true }
+        if networkMonitoring { networkMonitor?.stop() }
+        networkMonitoring = false
+        networkGeneration += 1
+        offlineSince = nil
+        networkState = WeatherNetworkState()
+        recoveryDeadline = 0
     }
 
     private func recordState(reason: String) {

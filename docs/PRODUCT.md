@@ -169,7 +169,8 @@ Event dates and countdowns use calendar-day semantics rather than elapsed-second
 
 ### Creating an event
 
-A new event may use today's date or a future date. Ordinary event creation initially selects tomorrow.
+A new event may use today's date or a future date. The ordinary header `+` initially selects
+tomorrow; empty-state creation offers today, tomorrow or the native date-selection route.
 
 Past dates cannot be selected or saved. Date validation uses the current calendar day when saving, including when a draft remains open across midnight.
 
@@ -261,11 +262,41 @@ to pretend to cover different local hours. Missing or incompatible values yield 
 
 One batch per source/location/date range serves every eligible event. Responses publish progressively.
 A fresh source cache remains usable during other requests; expired data disappears autonomously.
-The base request interval is thirty minutes, deferred further by service Expires or Retry-After.
-If a server expiry is shorter than that interval, its data is hidden at expiry but the request floor still
-applies. Failures back off for at least five minutes. OFF, location changes, empty demand and shutdown
-cancel work; old completions cannot resurrect badges. Memory is bounded to four area/range contexts
-with at most three source batches of sixteen requested dates each.
+Freshness follows HTTP max-age (ahead of Expires), Date, Age and request duration. Missing freshness
+has an explicit conservative 1800-second heuristic budget; malformed/conflicting relevant headers
+do not silently receive a new budget. Data disappears at expiry. no-cache requires revalidation;
+no-store does not retain a body. Neither feeds a long-lived badge. must-revalidate never permits
+stale display. 304 applies only to an exact cached representation with a matching validator; missing
+fields preserve prior restrictions. A header-free or lifetime-free 304 cannot restart a heuristic
+1800 seconds. Orphan/mismatched304 schedules a bounded unconditional GET, without borrowing a body
+from another area/range.
+
+Temporary connection errors, 408 and retryable 5xx may use two rapid retries (10–20 then 45–75 seconds)
+only while required dates remain uncovered within that source's horizon. A successful partial day
+does not trigger rapid polling for missing hours. Expensive/constrained paths and Low Power disable
+rapid retries. Otherwise failures use 300–360,900–1080, then 1800–2160 seconds. Permanent schema/units,
+ordinary 4xx and TLS errors use 1800–2160 seconds. Cancellation adds neither a failure nor an automatic
+retry. A zero-freshness 200/304 gets one 60–90-second recheck, then normal backoff; a short positive
+TTL rechecks at expiry plus 0–15 seconds, at least 60 seconds after receipt. Long TTL is honored.
+
+429/503 have no rapid series and a provider-wide minimum 300–360 seconds plus Retry-After.
+Server cooldown and a sliding budget of six admitted starts per source per ten minutes survive
+city changes and OFF/ON within the process. Rapid allowances are not replenished by refresh, event
+reordering or panel reopening. Usable success resets them; after at least 30 minutes without starts,
+a quiescent source can begin a new series. An active failing chain keeps its upper backoff stage.
+
+Intervals after receipt use ContinuousClock, including sleep. A wall/monotonic discrepancy over 60
+seconds withdraws doubtful freshness and schedules a bounded check; server gates/backoff do not move
+earlier with wall-clock rollback. Wake/clock/calendar refresh coalesces overdue work without catch-up.
+One NWPathMonitor runs only while ON with eligible demand. Unknown permits the first request;
+known offline suppresses GET while freshness still expires. Recovery is debounced 2–5 seconds and
+cannot bypass server/budget gates. After at least 60 seconds offline, one ordinary connection backoff
+may be relaxed without resetting rapid allowances. A satisfied path does not prove VPN/host access.
+
+OFF, location changes, empty demand and shutdown cancel work; old outcomes cannot restore badges.
+An observed late Retry-After may still extend the provider-wide gate, without publishing old data.
+Memory stays bounded to four area/range contexts of three sources/sixteen days and three small
+provider-policy records. There is no disk cache, persisted AUTO location or stale badge mode.
 
 Network requests, decoding and consensus normalization do not occupy the UI actor. Deleting an
 eligible event immediately removes its weather demand. Shared work continues while other eligible
@@ -285,7 +316,7 @@ The fixed manual list is Москва, Санкт-Петербург, Казан
 
 ## Current date in the list header
 
-The app name is removed from the list header. A compact Russian date, such as `Пт, 16 октября`,
+For a nonempty list, the app name is removed from the list header. A compact Russian date, such as `Пт, 16 октября`,
 comes first in system 15-point semibold type, without a year. A secondary 11-point event count
 follows with a 3-point gap: `1 событие`, `2 события`, `6 событий`, with the corresponding Russian
 endings for other counts. The existing 31 × 31 calendar and add buttons remain beside these lines.
@@ -401,7 +432,27 @@ When no events exist and the timer is idle, the menu bar displays:
 
 ## Empty state
 
-When no events exist, the event area displays an empty state and provides an action to create a new event. The timer remains independently available.
+After a successful load with no active events, the whole list header is absent: date, count,
+calendar/plus controls and any expanded day-choice row. The 60-point timer and existing 33-point
+footer remain in the retained 390 × 600 panel. The free event area centers a current-date calendar
+leaf, `Пока нет событий`, and `Выбери день события. Название и детали можно изменить.`
+The ordinary Georgia title and warm Light/Dark/Increase Contrast palette are retained.
+
+A 260 × 34 accent `На сегодня` button is followed, 8 points below, by equally wide secondary
+`На завтра` and `Выбрать дату` buttons, 32 points high and separated by 8 points. Each starts an
+`Новый день` draft using the existing day-creation defaults: Russian weekday title, empty note,
+additional emoji and checklist, weather ON, and favorite OFF. The initial dates are today, tomorrow
+and tomorrow respectively. The choose-date route uses the existing native editor date field, with a
+prompt to select a date. Date changes update the weekday title until its first manual edit; a custom
+title is then preserved. No new calendar, persisted data type or automatic Save is introduced.
+
+Today's expiry warning and mutation-time midnight validation are unchanged. Cancel creates no
+event; panel hide/show retains the draft. Hidden/repeated creation actions cannot replace an open
+editor. First successful Save restores the existing header/list. Deleting or expiring the last event
+returns this empty state, and its calendar leaf follows `Store.today` across midnight/wake/reopen.
+Loading, failed reads and persistence recovery are not successful empty lists and expose no empty
+creation actions. The nonempty `+` still starts an ordinary untitled event for tomorrow; header and
+empty-state day creation share the same weekday title/weather defaults.
 
 ## Editing and explicit actions
 

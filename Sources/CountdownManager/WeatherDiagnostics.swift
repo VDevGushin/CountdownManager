@@ -20,8 +20,8 @@ package struct WeatherDiagnostics: Sendable {
         if error is CancellationError { return "error=cancelled" }
         if let transport = error as? WeatherTransportFailure {
             switch transport {
-            case let .http(status, _): return "error=http http_status=\(status)"
-            case .notModified: return "error=not_modified"
+            case let .http(status, _), let .httpMetadata(status, _): return "error=http http_status=\(min(599, max(0, status)))"
+            case .notModified, .validated: return "error=not_modified"
             }
         }
         if error is DecodingError { return "error=decode" }

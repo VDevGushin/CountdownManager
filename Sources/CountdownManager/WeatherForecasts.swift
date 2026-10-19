@@ -136,11 +136,14 @@ package struct WeatherSourceBatch: Equatable, Sendable {
     package let forecasts: [String: WeatherDailySample]
     package var expiresAt: Date?
     package var lastModified: String?
+    package var http: WeatherHTTPMetadata?
 
-    package init(forecasts: [String: WeatherDailySample], expiresAt: Date? = nil, lastModified: String? = nil) {
+    package init(forecasts: [String: WeatherDailySample], expiresAt: Date? = nil, lastModified: String? = nil,
+                 http: WeatherHTTPMetadata? = nil) {
         self.forecasts = forecasts
         self.expiresAt = expiresAt
         self.lastModified = lastModified
+        self.http = http
     }
 }
 

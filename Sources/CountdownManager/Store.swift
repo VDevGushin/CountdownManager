@@ -70,7 +70,7 @@ package final class Store: ObservableObject {
     private var durableRevision = 0
     private var durableData = CountdownData()
     private var inFlightPersistenceRevisions: Set<Int> = []
-    private var isRecoveringPersistence = false
+    @Published private var isRecoveringPersistence = false
     private var recoveryMutationInFlight = false
     private var persistenceRecoveryWaiters: [CheckedContinuation<Void, Never>] = []
     private var needsDeferredNormalization = false
@@ -136,6 +136,12 @@ package final class Store: ObservableObject {
     package var hasPendingPersistence: Bool {
         isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
     }
+
+    package var eventCreationIsAvailable: Bool {
+        !isLoading && !readFailed && !isRecoveringPersistence && !recoveryMutationInFlight
+    }
+
+    package var showsEmptyEventList: Bool { eventCreationIsAvailable && active.isEmpty }
 
     func subtasksAreExpanded(for eventID: UUID) -> Bool {
         disclosureState(for: eventID).isExpanded

@@ -5,6 +5,7 @@ import Foundation
 private final class WeatherDiagnosticRecords: @unchecked Sendable {
     private let lock = NSLock()
     private var messages: [String] = []
+    private var waiters: [(@Sendable (String) -> Bool, CheckedContinuation<Void, Never>)] = []
 
     var lines: [String] {
         lock.lock()
@@ -14,8 +15,29 @@ private final class WeatherDiagnosticRecords: @unchecked Sendable {
 
     func record(_ message: String) {
         lock.lock()
-        defer { lock.unlock() }
         messages.append(message)
+        let ready = waiters.filter { $0.0(message) }
+        waiters.removeAll { $0.0(message) }
+        lock.unlock()
+        ready.forEach { $0.1.resume() }
+    }
+
+    func waitFor(_ predicate: @escaping @Sendable (String) -> Bool) async {
+        let timeout = Task {
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            preconditionFailure("Missing weather diagnostic transition")
+        }
+        defer { timeout.cancel() }
+        await withCheckedContinuation { continuation in
+            lock.lock()
+            if messages.contains(where: predicate) {
+                lock.unlock()
+                continuation.resume()
+            } else {
+                waiters.append((predicate, continuation))
+                lock.unlock()
+            }
+        }
     }
 
     var diagnostics: WeatherDiagnostics { WeatherDiagnostics { self.record($0) } }
@@ -30,12 +52,17 @@ private final class WeatherDiagnosticReply: @unchecked Sendable {
 
     private let lock = NSLock()
     private var value: Value?
+    private var capturedRequest: URLRequest?
 
     func install(_ value: Value) {
         lock.lock()
         defer { lock.unlock() }
         self.value = value
+        capturedRequest = nil
     }
+
+    func capture(_ request: URLRequest) { lock.lock(); capturedRequest = request; lock.unlock() }
+    func request() -> URLRequest? { lock.lock(); defer { lock.unlock() }; return capturedRequest }
 
     func read() -> Value {
         lock.lock()
@@ -52,6 +79,7 @@ private final class WeatherDiagnosticURLProtocol: URLProtocol {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
+        Self.reply.capture(request)
         switch Self.reply.read() {
         case let .response(response, data):
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -225,27 +253,34 @@ private final class WeatherDiagnosticLocation: WeatherLocationProviding {
 private actor WeatherDiagnosticSources {
     private var pending: [WeatherSource: CheckedContinuation<WeatherSourceBatch, Error>] = [:]
     private(set) var totalCount = 0
+    private var waiters: [(Int, CheckedContinuation<Void, Never>)] = []
 
     var count: Int { pending.count }
 
     func fetch(_ source: WeatherSource) async throws -> WeatherSourceBatch {
         totalCount += 1
-        return try await withCheckedThrowingContinuation { pending[source] = $0 }
+        return try await withCheckedThrowingContinuation {
+            pending[source] = $0
+            let ready = waiters.filter { $0.0 <= totalCount }
+            waiters.removeAll { $0.0 <= totalCount }
+            ready.forEach { $0.1.resume() }
+        }
+    }
+
+    func waitForTotal(_ expected: Int) async {
+        let timeout = Task {
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            preconditionFailure("Missing weather diagnostic source request")
+        }
+        defer { timeout.cancel() }
+        if totalCount < expected { await withCheckedContinuation { waiters.append((expected, $0)) } }
+        precondition(totalCount == expected)
     }
 
     func complete(_ source: WeatherSource, result: Result<WeatherSourceBatch, Error>) {
         guard let continuation = pending.removeValue(forKey: source) else { preconditionFailure("Missing diagnostic source request") }
         continuation.resume(with: result)
     }
-}
-
-@MainActor
-private func waitForDiagnostic(_ predicate: () async -> Bool) async {
-    for _ in 0..<1_000 {
-        if await predicate() { return }
-        await Task.yield()
-    }
-    preconditionFailure("Weather diagnostic fixture did not reach its expected state")
 }
 
 @MainActor
@@ -260,14 +295,14 @@ func testWeatherControllerDiagnostics() async {
     let event = Countdown(title: "PRIVATE_EVENT_TITLE", note: "PRIVATE_BODY", date: day, emoji: "", showsWeather: true)
     let controller = WeatherController(
         defaults: defaults, sourceProvider: { source, _, _ in try await requests.fetch(source) },
-        locationProvider: WeatherDiagnosticLocation(), allowLocationRequests: false, now: { clock },
+        locationProvider: WeatherDiagnosticLocation(), allowLocationRequests: false, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 },
         scheduler: { _, _ in {} }, diagnostics: records.diagnostics
     )
     defer { controller.shutdown() }
     controller.selectLocation(.city(.moscow))
     controller.updateEvents([event])
     controller.setEnabled(true)
-    await waitForDiagnostic { await requests.count == 3 }
+    await requests.waitForTotal(3)
     let query = WeatherQuery(coordinates: WeatherCity.moscow.coordinates, timeZone: WeatherCity.moscow.timeZone,
                              startDay: day)!
     let key = weatherDayKey(day)
@@ -275,16 +310,16 @@ func testWeatherControllerDiagnostics() async {
     let partial = WeatherDailySample(dayKey: key, period: DateInterval(start: full.start.addingTimeInterval(3_600), end: full.end),
                                     maximumTemperature: 42, condition: .rain)
     await requests.complete(.wttr, result: .success(WeatherSourceBatch(forecasts: [key: partial])))
-    await waitForDiagnostic {
-        records.lines.contains { $0.hasPrefix("weather.source source=wttr result=success ") }
+    await records.waitFor { line in
+        matchesWeatherSnapshot(line, expected: ["usable": "0", "fresh_sources": "1",
+                                                "request_pending": "true", "computation_pending": "false"])
     }
-    for _ in 0..<32 { await Task.yield() }
     precondition(records.lines.contains("weather.publication demanded=1 usable=0"))
     precondition(!records.lines.contains("weather.publication demanded=1 usable=1"))
     precondition(controller.forecast(for: day) == nil, "Successful partial-day data must not produce a daily badge")
     let sample = WeatherDailySample(dayKey: key, period: full, maximumTemperature: 14, condition: .clear)
     await requests.complete(.openMeteo, result: .success(WeatherSourceBatch(forecasts: [key: sample])))
-    await waitForDiagnostic { controller.forecast(for: day)?.maximumTemperature == 14 }
+    await records.waitFor { $0 == "weather.publication demanded=1 usable=1" }
     precondition(records.lines.contains("weather.publication demanded=1 usable=1"))
     // Forecast publication does not imply that every provider request has settled.
     // Keep one source pending to prove that distinction before testing cached-refresh deduplication.
@@ -292,11 +327,9 @@ func testWeatherControllerDiagnostics() async {
         "result": "available", "usable": "1", "request_pending": "true",
     ]))
     await requests.complete(.metNorway, result: .failure(hostileWeatherError(code: NSURLErrorTimedOut)))
-    await waitForDiagnostic {
-        records.lines.contains { $0.hasPrefix("weather.source source=metNorway result=failure ") && $0.contains("url_kind=timeout") }
-    }
-    await waitForDiagnostic {
-        containsWeatherSnapshot(records, expected: [
+    await records.waitFor { $0.hasPrefix("weather.source source=metNorway result=failure ") && $0.contains("url_kind=timeout") }
+    await records.waitFor { line in
+        matchesWeatherSnapshot(line, expected: [
             "reason": "settled", "result": "available", "usable": "1", "failed_sources": "1",
             "request_pending": "false", "computation_pending": "false",
         ])
@@ -307,17 +340,18 @@ func testWeatherControllerDiagnostics() async {
     }
     let beforeRefresh = records.lines
     controller.refresh()
-    for _ in 0..<32 { await Task.yield() }
     precondition(records.lines == beforeRefresh, "Unchanged cached refresh must not repeat weather diagnostic transitions")
     requirePrivateWeatherLogs(records)
 }
 
+private func matchesWeatherSnapshot(_ line: String, expected: [String: String]) -> Bool {
+    guard line.hasPrefix("weather.snapshot ") else { return false }
+    let fields = diagnosticFields(line)
+    return expected.allSatisfy { fields[$0.key] == $0.value }
+}
+
 private func containsWeatherSnapshot(_ records: WeatherDiagnosticRecords, expected: [String: String]) -> Bool {
-    records.lines.contains { line in
-        guard line.hasPrefix("weather.snapshot ") else { return false }
-        let fields = diagnosticFields(line)
-        return expected.allSatisfy { fields[$0.key] == $0.value }
-    }
+    records.lines.contains { matchesWeatherSnapshot($0, expected: expected) }
 }
 
 @MainActor
@@ -334,14 +368,14 @@ func testWeatherRestoredDiagnostics() async {
     let event = Countdown(title: "PRIVATE_EVENT_TITLE", note: "PRIVATE_BODY", date: Day(clock), emoji: "", showsWeather: true)
     let controller = WeatherController(
         defaults: defaults, sourceProvider: { source, _, _ in try await requests.fetch(source) },
-        locationProvider: WeatherDiagnosticLocation(), allowLocationRequests: false, now: { clock },
+        locationProvider: WeatherDiagnosticLocation(), allowLocationRequests: false, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 },
         scheduler: { _, _ in {} }, diagnostics: records.diagnostics
     )
     defer { controller.shutdown() }
     precondition(controller.enabled && controller.location == .city(.moscow))
     // The launch path supplies restored events without a toggle or an editor Save.
     controller.updateEvents([event])
-    await waitForDiagnostic { await requests.totalCount == 3 }
+    await requests.waitForTotal(3)
     precondition(containsWeatherSnapshot(records, expected: [
         "enabled": "true", "mode": "manual", "demanded": "1", "result": "loading", "request_pending": "true",
     ]), "Restored weather must automatically describe its in-flight launch state")
@@ -352,8 +386,8 @@ func testWeatherRestoredDiagnostics() async {
     for source in WeatherSource.allCases {
         await requests.complete(source, result: .failure(hostileWeatherError(code: NSURLErrorTimedOut)))
     }
-    await waitForDiagnostic {
-        containsWeatherSnapshot(records, expected: [
+    await records.waitFor { line in
+        matchesWeatherSnapshot(line, expected: [
             "reason": "settled", "result": "no_usable_data", "request_pending": "false",
             "computation_pending": "false", "demanded": "1", "usable": "0", "failed_sources": "3", "fresh_sources": "0",
         ])
@@ -365,7 +399,6 @@ func testWeatherRestoredDiagnostics() async {
         $0.hasPrefix("weather.snapshot reason=diagnostics ") && diagnosticFields($0)["result"] == "no_usable_data"
     }
     precondition(explicit.count == 2, "Every explicit diagnostic action must record its current snapshot")
-    for _ in 0..<32 { await Task.yield() }
     let afterSnapshots = await requests.totalCount
     precondition(afterSnapshots == completedRequestCount && afterSnapshots == 3,
                  "Reading diagnostics must not fetch weather or bypass source backoff")
@@ -386,5 +419,112 @@ func testWeatherRestoredDiagnostics() async {
     precondition(NSDictionary(dictionary: disabledPreferences).isEqual(to: defaults.persistentDomain(forName: suite)!))
     let finalCount = await requests.totalCount
     precondition(finalCount == 3)
+    requirePrivateWeatherLogs(records)
+}
+
+func testWeatherHTTPFreshness() {
+    let wall = Date(timeIntervalSince1970: 1_792_000_000)
+    func date(_ offset: TimeInterval) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss 'GMT'"
+        return formatter.string(from: wall.addingTimeInterval(offset))
+    }
+    func metadata(_ headers: [String: String], duration: TimeInterval = 0) -> WeatherHTTPMetadata {
+        WeatherHTTPMetadata(headers: headers, receivedWall: wall, receivedTick: 100, duration: duration)
+    }
+    let age = metadata(["Date": date(-30), "Age": "50", "Cache-Control": "max-age=300", "Expires": date(9_000)], duration: 2)
+    precondition(age.freshnessReason == .maxAge && age.ageAtReceipt == 52 && age.remaining == 248)
+    precondition(metadata(["Date": date(-30), "Age": "50", "Expires": date(70)], duration: 2).remaining == 48)
+    precondition(metadata(["Age": "10", "Expires": date(100)], duration: 2).remaining == 88)
+    precondition(metadata(["Cache-Control": "max-age=300", "Age": "50"], duration: 2).remaining == 248)
+    precondition(metadata(["Age": "50"], duration: 2).remaining == 1_748)
+    precondition(metadata([:]).freshnessReason == .heuristic && metadata([:]).remaining == 1_800)
+    precondition(metadata(["Expires": date(-10)]).remaining == 0)
+    precondition(metadata(["Cache-Control": "max-age=0", "Expires": date(1_800)]).remaining == 0)
+    precondition(metadata(["Cache-Control": "max-age=60", "Expires": "invalid"]).remaining == 60,
+                 "Explicit max-age overrides Expires, including an invalid obsolete Expires")
+    precondition(metadata(["Date": date(0), "date": date(-10)]).remaining == 0)
+    for raw in ["max-age=\"60", "max-age=60\"", "max-age=\"\"60\"\""] {
+        precondition(metadata(["Cache-Control": raw]).remaining == 0)
+    }
+    for headers in [["Cache-Control": "max-age=12,max-age=24"], ["Cache-Control": "max-age=no"],
+                    ["Cache-Control": "max-age=-1"], ["Date": "bad"], ["Expires": "bad"], ["Age": "-1"],
+                    ["Age": "1.5"], ["Age": "NaN"], ["Date": date(120)]] {
+        let value = metadata(headers)
+        precondition(value.remaining == 0 && value.freshnessReason == .invalid)
+    }
+    for directive in ["no-cache", "no-store", "no-cache, max-age=1000"] {
+        precondition(metadata(["Cache-Control": directive]).remaining == 0)
+    }
+    precondition(!metadata(["Cache-Control": "no-store"]).allowsStorage)
+    precondition(metadata(["Cache-Control": "must-revalidate, max-age=10"]).remaining == 10)
+    let old = metadata(["Date": date(0), "Expires": date(60), "ETag": "PRIVATE_BODY", "Last-Modified": date(-3_600)])
+    let validation = WeatherHTTPMetadata(headers: ["Date": date(30)], receivedWall: wall.addingTimeInterval(30), receivedTick: 130)
+    let merged = old.revalidated(by: validation)
+    precondition(merged.remaining == 30 && merged.expires == old.expires && merged.validators == old.validators)
+    let absent = WeatherHTTPMetadata(headers: [:], receivedWall: wall.addingTimeInterval(60), receivedTick: 160)
+    precondition(old.revalidated(by: absent).remaining == 0, "A header-free304 cannot reset the old lifetime")
+    let maxAge = metadata(["Cache-Control": "max-age=60", "Date": date(0), "ETag": "PRIVATE_BODY"])
+    precondition(maxAge.revalidated(by: validation).remaining == 60, "A validated Date can renew a preserved max-age")
+    precondition(maxAge.revalidated(by: absent).remaining == 0)
+    let heuristic = metadata(["Last-Modified": date(-3_600)])
+    let lateValidation = WeatherHTTPMetadata(headers: ["Date": date(1_800)],
+        receivedWall: wall.addingTimeInterval(1_800), receivedTick: 1_900)
+    precondition(heuristic.revalidated(by: lateValidation).remaining == 0,
+                 "304 without explicit lifetime cannot manufacture a new heuristic30minutes")
+    let forbid = WeatherHTTPMetadata(headers: ["Cache-Control": "no-store"], receivedWall: wall, receivedTick: 100)
+    precondition(!maxAge.revalidated(by: forbid).allowsStorage)
+    let crossedClock = WeatherHTTPMetadata(headers: ["Cache-Control": "max-age=600"], receivedWall: wall,
+                                           receivedTick: 100, duration: 2, requestWall: wall.addingTimeInterval(-7_200))
+    precondition(crossedClock.remaining == 0)
+    for raw in ["-1", "1.2", "NaN", "infinity", "18446744073709551616"] {
+        precondition(WeatherHTTPMetadata.retryDelay(raw, wall: wall, serverDate: nil) == nil)
+    }
+    precondition(WeatherHTTPMetadata.retryDelay("120", wall: wall, serverDate: nil) == 120)
+    precondition(WeatherHTTPMetadata.retryDelay(date(120), wall: wall, serverDate: wall.addingTimeInterval(-60)) == 180)
+    precondition(WeatherHTTPMetadata.retryDelay(date(-120), wall: wall, serverDate: nil) == 0)
+    precondition(WeatherHTTPMetadata.retryDelay(date(10_000_000), wall: wall, serverDate: nil) == 10_000_000)
+    let dates = ["Sun, 06 Nov 1994 08:49:37 GMT", "Sunday, 06-Nov-94 08:49:37 GMT", "Sun Nov  6 08:49:37 1994"]
+    let parsed = dates.compactMap { WeatherHTTPMetadata.httpDate($0, now: wall) }
+    precondition(parsed.count == 3 && Set(parsed).count == 1)
+    for value in [age, old, old.revalidated(by: absent), crossedClock] {
+        let fields = value.diagnosticFields
+        for sentinel in weatherPrivateSentinels { precondition(!fields.contains(sentinel)) }
+    }
+    precondition(metadata(["Expires": date(-10)]).diagnosticFields.contains("expires_receipt_s=-10"))
+}
+
+func testWeatherHTTPTransportMetadata() async throws {
+    let query = diagnosticQuery()
+    let records = WeatherDiagnosticRecords()
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [WeatherDiagnosticURLProtocol.self]
+    configuration.urlCache = nil
+    let session = URLSession(configuration: configuration)
+    defer { session.invalidateAndCancel() }
+    let modified = "Sun, 06 Nov 1994 08:49:37 GMT"
+    let tag = "W/\"PRIVATE_BODY\""
+    let response = HTTPURLResponse(url: URL(string: "https://private-weather.invalid/PRIVATE_BODY")!, statusCode: 200,
+        httpVersion: "HTTP/1.1", headerFields: ["Cache-Control": "max-age=300", "Age": "10", "ETag": tag, "Last-Modified": modified])!
+    WeatherDiagnosticURLProtocol.reply.install(.response(response, try diagnosticOpenMeteoData(query)))
+    let batch = try await WeatherTransport.fetch(.openMeteo, query: query, diagnostics: records.diagnostics,
+                                                 session: session)
+    precondition(batch.http?.freshnessReason == .maxAge && batch.http?.validators.etag == tag)
+    let validation = HTTPURLResponse(url: response.url!, statusCode: 304, httpVersion: "HTTP/1.1",
+                                    headerFields: ["ETag": tag])!
+    WeatherDiagnosticURLProtocol.reply.install(.response(validation, Data()))
+    do {
+        _ = try await WeatherTransport.fetch(.openMeteo, query: query, diagnostics: records.diagnostics,
+            session: session, validators: WeatherHTTPMetadata.Validators(etag: tag, lastModified: modified))
+        preconditionFailure("304 must carry validation metadata instead of decoding an empty body")
+    } catch let WeatherTransportFailure.validated(metadata) {
+        precondition(metadata.validators.etag == tag && metadata.expires == nil)
+    }
+    let sent = WeatherDiagnosticURLProtocol.reply.request()
+    precondition(sent?.value(forHTTPHeaderField: "If-None-Match") == tag)
+    precondition(sent?.value(forHTTPHeaderField: "If-Modified-Since") == modified)
+    precondition(records.lines.contains { $0.hasPrefix("weather.http ") && $0.contains("freshness=maxAge") })
     requirePrivateWeatherLogs(records)
 }

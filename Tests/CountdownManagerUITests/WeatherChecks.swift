@@ -104,7 +104,7 @@ func testWeatherLifecycle() async throws {
     let location = WeatherLocationRecorder()
     let controller = WeatherController(
         defaults: defaults, provider: { try await provider.fetch($0) },
-        locationProvider: location, now: { clock }
+        locationProvider: location, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     defer { controller.shutdown() }
     precondition(!controller.enabled && controller.location == .automatic)
@@ -175,6 +175,9 @@ func testWeatherLifecycle() async throws {
     precondition(controller.forecast(for: today) == nil)
     clock = clock.addingTimeInterval(301)
     controller.refresh()
+    await requireWeatherRequests(provider, count: 5)
+    clock = clock.addingTimeInterval(1_500)
+    controller.refresh()
     await waitForWeather { await provider.requests.count == 6 }
     await provider.complete(5, result: .success([weatherDayKey(today): sunny]))
     await waitForWeather { controller.forecast(for: today) == sunny }
@@ -206,7 +209,7 @@ func testWeatherLifecycle() async throws {
     controller.setEnabled(false)
     let reopened = WeatherController(
         defaults: defaults, provider: { try await provider.fetch($0) },
-        locationProvider: location, allowLocationRequests: false, now: { clock }
+        locationProvider: location, allowLocationRequests: false, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     precondition(!reopened.enabled && reopened.location == .city(.samara))
     reopened.selectLocation(.automatic)
@@ -220,7 +223,7 @@ func testWeatherLifecycle() async throws {
     let restoredLocation = WeatherLocationRecorder()
     let restored = WeatherController(
         defaults: defaults, provider: { try await provider.fetch($0) },
-        locationProvider: restoredLocation, now: { clock }
+        locationProvider: restoredLocation, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     precondition(restored.enabled && restored.location == .automatic)
     restored.updateEvents([first])
@@ -252,7 +255,7 @@ private func testWeatherScheduledLifetime() async {
     let scheduler = WeatherScheduleRecorder()
     let controller = WeatherController(
         defaults: defaults, provider: { try await provider.fetch($0) },
-        locationProvider: WeatherLocationRecorder(), now: { clock },
+        locationProvider: WeatherLocationRecorder(), now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 },
         scheduler: { scheduler.schedule(after: $0, action: $1) }
     )
     defer { controller.shutdown() }
@@ -284,10 +287,10 @@ private func testWeatherScheduledLifetime() async {
     await waitForWeather { await provider.requests.count == 3 }
     await provider.complete(2, result: .failure(WeatherProviderFailure.response))
     await waitForWeather { scheduler.entries.count == 3 }
-    precondition(controller.forecast(for: event.date) == nil && scheduler.entries[2].delay == 300)
+    precondition(controller.forecast(for: event.date) == nil && scheduler.entries[2].delay == 1_800)
     controller.updateEvents([event])
     precondition(scheduler.entries.count == 3)
-    clock = clock.addingTimeInterval(300)
+    clock = clock.addingTimeInterval(1_800)
     scheduler.fire(2)
     await waitForWeather { await provider.requests.count == 4 }
     await provider.complete(3, result: .success([weatherDayKey(event.date): sunny]))
@@ -329,7 +332,7 @@ private func testWeatherSavedPermissionAction() {
     let location = WeatherLocationRecorder()
     let controller = WeatherController(
         defaults: defaults, provider: { _ in preconditionFailure("Permission-only fixture must not fetch") },
-        locationProvider: location, now: { clock }
+        locationProvider: location, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     defer { controller.shutdown() }
     controller.setEnabled(true)
@@ -344,7 +347,7 @@ private func testWeatherSavedPermissionAction() {
     let restoredLocation = WeatherLocationRecorder()
     let restored = WeatherController(
         defaults: defaults, provider: { _ in preconditionFailure("Permission-only fixture must not fetch") },
-        locationProvider: restoredLocation, now: { clock }
+        locationProvider: restoredLocation, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     defer { restored.shutdown() }
     restored.updateEvents([event])
@@ -371,7 +374,7 @@ private func testWeatherCacheBound() async throws {
     let location = WeatherLocationRecorder()
     let controller = WeatherController(
         defaults: defaults, provider: { try await provider.fetch($0) },
-        locationProvider: location, now: { clock }
+        locationProvider: location, now: { clock }, monotonicNow: { clock.timeIntervalSinceReferenceDate }, jitter: { 0 }
     )
     defer { controller.shutdown() }
     controller.updateEvents([event])

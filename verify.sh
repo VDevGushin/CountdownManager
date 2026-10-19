@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather) ;;
-    capture|weather-capture)
+    fast|ui|full|weather|empty-state) ;;
+    capture|weather-capture|empty-state-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|capture <directory>|weather-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -183,6 +183,11 @@ copy_capture_evidence() {
                         weather-editor-dark weather-editor-light
                         weather-header-before-midnight weather-header-midnight-empty)
     fi
+    if [[ "$mode" == "empty-state-capture" ]]; then
+        required_files=(empty-state-dark empty-state-light empty-state-light-high-contrast
+                        empty-state-dark-reduced-motion empty-state-timer-running
+                        empty-state-today-editor-dark empty-state-today-editor-light empty-state-midnight)
+    fi
     for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
@@ -222,5 +227,15 @@ case "$mode" in
         run_smoke visual-captures --ui-smoke-weather-captures
         copy_capture_evidence
         echo "PASS: focused weather Real UI Smoke and ten captures"
+        ;;
+    empty-state|empty-state-capture)
+        build_ui_app
+        if [[ "$mode" == "empty-state-capture" ]]; then
+            run_smoke visual-captures --ui-smoke-empty-state-captures
+            copy_capture_evidence
+        else
+            run_smoke empty-state --ui-smoke-empty-state
+        fi
+        echo "PASS: focused empty-state Real UI Smoke"
         ;;
 esac

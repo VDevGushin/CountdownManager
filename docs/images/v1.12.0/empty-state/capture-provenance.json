@@ -1,0 +1,121 @@
+{
+  "parent": "../capture-provenance.json",
+  "version": "1.12.0",
+  "build": "21",
+  "executable_sha256": "5eb779ae6b9d900342943db5454a174f92565682e7fa32a185d100b709e2462c",
+  "manifest": {
+    "applicationBuild": "21",
+    "applicationVersion": "1.12.0",
+    "captures": [
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "dark",
+        "file": "empty-state-dark.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-dark",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "dark",
+        "file": "empty-state-dark-reduced-motion.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-dark-reduced-motion",
+        "opaqueCorners": true,
+        "reduceMotionOverride": true,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "light",
+        "file": "empty-state-light.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-light",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "light",
+        "file": "empty-state-light-high-contrast.png",
+        "height": 1200,
+        "highContrastOverride": true,
+        "name": "empty-state-light-high-contrast",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "light",
+        "file": "empty-state-midnight.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-midnight",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "dark",
+        "file": "empty-state-timer-running.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-timer-running",
+        "opaqueCorners": true,
+        "reduceMotionOverride": true,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "dark",
+        "file": "empty-state-today-editor-dark.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-today-editor-dark",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      },
+      {
+        "appearanceName": "NSAppearanceNameDarkAqua",
+        "colorSchemeOverride": "light",
+        "file": "empty-state-today-editor-light.png",
+        "height": 1200,
+        "highContrastOverride": false,
+        "name": "empty-state-today-editor-light",
+        "opaqueCorners": true,
+        "reduceMotionOverride": false,
+        "scale": 2,
+        "width": 780,
+        "windowIdentifier": "main.panel"
+      }
+    ],
+    "emptyStateSyntheticDays": {
+      "empty-state-midnight": "2026-10-20"
+    },
+    "executableSHA256": "5eb779ae6b9d900342943db5454a174f92565682e7fa32a185d100b709e2462c",
+    "version": 5
+  }
+}

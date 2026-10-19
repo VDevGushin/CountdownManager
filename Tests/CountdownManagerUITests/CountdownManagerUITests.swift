@@ -38,7 +38,8 @@ enum UIChecks {
         precondition(EventUIStrings.editEvent == "Редактировать событие")
         precondition(EventUIStrings.deleteEvent == "Удалить событие?")
         precondition(EventUIStrings.emptyTitle == "Пока нет событий")
-        precondition(EventUIStrings.emptyMessage.contains("Добавь событие и выбери дату"))
+        precondition(EventUIStrings.emptyMessage == "Выбери день события.\nНазвание и детали можно изменить.")
+        try await testEmptyEventList(in: directory.appendingPathComponent("empty-state"))
         testDayCreationDefaultsAndCalendarBoundaries()
         testApplicationUpdateSafety()
         try testWeatherEditorDraftBoundaries()
@@ -48,6 +49,8 @@ enum UIChecks {
         try testWeatherWttrNormalization()
         try await testWeatherConsensusLifecycle()
         try await testWeatherTransportDiagnostics()
+        testWeatherHTTPFreshness()
+        try await testWeatherHTTPTransportMetadata()
         await testWeatherControllerDiagnostics()
         await testWeatherRestoredDiagnostics()
         try await testDiagnosticArchiveExport()
@@ -928,6 +931,8 @@ enum UIChecks {
             await gate.fail(revision: 2)
             let didFail = await failedSave.value
             precondition(!didFail)
+            precondition(!store.eventCreationIsAvailable && !store.showsEmptyEventList,
+                         "Persistence recovery must not expose empty-state creation")
             let recoverySave = Task { @MainActor in await store.save(recovery, primary: false) }
             let laterSave = Task { @MainActor in await store.save(later, primary: false) }
 
