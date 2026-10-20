@@ -1,8 +1,10 @@
 # Preparing signed updates
 
-Release **1.13.1 / build 23** is being prepared. Cards use Today/Tomorrow/Through N days,
+Release **1.13.1 / build 23** is published as Latest. Cards use Today/Tomorrow/Through N days,
 with exact dates preserved; the status-bar count stays numeric. The production key and stable
-Sparkle channel remain unchanged. Results are recorded after actual publication and verification.
+Sparkle channel remain unchanged. Anonymous ZIP, version-feed and Latest-feed downloads returned
+HTTP 200 and matched the signed local files. The exact release executable is installed locally;
+events and preferences were unchanged.
 
 Current status, evidence and limits: [releases/v1.13.1.md](releases/v1.13.1.md).
 Previous release: [releases/v1.13.0.md](releases/v1.13.0.md).
@@ -13,8 +15,8 @@ The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.1/CountdownManager-1.13.1-23.zip`.
-Publish the signed `appcast.xml` and ZIP together as Latest, then verify anonymous downloads
-against the locally signed SHA-256 values.
+The signed `appcast.xml` and ZIP are published together as Latest. Anonymous downloads
+matched the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
