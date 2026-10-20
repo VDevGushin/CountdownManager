@@ -631,8 +631,20 @@ private struct SubtaskChecklistView: View {
                         .accessibilityHidden(true)
                     Text("Подзадачи")
                     Spacer()
-                    Text(completionLabel.replacingOccurrences(of: "/", with: " из "))
-                        .monospacedDigit()
+                    HStack(spacing: 4) {
+                        if presentation.allSubtasksCompleted {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .semibold))
+                                .accessibilityHidden(true)
+                                .uiSmokeControl(id: "subtasks.complete.\(item.id.uuidString)")
+                        }
+                        Text(completionLabel.replacingOccurrences(of: "/", with: " из "))
+                            .monospacedDigit()
+                    }
+                    .foregroundStyle(presentation.allSubtasksCompleted
+                        ? AuroraInstrument.todayColor(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+                        : AuroraInstrument.secondaryInk(for: colorScheme))
+                    .uiSmokeControl(id: "subtasks.progress.\(item.id.uuidString)", value: { completionLabel })
                 }
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .font(.system(size: 11))
@@ -640,7 +652,7 @@ private struct SubtaskChecklistView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Подзадачи: \(completionLabel), \(isExpanded ? "свернуть" : "раскрыть")")
+            .accessibilityLabel("Подзадачи: \(completionLabel)\(presentation.allSubtasksCompleted ? ", все выполнены" : ""), \(isExpanded ? "свернуть" : "раскрыть")")
             .accessibilityIdentifier("subtasks.disclosure.\(item.id.uuidString)")
             .uiSmokeControl(
                 id: "subtasks.disclosure.\(item.id.uuidString)",

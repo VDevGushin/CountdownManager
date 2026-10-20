@@ -65,6 +65,7 @@ enum UIChecks {
         precondition(editorSubtaskMotion(reduceMotion: true) == .immediate)
         testEditorEmojiDisclosure()
         testEditorSubtaskLimitsAndIdentity()
+        try testSubtaskCompletionIndicator(today: today)
 
         // The timer exposes only bounded presets and cannot overflow display seconds.
         precondition(countdownTimerPresetMinutes == [5, 10, 15, 30, 40, 60, 120])
@@ -565,6 +566,30 @@ enum UIChecks {
         let roundTrip = try JSONDecoder().decode(CountdownData.self, from: afterPresentation)
         precondition(roundTrip == data)
         precondition(roundTrip.items[1].subtasks[0].isCompleted)
+    }
+
+    private static func testSubtaskCompletionIndicator(today: Day) throws {
+        for total in [0, 1, 6, 10] {
+            for completed in 0...total {
+                let tasks = try (0..<total).map { try Subtask(text: "Task \($0)", isCompleted: $0 < completed) }
+                let event = Countdown(title: "Indicator", date: today, emoji: "", subtasks: tasks)
+                let row = CountdownRowPresentation(item: event, today: today, primaryID: event.id)
+                precondition(row.allSubtasksCompleted == (total > 0 && completed == total))
+                precondition(row.completionLabel == (total == 0 ? nil : "\(completed)/\(total)"))
+                precondition(row.activeSubtasks.count == total - completed && row.completedSubtasks.count == completed)
+            }
+        }
+        var event = Countdown(title: "Still an event", date: today, emoji: "",
+                              subtasks: [try Subtask(text: "Done", isCompleted: true)])
+        var data = CountdownData()
+        try data.save(event, primary: true, today: today)
+        data.normalize(today: today)
+        precondition(data.items == [event] && data.primaryID == event.id)
+        event.subtasks.append(try Subtask(text: "Added unfinished"))
+        precondition(!CountdownRowPresentation(item: event, today: today, primaryID: event.id).allSubtasksCompleted)
+        event.subtasks.removeLast()
+        event.subtasks[0].isCompleted = false
+        precondition(!CountdownRowPresentation(item: event, today: today, primaryID: event.id).allSubtasksCompleted)
     }
 
     private static func testEditorSubtaskLimitsAndIdentity() {

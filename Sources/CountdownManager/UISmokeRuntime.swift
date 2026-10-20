@@ -29,6 +29,8 @@ struct UISmokeConfiguration {
     static let emptyStateCaptureLaunchArgument = "--ui-smoke-empty-state-captures"
     static let compactCaptureLaunchArgument = "--ui-smoke-compact-captures"
     static var compactCaptureWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(compactCaptureLaunchArgument) }
+    static let completedCaptureLaunchArgument = "--ui-smoke-completed-subtasks-captures"
+    static var completedCaptureWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(completedCaptureLaunchArgument) }
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
@@ -57,6 +59,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
             || compactCaptureWasRequested
+            || completedCaptureWasRequested
             || weatherWasRequested
             || emptyStateWasRequested
     }
@@ -88,7 +91,7 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested || completedCaptureWasRequested
     }
 
     static var weatherWasRequested: Bool {
@@ -121,6 +124,7 @@ struct UISmokeConfiguration {
             weatherCaptureLaunchArgument,
             emptyStateLaunchArgument,
             emptyStateCaptureLaunchArgument,
+            completedCaptureLaunchArgument,
         ]
         .filter { ProcessInfo.processInfo.arguments.contains($0) }
         guard smokeArguments.count <= 1 else {
@@ -176,7 +180,7 @@ struct UISmokeConfiguration {
         )
         if compactCaptureWasRequested {
             try configuration.seedCompactCaptureFixture()
-        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested {
+        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested && !completedCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -304,7 +308,10 @@ final class UISmokeRuntime {
                         && (self.controls.entries["event.add"]?.isEnabled == true
                             || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.compactCaptureWasRequested {
+                if UISmokeConfiguration.completedCaptureWasRequested {
+                    try await runCompletedSubtasksCapture()
+                    try writeCaptureManifest()
+                } else if UISmokeConfiguration.compactCaptureWasRequested {
                     try await runCompactCardsAndNotes()
                     try writeCaptureManifest()
                 } else if UISmokeConfiguration.emptyStateWasRequested {
@@ -360,6 +367,109 @@ final class UISmokeRuntime {
         try require(shown.contentViewController === host && shown.contentView === content,
                     "hosting hierarchy was reconstructed")
         try require(controls.value("root.window") == token, "root State identity changed")
+    }
+
+    private func runCompletedSubtasksCapture() async throws {
+        try require(store.active.isEmpty, "completed-subtask fixture must start empty")
+        timer.delete()
+        weather.setEnabled(false)
+        let primary = Countdown(title: "Ближайшая встреча", date: store.today, emoji: "")
+        let names = ["Проверить маршрут", "Подготовить документы", "Забронировать встречу",
+                     "Зарядить телефон", "Собрать вещи", "Проверить прогноз"]
+        let event = Countdown(title: "Вторник", date: Day(store.tomorrow), emoji: "",
+                              subtasks: try names.map { try Subtask(text: $0) })
+        let primarySaved = await store.save(primary, primary: true)
+        let eventSaved = await store.save(event, primary: false)
+        try require(primarySaved && eventSaved, "completed-subtask fixture save failed")
+        let suffix = event.id.uuidString
+        let disclosure = "subtasks.disclosure.\(suffix)"
+        let progress = "subtasks.progress.\(suffix)"
+        let check = "subtasks.complete.\(suffix)"
+        for scheme in [ColorScheme.dark, .light] {
+            let appearance = scheme == .dark ? "dark" : "light"
+            visualEnvironment.colorSchemeOverride = scheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+            let restored = await store.save(event, primary: false, requireExisting: true)
+            try require(restored, "restore six-task fixture")
+            for (completed, state) in [(6, "complete"), (5, "partial"), (0, "zero")] {
+                try await waitForElement(disclosure)
+                if controls.value(disclosure) != "expanded" { try await press(disclosure) }
+                try await waitForValue(disclosure, equals: "expanded")
+                try await requireChecklistControls(event, expanded: true)
+                for (index, task) in event.subtasks.enumerated() {
+                    let id = "subtask.toggle.\(task.id.uuidString)"
+                    let expected = index < completed ? "completed" : "active"
+                    if controls.value(id) != expected { try await press(id) }
+                    try await waitForValue(id, equals: expected)
+                }
+                try await waitForValue(progress, equals: "\(completed)/6")
+                try await waitFor("correct all-completed symbol") {
+                    (self.controls.entries[check] != nil) == (completed == 6)
+                }
+                let current = try requireValue(store.active.first { $0.id == event.id }, "retained event")
+                try require(current.date == event.date && current.title == event.title
+                            && store.data.primaryID == primary.id, "completing tasks changed parent event lifecycle")
+                for expanded in [true, false] {
+                    if (controls.value(disclosure) == "expanded") != expanded { try await press(disclosure) }
+                    try await waitForValue(disclosure, equals: expanded ? "expanded" : "collapsed")
+                    try await requireChecklistControls(event, expanded: expanded)
+                    try require((controls.entries[check] != nil) == (completed == 6), "collapse changed completion indicator")
+                    try require(controls.value(progress) == "\(completed)/6", "collapse changed counter")
+                    try await settleLayout()
+                    try requireChecklistDisclosureLayout(current)
+                    if let scroll = rootListScrollView() {
+                        let maximumY = max(0, (scroll.documentView?.bounds.height ?? 0) - scroll.contentSize.height)
+                        scroll.contentView.scroll(to: CGPoint(x: 0, y: maximumY))
+                        scroll.reflectScrolledClipView(scroll.contentView)
+                    }
+                    try await settleLayout(waitForAnimation: false)
+                    try capture(name: "completed-subtasks-\(state)-\(expanded ? "expanded" : "collapsed")-\(appearance)")
+                }
+            }
+            var empty = event
+            empty.subtasks = []
+            let emptied = await store.save(empty, primary: false, requireExisting: true)
+            try require(emptied, "empty checklist fixture save")
+            try await waitFor("no disclosure/counter/check when empty") {
+                self.controls.entries[disclosure] == nil && self.controls.entries[progress] == nil && self.controls.entries[check] == nil
+            }
+            try await settleLayout()
+            try capture(name: "completed-subtasks-empty-\(appearance)")
+        }
+        var complete = event
+        for index in complete.subtasks.indices { complete.subtasks[index].isCompleted = true }
+        let completed = await store.save(complete, primary: false, requireExisting: true)
+        try require(completed, "complete fixture restoration")
+        try await waitForElement(check)
+        if controls.value(disclosure) == "expanded" { try await press(disclosure) }
+        try await waitForValue(disclosure, equals: "collapsed")
+        let added = await store.addSubtask(to: event.id, text: "Ещё один незавершённый пункт")
+        try require(added, "unfinished task append failed")
+        try await waitForValue(progress, equals: "6/7")
+        try await waitFor("unfinished addition clears complete symbol while collapsed") { self.controls.entries[check] == nil }
+        // The existing add API expands the list; verify its ordinary counter after collapsing it again.
+        try await waitForValue(disclosure, equals: "expanded")
+        try await press(disclosure)
+        try await waitForValue(disclosure, equals: "collapsed")
+        try require(controls.entries[check] == nil && controls.value(progress) == "6/7",
+                    "incomplete counter changed after collapsing the added task")
+        let restored = await store.save(complete, primary: false, requireExisting: true)
+        try require(restored, "restore complete fixture for contrast")
+        try await waitForElement(check)
+        if controls.value(disclosure) != "expanded" { try await press(disclosure) }
+        try await waitForValue(disclosure, equals: "expanded")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+            try await settleLayout()
+            try requireChecklistDisclosureLayout(complete)
+            try capture(name: "completed-subtasks-high-contrast-\(scheme == .dark ? "dark" : "light")")
+        }
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(persisted.items.first { $0.id == event.id } == complete && persisted.primaryID == primary.id,
+                    "indicator or completion changed saved parent event")
+        pass("complete/partial/zero headers in both disclosure states, empty suppression and collapsed unfinished addition pass in Light/Dark")
+        pass("semantic green indicator and counter captured under Increase Contrast; checklist controls, disclosure bounds and parent event/data preserved")
     }
 
     private func verifyNewNoteLimit() async throws {
@@ -1867,7 +1977,7 @@ final class UISmokeRuntime {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
         let isCompact = UISmokeConfiguration.compactCaptureWasRequested
-        let expectedCount = isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31))
+        let expectedCount = UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31)))
         try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

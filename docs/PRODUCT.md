@@ -422,7 +422,14 @@ The event continues to exist until its own calendar date ends.
 
 ### Progress
 
-When subtasks exist, the interface may show progress as completed count over total count.
+When subtasks exist, the disclosure header shows completed count over total count. Only when
+total > 0 and completed == total, a green SF Symbol checkmark precedes the green `N из N` count.
+Use the existing semantic green adapted for Light/Dark and Increase Contrast. The label, chevron,
+other header controls and native checkbox rows retain their ordinary colors. The indicator remains
+visible when collapsed. Reopening a task or adding an unfinished task restores the ordinary counter.
+This is derived presentation, not a saved completion flag, button or parent-event completion state.
+It never completes, archives or reschedules the event. Accessibility conveys `все выполнены` on
+the existing disclosure button; the decorative checkmark is not a separate accessibility control.
 
 When no subtasks exist, a `0/0` progress state is not shown.
 

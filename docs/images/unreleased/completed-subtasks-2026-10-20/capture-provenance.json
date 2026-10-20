@@ -1,0 +1,108 @@
+{
+  "status": "PASS",
+  "unreleased": true,
+  "base_head": "61c02f79297e18baece76e802ce0de10da029be7",
+  "source_fingerprint": "fd39857db0ecd8e306a7da78b925100359eed2c79afceb1e0f8fd54658d83151",
+  "application_version": "1.13.1",
+  "application_build": "23",
+  "executable_sha256": "5c8330384ae53a7fefc353f8779f7098b106520600d11c437bf4866fed7e7b70",
+  "source_capture_directory": "/private/tmp/countdown-completed-subtasks-captures/countdown-ui-captures-20261020-214459-41397",
+  "tested_app": "/private/tmp/countdown-completed-subtasks-captures/countdown-ui-captures-20261020-214459-41397/Countdown Manager.app",
+  "native_command": "./verify.sh completed-subtasks-capture /private/tmp/countdown-completed-subtasks-captures",
+  "native_exit": 0,
+  "result": "ui-smoke-result.txt",
+  "images": {
+    "completed-subtasks-partial-expanded-dark.png": {
+      "sha256": "a7d528e7db6f8a38f4a16328b4287e4d1c61843715c277235b821d4e57f4a0b8",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-collapsed-light.png": {
+      "sha256": "bf618b83e1aeb7490db644d00740c512917d1edf3c8105e0c6e6110d75f4fe17",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-expanded-light.png": {
+      "sha256": "778df53064d4abb7ff0f4af2b5da1ac2d78570d20967e8ae683aabc22452fd4b",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-expanded-dark.png": {
+      "sha256": "248081368204fff660c26064af2b26c69a87ab623f52279afb60beafa97e1f22",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-empty-dark.png": {
+      "sha256": "d73abd56681131d3698f67ee837d233d6705c655c1b08bae74aa01da03b72e91",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-expanded-dark.png": {
+      "sha256": "a7d8eecaadf3093b9fa0e3a36bbeceb057080f2017948f5969f7b10c0fd0add4",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-collapsed-dark.png": {
+      "sha256": "bc9dc7210a8f06b340de14913698057f4457ee27b69869e2865fdde1bc2afc54",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-collapsed-light.png": {
+      "sha256": "1ce022656f3ea1325d5ecc4b69c2232d7bc0bea8b5bd951c883b03a9d51cd639",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-high-contrast-dark.png": {
+      "sha256": "8565934922401bbe6d18f569d08942912eb173c99d088f9973ab20acd4f8c987",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-expanded-light.png": {
+      "sha256": "53cf4544e4e6b5057f33c5bf4caa078433acad147ebb085ca9486acf8ca468ea",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-collapsed-dark.png": {
+      "sha256": "d072ec9cffec2e80a6e898c563458041e0c31536e6f29a691351e1b564bcb220",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-collapsed-dark.png": {
+      "sha256": "2bedc6e85a4d80cb28370e2a5e687add9c2ebe9dbe2e23dbff6e79c8edc2f193",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-empty-light.png": {
+      "sha256": "729180799e426c9d945c7e957b9c047ec88dd7b0395766e97540cd616233aa62",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-high-contrast-light.png": {
+      "sha256": "cc8daf64c0ab027e2a1dd8d2a33feb5f9edc7ba420209589dde34468cd277e8e",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-expanded-light.png": {
+      "sha256": "6eb6cc394487ce751429de5aecdd3bf5c13efd09c4d814defa3b0177c6883935",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-collapsed-light.png": {
+      "sha256": "5980f967bff9c6300913b26ac0430c62922bba642f208bfa55d3bf415bb19b53",
+      "width": 780,
+      "height": 1200
+    }
+  },
+  "visual_review": [
+    "completed-subtasks-complete-expanded-light.png",
+    "completed-subtasks-complete-collapsed-dark.png",
+    "completed-subtasks-partial-expanded-light.png",
+    "completed-subtasks-high-contrast-dark.png"
+  ],
+  "isolation": "Temporary marked home, synthetic events and isolated preferences; weather OFF; no production data used",
+  "limitations": [
+    "Native in-process actions, not external click/keyboard routing",
+    "VoiceOver speech not manually observed",
+    "Increase Contrast captured with isolated application override; system settings unchanged"
+  ]
+}

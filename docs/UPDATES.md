@@ -1,22 +1,23 @@
 # Preparing signed updates
 
-Release **1.13.1 / build 23** is published as Latest. Cards use Today/Tomorrow/Through N days,
-with exact dates preserved; the status-bar count stays numeric. The production key and stable
-Sparkle channel remain unchanged. Anonymous ZIP, version-feed and Latest-feed downloads returned
-HTTP 200 and matched the signed local files. The exact release executable is installed locally;
-events and preferences were unchanged.
+Release **1.13.2 / build 24** is prepared locally from the accepted completed-subtask indicator.
+It is not published or installed yet. The last published release remains **1.13.1 / build 23**;
+its recorded publication/installation evidence is in [releases/v1.13.1.md](releases/v1.13.1.md).
+The production key, stable feed and persisted event/preferences schema are unchanged.
 
-Current status, evidence and limits: [releases/v1.13.1.md](releases/v1.13.1.md).
-Previous release: [releases/v1.13.0.md](releases/v1.13.0.md).
+Archive/feed signing, exact release native captures and extracted-bundle verification passed.
+Prepared assets and receipts are in `.build/releases/1.13.2/`; public access is not yet claimed.
+
+Preparation status and limits: [releases/v1.13.2.md](releases/v1.13.2.md).
 
 ## Channel and signing key
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.1/CountdownManager-1.13.1-23.zip`.
-The signed `appcast.xml` and ZIP are published together as Latest. Anonymous downloads
-matched the locally signed SHA-256 values.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.2/CountdownManager-1.13.2-24.zip`.
+The signed `appcast.xml` and ZIP are prepared together for a later Latest publication.
+Anonymous download verification for 1.13.2 belongs to that separate publication step.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -75,7 +76,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.13.1 COUNTDOWN_BUILD_NUMBER=23 \
+  COUNTDOWN_VERSION=1.13.2 COUNTDOWN_BUILD_NUMBER=24 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -85,15 +86,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.1/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.2/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.13.1 preparation procedure; publication and verification
-evidence is recorded in the release notes linked above. For subsequent releases, change the version,
+The numbers above illustrate the 1.13.2 preparation procedure; preparation evidence is recorded
+in the release notes linked above. They do not establish publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The preceding distributed 1.13.0 uses build 22; this release uses build 23. Keep `local.countdownmanager.app`
+build. The preceding distributed 1.13.1 uses build 23; this candidate uses build 24. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.

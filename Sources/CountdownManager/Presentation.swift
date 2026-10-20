@@ -96,6 +96,7 @@ package struct CountdownRowPresentation: Equatable {
     package let activeSubtasks: [Subtask]
     package let completedSubtasks: [Subtask]
     package let completionLabel: String?
+    package var allSubtasksCompleted: Bool { !completedSubtasks.isEmpty && activeSubtasks.isEmpty }
 
     package init(item: Countdown, today: Day, primaryID: UUID?, featuredID: UUID? = nil) {
         remainingDays = item.date.days(from: today)

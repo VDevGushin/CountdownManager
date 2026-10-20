@@ -7,7 +7,7 @@ mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
     fast|ui|full|weather|empty-state) ;;
-    capture|weather-capture|empty-state-capture|compact-capture)
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -200,6 +200,17 @@ copy_capture_evidence() {
                         compact-featured-no-weather-dark compact-featured-no-weather-light
                         compact-featured-long-dark compact-featured-long-light)
     fi
+    if [[ "$mode" == "completed-subtasks-capture" ]]; then
+        required_files=()
+        for appearance in dark light; do
+            for state in complete partial zero; do
+                for disclosure in expanded collapsed; do
+                    required_files+=("completed-subtasks-$state-$disclosure-$appearance")
+                done
+            done
+            required_files+=("completed-subtasks-empty-$appearance" "completed-subtasks-high-contrast-$appearance")
+        done
+    fi
     for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
@@ -211,6 +222,10 @@ copy_capture_evidence() {
     cp "$source_dir"/*.png "$destination_dir/"
     if [[ "$mode" == "compact-capture" ]]; then
         cp "$source_dir/compact-input-state.json" "$destination_dir/"
+    fi
+    if [[ "$mode" == "completed-subtasks-capture" ]]; then
+        cp "$verify_root/visual-captures/ui-smoke-result.txt" "$destination_dir/"
+        ditto "$app_path" "$destination_dir/Countdown Manager.app"
     fi
     echo "Capture evidence: $destination_dir"
 }
@@ -237,6 +252,12 @@ case "$mode" in
         run_smoke visual-captures --ui-smoke-compact-captures
         copy_capture_evidence
         echo "PASS: focused compact cards and native note editing"
+        ;;
+    completed-subtasks-capture)
+        build_ui_app
+        run_smoke visual-captures --ui-smoke-completed-subtasks-captures
+        copy_capture_evidence
+        echo "PASS: focused completed-subtask indicator and16captures"
         ;;
     weather)
         build_ui_app

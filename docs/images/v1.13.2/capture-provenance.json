@@ -1,0 +1,104 @@
+{
+  "status": "PREPARED_RELEASE_NATIVE_PASS_NOT_PUBLISHED",
+  "version": "1.13.2",
+  "build": "24",
+  "accepted_product_fingerprint": "fd39857db0ecd8e306a7da78b925100359eed2c79afceb1e0f8fd54658d83151",
+  "release_input_fingerprint": "97a8e2e862b1351068c0d6af08fbbf1a00bf5bac7157dc96b13feae740c29a66",
+  "executable_sha256": "57c59afd2e7286a57b5f780647be9dffd2355f0467a216f7b268f3f2c2ee044d",
+  "bundle_feed": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+  "production_public_key_fingerprint": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "native_result": "UISmoke\n✓ complete/partial/zero headers in both disclosure states, empty suppression and collapsed unfinished addition pass in Light/Dark\n✓ semantic green indicator and counter captured under Increase Contrast; checklist controls, disclosure bounds and parent event/data preserved\nPASS: 2/2",
+  "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.2/Countdown Manager.app",
+  "runtime_mode": "--ui-smoke-completed-subtasks-captures",
+  "data": "Isolated marked temporary home; synthetic events; weather OFF; no production event data",
+  "images": {
+    "completed-subtasks-partial-expanded-dark.png": {
+      "sha256": "a7d528e7db6f8a38f4a16328b4287e4d1c61843715c277235b821d4e57f4a0b8",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-collapsed-light.png": {
+      "sha256": "bf618b83e1aeb7490db644d00740c512917d1edf3c8105e0c6e6110d75f4fe17",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-expanded-light.png": {
+      "sha256": "778df53064d4abb7ff0f4af2b5da1ac2d78570d20967e8ae683aabc22452fd4b",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-expanded-dark.png": {
+      "sha256": "248081368204fff660c26064af2b26c69a87ab623f52279afb60beafa97e1f22",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-empty-dark.png": {
+      "sha256": "d73abd56681131d3698f67ee837d233d6705c655c1b08bae74aa01da03b72e91",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-expanded-dark.png": {
+      "sha256": "a7d8eecaadf3093b9fa0e3a36bbeceb057080f2017948f5969f7b10c0fd0add4",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-collapsed-dark.png": {
+      "sha256": "bc9dc7210a8f06b340de14913698057f4457ee27b69869e2865fdde1bc2afc54",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-collapsed-light.png": {
+      "sha256": "1ce022656f3ea1325d5ecc4b69c2232d7bc0bea8b5bd951c883b03a9d51cd639",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-high-contrast-dark.png": {
+      "sha256": "fa5d651b25569431eb9163ae1d8e77c3c6b5b112ef04be829d2cae31d4899a4c",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-expanded-light.png": {
+      "sha256": "53cf4544e4e6b5057f33c5bf4caa078433acad147ebb085ca9486acf8ca468ea",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-collapsed-dark.png": {
+      "sha256": "d072ec9cffec2e80a6e898c563458041e0c31536e6f29a691351e1b564bcb220",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-zero-collapsed-dark.png": {
+      "sha256": "2bedc6e85a4d80cb28370e2a5e687add9c2ebe9dbe2e23dbff6e79c8edc2f193",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-empty-light.png": {
+      "sha256": "729180799e426c9d945c7e957b9c047ec88dd7b0395766e97540cd616233aa62",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-high-contrast-light.png": {
+      "sha256": "cc8daf64c0ab027e2a1dd8d2a33feb5f9edc7ba420209589dde34468cd277e8e",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-partial-expanded-light.png": {
+      "sha256": "6eb6cc394487ce751429de5aecdd3bf5c13efd09c4d814defa3b0177c6883935",
+      "width": 780,
+      "height": 1200
+    },
+    "completed-subtasks-complete-collapsed-light.png": {
+      "sha256": "5980f967bff9c6300913b26ac0430c62922bba642f208bfa55d3bf415bb19b53",
+      "width": 780,
+      "height": 1200
+    }
+  },
+  "signed_archive_sha256": "1ce00bcd57d8735de56b778c6392c62dec57f678e90a55d1dec95b1d677f059c",
+  "publication_verified": false,
+  "installation_performed": false,
+  "limits": [
+    "In-process native actions; external keyboard/VoiceOver speech not repeated",
+    "Increase Contrast uses isolated app override",
+    "No first-install Gatekeeper, Intel/older-macOS runtime or end-to-end Sparkle replacement test in this preparation"
+  ]
+}

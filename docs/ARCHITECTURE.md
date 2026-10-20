@@ -508,7 +508,12 @@ reuses the native date field with a prompt; text fields keep only their system b
 
 An event surface groups the row and its checklist as one block. The full-width disclosure button
 places a chevron left of `Подзадачи` and the completed/total count at the right; it does not wrap
-the favorite/edit actions. The cached `SubtaskDisclosureState` remains its sole owner. Standard
+the favorite/edit actions. `CountdownRowPresentation.allSubtasksCompleted` derives nonempty/all-done
+from its existing active/completed groups. Only the trailing counter group receives the semantic
+green from `AuroraInstrument.todayColor`, with a decorative SF Symbol checkmark. The existing
+disclosure accessibility label conveys completion; no second action or stored state is introduced.
+Native checkbox row colors and event lifecycle remain unchanged.
+The cached `SubtaskDisclosureState` remains its sole owner. Standard
 SwiftUI layout and opacity transitions animate presentation without another expanded state or
 animation timer.
 

@@ -1,0 +1,4 @@
+UISmoke
+✓ complete/partial/zero headers in both disclosure states, empty suppression and collapsed unfinished addition pass in Light/Dark
+✓ semantic green indicator and counter captured under Increase Contrast; checklist controls, disclosure bounds and parent event/data preserved
+PASS: 2/2

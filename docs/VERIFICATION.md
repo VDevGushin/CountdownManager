@@ -17,6 +17,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 26 isolated PNGs |
+| Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Native field outline guard | `python3 -B Tests/test_native_field_chrome.py` | Exercises actual SwiftLint rejection of a second outline on native rounded-border fields, plus allowed native fields and selection controls |
@@ -123,6 +124,19 @@ differs from Apple's documented NSNotFound sentinel. Acceptance requires exact n
 text equality, 150 graphemes, the correct caret, no active marked text, and the same empty range as
 the native baseline; it does not rewrite product composition state to satisfy a sentinel assumption.
 Role-specific geometry markers avoid stale shared-calendar frames after featured/secondary changes.
+
+## Completed-subtask indicator
+
+After full lint and `fast`, run `completed-subtasks-capture` in a marked output directory.
+The focused runtime starts with an empty isolated store and uses synthetic events only. It checks
+complete/partial/zero counts through existing checkbox actions, both disclosure states, removal
+of the whole header when empty, and an unfinished addition clearing the indicator before and after manual collapse.
+The event's identity/date/title and primary selection persist unchanged. Disclosure geometry and
+hidden checkbox input guards reuse existing checks. Presentation regression covers 0/1/6/10 totals.
+Sixteen native PNGs cover Light/Dark × complete/partial/zero × expanded/collapsed, empty in each
+theme, plus both contrast overrides. The mode retains its tested app, manifest and native result
+beside the PNGs for independent QA. This does not establish external keyboard or VoiceOver speech;
+no new input route or accessibility control is introduced by the decorative symbol.
 
 ## Real UI Smoke
 
