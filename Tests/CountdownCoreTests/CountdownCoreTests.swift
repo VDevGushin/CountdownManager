@@ -146,19 +146,59 @@ final class CountdownCoreTests {
         var data = CountdownData()
         let accepted = Countdown(
             title: "Exact limit",
-            note: "  \(String(repeating: "я", count: 280))  ",
+            note: String(repeating: "я", count: 150),
             date: day(2026, 9, 6),
             emoji: "📝"
         )
         try data.save(accepted, primary: false, today: today)
-        XCTAssertEqual(data.items[0].note?.count, 280)
+        XCTAssertEqual(data.items[0].note?.count, 150)
 
         var blankNote = Countdown(title: "Blank", note: " \n\t ", date: day(2026, 9, 7), emoji: "🎉")
         try data.save(blankNote, primary: false, today: today)
         XCTAssertNil(data.items.first(where: { $0.id == blankNote.id })?.note)
 
-        blankNote.note = String(repeating: "🙂", count: 281)
+        blankNote.note = String(repeating: "👨‍👩‍👧‍👦", count: 151)
         XCTAssertThrowsError(try data.save(blankNote, primary: false, today: today))
+        blankNote.note = String(repeating: "👨‍👩‍👧‍👦", count: 148) + "\né"
+        try data.save(blankNote, primary: false, today: today)
+        XCTAssertEqual(data.items.first(where: { $0.id == blankNote.id })?.note, blankNote.note)
+
+        var expired = Countdown(title: "Expired", note: String(repeating: "я", count: 280), date: day(2026, 9, 4), emoji: "")
+        var expiredData = CountdownData()
+        expiredData.items = [expired]
+        expired.date = day(2026, 9, 6)
+        XCTAssertThrowsError(try expiredData.save(expired, primary: false, today: today))
+        expiredData.items = []
+        XCTAssertThrowsError(try expiredData.save(expired, primary: false, today: today))
+        var whitespace = Countdown(title: "Whitespace", note: String(repeating: "я", count: 149) + "  ", date: day(2026, 9, 6), emoji: "")
+        XCTAssertThrowsError(try data.save(whitespace, primary: false, today: today))
+        whitespace.note = "  Normal note  "
+        try data.save(whitespace, primary: false, today: today)
+        XCTAssertEqual(data.items.first(where: { $0.id == whitespace.id })?.note, "Normal note")
+
+        for length in [151, 280] {
+            var legacy = Countdown(title: "Legacy", note: String(repeating: "🙂", count: length), date: day(2026, 9, 8), emoji: "")
+            var stored = CountdownData()
+            stored.items = [legacy]
+            stored = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(stored))
+            legacy.title = "Other fields"
+            legacy.subtasks = [try Subtask(text: "Keep task")]
+            try stored.save(legacy, primary: true, today: today)
+            XCTAssertEqual(stored.items[0].note, legacy.note)
+            XCTAssertEqual(stored.primaryID, legacy.id)
+            legacy.note = String(repeating: "🙂", count: length + 1)
+            XCTAssertThrowsError(try stored.save(legacy, primary: false, today: today))
+            for count in [length - 1, 150, 149] {
+                legacy.note = String(repeating: "🙂", count: count)
+                try stored.save(legacy, primary: true, today: today)
+                try stored.save(legacy, primary: true, today: today)
+                XCTAssertEqual(stored.items[0].note, legacy.note)
+                if count >= 150 {
+                    legacy.note = String(repeating: "🙂", count: count + 1)
+                    XCTAssertThrowsError(try stored.save(legacy, primary: false, today: today))
+                }
+            }
+        }
     }
 
     func testTodayEditingAndLifecycleRegardlessOfSubtasks() throws {

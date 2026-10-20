@@ -116,7 +116,7 @@ enum UIChecks {
         // Creation and editing both accept Today, while past dates remain invalid.
         precondition(editorCanSave(
             title: "Future UI",
-            note: String(repeating: "я", count: 280),
+            note: String(repeating: "я", count: 150),
             date: futureItem.date,
             emoji: futureItem.emoji,
             today: today
@@ -151,9 +151,18 @@ enum UIChecks {
             emoji: "",
             today: today
         ))
+        for count in [151, 280] {
+            let note = String(repeating: "👨‍👩‍👧‍👦", count: count)
+            precondition(editorCanSave(title: "Legacy", note: note, date: futureItem.date, emoji: "", today: today, savedNote: note))
+            precondition(!editorCanSave(title: "Legacy", note: note + "x", date: futureItem.date, emoji: "", today: today, savedNote: note))
+            let draft = EventEditorDraft(item: Countdown(title: "Legacy", note: note, date: futureItem.date, emoji: ""))
+            precondition(draft.note == note)
+            precondition(CountdownRowPresentation(item: draft.countdown(id: UUID(), date: futureItem.date), today: today,
+                primaryID: nil).note == note)
+        }
         precondition(!editorCanSave(
             title: "Invalid note",
-            note: String(repeating: "я", count: 281),
+            note: String(repeating: "я", count: 151),
             date: futureItem.date,
             emoji: futureItem.emoji,
             today: today

@@ -1,0 +1,110 @@
+{
+  "status": "NATIVE_CAPTURE_PASS",
+  "unreleased": true,
+  "created_at": "2026-10-20T10:21:10.796785+00:00",
+  "base_head": "b3845c42eee525952d0f706902b862792c8247bd",
+  "source_fingerprint": "cee3f5d1d717c29fad612f835b54ba6893edf640a33b8531cb5c715ca745c894",
+  "application_version": "1.12.0",
+  "application_build": "21",
+  "executable_sha256": "1118d34c6539991657db232e8f45115e6ab374090795aac1588a123865622367",
+  "command": "./verify.sh compact-capture /private/tmp/countdown-compact-captures",
+  "exit_code": 0,
+  "native_log": "/private/tmp/countdown-compact-final-native.log",
+  "original_capture_directory": "/private/tmp/countdown-compact-captures/countdown-ui-captures-20261020-131647-38063",
+  "weather": "Synthetic +14°C today/−18°C tomorrow; no real HTTP or geolocation",
+  "images": {
+    "compact-cards-dark.png": {
+      "sha256": "52fa854e28cc4fa4c4e7bbd381d1766a79008b40488ab273cf6fedbae4d1d97b",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-cards-high-contrast.png": {
+      "sha256": "55676eec0bc695de723b1bd9ff4cfd54c38bef799ae89c311ee997e3a0754f28",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-cards-light.png": {
+      "sha256": "ae03bf3d16f8299c4cb24a30e2272a92e8e3eb1ee0ce243d324429dc7cec7797",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-editor-dark.png": {
+      "sha256": "38f15d40757f095b456076d8c3cc3d861dbc856994c670a8d5aa6cf2f4901f83",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-editor-light.png": {
+      "sha256": "962ee4efde6a29ba18fbab288644913de8feb0ad3fca8123e32afefe4239f5a6",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-editor-scroll.png": {
+      "sha256": "f76968fc0d9c8c327fd554c5e9da3352882f92aec7f28cf692ee2bf74ce22e95",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-emoji.png": {
+      "sha256": "45d804e2cd23a5e84e8c49cd5b142a9b8377b997e13718d008b88bb06c319311",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-long-dark.png": {
+      "sha256": "79416b9792ae634fed17e35e926c4544959b2843b3b6818b66018c5089071f93",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-long-light.png": {
+      "sha256": "3673d024089d8311dae3cfae749b6a5d7c15db4c23718894abf6ccc7d05d461c",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-no-weather-dark.png": {
+      "sha256": "3a6826c6c7817ede970edde86c4aa48ee7fa4c187443f59ccbe71e37171a2b9a",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-no-weather-light.png": {
+      "sha256": "59e8278b0e1eff38846c83f6d9e6a71ff5aefc568987b2a440f6d7dabf89421c",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-today-dark.png": {
+      "sha256": "7f23775e6e6971f4eee17b669b41684831ef97017aeaf6ad1ae51702acabdc24",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-featured-today-light.png": {
+      "sha256": "4fd1f24c8b234a2b7b029290723b1f5b2d07dc8a8e37915ab53d7e456a674774",
+      "width": 780,
+      "height": 1200
+    },
+    "compact-new-note-limit.png": {
+      "sha256": "14cd4f4e89f3bc2c287ad98b3ece5e70a2a89f91da59cffa40741eb6eef041a4",
+      "width": 780,
+      "height": 1200
+    }
+  },
+  "input_state": "compact-input-state.json",
+  "runtime_ime_baseline": "Plain NSTextView and NoteTextView both return {151,0} with hasMarkedText=false after commit; exact text/draft/selection match. Documented NSNotFound sentinel differs on this runtime.",
+  "external_keyboard": {
+    "status": "NOT_ESTABLISHED",
+    "exit_code": 65,
+    "log": "/private/tmp/countdown-compact-xcui.log",
+    "boundary": "editor.title initially found; external click/replace loses matching TextField before note input. No assertions weakened or retry."
+  },
+  "limits": [
+    "No physical IME keyboard-session or VoiceOver proof",
+    "Contrast is an isolated Aurora override, not a system-wide settings change",
+    "No application installation, publication or production-data migration"
+  ],
+  "runtime": {
+    "macos": "26.6.2",
+    "architecture": "arm64"
+  },
+  "visually_inspected_final": [
+    "compact-cards-dark.png",
+    "compact-featured-long-light.png",
+    "compact-featured-today-dark.png",
+    "compact-editor-light.png"
+  ]
+}

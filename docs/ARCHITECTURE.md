@@ -479,8 +479,16 @@ matched-geometry motion, keyboard focus and deadline owner are unchanged.
 
 Event rows use a 23-point Georgia featured title and a 54 × 65 right-hand calendar leaf; secondary
 rows use 14-point titles and 42 × 51 left-hand leaves. Additional emoji is composed with the title;
-favorite/edit actions remain separate. Secondary metadata shares a compact date/remaining/weather
-row, while featured weather is beside the countdown.
+favorite/edit actions remain separate 28 × 28 controls. Secondary headers use a 51-point GeometryReader
+with the actual available title width. Native 14-point semibold string measurement (including emoji)
+selects one-line title/date/weather or two-line title/inline metadata composition; no character-count
+heuristic is used. Title/meta line slots are 17/14 points with 3-point spacing. The 51-point calendar
+and text/action block align in both layouts. Actual forecast SF Symbols remain bound to the existing
+weather getter, without new requests. Featured weather and its conditional middle dot are in the
+full-date HStack under the title, including today; the separate countdown contains no weather.
+The featured Georgia 23 title, 54 × 65 right leaf and 28-point actions keep their existing metrics.
+Notes use an
+unlimited-height12-point block below the entire header at full content width; checklists follow.
 
 `Store.showsEmptyEventList` derives genuine empty content from active events and
 `eventCreationIsAvailable` (successful load/read, no persistence recovery). Recovery-state changes
@@ -527,9 +535,17 @@ The header calendar control reveals inline `Сегодня`, `Завтра` and 
 The editor uses a 21-point Georgia heading in a 49-point header. Its scrolling form keeps the
 existing retained draft; Delete, Cancel and Save share the 58-point fixed footer, with deletion
 confirmation presented inline above it. The native note field remains visible for empty and filled
-notes, with `Заметка · необязательно`, `Пара слов о событии` and a live `0/280` character count.
-There is no note disclosure state; its text stays in the existing retained draft. The native fields
-retain focus behavior and do not persist edits before Save.
+notes, with `Заметка · необязательно`, `Пара слов о событии` and a live `0/150` character count below the field.
+There is no note disclosure state; its text stays in the existing retained draft. `NoteEditor.swift`
+is a narrow NSViewRepresentable boundary around an NSTextView and native bezel NSScrollView. It
+reserves 3 native lines, grows to 6 and then scrolls. AppKit owns selection/undo and marked text;
+committed replacements are checked before mutation, never truncated. The bridge only requests focus
+on a distinct explicit note-focus request after releasing the SwiftUI field focus, and does not rewrite matching or marked native storage.
+`CountdownNote` in CountdownCore supplies the shared raw-grapheme allowance: 150 for a new note,
+or max(150, current saved active event note count) for an existing identity. `CountdownData.save`
+looks up that current record; `editorCanSave` and the native editor use the same rule. No schema
+field, migration, legacy cap copy or second note owner is added. Unchanged saved notes are preserved
+exactly; changed/new notes keep existing outer trimming. No edits persist before Save.
 
 Emoji selection is an independent outlined full-width `Значок` field, with a disclosure chevron
 and a separate clear button inside the same boundary. A 13-point gap separates it from the weather

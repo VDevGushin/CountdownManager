@@ -177,7 +177,7 @@ public enum CountdownError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .title: return "Укажите название события."
-        case .note: return "Заметка должна быть не длиннее 280 символов."
+        case .note: return "Новая заметка — до 150 символов. Старую длинную заметку можно сохранить или сократить."
         case .date: return "Дата события недопустима. Выберите сегодня или будущую дату."
         case .emoji: return "Выберите один emoji или оставьте значок пустым."
         case .eventNotFound: return "Событие больше недоступно."
@@ -186,6 +186,18 @@ public enum CountdownError: LocalizedError {
         case .subtaskLength: return "Подзадача должна быть не длиннее 50 символов."
         case .subtaskCount: return "У события может быть не больше десяти подзадач."
         }
+    }
+}
+
+public enum CountdownNote {
+    public static let maximumLength = 150
+
+    public static func allowedLength(savedNote: String?) -> Int {
+        max(maximumLength, savedNote?.count ?? 0)
+    }
+
+    public static func isAllowed(_ note: String, savedNote: String? = nil) -> Bool {
+        note.count <= allowedLength(savedNote: savedNote)
     }
 }
 
@@ -218,7 +230,9 @@ public struct CountdownData: Codable, Equatable {
             try cleaned.subtasks[index].normalizeAndValidate()
         }
         guard !cleaned.title.isEmpty else { throw CountdownError.title }
-        guard (cleaned.note?.count ?? 0) <= 280 else { throw CountdownError.note }
+        let savedNote = items.first(where: { $0.id == item.id && $0.date >= today })?.note
+        guard CountdownNote.isAllowed(item.note ?? "", savedNote: savedNote) else { throw CountdownError.note }
+        if item.note == savedNote { cleaned.note = savedNote }
         guard cleaned.date >= today else { throw CountdownError.date }
         guard cleaned.emoji.isEmpty || Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         guard cleaned.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }

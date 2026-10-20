@@ -29,7 +29,8 @@ The single timer is shown as a compact strip above the event interface. There is
 The editor uses a compact 21-point Georgia heading and a scrolling form. Title, note and subtask text fields
 use one native bezel and the native focus ring, without a second custom border. The native note field is
 always visible, labelled `Заметка · необязательно`, with the `Пара слов о событии` placeholder and
-a live character count starting at `0/280`. Hiding and reopening the panel preserves the note text
+a live character count starting at `0/150`, below the field at the right. The native multiline
+field reserves three lines, grows to six, then scrolls vertically. Hiding and reopening the panel preserves the note text
 along with the other draft fields. Title and date remain directly
 available, and today's expiry warning retains its exact meaning in a quiet ochre treatment.
 
@@ -52,11 +53,35 @@ Event deletion uses an explicit inline confirmation with a cancel action. Launch
 Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
 
 The featured title uses 23-point Georgia and a compact 54 × 65 calendar leaf; secondary events
-use 14-point titles and 42 × 51 leaves. Secondary date, remaining days and available weather share
-a compact metadata row; featured weather sits beside its countdown. Each event and its checklist
+use 14-point semibold titles and 42 × 51 leaves. The entire secondary header stays 51 points high,
+including separate 28 × 28 favorite/edit actions. Actual title width, including emoji, determines
+the layout: a one-line title has a separate date/count line and available weather line; a wrapping
+title takes up to two lines with date/count/weather together below. Title line height is 17, metadata
+font 11/line height 14, with 3-point gaps. Metadata does not wrap, and available weather follows the
+countdown without an expanding spacer. No forecast placeholder is invented. The featured title/calendar/actions keep their existing metrics.
+
+Every note uses 12-point text below the whole header, across the full 342-point content width.
+The complete note wraps and preserves internal newlines, without a line limit, ellipsis, disclosure
+or inner scrolling. Checklists follow the note. Featured weather sits immediately after the full date beneath the title,
+with a middle dot and real forecast SF Symbol on the metadata baseline. This also applies to today.
+Its separate countdown/green `Сегодня` line contains no duplicate forecast. Without an eligible
+forecast or with showsWeather OFF, both forecast and its separator are absent. Each event and its checklist
 form one visually separate block on a subtle surface, with space between events. Individual subtask rows have no horizontal separators. Completed subtasks remain readable and directly reopenable, with quieter text and neutral completion marks.
 
 Opening the internal editor or settings must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
+
+New notes accept at most 150 Swift String graphemes, including emoji and newlines. A replacement
+that would exceed the limit is rejected as a whole, preserving the accepted text; no prefix clipping
+or partial-emoji truncation is allowed. Marked IME input is provisional, and committed edits, selection
+and Undo retain native text behavior. The same limit is enforced at Save, not just in the editor.
+Existing stored notes longer than 150 remain fully visible and load without truncation or migration.
+For an active existing event only, the permitted length is max(150, its currently saved note length).
+The note can stay that length or shrink while other fields, subtasks and primary selection remain
+saveable. A successful shorter Save reduces this allowance; draft deletion/Undo does not. Deleted or
+expired identities grant no allowance. Legacy counters show the real N/150 and a short explanation,
+without treating permitted legacy content as invalid. The counter/input limit count raw graphemes;
+Save retains existing outer-whitespace normalization for changed/new notes. An unchanged stored
+note is preserved exactly. Internal newlines remain unchanged.
 
 ## Settings
 

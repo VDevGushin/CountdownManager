@@ -172,7 +172,8 @@ package func editorCanSave(
     date: Day,
     emoji: String,
     subtasks: [Subtask] = [],
-    today: Day
+    today: Day,
+    savedNote: String? = nil
 ) -> Bool {
     let cleanedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
     let dateIsValid = date >= today
@@ -183,7 +184,7 @@ package func editorCanSave(
         }
     return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         && dateIsValid
-        && note.trimmingCharacters(in: .whitespacesAndNewlines).count <= 280
+        && CountdownNote.isAllowed(note, savedNote: savedNote)
         && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
         && subtasksAreValid
 }

@@ -27,6 +27,8 @@ struct UISmokeConfiguration {
     static let weatherCaptureLaunchArgument = "--ui-smoke-weather-captures"
     static let emptyStateLaunchArgument = "--ui-smoke-empty-state"
     static let emptyStateCaptureLaunchArgument = "--ui-smoke-empty-state-captures"
+    static let compactCaptureLaunchArgument = "--ui-smoke-compact-captures"
+    static var compactCaptureWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(compactCaptureLaunchArgument) }
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
@@ -54,6 +56,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
+            || compactCaptureWasRequested
             || weatherWasRequested
             || emptyStateWasRequested
     }
@@ -85,7 +88,7 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested
     }
 
     static var weatherWasRequested: Bool {
@@ -171,7 +174,9 @@ struct UISmokeConfiguration {
             defaults: defaults,
             defaultsSuiteName: suiteName
         )
-        if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested {
+        if compactCaptureWasRequested {
+            try configuration.seedCompactCaptureFixture()
+        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -179,6 +184,21 @@ struct UISmokeConfiguration {
 
     var dataURL: URL {
         homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+    }
+
+    private func seedCompactCaptureFixture() throws {
+        guard !FileManager.default.fileExists(atPath: dataURL.path) else { throw Failure("compact fixture must start empty") }
+        var data = CountdownData()
+        let today = Day(Date())
+        let tomorrow = Day(Day.calendar.date(byAdding: .day, value: 1, to: today.date())!)
+        let primary = Countdown(title: "Ближайшая встреча", date: today, emoji: "")
+        data.items = [primary,
+            Countdown(title: "Legacy151", note: String(repeating: "я", count: 151), date: tomorrow, emoji: ""),
+            Countdown(title: "Legacy280", note: String(repeating: "🙂", count: 280), date: tomorrow, emoji: "",
+                      subtasks: [try Subtask(text: "Проверить документы")])]
+        data.primaryID = primary.id
+        try FileManager.default.createDirectory(at: dataURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try JSONEncoder().encode(data).write(to: dataURL, options: .atomic)
     }
 
     private func seedTodayCaptureFixture() throws {
@@ -284,7 +304,10 @@ final class UISmokeRuntime {
                         && (self.controls.entries["event.add"]?.isEnabled == true
                             || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.emptyStateWasRequested {
+                if UISmokeConfiguration.compactCaptureWasRequested {
+                    try await runCompactCardsAndNotes()
+                    try writeCaptureManifest()
+                } else if UISmokeConfiguration.emptyStateWasRequested {
                     try await runEmptyStateRegression()
                     if UISmokeConfiguration.emptyStateCaptureWasRequested { try writeCaptureManifest() }
                 } else if UISmokeConfiguration.weatherWasRequested {
@@ -337,6 +360,279 @@ final class UISmokeRuntime {
         try require(shown.contentViewController === host && shown.contentView === content,
                     "hosting hierarchy was reconstructed")
         try require(controls.value("root.window") == token, "root State identity changed")
+    }
+
+    private func verifyNewNoteLimit() async throws {
+        try await press("event.add")
+        try await waitForElement("editor.new")
+        try await focusAndReplace("editor.title", with: "Новая заметка: предел150")
+        try await replaceEditorNote(with: String(repeating: "я", count: 149))
+        let editor = try requireValue(NSApp.keyWindow?.firstResponder as? NoteTextView, "new native note")
+        editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+        editor.insertText("🙂", replacementRange: editor.selectedRange())
+        try await waitForValue("editor.note.count", equals: "150/150")
+        let accepted = editor.string
+        let selection = editor.selectedRange()
+        editor.insertText("x", replacementRange: selection)
+        try require(editor.string == accepted && editor.selectedRange() == selection, "new151 was not rejected")
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("new-note-\(UUID().uuidString)"))
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(String(repeating: "я", count: 151), forType: .string)
+        editor.selectAll(nil)
+        let all = editor.selectedRange()
+        _ = editor.readSelection(from: pasteboard, type: .string)
+        try require(editor.string == accepted && editor.selectedRange() == all, "new oversized paste changed text/selection")
+        editor.setSelectedRange(NSRange(location: 0, length: 1))
+        editor.insertText("é", replacementRange: editor.selectedRange())
+        try require(editor.string.count == 150 && editor.string.hasPrefix("é"), "new Unicode replacement split text")
+        editor.setSelectedRange(NSRange(location: 0, length: 2))
+        editor.setMarkedText("漢", selectedRange: NSRange(location: 1, length: 0),
+                             replacementRange: NSRange(location: NSNotFound, length: 0))
+        editor.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+        try require(editor.string.count == 150 && editor.string.hasPrefix("漢"), "valid IME replacement failed")
+        try await waitForValue("editor.note.count", equals: "150/150")
+        try await settleLayout()
+        let expected = "漢" + String(repeating: "я", count: 148) + "🙂"
+        let reference = NSTextView(frame: NSRect(x: 0, y: 0, width: 300, height: 100))
+        reference.isRichText = false
+        reference.string = "é" + String(repeating: "я", count: 148) + "🙂"
+        reference.setSelectedRange(NSRange(location: 0, length: 2))
+        reference.setMarkedText("漢", selectedRange: NSRange(location: 1, length: 0),
+                                replacementRange: NSRange(location: NSNotFound, length: 0))
+        reference.insertText("漢", replacementRange: NSRange(location: NSNotFound, length: 0))
+        let state: [String: Any] = ["graphemes": editor.string.count, "text_matches_expected": editor.string == expected,
+            "draft_matches_editor": controls.value("editor.note") == editor.string, "has_marked_text": editor.hasMarkedText(),
+            "marked_range": NSStringFromRange(editor.markedRange()), "selected_range": NSStringFromRange(editor.selectedRange()),
+            "contains_newline": editor.string.contains("\n"), "expected_prefix": "漢",
+            "plain_native_marked_range": NSStringFromRange(reference.markedRange()),
+            "plain_native_has_marked_text": reference.hasMarkedText(), "plain_native_matches_expected": reference.string == expected,
+            "native_synthetic_text": editor.string, "draft_synthetic_text": controls.value("editor.note") ?? "missing",
+            "text_sha256": SHA256.hash(data: Data(editor.string.utf8)).map { String(format: "%02x", $0) }.joined()]
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: state, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("compact-input-state.json"), options: .atomic)
+        try require(editor.string == expected && controls.value("editor.note") == expected
+                    && !editor.hasMarkedText() && !reference.hasMarkedText() && reference.string == expected
+                    && editor.markedRange() == reference.markedRange()
+                    && editor.selectedRange() == NSRange(location: 1, length: 0),
+                    "settled new-note state mismatch: nativeCount=\(editor.string.count) draftCount=\(controls.value("editor.note")?.count ?? -1) hasMarked=\(editor.hasMarkedText()) marked=\(editor.markedRange()) selection=\(editor.selectedRange()); see compact-input-state.json")
+        try capture(name: "compact-new-note-limit")
+        try await press("editor.cancel")
+        try await waitFor("new limit draft cancelled") { self.controls.entries["editor.new"] == nil }
+        pass("NEW note149→150,151 rejected; oversized paste and grapheme replacement keep <=150 with stable selection")
+    }
+
+    private func runCompactCardsAndNotes() async throws {
+        timer.delete()
+        weather.setEnabled(false)
+        try await verifyNewNoteLimit()
+        let legacy = try requireValue(store.active.first { $0.title == "Legacy280" }, "loaded legacy280")
+        let legacy151 = try requireValue(store.active.first { $0.title == "Legacy151" }, "loaded legacy151")
+        try require(legacy.note?.count == 280 && legacy151.note?.count == 151, "legacy load trimmed notes")
+        try await press("event.edit.\(legacy.id.uuidString)")
+        try await waitForValue("editor.note.count", equals: "280/150")
+        try await focusAndReplace("editor.title", with: "Сохранённая длинная заметка")
+        try await press("editor.primary")
+        try await press("editor.save")
+        try await waitFor("legacy other fields saved") { self.controls.entries["editor.edit"] == nil }
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(persisted.items.first { $0.id == legacy.id }?.note == legacy.note
+                    && persisted.primaryID == legacy.id, "legacy other-field save lost note or primary")
+        for count in [200, 150] {
+            try await press("event.edit.\(legacy.id.uuidString)")
+            try await replaceEditorNote(with: String(repeating: "я", count: count))
+            try await press("editor.save")
+            try await waitFor("legacy shortening saved") { self.controls.entries["editor.edit"] == nil }
+            try require(store.active.first { $0.id == legacy.id }?.note?.count == count, "shortening was not persisted")
+        }
+        pass("legacy151/280 load whole; other-field/primary Save and progressive shortening preserve data")
+        try await press("event.edit.\(legacy.id.uuidString)")
+        try await press("editor.note")
+        try await waitForFirstResponder("editor.note")
+        let editor = try requireValue(NSApp.keyWindow?.firstResponder as? NoteTextView, "native note view")
+        editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
+        let selection = editor.selectedRange()
+        editor.insertText("x", replacementRange: selection)
+        try require(editor.string.count == 150 && editor.selectedRange() == selection, "151st character changed text/selection")
+        let family = "👨‍👩‍👧‍👦"
+        try await replaceEditorNote(with: String(repeating: family, count: 150))
+        editor.undoManager?.removeAllActions()
+        editor.undoManager?.beginUndoGrouping()
+        let last = (editor.string as NSString).rangeOfComposedCharacterSequence(at: (editor.string as NSString).length - 1)
+        editor.setSelectedRange(last)
+        editor.insertText("é", replacementRange: last)
+        editor.undoManager?.endUndoGrouping()
+        try await waitForValue("editor.note.count", equals: "150/150")
+        try require(editor.string.hasSuffix("é") && editor.string.count == 150, "replacement split a grapheme")
+        editor.undoManager?.undo()
+        try await waitForValue("editor.note", equals: String(repeating: family, count: 150))
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("compact-notes-\(UUID().uuidString)"))
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(String(repeating: "я", count: 151), forType: .string)
+        editor.selectAll(nil)
+        _ = editor.readSelection(from: pasteboard, type: .string)
+        try require(editor.string == String(repeating: family, count: 150), "oversized paste changed accepted text")
+        try await replaceEditorNote(with: "")
+        try await settleLayout()
+        let emptyHeight = try requireValue(editor.enclosingScrollView, "native note scroll").frame.height
+        let line = ceil((editor.font?.ascender ?? 0) - (editor.font?.descender ?? 0) + (editor.font?.leading ?? 0))
+        try require(emptyHeight >= line * 3 && emptyHeight <= line * 3 + 20, "empty note does not reserve three native lines")
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        let beforeComposition = editor.selectedRange()
+        editor.setMarkedText(String(repeating: "漢", count: 151), selectedRange: NSRange(location: 151, length: 0),
+                             replacementRange: NSRange(location: NSNotFound, length: 0))
+        try require(controls.value("editor.note")?.isEmpty == true, "marked text was prematurely committed")
+        editor.insertText(String(repeating: "漢", count: 151), replacementRange: NSRange(location: NSNotFound, length: 0))
+        try require(editor.string.isEmpty && editor.selectedRange() == beforeComposition, "rejected IME commit lost selection/text")
+        editor.undoManager?.undo()
+        try require(editor.string.count <= 150, "undo restored over-limit composition")
+        try await replaceEditorNote(with: "1\n2\n3\n4\n5\n6\n7\n8")
+        try await settleLayout()
+        let scroll = try requireValue(editor.enclosingScrollView, "scrolling note")
+        try require(editor.frame.width <= scroll.contentSize.width + 1 && abs(scroll.documentVisibleRect.minX) < 1,
+                    "native note is wider than its viewport or horizontally scrolled")
+        try require(scroll.frame.height > emptyHeight && scroll.frame.height <= line * 6 + 20
+                    && editor.frame.height > scroll.contentSize.height, "seven lines do not use six-line native scrolling")
+        try capture(name: "compact-editor-scroll")
+        try await focusAndReplace("editor.title", with: "Название после заметки")
+        try await settleLayout()
+        try require(!(NSApp.keyWindow?.firstResponder is NoteTextView), "note stole title focus")
+        let subtask = "editor.subtask.\(legacy.subtasks[0].id.uuidString)"
+        try await focusAndReplace(subtask, with: "Подготовить документы")
+        try await press("editor.note")
+        try await waitForFirstResponder("editor.note")
+        pass("native note insertion/selection/paste/undo/IME/focus pass; empty=\(emptyHeight) six-line=\(scroll.frame.height) docWidth=\(editor.frame.width) viewport=\(scroll.contentSize.width)")
+        let sample = "Забрать документы и проверить время встречи с мастерской. Перед поездкой зарядить телефон, собрать все вещи, посмотреть маршрут. Взять воду и дождевик"
+        try require(sample.count == 150, "approved demo note differs")
+        try await replaceEditorNote(with: sample)
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await settleLayout()
+            try capture(name: "compact-editor-\(scheme == .dark ? "dark" : "light")")
+        }
+        try await press("editor.emoji.toggle")
+        try await press("editor.emoji.more")
+        try await waitForValue("editor.emoji.page", equals: "1/5")
+        try await settleLayout()
+        try scrollEditorCatalogueIntoView()
+        try await settleLayout()
+        try requireEmojiRowLayout(page: 1)
+        try capture(name: "compact-emoji")
+        try await press("editor.emoji.preset.page.1.row.1.column.3.1f389")
+        try await press("editor.save")
+        try await waitFor("native note saved") { self.controls.entries["editor.edit"] == nil }
+        let saved = try requireValue(store.active.first { $0.id == legacy.id }, "saved note")
+        try require(saved.note == sample && saved.subtasks[0].text == "Подготовить документы", "native edit lost note/subtask")
+        let removed = await store.delete(legacy151.id)
+        try require(removed, "legacy151 fixture cleanup")
+        var long = saved
+        long.title = "День рождения Миры моей любимой"
+        long.showsWeather = true
+        let updated = await store.save(long, primary: false, requireExisting: true)
+        try require(updated, "long card fixture")
+        let short = Countdown(title: "Вторник", date: Day(store.tomorrow), emoji: "", showsWeather: true)
+        let shortSaved = await store.save(short, primary: false)
+        try require(shortSaved, "short card fixture")
+        weather.selectLocation(.city(.moscow))
+        weather.setEnabled(true)
+        weather.updateEvents(store.active)
+        try await waitForElement("event.weather.\(short.id.uuidString)")
+        try await waitForValue("event.header.\(short.id.uuidString)", equals: "short")
+        try await waitForValue("event.header.\(long.id.uuidString)", equals: "long")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            if let scroll = rootListScrollView() {
+                let maximumY = max(0, (scroll.documentView?.bounds.height ?? 0) - scroll.contentSize.height)
+                scroll.contentView.scroll(to: CGPoint(x: 0, y: maximumY))
+                scroll.reflectScrolledClipView(scroll.contentView)
+            }
+            try await settleLayout()
+            try capture(name: "compact-cards-\(scheme == .dark ? "dark" : "light")")
+            for item in [short, long] {
+                do { try await waitFor("settled logical secondary header/calendar51") {
+                    guard let header = self.controls.frame("event.header.\(item.id.uuidString)"),
+                          let calendar = self.controls.frame("event.secondary.calendar.\(item.id.uuidString)") else { return false }
+                    return abs(header.height - 51) < 1 && abs(calendar.height - 51) < 1 && abs(calendar.width - 42) < 1
+                        && abs(header.minY - calendar.minY) < 1
+                } } catch {
+                    throw Failure("\(error.localizedDescription); item=\(item.id) header=\(String(describing: controls.frame("event.header.\(item.id.uuidString)"))) calendar=\(String(describing: controls.frame("event.secondary.calendar.\(item.id.uuidString)")))")
+                }
+                let header = try requireValue(controls.frame("event.header.\(item.id.uuidString)"), "secondary header")
+                let calendar = try requireValue(controls.frame("event.secondary.calendar.\(item.id.uuidString)"), "secondary calendar")
+                // This registry reports logical layout bounds; the leaf keeps its existing optical rotation.
+                try require(abs(header.height - 51) < 1 && abs(calendar.height - 51) < 1
+                            && abs(calendar.width - 42) < 1 && abs(header.minY - calendar.minY) < 1,
+                            "logical51pt header/42×51 calendar mismatch: \(header) / \(calendar)")
+                let action = try requireValue(controls.frame("event.edit.\(item.id.uuidString)"), "edit action")
+                try require(abs(action.width - 28) < 1 && abs(action.height - 28) < 1, "action target differs from28")
+            }
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await settleLayout()
+        try capture(name: "compact-cards-high-contrast")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        var newline = short
+        newline.title = "Один\nДва"
+        let newlineSaved = await store.save(newline, primary: false, requireExisting: true)
+        try require(newlineSaved, "newline title fixture save")
+        try await waitForValue("event.header.\(newline.id.uuidString)", equals: "long")
+        let noteFrame = try requireValue(controls.frame("event.note.\(long.id.uuidString)"), "full-width note")
+        try require(abs(noteFrame.width - 342) < 1 && controls.value("event.note.\(long.id.uuidString)") == sample,
+                    "card note does not span full content width or loses text")
+        try await captureFeaturedWeather(long: long)
+        let finalData = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(finalData.items.first { $0.id == long.id }?.note == sample, "read/write note roundtrip changed text")
+        pass("native150/151, Unicode selection, paste, undo, rejected IME, 3–6 lines/scroll and focus handoffs pass")
+        pass("native51pt short/long headers, real synthetic forecast symbols, full note, checkbox and emoji siblings captured")
+    }
+
+    private func captureFeaturedWeather(long: Countdown) async throws {
+        let today = try requireValue(store.active.first { $0.date == store.today }, "today featured fixture")
+        var featured = today
+        featured.showsWeather = true
+        let enabled = await store.save(featured, primary: true, requireExisting: true)
+        try require(enabled, "today forecast flag")
+        weather.updateEvents(store.active)
+        try await waitForElement("event.weather.\(featured.id.uuidString)")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await scrollRootListToTop()
+            try await settleLayout()
+            let date = try requireValue(controls.frame("event.featured.date.\(featured.id.uuidString)"), "featured date")
+            let forecast = try requireValue(controls.frame("event.featured.weather.\(featured.id.uuidString)"), "featured weather")
+            try require(abs(date.midY - forecast.midY) < 2 && forecast.minX > date.maxX
+                        && forecast.minX - date.maxX < 35, "featured weather not adjacent to full date baseline")
+            try require(controls.entries["event.weather.separator.\(featured.id.uuidString)"] != nil,
+                        "featured forecast missing separator")
+            try require(controls.ids(withPrefix: "event.weather.\(featured.id.uuidString)").count == 1,
+                        "featured forecast duplicated")
+            try capture(name: "compact-featured-today-\(scheme == .dark ? "dark" : "light")")
+            featured.showsWeather = false
+            let disabled = await store.save(featured, primary: true, requireExisting: true)
+            try require(disabled, "disable today weather")
+            try await waitFor("today no weather or separator") {
+                self.controls.entries["event.weather.\(featured.id.uuidString)"] == nil
+                    && self.controls.entries["event.weather.separator.\(featured.id.uuidString)"] == nil
+            }
+            try await settleLayout()
+            try capture(name: "compact-featured-no-weather-\(scheme == .dark ? "dark" : "light")")
+            featured.showsWeather = true
+            let restored = await store.save(featured, primary: true, requireExisting: true)
+            try require(restored, "restore today weather")
+            weather.updateEvents(store.active)
+            try await waitForElement("event.weather.\(featured.id.uuidString)")
+        }
+        let selected = await store.save(long, primary: true, requireExisting: true)
+        try require(selected, "long featured fixture")
+        try await waitForValue("event.weather.\(long.id.uuidString)", equals: "−18°")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await scrollRootListToTop()
+            try await settleLayout()
+            try capture(name: "compact-featured-long-\(scheme == .dark ? "dark" : "light")")
+        }
+        pass("featured full date contains one forecast+separator, today/no-weather and long-title−18 in Light/Dark")
     }
 
     private func runEmptyStateRegression() async throws {
@@ -1522,7 +1818,9 @@ final class UISmokeRuntime {
     private func writeCaptureManifest() throws {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
-        try require(captures.count == (isEmptyState ? 8 : (isWeather ? 10 : 31)), "capture set is incomplete")
+        let isCompact = UISmokeConfiguration.compactCaptureWasRequested
+        let expectedCount = isCompact ? 14 : (isEmptyState ? 8 : (isWeather ? 10 : 31))
+        try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let executable = Bundle.main.executableURL.flatMap { try? Data(contentsOf: $0) }
@@ -1533,7 +1831,9 @@ final class UISmokeRuntime {
             executableSHA256: executable.map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() },
             headerSyntheticDays: isWeather ? ["weather-header-before-midnight": "2026-10-14", "weather-header-midnight-empty": "2026-10-15"] : nil,
             emptyStateSyntheticDays: isEmptyState ? ["empty-state-midnight": "2026-10-20"] : nil,
-            weatherForecastSource: isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil,
+            weatherForecastSource: isCompact
+                ? "Synthetic +14°C today, −18°C tomorrow; day+2 absent; no HTTP/geolocation"
+                : (isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil),
             captures: captures.sorted { $0.name < $1.name }
         )
         let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
@@ -1637,7 +1937,7 @@ final class UISmokeRuntime {
         try await hideAndShow(usingStatusItem: true)
         try require(controls.entries["editor.new"]?.ownerID == owner
                     && controls.value("editor.note") == "Unsaved private note"
-                    && controls.value("editor.note.count") == "20/280",
+                    && controls.value("editor.note.count") == "20/150",
                     "visible note field or draft changed during hide/show")
         try await press("editor.cancel")
         try await waitFor("new note draft cancelled") { self.controls.entries["editor.new"] == nil }
@@ -2600,7 +2900,7 @@ final class UISmokeRuntime {
 
     private func requireEmptyEditorNoteVisible() async throws {
         try await waitForValue("editor.note", equals: "")
-        try await waitForValue("editor.note.count", equals: "0/280")
+        try await waitForValue("editor.note.count", equals: "0/150")
         try require(controls.entries["editor.note"]?.isEnabled == true
                     && controls.entries["editor.note.add"] == nil && controls.entries["editor.note.disclosure"] == nil,
                     "empty note should remain directly editable without a disclosure action")
@@ -2609,9 +2909,9 @@ final class UISmokeRuntime {
     private func replaceEditorNote(with text: String) async throws {
         try await waitForElement("editor.note")
         try await focusAndReplace("editor.note", with: text)
-        try await waitForValue("editor.note.count", equals: "\(text.count)/280")
-        let nativeField = (NSApp.keyWindow?.firstResponder as? NSTextView)?.delegate as? NSTextField
-        try require(nativeField?.placeholderString == "Пара слов о событии", "native note placeholder changed")
+        try await waitForValue("editor.note.count", equals: "\(text.count)/150")
+        let nativeField = NSApp.keyWindow?.firstResponder as? NoteTextView
+        try require(nativeField != nil && NoteTextView.placeholder == "Пара слов о событии", "native note placeholder changed")
     }
 
     private func focusAndReplace(_ id: String, with text: String) async throws {
@@ -3103,6 +3403,10 @@ final class UISmokeRuntime {
 
     private func waitForFirstResponder(_ description: String) async throws {
         try await waitFor("first responder for \(description)") {
+            if description == "editor.note", let note = NSApp.keyWindow?.firstResponder as? NoteTextView {
+                return note.window === self.window() && note.isEditable && note.isSelectable
+                    && note.accessibilityIdentifier() == "editor.note"
+            }
             guard let editor = NSApp.keyWindow?.firstResponder as? NSTextView,
                   let fieldFrame = self.controls.frame(description),
                   let nativeField = editor.delegate as? NSTextField,

@@ -16,6 +16,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
+| Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 14 isolated PNGs |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Native field outline guard | `python3 -B Tests/test_native_field_chrome.py` | Exercises actual SwiftLint rejection of a second outline on native rounded-border fields, plus allowed native fields and selection controls |
@@ -85,6 +86,28 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 - persistence coordination visible to the UI layer.
 
 It does not prove real AppKit event routing, external keyboard delivery, system focus, application switching, or Spaces behaviour.
+
+## Compact cards and notes
+
+Run full lint and `./verify.sh fast`, then `./verify.sh compact-capture <marked-output-directory>`.
+This focused isolated runtime seeds genuine 151/280 legacy JSON before load; it does not use
+production notes. Core/UI checks cover 150/151, Unicode graphemes/newlines, other-field/subtask/primary
+saves, unchanged legacy notes, successive shorter Saves, and expired/deleted identities. Native
+checks exercise NSTextView insert/selection replacement, a local pasteboard, undo, provisional/rejected
+IME commit, focus into title/subtask and back, and actual native scroll geometry for empty/7+ lines.
+They validate 51-point short/long headers and 28-point actions with synthetic weather, plus full-note
+read/write, emoji-catalog and checklist siblings. PNGs include Light/Dark, Increase Contrast,
+editor and scrolling text. Featured cases cover today weather/no-weather and long titles with −18°
+in both themes, an adjacent full-date baseline and no empty separator or duplicate countdown forecast.
+The focused XCUITest `testNewNoteHardLimitAndNativeFocus` exercises actual keyboard 149→150→151
+rejection, title/note handoff and Undo in a NEW note. Internal native calls do not prove physical IME keyboard delivery,
+VoiceOver announcements, or external keyboard routing; record those separately when exercised.
+The 2026-10-20 host returned `hasMarkedText=false` and a zero-length markedRange at UTF16-end
+after accepted IME commit, both in NoteTextView and in an unmodified NSTextView baseline. This
+differs from Apple's documented NSNotFound sentinel. Acceptance requires exact native/draft/expected
+text equality, 150 graphemes, the correct caret, no active marked text, and the same empty range as
+the native baseline; it does not rewrite product composition state to satisfy a sentinel assumption.
+Role-specific geometry markers avoid stale shared-calendar frames after featured/secondary changes.
 
 ## Real UI Smoke
 
@@ -270,7 +293,7 @@ Check the compact featured and secondary title/calendar bounds, separate star/ed
 Russian event count, full-width checklist disclosure with left chevron/right progress, empty-state
 create action, native fields and the unchanged retained list/scroll hierarchy. Verify that an empty
 note is immediately editable through `editor.note`, with the ordinary placeholder and live
-`editor.note.count` starting at `0/280`. Empty and filled notes survive panel hide/show; Cancel
+`editor.note.count` starting at `0/150`. Empty and filled notes survive panel hide/show; Cancel
 does not restore the discarded text in a new draft, and clearing with Save persists an empty note
 that remains visible on reopening. Keep the outlined
 icon field distinct from the checkbox group with its 13-point separation, and exercise the existing

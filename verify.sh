@@ -7,7 +7,7 @@ mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
     fast|ui|full|weather|empty-state) ;;
-    capture|weather-capture|empty-state-capture)
+    capture|weather-capture|empty-state-capture|compact-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -188,6 +188,13 @@ copy_capture_evidence() {
                         empty-state-dark-reduced-motion empty-state-timer-running
                         empty-state-today-editor-dark empty-state-today-editor-light empty-state-midnight)
     fi
+    if [[ "$mode" == "compact-capture" ]]; then
+        required_files=(compact-cards-dark compact-cards-light compact-cards-high-contrast
+                        compact-editor-dark compact-editor-light compact-editor-scroll compact-emoji compact-new-note-limit
+                        compact-featured-today-dark compact-featured-today-light
+                        compact-featured-no-weather-dark compact-featured-no-weather-light
+                        compact-featured-long-dark compact-featured-long-light)
+    fi
     for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
@@ -197,6 +204,9 @@ copy_capture_evidence() {
     mkdir -p "$destination_dir"
     cp "$source_dir/manifest.json" "$destination_dir/"
     cp "$source_dir"/*.png "$destination_dir/"
+    if [[ "$mode" == "compact-capture" ]]; then
+        cp "$source_dir/compact-input-state.json" "$destination_dir/"
+    fi
     echo "Capture evidence: $destination_dir"
 }
 
@@ -216,6 +226,12 @@ case "$mode" in
         ;;
     capture)
         run_capture_checks
+        ;;
+    compact-capture)
+        build_ui_app
+        run_smoke visual-captures --ui-smoke-compact-captures
+        copy_capture_evidence
+        echo "PASS: focused compact cards and native note editing"
         ;;
     weather)
         build_ui_app

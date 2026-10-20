@@ -43,6 +43,35 @@ final class CountdownManagerXCUITests: XCTestCase {
         defaultsSuiteName = nil
     }
 
+    func testNewNoteHardLimitAndNativeFocus() throws {
+        app.launch()
+        let add = app.buttons["event.add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        add.click()
+        let title = app.textFields["editor.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        replace(title, with: "New limit")
+        let note = app.textViews["editor.note"]
+        XCTAssertTrue(note.waitForExistence(timeout: 3))
+        note.click()
+        note.typeText(String(repeating: "a", count: 149))
+        XCTAssertEqual((note.value as? String)?.count, 149)
+        note.typeText("b")
+        XCTAssertEqual((note.value as? String)?.count, 150)
+        note.typeText("c")
+        XCTAssertEqual(note.value as? String, String(repeating: "a", count: 149) + "b")
+        title.click()
+        title.typeText(" title")
+        XCTAssertEqual(title.value as? String, "New limit title")
+        note.click()
+        note.typeKey(.delete, modifierFlags: [])
+        XCTAssertEqual((note.value as? String)?.count, 149)
+        note.typeKey("z", modifierFlags: .command)
+        XCTAssertEqual((note.value as? String)?.count, 150)
+        app.buttons["editor.cancel"].click()
+        XCTAssertEqual(try persistedItems().count, 1)
+    }
+
     func testNewEventCancelDoesNotLeakDraft() throws {
         app.launch()
         let add = app.buttons["event.add"]
@@ -241,7 +270,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.launch()
         openEditor()
         let title = app.textFields["editor.title"]
-        let note = app.textFields["editor.note"]
+        let note = app.textViews["editor.note"]
         replace(title, with: "Черновик со значком")
         replace(note, with: "Заметка остаётся")
         let task = app.textFields["editor.subtask.\(activeSubtaskID)"]

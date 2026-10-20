@@ -1,25 +1,22 @@
 # Preparing signed updates
 
-Release **1.12.0 / build 21** is published as Latest and installed in `/Applications`.
-It includes the new empty-state
-day creation and weather freshness/retry improvements. Production events and settings retain their
-existing formats and locations. The pinned Sparkle version remains 2.10.0 and the signing key is
-unchanged. Anonymous ZIP, version-specific feed and stable Latest feed returned HTTP200 and match
-the signed local files. The installed/running executable matches the verified archive; events and
-preferences are unchanged. Duplicate local app bundles and older generated ZIP/feed were removed;
-the current signed artifacts and compact evidence remain in `.build/releases/1.12.0`.
+Release **1.13.0 / build 22** is prepared for publication. It includes the accepted compact
+cards, featured weather next to the date, whole notes and the native 3–6-line note editor.
+New notes have a 150-grapheme limit; saved 151–280 notes retain compatibility without migration.
+The production key and stable Sparkle channel remain unchanged. Publication/download/installation
+results are recorded only after verification.
 
-Current status, evidence and limits: [releases/v1.12.0.md](releases/v1.12.0.md).
-Previous publication/installation: [releases/v1.11.0.md](releases/v1.11.0.md).
+Current status, evidence and limits: [releases/v1.13.0.md](releases/v1.13.0.md).
+Previous release: [releases/v1.12.0.md](releases/v1.12.0.md).
 
 ## Channel and signing key
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.12.0/CountdownManager-1.12.0-21.zip`.
-The signed `appcast.xml` and ZIP are published together, with 1.12.0 selected as Latest.
-Anonymous downloads match the locally signed SHA-256 values.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.0/CountdownManager-1.13.0-22.zip`.
+The signed `appcast.xml` and ZIP are published together, when 1.13.0 is published as Latest.
+Verify anonymous downloads against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -78,7 +75,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.12.0 COUNTDOWN_BUILD_NUMBER=21 \
+  COUNTDOWN_VERSION=1.13.0 COUNTDOWN_BUILD_NUMBER=22 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -88,15 +85,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.12.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.12.0 preparation procedure; publication and verification
+The numbers above illustrate the 1.13.0 preparation procedure; publication and verification
 evidence is recorded in the release notes linked above. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The preceding distributed 1.11.0 uses build 20; this release uses build 21. Keep `local.countdownmanager.app`
+build. The preceding distributed 1.12.0 uses build 21; this release uses build 22. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
@@ -105,7 +102,7 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current release status is recorded in [releases/v1.12.0.md](releases/v1.12.0.md).
+Current release status is recorded in [releases/v1.13.0.md](releases/v1.13.0.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus

@@ -293,7 +293,7 @@ struct ManagerView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
-                    eventDate(item, label: presentation.dateLabel, includesWeather: false)
+                    eventDate(item, label: presentation.dateLabel)
                 }
                 calendarTile(item, isFeatured: true)
             }
@@ -321,48 +321,72 @@ struct ManagerView: View {
                     .accessibilityIdentifier("event.remaining")
                 }
                 Spacer(minLength: 4)
-                eventWeather(item)
             }
             .padding(.top, 1)
-            eventNote(presentation)
+            eventNote(presentation, id: item.id)
         }
     }
 
     private func secondaryEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
-        HStack(alignment: .top, spacing: 11) {
-            calendarTile(item, isFeatured: false)
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(alignment: .top, spacing: 3) {
-                    Text((eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.title)
-                        .font(.system(size: 14, weight: .semibold))
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.top, 2)
-                        .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
-                    eventActions(item, presentation: presentation)
-                }
-                HStack(spacing: 6) {
-                    if presentation.isToday {
-                        Text(presentation.remainingLabel)
-                            .foregroundStyle(AuroraInstrument.todayColor(
-                                for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                            ))
-                            .accessibilityIdentifier("event.today")
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 11) {
+                calendarTile(item, isFeatured: false)
+                    .uiSmokeControl(id: "event.secondary.calendar.\(item.id.uuidString)")
+                GeometryReader { geometry in
+                    let title = (eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.title
+                    let textWidth = max(0, geometry.size.width - 59)
+                    let wraps = title.contains(where: \.isNewline) || (title as NSString).size(withAttributes: [
+                        .font: NSFont.systemFont(ofSize: 14, weight: .semibold)
+                    ]).width > textWidth
+                    HStack(alignment: .top, spacing: 3) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(title)
+                                .font(.system(size: 14, weight: .semibold))
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(height: wraps ? 34 : 17, alignment: .topLeading)
+                                .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                if presentation.isToday {
+                                    Text(presentation.remainingLabel)
+                                        .foregroundStyle(AuroraInstrument.todayColor(
+                                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                                        ))
+                                        .accessibilityIdentifier("event.today")
+                                }
+                                Text(compactDateLabel(item.date))
+                                    .fixedSize()
+                                    .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { presentation.dateLabel })
+                                if !presentation.isToday {
+                                    Text("· через \(presentation.remainingLabel)")
+                                        .help("через \(presentation.remainingLabel)")
+                                        .accessibilityIdentifier("event.remaining")
+                                }
+                                if wraps, item.showsWeather, weather.forecast(for: item.date) != nil {
+                                    Text("·").accessibilityHidden(true)
+                                    eventWeather(item).fixedSize()
+                                }
+                            }
+                            .font(.system(size: 11))
+                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                            .lineLimit(1)
+                            .frame(height: 14, alignment: .leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            if !wraps {
+                                eventWeather(item)
+                                    .frame(height: 14, alignment: .leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                        .frame(width: textWidth, height: 51, alignment: .topLeading)
+                        eventActions(item, presentation: presentation)
                     }
-                    Text(compactDateLabel(item.date))
-                        .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { presentation.dateLabel })
-                    if !presentation.isToday {
-                        Text("· через \(presentation.remainingLabel)")
-                            .accessibilityIdentifier("event.remaining")
-                    }
-                    eventWeather(item)
+                    .uiSmokeControl(id: "event.header.\(item.id.uuidString)", value: { wraps ? "long" : "short" })
                 }
-                .font(.system(size: 11))
-                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                .fixedSize(horizontal: false, vertical: true)
-                eventNote(presentation)
+                .frame(height: 51)
             }
+            eventNote(presentation, id: item.id)
         }
     }
 
@@ -377,39 +401,46 @@ struct ManagerView: View {
     }
 
     private func eventDate(_ item: Countdown, label: String, includesWeather: Bool = true) -> some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(label)
                 .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { label })
-            if includesWeather { eventWeather(item) }
+                .uiSmokeControl(id: "event.featured.date.\(item.id.uuidString)", value: { label })
+            if includesWeather, item.showsWeather, weather.forecast(for: item.date) != nil {
+                Text("·").accessibilityHidden(true)
+                    .uiSmokeControl(id: "event.weather.separator.\(item.id.uuidString)")
+                eventWeather(item, role: "featured").fixedSize()
+            }
         }
         .font(.system(size: 11))
         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+        .lineLimit(1)
     }
 
     @ViewBuilder
-    private func eventWeather(_ item: Countdown) -> some View {
+    private func eventWeather(_ item: Countdown, role: String = "secondary") -> some View {
         if item.showsWeather, let forecast = weather.forecast(for: item.date) {
-            HStack(spacing: 3) {
-                Image(systemName: forecast.symbolName).accessibilityHidden(true)
-                Text(forecast.temperatureLabel).monospacedDigit()
-            }
+            (Text(Image(systemName: forecast.symbolName)) + Text(" " + forecast.temperatureLabel))
+            .monospacedDigit()
             .font(.system(size: 11))
             .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(forecast.conditionDescription), \(forecast.temperatureLabel)")
             .accessibilityIdentifier("event.weather.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
+            .uiSmokeControl(id: "event.\(role).weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
         }
     }
 
     @ViewBuilder
-    private func eventNote(_ presentation: CountdownRowPresentation) -> some View {
+    private func eventNote(_ presentation: CountdownRowPresentation, id: UUID) -> some View {
         if let note = presentation.note, !note.isEmpty {
             Text(note)
                 .font(.system(size: 12))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityIdentifier("event.note")
+                .uiSmokeControl(id: "event.note.\(id.uuidString)", value: { note })
         }
     }
 
@@ -733,6 +764,7 @@ struct EditorView: View {
     @State private var isSaving = false
     @State private var confirmingDeletion = false
     @State private var emojiPicker: EditorEmojiPickerState = .closed
+    @State private var noteFocusRequest = 0
     @FocusState private var focusedField: EditorFocusTarget?
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
@@ -805,8 +837,13 @@ struct EditorView: View {
             date: Day(date),
             emoji: draft.emoji,
             subtasks: draft.subtasks,
-            today: store.today
+            today: store.today,
+            savedNote: savedNote
         )
+    }
+
+    private var savedNote: String? {
+        item.flatMap { original in store.active.first(where: { $0.id == original.id })?.note }
     }
 
     var body: some View {
@@ -889,23 +926,27 @@ struct EditorView: View {
 
     private var noteControls: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("Заметка · необязательно")
-                    .font(.caption)
-                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                Spacer()
-                Text("\(draft.note.count)/280")
-                    .font(.caption2)
-                    .foregroundStyle(draft.note.count <= 280 ? Color.secondary : Color.red)
-                    .accessibilityIdentifier("editor.note.count")
-                    .uiSmokeControl(id: "editor.note.count", value: { "\(draft.note.count)/280" })
-            }
-            TextField("Пара слов о событии", text: $draft.note, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(2...3)
+            Text("Заметка · необязательно")
+                .font(.caption)
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            NoteEditor(text: $draft.note, maximumLength: CountdownNote.allowedLength(savedNote: savedNote),
+                       focusRequest: noteFocusRequest)
+                .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("editor.note")
-                .focused($focusedField, equals: .note)
                 .uiSmokeControl(id: "editor.note", action: { focus(.note, id: "editor.note") }, value: { draft.note })
+            HStack(alignment: .top) {
+                if (savedNote?.count ?? 0) > CountdownNote.maximumLength {
+                    Text("Старая заметка: можно сохранить или сократить.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 4)
+                Text("\(draft.note.count)/150")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("editor.note.count")
+                    .uiSmokeControl(id: "editor.note.count", value: { "\(draft.note.count)/150" })
+            }
         }
     }
 
@@ -1517,6 +1558,14 @@ struct EditorView: View {
     }
 
     private func focus(_ target: EditorFocusTarget, id: String) {
+        if target == .note {
+            focusedField = nil
+            Task { @MainActor in
+                await Task.yield()
+                noteFocusRequest += 1
+            }
+            return
+        }
         focusedField = target
         Task { @MainActor in
             await Task.yield()
