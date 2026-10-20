@@ -1,0 +1,16 @@
+{
+  "contains_newline" : false,
+  "draft_matches_editor" : true,
+  "draft_synthetic_text" : "漢яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя🙂",
+  "expected_prefix" : "漢",
+  "graphemes" : 150,
+  "has_marked_text" : false,
+  "marked_range" : "{151, 0}",
+  "native_synthetic_text" : "漢яяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяяя🙂",
+  "plain_native_has_marked_text" : false,
+  "plain_native_marked_range" : "{151, 0}",
+  "plain_native_matches_expected" : true,
+  "selected_range" : "{1, 0}",
+  "text_matches_expected" : true,
+  "text_sha256" : "050be7118f021facf2670e14dc2505915361592549d490d380e48d2b781a58a2"
+}

@@ -89,7 +89,6 @@ package struct CountdownRowPresentation: Equatable {
     package let dateLabel: String
     package let remainingLabel: String
     package let remainingDays: Int
-    package let remainingUnit: String?
     package let dateAndRemainingLabel: String
     package let isToday: Bool
     package let isPrimary: Bool
@@ -102,8 +101,11 @@ package struct CountdownRowPresentation: Equatable {
         remainingDays = item.date.days(from: today)
         note = item.note
         dateLabel = humanDateLabel(item.date)
-        remainingLabel = countdownLabel(remainingDays)
-        remainingUnit = remainingDays == 0 ? nil : remainingLabel.split(separator: " ").dropFirst().joined(separator: " ")
+        switch remainingDays {
+        case 0: remainingLabel = "Сегодня"
+        case 1: remainingLabel = "Завтра"
+        default: remainingLabel = "Через \(dayLabel(remainingDays))"
+        }
         dateAndRemainingLabel = "\(dateLabel) · \(remainingLabel)"
         isToday = remainingDays == 0
         isPrimary = primaryID == item.id

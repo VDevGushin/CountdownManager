@@ -297,32 +297,18 @@ struct ManagerView: View {
                 }
                 calendarTile(item, isFeatured: true)
             }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                if presentation.isToday {
-                    Text(presentation.remainingLabel)
-                        .font(.custom("Georgia", size: 21))
-                        .foregroundStyle(AuroraInstrument.todayColor(
-                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                        ))
-                        .accessibilityIdentifier("event.today")
-                } else {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("\(presentation.remainingDays)")
-                            .font(.custom("Georgia", size: 27))
-                            .foregroundStyle(AuroraInstrument.accentInk(
-                                for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                            ))
-                        Text("\(presentation.remainingUnit ?? "") до события")
-                            .font(.system(size: 12))
-                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    }
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(presentation.remainingLabel)
-                    .accessibilityIdentifier("event.remaining")
-                }
-                Spacer(minLength: 4)
-            }
-            .padding(.top, 1)
+            Text(presentation.remainingLabel)
+                .font(.custom("Georgia", size: 21))
+                .foregroundStyle(presentation.isToday
+                    ? AuroraInstrument.todayColor(
+                        for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                    )
+                    : AuroraInstrument.accentInk(
+                        for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                    ))
+                .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
+                .uiSmokeControl(id: "event.relative.\(item.id.uuidString)", value: { presentation.remainingLabel })
+                .padding(.top, 1)
             eventNote(presentation, id: item.id)
         }
     }
@@ -348,21 +334,18 @@ struct ManagerView: View {
                                 .frame(height: wraps ? 34 : 17, alignment: .topLeading)
                                 .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                if presentation.isToday {
-                                    Text(presentation.remainingLabel)
-                                        .foregroundStyle(AuroraInstrument.todayColor(
-                                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                                        ))
-                                        .accessibilityIdentifier("event.today")
-                                }
                                 Text(compactDateLabel(item.date))
                                     .fixedSize()
                                     .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { presentation.dateLabel })
-                                if !presentation.isToday {
-                                    Text("· через \(presentation.remainingLabel)")
-                                        .help("через \(presentation.remainingLabel)")
-                                        .accessibilityIdentifier("event.remaining")
-                                }
+                                Text("·").accessibilityHidden(true)
+                                Text(presentation.remainingLabel)
+                                    .foregroundStyle(presentation.isToday
+                                        ? AuroraInstrument.todayColor(
+                                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                                        )
+                                        : AuroraInstrument.secondaryInk(for: colorScheme))
+                                    .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
+                                    .uiSmokeControl(id: "event.relative.\(item.id.uuidString)", value: { presentation.remainingLabel })
                                 if wraps, item.showsWeather, weather.forecast(for: item.date) != nil {
                                     Text("·").accessibilityHidden(true)
                                     eventWeather(item).fixedSize()

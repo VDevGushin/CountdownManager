@@ -89,6 +89,11 @@ Key files:
 - `UISmokeControls.swift`
 - `UISmokeRuntime.swift`
 
+`CountdownRowPresentation` derives card-relative labels from the existing civil-day distance:
+Today/Tomorrow/Through N days with Russian pluralization. Views use this same label in featured
+and secondary cards; the numeric Core formatter remains the status-bar owner. No saved state
+or data-format change is needed for these labels.
+
 ### `CountdownManager`
 
 Source: `Sources/CountdownManagerApp/`

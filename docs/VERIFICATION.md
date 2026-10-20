@@ -16,7 +16,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
-| Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 14 isolated PNGs |
+| Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 26 isolated PNGs |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
 | Native field outline guard | `python3 -B Tests/test_native_field_chrome.py` | Exercises actual SwiftLint rejection of a second outline on native rounded-border fields, plus allowed native fields and selection controls |
@@ -99,6 +99,11 @@ They validate 51-point short/long headers and 28-point actions with synthetic we
 read/write, emoji-catalog and checklist siblings. PNGs include Light/Dark, Increase Contrast,
 editor and scrolling text. Featured cases cover today weather/no-weather and long titles with −18°
 in both themes, an adjacent full-date baseline and no empty separator or duplicate countdown forecast.
+The same capture mode also checks Today/Tomorrow/Through 2 days in featured, short and long
+cards across Light/Dark and weather ON/OFF, with twelve `relative-day-*` PNGs. Secondary relative
+labels must follow the exact date on the metadata baseline. UI checks cover Russian day forms,
+a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. The status-bar
+formatter remains numeric. These text/layout checks do not require repeating external note entry.
 The focused XCUITest `testNewNoteHardLimitAndNativeFocus` exercises actual keyboard 149→150→151
 rejection, title/note handoff and Undo in a NEW note. Internal native calls do not prove physical IME keyboard delivery,
 VoiceOver announcements, or external keyboard routing; record those separately when exercised.

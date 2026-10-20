@@ -111,7 +111,7 @@ enum UIChecks {
 
         let emptyRow = CountdownRowPresentation(item: futureItem, today: today, primaryID: data.primaryID)
         precondition(emptyRow.completionLabel == nil) // No disclosure and no 0/0.
-        precondition(emptyRow.dateAndRemainingLabel == "\(humanDateLabel(Day(tomorrowDate))) · 1 день")
+        precondition(emptyRow.dateAndRemainingLabel == "\(humanDateLabel(Day(tomorrowDate))) · Завтра")
 
         // Creation and editing both accept Today, while past dates remain invalid.
         precondition(editorCanSave(
@@ -507,16 +507,25 @@ enum UIChecks {
         }
 
         let today = civilDay(2026, 10, 3)
-        let counts = [(1, "день"), (2, "дня"), (5, "дней"), (11, "дней"), (21, "день"), (101, "день")]
-        for (count, unit) in counts {
+        let counts = [(0, "Сегодня"), (1, "Завтра"), (2, "Через 2 дня"), (5, "Через 5 дней"),
+                      (11, "Через 11 дней"), (21, "Через 21 день"), (101, "Через 101 день")]
+        for (count, label) in counts {
             let event = Countdown(title: "Plan", date: futureDay(count, from: today), emoji: "📅")
             let row = CountdownRowPresentation(item: event, today: today, primaryID: event.id)
-            precondition(row.remainingDays == count && row.remainingUnit == unit)
-            precondition(row.remainingLabel == "\(count) \(unit)" && !row.isToday)
+            precondition(row.remainingDays == count && row.isToday == (count == 0))
+            precondition(row.remainingLabel == label)
+            precondition(row.dateAndRemainingLabel == "\(humanDateLabel(event.date)) · \(label)")
         }
+        // The same saved date becomes Tomorrow, then Today, across civil midnight/year boundaries.
+        let newYear = Countdown(title: "New year", date: civilDay(2027, 1, 1), emoji: "")
+        for (day, label) in [(civilDay(2026, 12, 30), "Через 2 дня"),
+                             (civilDay(2026, 12, 31), "Завтра"), (civilDay(2027, 1, 1), "Сегодня")] {
+            let row = CountdownRowPresentation(item: newYear, today: day, primaryID: nil)
+            precondition(row.remainingLabel == label && row.dateLabel == "1 января 2027")
+        }
+        let leapEvent = Countdown(title: "Leap day", date: civilDay(2028, 2, 29), emoji: "")
+        precondition(CountdownRowPresentation(item: leapEvent, today: civilDay(2028, 2, 28), primaryID: nil).remainingLabel == "Завтра")
         let todayEvent = Countdown(title: "Today plan", date: today, emoji: "📅")
-        let todayRow = CountdownRowPresentation(item: todayEvent, today: today, primaryID: todayEvent.id)
-        precondition(todayRow.isToday && todayRow.remainingLabel == "Сегодня" && todayRow.remainingUnit == nil)
         precondition(CalendarDateTilePresentation(day: todayEvent.date).dayLabel == "3")
         try testPlannerEmojiAndOrderingPreserveEventData(today: today)
     }

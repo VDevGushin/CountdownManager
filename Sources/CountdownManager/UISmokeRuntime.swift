@@ -583,6 +583,7 @@ final class UISmokeRuntime {
         try await captureFeaturedWeather(long: long)
         let finalData = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
         try require(finalData.items.first { $0.id == long.id }?.note == sample, "read/write note roundtrip changed text")
+        try await captureRelativeDayLabels()
         pass("native150/151, Unicode selection, paste, undo, rejected IME, 3–6 lines/scroll and focus handoffs pass")
         pass("native51pt short/long headers, real synthetic forecast symbols, full note, checkbox and emoji siblings captured")
     }
@@ -633,6 +634,53 @@ final class UISmokeRuntime {
             try capture(name: "compact-featured-long-\(scheme == .dark ? "dark" : "light")")
         }
         pass("featured full date contains one forecast+separator, today/no-weather and long-title−18 in Light/Dark")
+    }
+
+    private func captureRelativeDayLabels() async throws {
+        for offset in 0...2 {
+            for item in store.active {
+                let deleted = await store.delete(item.id)
+                try require(deleted, "relative-label fixture cleanup")
+            }
+            let date = Day(Day.calendar.date(byAdding: .day, value: offset, to: store.today.date())!)
+            let featured = Countdown(title: "Встреча с друзьями", date: date, emoji: "", showsWeather: true)
+            let short = Countdown(title: "Поездка", date: date, emoji: "", showsWeather: true)
+            let long = Countdown(title: "Подготовка к большой поездке на выходные", date: date, emoji: "", showsWeather: true)
+            for item in [featured, short, long] {
+                let saved = await store.save(item, primary: item.id == featured.id)
+                try require(saved, "relative-label fixture save")
+            }
+            weather.updateEvents(store.active)
+            let expected = ["Сегодня", "Завтра", "Через 2 дня"][offset]
+            for scheme in [ColorScheme.dark, .light] {
+                visualEnvironment.colorSchemeOverride = scheme
+                for showsWeather in [true, false] {
+                    for var item in [featured, short, long] {
+                        item.showsWeather = showsWeather
+                        let saved = await store.save(item, primary: item.id == featured.id, requireExisting: true)
+                        try require(saved, "relative-label weather toggle")
+                    }
+                    weather.updateEvents(store.active)
+                    for item in [featured, short, long] {
+                        try await waitForValue("event.relative.\(item.id.uuidString)", equals: expected)
+                        try await waitFor("relative-label forecast visibility") {
+                            (self.controls.entries["event.weather.\(item.id.uuidString)"] != nil) == showsWeather
+                        }
+                    }
+                    if rootListScrollView() != nil { try await scrollRootListToTop() }
+                    try await settleLayout()
+                    for item in [short, long] {
+                        let relative = try requireValue(controls.frame("event.relative.\(item.id.uuidString)"), "relative label")
+                        let dateFrame = try requireValue(controls.frame("event.date.\(item.id.uuidString)"), "exact date")
+                        try require(relative.minX > dateFrame.maxX && abs(relative.midY - dateFrame.midY) < 2,
+                                    "relative label must follow the exact date on the metadata baseline")
+                    }
+                    let theme = scheme == .dark ? "dark" : "light"
+                    try capture(name: "relative-day-\(offset)-\(theme)-\(showsWeather ? "weather" : "plain")")
+                }
+            }
+        }
+        pass("Today/Tomorrow/Through2 labels, exact date order and short/long/featured cards in Light/Dark with/without weather")
     }
 
     private func runEmptyStateRegression() async throws {
@@ -1819,7 +1867,7 @@ final class UISmokeRuntime {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
         let isCompact = UISmokeConfiguration.compactCaptureWasRequested
-        let expectedCount = isCompact ? 14 : (isEmptyState ? 8 : (isWeather ? 10 : 31))
+        let expectedCount = isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31))
         try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -1832,7 +1880,7 @@ final class UISmokeRuntime {
             headerSyntheticDays: isWeather ? ["weather-header-before-midnight": "2026-10-14", "weather-header-midnight-empty": "2026-10-15"] : nil,
             emptyStateSyntheticDays: isEmptyState ? ["empty-state-midnight": "2026-10-20"] : nil,
             weatherForecastSource: isCompact
-                ? "Synthetic +14°C today, −18°C tomorrow; day+2 absent; no HTTP/geolocation"
+                ? "Synthetic +14°C today/day+2, −18°C tomorrow; no HTTP/geolocation"
                 : (isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil),
             captures: captures.sorted { $0.name < $1.name }
         )

@@ -52,6 +52,13 @@ Event deletion uses an explicit inline confirmation with a cancel action. Launch
 
 Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
 
+Event cards express their civil-day distance as `Сегодня`, `Завтра`, then `Через N дней`
+with correct Russian day forms. The exact date and event title remain visible and unchanged.
+A featured card uses one 21-point Georgia line below the date: green for today and the
+existing terracotta accent for future days. Secondary metadata is ordered `date · relative label`,
+including today; only today's relative label is green. The menu-bar count keeps its existing
+compact numeric format. Labels are derived from the current civil day; expiry rules are unchanged.
+
 The featured title uses 23-point Georgia and a compact 54 × 65 calendar leaf; secondary events
 use 14-point semibold titles and 42 × 51 leaves. The entire secondary header stays 51 points high,
 including separate 28 × 28 favorite/edit actions. Actual title width, including emoji, determines

@@ -537,7 +537,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         var result: [String: DailyWeatherForecast] = [:]
         for offset in 0..<16 {
             // The weather runtime checks the ordinary missing-forecast state at an eligible date.
-            if offset == 2 { continue }
+            if offset == 2 && !UISmokeConfiguration.compactCaptureWasRequested { continue }
             guard let date = Day.calendar.date(byAdding: .day, value: offset, to: today.date()),
                   let forecast = DailyWeatherForecast(weatherCode: offset.isMultiple(of: 2) ? 2 : 3,
                   maximumTemperature: UISmokeConfiguration.compactCaptureWasRequested && offset == 1 ? -18 : 14) else { continue }
