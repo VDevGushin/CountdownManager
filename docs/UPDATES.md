@@ -1,10 +1,11 @@
 # Preparing signed updates
 
-Release **1.13.0 / build 22** is prepared for publication. It includes the accepted compact
+Release **1.13.0 / build 22** is published as Latest and installed locally. It includes the accepted compact
 cards, featured weather next to the date, whole notes and the native 3–6-line note editor.
 New notes have a 150-grapheme limit; saved 151–280 notes retain compatibility without migration.
-The production key and stable Sparkle channel remain unchanged. Publication/download/installation
-results are recorded only after verification.
+The production key and stable Sparkle channel remain unchanged. Anonymous archive, version-feed and
+Latest-feed downloads returned HTTP 200 and matched the signed hashes. The exact release executable
+is installed in `/Applications/Countdown Manager.app`; events and preferences were unchanged.
 
 Current status, evidence and limits: [releases/v1.13.0.md](releases/v1.13.0.md).
 Previous release: [releases/v1.12.0.md](releases/v1.12.0.md).
@@ -15,8 +16,8 @@ The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.0/CountdownManager-1.13.0-22.zip`.
-The signed `appcast.xml` and ZIP are published together, when 1.13.0 is published as Latest.
-Verify anonymous downloads against the locally signed SHA-256 values.
+The signed `appcast.xml` and ZIP are published together in the Latest release 1.13.0.
+Anonymous downloads were verified against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
