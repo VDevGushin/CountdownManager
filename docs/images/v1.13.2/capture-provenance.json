@@ -1,5 +1,5 @@
 {
-  "status": "PREPARED_RELEASE_NATIVE_PASS_NOT_PUBLISHED",
+  "status": "PUBLISHED_VERIFIED_AND_INSTALLED",
   "version": "1.13.2",
   "build": "24",
   "accepted_product_fingerprint": "fd39857db0ecd8e306a7da78b925100359eed2c79afceb1e0f8fd54658d83151",
@@ -94,11 +94,12 @@
     }
   },
   "signed_archive_sha256": "1ce00bcd57d8735de56b778c6392c62dec57f678e90a55d1dec95b1d677f059c",
-  "publication_verified": false,
-  "installation_performed": false,
+  "publication_verified": true,
+  "installation_performed": true,
   "limits": [
     "In-process native actions; external keyboard/VoiceOver speech not repeated",
     "Increase Contrast uses isolated app override",
     "No first-install Gatekeeper, Intel/older-macOS runtime or end-to-end Sparkle replacement test in this preparation"
-  ]
+  ],
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.13.2"
 }

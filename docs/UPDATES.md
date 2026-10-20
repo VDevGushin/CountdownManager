@@ -1,14 +1,13 @@
 # Preparing signed updates
 
-Release **1.13.2 / build 24** is prepared locally from the accepted completed-subtask indicator.
-It is not published or installed yet. The last published release remains **1.13.1 / build 23**;
-its recorded publication/installation evidence is in [releases/v1.13.1.md](releases/v1.13.1.md).
-The production key, stable feed and persisted event/preferences schema are unchanged.
+Release **1.13.2 / build 24** is published as Latest and installed locally.
+The completed-subtask indicator uses the previously accepted product code. Anonymous ZIP,
+version-feed and Latest-feed downloads returned HTTP 200 and matched the signed local hashes.
+The exact native-tested executable is running from `/Applications/Countdown Manager.app`;
+events and preferences were unchanged. The production key and stable feed remain unchanged.
 
-Archive/feed signing, exact release native captures and extracted-bundle verification passed.
-Prepared assets and receipts are in `.build/releases/1.13.2/`; public access is not yet claimed.
-
-Preparation status and limits: [releases/v1.13.2.md](releases/v1.13.2.md).
+Release status, evidence and limits: [releases/v1.13.2.md](releases/v1.13.2.md).
+Previous release: [releases/v1.13.1.md](releases/v1.13.1.md).
 
 ## Channel and signing key
 
@@ -16,8 +15,8 @@ The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.2/CountdownManager-1.13.2-24.zip`.
-The signed `appcast.xml` and ZIP are prepared together for a later Latest publication.
-Anonymous download verification for 1.13.2 belongs to that separate publication step.
+The signed `appcast.xml` and ZIP are published together as Latest. Anonymous downloads
+were verified against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
