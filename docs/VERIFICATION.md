@@ -62,6 +62,16 @@ when changing instructions, skills, tools or verification policy. They are not p
 or the Swift completion hook. See [`evals/README.md`](../evals/README.md) for cases, artifacts, rubric
 review, isolation and limitations. A successful machine check alone is `REVIEW_REQUIRED`, not PASS.
 
+Swift behaviour evals prepare locked dependencies in a case-local SwiftPM cache before starting
+the network-restricted subject. `COUNTDOWN_SWIFTPM_CACHE_PATH` makes `verify.sh fast` use that cache
+with the native SwiftPM build route, locked versions and no repository updates; without it, the
+normal fast command is unchanged. The native route avoids Swift Build service/dSYM sandbox failures.
+Dependency preparation errors remain `INFRA_ERROR`, with separate logs, rather than a model failure.
+The eval judge recognizes every listed `verify.sh` UI mode as a build/UI operation. Quiet SwiftLint
+requires an unambiguous exit (standalone or in the final AND-only chain); complex shell scripts
+should run it separately so skipped or masked checks cannot be credited.
+Verbose lint may instead provide its real final zero-violation `Done linting!` summary.
+
 ## CoreChecks
 
 `CoreChecks` covers behaviour without application UI:

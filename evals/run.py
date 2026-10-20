@@ -138,22 +138,32 @@ def completed_commands(events):
             and e["item"].get("type") == "command_execution"]
 
 
+def shell_source(command):
+    words = shlex.split(command)
+    if words and Path(words[0]).name in {"sh", "bash", "zsh"}:
+        flag = next((i for i, word in enumerate(words[1:], 1)
+                     if word in {"-c", "-lc", "-ic", "-lic"}), None)
+        if flag is not None and flag + 1 < len(words):
+            command = words[flag + 1]
+    return command
+
+
+def shell_tokens(command):
+    """Unwrap a CLI shell command while retaining control operators."""
+    command = shell_source(command)
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|\n()")
+    lexer.whitespace = " \t\r"
+    lexer.whitespace_split = True
+    lexer.commenters = "#"
+    return list(lexer)
+
+
 def shell_commands(command):
     """Recognize ordinary shell invocations; do not treat quoted mentions as execution."""
     try:
-        words = shlex.split(command)
-        if words and Path(words[0]).name in {"sh", "bash", "zsh"}:
-            flag = next((i for i, word in enumerate(words[1:], 1)
-                         if word in {"-c", "-lc", "-ic", "-lic"}), None)
-            if flag is not None and flag + 1 < len(words):
-                command = words[flag + 1]
-        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|\n")
-        lexer.whitespace = " \t\r"
-        lexer.whitespace_split = True
-        lexer.commenters = ""
         groups, current = [], []
-        for word in lexer:
-            if word and set(word) <= set(";&|\n"):
+        for word in shell_tokens(command):
+            if word and set(word) <= set(";&|\n()"):
                 if current:
                     groups.append(current)
                 current = []
@@ -197,7 +207,8 @@ def verification_invocations(command):
             mode = arguments[0] if arguments else "full"
             if mode in {"fast", "full"}:
                 checks.update({"core-checks", "ui-checks"})
-            if mode in {"ui", "full", "capture"}:
+            if mode in {"ui", "full", "capture", "weather", "weather-capture",
+                        "empty-state", "empty-state-capture", "compact-capture"}:
                 checks.update({"real-ui", "app-build"})
         information_query = program in {"swift", "swiftc", "xcodebuild"} and any(
             arg in {"--version", "-version", "--help", "-help", "-h", "-list", "-showsdks",
@@ -222,18 +233,57 @@ def verification_invocations(command):
     return checks
 
 
+def lint_exit_is_unambiguous(command):
+    """Quiet lint needs its own exit, not a skipped branch or a later command's exit."""
+    try:
+        source = shell_source(command)
+        tokens = shell_tokens(command)
+    except ValueError:
+        return False
+    # shlex removes quoting; a quoted/escaped operator is an argument, not a
+    # branch. Keep such spellings inconclusive instead of inventing a chain.
+    if "\\" in source or re.search(r'''["']\s*[;&|()]+\s*["']''', source):
+        return False
+    # Do not infer execution/status through conditionals, loops, pipelines,
+    # background jobs, subshells or substitutions. An AND-only terminal lint
+    # is safe: successful completion requires every link to have run.
+    if any(word in {"if", "then", "else", "elif", "fi", "for", "while", "until",
+                    "case", "esac", "do", "done", "!", "exit", "return", "exec"}
+           or (set(word) <= set(";&|\n()") and word not in {";", "\n", "&&"})
+           or "$" in word or "`" in word for word in tokens):
+        return False
+    # A successful terminal AND chain proves every member succeeded. Earlier
+    # semicolon/newline-separated commands may have had their exit overwritten.
+    while tokens and set(tokens[-1]) <= set(";\n"):
+        tokens.pop()
+    boundary = max((i for i, word in enumerate(tokens) if set(word) <= set(";\n")), default=-1)
+    terminal = shlex.join(tokens[boundary + 1:]).replace("'&&'", "&&")
+    return any(Path(words[0]).name == "swiftlint" and "lint" in words[1:]
+               for words in shell_commands(terminal))
+
+
 def verified_operations(command):
     if command.get("exit_code") != 0:
         return set()
     invocations = verification_invocations(command.get("command", ""))
     output = command.get("aggregated_output", "")
     verified = set()
-    if "swiftlint" in invocations:
-        verified.add("swiftlint")  # Successful quiet SwiftLint may emit no text.
+    lint_summaries = re.findall(r"(?m)^Done linting! Found (\d+) violations?, (\d+) serious", output)
+    lint_report_passed = bool(lint_summaries and lint_summaries[-1] == ("0", "0"))
+    if "swiftlint" in invocations and (lint_report_passed or lint_exit_is_unambiguous(command.get("command", ""))):
+        verified.add("swiftlint")  # Quiet lint has no report; its own exit must be unambiguous.
     if "core-checks" in invocations and re.search(r"(?m)^PASS unit:", output):
         verified.add("core-checks")
     if "ui-checks" in invocations and re.search(r"(?m)^PASS UI state:", output):
         verified.add("ui-checks")
+        # verify.sh runs CoreChecks before UIChecks under set -e. A successful
+        # fast/full invocation reaching the final UI PASS also certifies Core,
+        # even when a tail of its log omits the earlier Core PASS line. Do not
+        # infer this ordering for arbitrary Swift commands or shell loops.
+        if any(Path(words[0]).name == "verify.sh"
+               and (len(words) == 1 or words[1] in {"fast", "full"})
+               for words in shell_commands(command.get("command", ""))):
+            verified.add("core-checks")
     if "hook-tests" in invocations:
         summaries = re.findall(r"Ran ([1-9][0-9]*) tests? in [^\n]*\n\s*\n(OK|FAILED[^\n]*)", output)
         if summaries and summaries[-1][1] == "OK":
@@ -371,11 +421,43 @@ def prepare(workspace, case):
     return copied
 
 
+def prepare_swift_dependencies(workspace, output, seed=None):
+    """Fetch public dependencies before entering the subject's network sandbox."""
+    cache = workspace / ".build/eval-dependency-cache"
+    if seed is not None:
+        seed = Path(seed).resolve(strict=True)
+        if not seed.is_dir():
+            raise ValueError("Dependency cache seed must be a directory")
+        # Copy only SwiftPM dependency caches, never grant the subject access to
+        # the seed or reuse mutable build products from an earlier subject.
+        for name in ("repositories", "artifacts"):
+            source = seed / name
+            if source.is_dir():
+                shutil.copytree(source, cache / name)
+    module_cache = workspace / ".build/eval-module-cache"
+    environment = os.environ.copy()
+    environment.update(CLANG_MODULE_CACHE_PATH=str(module_cache),
+                       SWIFTPM_MODULECACHE_OVERRIDE=str(module_cache))
+    command = ["swift", "package", "--disable-sandbox", "--cache-path", str(cache),
+               "--scratch-path", str(workspace / ".build/eval-prefetch"),
+               "--skip-update", "--force-resolved-versions", "resolve"]
+    result = execute(command, workspace, 180, output / "dependencies.stdout",
+                     output / "dependencies.stderr", env=environment)
+    write_json(output / "dependencies.json", {"command": command,
+                                              "seed": str(seed) if seed else None, **result})
+    if result["exit_code"] != 0 or result["timed_out"]:
+        raise ValueError("Swift dependency preparation failed; see dependencies.stderr")
+    return cache
+
+
 def run_case(case, output, args):
     output.mkdir()
     with tempfile.TemporaryDirectory(prefix="countdown-agent-eval-", dir="/private/tmp") as temporary:
         workspace = Path(temporary) / "repo"
         prepare(workspace, case)
+        dependency_cache = None
+        if {"core-checks", "ui-checks"} & set(case["required_checks"]):
+            dependency_cache = prepare_swift_dependencies(workspace, output, getattr(args, "dependency_cache", None))
         before = snapshot(workspace)
         before_bytes = {path: (workspace / path).read_bytes() for path in before
                         if (workspace / path).is_file() and not (workspace / path).is_symlink()}
@@ -394,7 +476,11 @@ def run_case(case, output, args):
         command = [args.codex, "exec", "--ignore-user-config", "--ephemeral", "--json",
                    "--sandbox", "workspace-write", "-c", 'approval_policy="never"',
                    "-c", 'features.multi_agent=false', "-c", f'model_reasoning_effort="{args.effort}"',
+                   "-c", 'projects={' + json.dumps(str(workspace)) + '={trust_level="trusted"}}',
                    "-C", str(workspace), "-o", str(output / "final.txt")]
+        if dependency_cache is not None:
+            command += ["-c", "shell_environment_policy.set={COUNTDOWN_SWIFTPM_CACHE_PATH="
+                        + json.dumps(str(dependency_cache)) + "}"]
         if args.model:
             command += ["--model", args.model]
         command += ["-"]
@@ -526,6 +612,7 @@ def main():
     run.add_argument("--model", help="Exact supported CLI model; omission uses CLI's own default")
     run.add_argument("--effort", choices=["low", "medium", "high", "xhigh"], default="high")
     run.add_argument("--codex", default="codex")
+    run.add_argument("--dependency-cache", type=Path, help="Optional prepared SwiftPM cache to copy into Swift cases")
     run.add_argument("--output", type=Path, required=True, help="New artifact directory; never overwritten")
     summarize = sub.add_parser("summarize")
     summarize.add_argument("output", type=Path)
@@ -560,6 +647,8 @@ def main():
         "codex_version": version, "model": args.model or "CLI-default (unresolved)",
         "reasoning_effort": args.effort, "user_config": "ignored", "subject_sandbox": "workspace-write",
         "native_hook_trust": "not bypassed; hook registration is not evaluated",
+        "swift_dependencies": "prefetched into each Swift case's local cache before subject execution",
+        "dependency_cache_seed": str(args.dependency_cache.resolve()) if args.dependency_cache else None,
         "expected_runs": len(cases) * args.repeat, "repeat": args.repeat,
         "case_ids": [case["id"] for case in cases],
     })

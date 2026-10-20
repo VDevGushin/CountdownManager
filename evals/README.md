@@ -36,6 +36,17 @@ are never used. The CLI itself retains its normal account/service-state access; 
 writes, not all filesystem reads. Subjects are instructed not to access production data. This is a
 controlled regression suite, not a hostile-agent security benchmark.
 
+Before a Swift repair case, the runner resolves the locked public SwiftPM dependencies into
+`.build/eval-dependency-cache` inside that case's temporary checkout. Preparation has its own logs
+and must succeed before the subject starts; failure is `INFRA_ERROR`. The subject shell receives
+`COUNTDOWN_SWIFTPM_CACHE_PATH`, so `./verify.sh fast` uses the native SwiftPM build route, that cache
+and the locked versions without updating remote repositories. The native route avoids Swift Build's
+service/dSYM operations blocked by the subject sandbox. This does not relax the sandbox or prebuild its fix.
+For repeated runs, `--dependency-cache <prepared-cache-directory>` copies the seed's SwiftPM
+`repositories` and `artifacts` into a new case-local cache; subjects never write to the seed.
+Preparation still resolves/checks the current lockfile. Read-only/Python cases do not fetch dependencies.
+Temporary project trust is passed as a session override rather than persisted in global config.
+
 Native hook registration/trust is not evaluated: the repair case tests hook functions and the Swift
 case checks explicit verification commands. These runs also do not establish equivalence to every
 desktop plugin, memory, configuration or model setting.
@@ -84,8 +95,17 @@ Machine checks detect missing/incomplete runs, invalid traces, changes outside t
 missing successful verification operations and failing independent oracles. Verification requires a
 recognized invocation, successful exit and the corresponding real result: `PASS unit:` for CoreChecks,
 `PASS UI state:` for UIChecks and a nonempty unittest run ending in `OK` for hook tests. Quiet SwiftLint
-is recognized by its successful invocation. A successful `verify.sh fast` or equivalent direct/native
+is recognized only when its exit is unambiguous: a standalone invocation or a member of the final
+AND-only command chain. A skipped branch, pipeline, background job, loop or a later command's zero
+exit cannot certify quiet lint. Run SwiftLint separately when using more complex shell scripts.
+Verbose lint can instead supply its actual zero-violation `Done linting!` summary; the last lint
+summary must report zero violations and zero serious findings. Mere invocation or a final-answer
+claim is insufficient when the exit is ambiguous.
+A successful `verify.sh fast` or equivalent direct/native
 SwiftPM runs satisfy the same CoreChecks/UIChecks expectations. Reading or echoing a test path does not.
+For the repository's fail-fast `verify.sh fast/full` route, successful exit plus its final
+`PASS UI state:` also certifies the preceding CoreChecks gate when log tailing omitted its earlier
+marker. This ordering is not inferred for arbitrary direct commands or loops.
 Forbidden verification attempts are counted even if they fail. Required-read detection uses successful
 command path mentions; it is supporting evidence, not proof of comprehension, and unusual equivalent
 read/command syntax can require inspection. Before/after snapshots detect final additions, deletions
@@ -128,6 +148,12 @@ Version 3 additionally recognizes official GUI/build routes for forbidden-operat
 rubric are unchanged from version 2. The project router now explicitly excludes product-qa for
 harness/tooling/documentation changes without changed product behaviour. Rubric failures appear in
 the summary as `rubric:<criterion-id>` rather than a FAIL with no stated cause.
+
+The 2026-10-20 runner correction also recognizes `weather`, `weather-capture`, `empty-state`,
+`empty-state-capture` and `compact-capture` as UI/build operations, and removes quiet-lint credit
+from ambiguous shell control flow. Prompts and rubrics remain version 3; runner hashes distinguish
+the corrected judge. Dependency prefetch changes the execution environment, so new live runs must
+be identified separately from earlier runs blocked by unavailable dependencies.
 
 If a recognizer defect is found in a completed version-2 run, `recheck` creates a separate assessment
 of the same frozen prompts, traces, snapshots and oracle results without making new model calls:

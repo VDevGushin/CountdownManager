@@ -4,8 +4,10 @@ import contextlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -114,6 +116,69 @@ class AgentEvalChecks(unittest.TestCase):
         quoted = "echo 'for target in CoreChecks UIChecks; do swift run $target; done'"
         self.assertEqual(runner.verified_operations({**complete, "command": quoted}), set())
 
+    def test_quiet_lint_requires_an_executed_terminal_command(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lint = root / "swiftlint"
+            lint.write_text('#!/bin/sh\nexit "${LINT_EXIT:-0}"\n')
+            lint.chmod(0o755)
+            environment = {**os.environ, "PATH": str(root) + ":/usr/bin:/bin"}
+            cases = [
+                ("true || swiftlint lint --quiet", {}, False),
+                ("true '&&' swiftlint lint --quiet", {}, False),
+                (r"true \&\& swiftlint lint --quiet", {}, False),
+                ("false && swiftlint lint --quiet; true", {}, False),
+                ("if false; then swiftlint lint --quiet; fi", {}, False),
+                ("swiftlint lint --quiet || true", {"LINT_EXIT": "1"}, False),
+                ("swiftlint lint --quiet; true", {"LINT_EXIT": "1"}, False),
+                ("swiftlint lint --quiet | cat", {"LINT_EXIT": "1"}, False),
+                ("swiftlint lint --quiet & wait", {"LINT_EXIT": "1"}, False),
+                ("swiftlint lint --quiet", {}, True),
+                ("true && swiftlint lint --quiet", {}, True),
+                ("true; swiftlint lint --quiet", {}, True),
+                ("swiftlint lint --quiet && true", {}, True),
+                ("swiftlint lint --quiet && true\n", {}, True),
+                ("swiftlint lint --quiet\ntrue", {"LINT_EXIT": "1"}, False),
+            ]
+            for command, extra, expected in cases:
+                with self.subTest(command=command):
+                    result = subprocess.run(["/bin/sh", "-c", command], env={**environment, **extra},
+                                            capture_output=True, text=True, check=False)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    credited = runner.verified_operations({"command": command,
+                        "exit_code": result.returncode, "aggregated_output": result.stdout + result.stderr})
+                    self.assertEqual("swiftlint" in credited, expected)
+
+    def test_lint_wrappers_and_ambiguous_control_flow(self):
+        self.assertTrue(runner.lint_exit_is_unambiguous(
+            "/bin/zsh -lc 'cd /private/tmp && env X=1 swiftlint lint --quiet'"))
+        for command in ("for x in a; do swiftlint lint --quiet; done",
+                        "! swiftlint lint --quiet", "(swiftlint lint --quiet)",
+                        "echo $(swiftlint lint --quiet)", "exit 0; swiftlint lint --quiet"):
+            self.assertFalse(runner.lint_exit_is_unambiguous(command), command)
+
+    def test_verbose_lint_can_supply_its_real_result_in_a_compound_command(self):
+        command = "cat <<'PATCH'\nfunc example() {}\nPATCH\nswiftlint lint; echo finished"
+        for output, expected in (
+            ("Done linting! Found 0 violations, 0 serious in 46 files.\n", True),
+            ("", False),
+            ("Done linting! Found 1 violation, 1 serious in 46 files.\n", False),
+            ("Done linting! Found 0 violations, 0 serious in 46 files.\n"
+             "Done linting! Found 1 violation, 1 serious in 46 files.\n", False),
+        ):
+            with self.subTest(output=output):
+                result = runner.verified_operations({"command": command, "exit_code": 0,
+                                                     "aggregated_output": output})
+                self.assertEqual("swiftlint" in result, expected)
+
+    def test_official_fast_final_marker_certifies_ordered_core_gate(self):
+        for command in ("./verify.sh fast", "bash verify.sh full", "./verify.sh"):
+            item = {"command": command, "exit_code": 0, "aggregated_output": "PASS UI state: checks\n"}
+            self.assertEqual(runner.verified_operations(item), {"core-checks", "ui-checks"})
+            self.assertEqual(runner.verified_operations({**item, "exit_code": 1}), set())
+        self.assertEqual(runner.verified_operations({"command": "swift run UIChecks", "exit_code": 0,
+            "aggregated_output": "PASS UI state: checks\n"}), {"ui-checks"})
+
     def test_recheck_preserves_original_evidence_and_requires_rubric_review(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -175,6 +240,75 @@ class AgentEvalChecks(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertEqual(runner.verification_invocations(command), set())
         self.assertEqual(runner.verification_invocations("xcodebuild test"), {"xcui", "app-build"})
+
+    def test_all_focused_ui_modes_are_rejected_by_negative_controls(self):
+        self.case["forbidden_checks"] = ["real-ui", "app-build"]
+        for mode in ("weather", "weather-capture", "empty-state", "empty-state-capture", "compact-capture"):
+            for exit_code in (0, 1):
+                with self.subTest(mode=mode, exit_code=exit_code):
+                    command = "./verify.sh " + mode
+                    self.assertEqual(runner.verification_invocations(command), {"real-ui", "app-build"})
+                    item = {"id": "cmd", "type": "command_execution", "command": command,
+                            "exit_code": exit_code}
+                    self.assertEqual(self.grade(events=[{"type": "item.completed", "item": item}]
+                                               + self.events)["status"], "FAIL")
+
+    def test_swift_dependencies_are_local_and_preparation_failure_stops_the_case(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            result = {"exit_code": 0, "timed_out": False}
+            with patch.object(runner, "execute", return_value=result) as execute:
+                cache = runner.prepare_swift_dependencies(root, root)
+            self.assertEqual(cache, root / ".build/eval-dependency-cache")
+            command = execute.call_args.args[0]
+            self.assertEqual(command[command.index("--cache-path") + 1], str(cache))
+            self.assertIn("--force-resolved-versions", command)
+            self.assertEqual(command[-1], "resolve")
+            seed = root / "seed"
+            (seed / "repositories").mkdir(parents=True)
+            (seed / "repositories/public.git").write_text("cached public dependency")
+            (seed / "private-other-file").write_text("must not be exposed")
+            with patch.object(runner, "execute", return_value=result):
+                runner.prepare_swift_dependencies(root, root, seed)
+            copied = cache / "repositories/public.git"
+            self.assertEqual(copied.read_text(), "cached public dependency")
+            self.assertFalse((cache / "private-other-file").exists())
+            copied.write_text("subject mutation")
+            self.assertEqual((seed / "repositories/public.git").read_text(), "cached public dependency")
+            for outcome in ({"exit_code": 1, "timed_out": False},
+                            {"exit_code": 0, "timed_out": True}):
+                with patch.object(runner, "execute", return_value=outcome), self.assertRaises(ValueError):
+                    runner.prepare_swift_dependencies(root, root)
+            case = next(c for c in runner.load_suite()["cases"] if c["id"] == "fix-today-label")
+            with patch.object(runner, "prepare"), \
+                 patch.object(runner, "prepare_swift_dependencies", side_effect=ValueError("offline")), \
+                 patch.object(runner, "execute") as subject, self.assertRaisesRegex(ValueError, "offline"):
+                runner.run_case(case, root / "case", SimpleNamespace())
+            subject.assert_not_called()
+
+    def test_fast_verification_passes_the_optional_cache_to_both_products(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            shutil.copy2(ROOT / "verify.sh", root / "verify.sh")
+            swift = root / "swift"
+            swift.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n')
+            swift.chmod(0o755)
+            for cached in (False, True):
+                log = root / ("cached.log" if cached else "default.log")
+                environment = {**os.environ, "PATH": str(root) + ":/usr/bin:/bin", "CALL_LOG": str(log)}
+                environment.pop("COUNTDOWN_SWIFTPM_CACHE_PATH", None)
+                if cached:
+                    environment["COUNTDOWN_SWIFTPM_CACHE_PATH"] = str(root / "local cache")
+                result = subprocess.run(["/bin/bash", str(root / "verify.sh"), "fast"],
+                                        env=environment, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                lines = log.read_text().splitlines()
+                self.assertEqual(len(lines), 2)
+                self.assertTrue(lines[0].endswith("CoreChecks"))
+                self.assertTrue(lines[1].endswith("UIChecks"))
+                self.assertEqual(all("--cache-path" in line for line in lines), cached)
+                self.assertEqual(all("--force-resolved-versions" in line for line in lines), cached)
+                self.assertEqual(all("--build-system native" in line for line in lines), cached)
 
     def test_empty_answer_and_malformed_trace_fail(self):
         self.assertEqual(self.grade(final="")["status"], "FAIL")

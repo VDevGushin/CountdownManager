@@ -41,12 +41,17 @@ export SWIFTPM_MODULECACHE_OVERRIDE="$verify_root/swift-module-cache"
 
 scratch_path="$verify_root/build"
 app_path=""
+fast_command=(swift run --disable-sandbox -c release --scratch-path "$scratch_path")
+if [[ -n "${COUNTDOWN_SWIFTPM_CACHE_PATH:-}" ]]; then
+    # Eval subjects have no network. Their runner prefetches into this local cache.
+    fast_command+=(--build-system native --cache-path "$COUNTDOWN_SWIFTPM_CACHE_PATH" --skip-update --force-resolved-versions)
+fi
 
 run_fast_checks() {
     echo "Verification: CoreChecks"
-    swift run --disable-sandbox -c release --scratch-path "$scratch_path" CoreChecks
+    "${fast_command[@]}" CoreChecks
     echo "Verification: UIChecks"
-    swift run --disable-sandbox -c release --scratch-path "$scratch_path" UIChecks
+    "${fast_command[@]}" UIChecks
 }
 
 run_with_timeout() {
