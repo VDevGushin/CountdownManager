@@ -7,6 +7,7 @@ No installed application or user data is read or changed.
 """
 
 from pathlib import Path
+import argparse
 import math
 import os
 import subprocess
@@ -55,22 +56,45 @@ def rounded_rect(x, y, width, height, radius):
 
 MARS_SVG = '''<clipPath id="mars-circle"><circle cx="50" cy="50" r="47"/></clipPath><path clip-path="url(#mars-circle)" fill="currentColor" fill-rule="evenodd" d="M50 3a47 47 0 1 1 0 94 47 47 0 1 1 0-94ZM-8 35C12 25 25 32 43 43S77 47 108 59V68C77 56 59 63 39 51S12 36-8 45ZM68 23a7.5 7.5 0 1 1 15 0 7.5 7.5 0 1 1-15 0ZM18 64a5.5 5.5 0 1 1 11 0 5.5 5.5 0 1 1-11 0ZM54 76a4 4 0 1 1 8 0 4 4 0 1 1-8 0Z"/>'''
 CALENDAR_SVG = '''<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M7 3v4M17 3v4"/></g>'''
+MARS_BAND_SVG = "M-8 35C12 25 25 32 43 43S77 47 108 59V68C77 56 59 63 39 51S12 36-8 45Z"
+MARS_BODY_SVG = "M50 3a47 47 0 1 1 0 94 47 47 0 1 1 0-94ZM68 23a7.5 7.5 0 1 1 15 0 7.5 7.5 0 1 1-15 0ZM18 64a5.5 5.5 0 1 1 11 0 5.5 5.5 0 1 1-11 0ZM54 76a4 4 0 1 1 8 0 4 4 0 1 1-8 0Z"
+MENU_COLORS = {
+    "Light": ("#303038", "#b44e38"),
+    "Dark": ("#f0eee9", "#ef9b81"),
+}
 
 
 def svg(view_box, body):
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}">{body}</svg>\n'
 
 
-def mars_path():
-    # The circle clips the through-band outside the planet. Even-odd fill makes
-    # the stripe and craters transparent rather than painting a background color.
-    band = "\n".join([
+def mars_band_path():
+    return "\n".join([
         "-8 35 m", "12 25 25 32 43 43 c", "61 54 77 47 108 59 c",
         "108 68 l", "77 56 59 63 39 51 c", "19 39 12 36 -8 45 c", "h",
     ])
+
+
+def mars_path():
+    # The circle clips the through-band outside the planet. Even-odd fill makes
+    # the stripe and craters transparent rather than painting a background color.
     return "\n".join([
-        "q", circle(50, 50, 47), "W n", circle(50, 50, 47), band,
+        "q", circle(50, 50, 47), "W n", circle(50, 50, 47), mars_band_path(),
         circle(75.5, 23, 7.5), circle(23.5, 64, 5.5), circle(58, 76, 4), "f*", "Q",
+    ])
+
+
+def colored_mars_path(body_color, stripe_color):
+    def rgb(hex_color):
+        return tuple(int(hex_color[index:index + 2], 16) / 255 for index in (1, 3, 5))
+
+    # Clip both paints to the planet minus its craters. The stripe is color,
+    # while the three craters and everything outside remain truly transparent.
+    return "\n".join([
+        "q", circle(50, 50, 47), circle(75.5, 23, 7.5),
+        circle(23.5, 64, 5.5), circle(58, 76, 4), "W* n",
+        command(*rgb(body_color), "rg"), circle(50, 50, 47), "f",
+        command(*rgb(stripe_color), "rg"), mars_band_path(), "f", "Q",
     ])
 
 
@@ -128,7 +152,28 @@ for points in [16, 32, 128, 256, 512] {
 '''
 
 
+def generate_menu_colors():
+    for appearance, (body_color, stripe_color) in MENU_COLORS.items():
+        name = f"MarsMenu{appearance}"
+        body = (
+            '<clipPath id="mars-body"><path clip-rule="evenodd" d="' + MARS_BODY_SVG + '"/></clipPath>'
+            '<g clip-path="url(#mars-body)"><circle cx="50" cy="50" r="47" fill="' + body_color + '"/>'
+            '<path d="' + MARS_BAND_SVG + '" fill="' + stripe_color + '"/></g>'
+        )
+        RESOURCES.joinpath(f"{name}.svg").write_text(svg("-4 -4 108 108", body))
+        write_pdf(RESOURCES / f"{name}.pdf", 108,
+                  "1 0 0 1 4 4 cm\n" + colored_mars_path(body_color, stripe_color))
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--menu-only", action="store_true",
+                        help="generate only the Light/Dark colored Mars menu PDFs and SVGs; leave the app icon and template assets untouched")
+    arguments = parser.parse_args()
+    generate_menu_colors()
+    if arguments.menu_only:
+        print("Generated MarsMenuLight/Dark.pdf and .svg; app icon and template assets unchanged")
+        return
     RESOURCES.joinpath("Mars.svg").write_text(svg("-4 -4 108 108", MARS_SVG))
     RESOURCES.joinpath("Calendar.svg").write_text(svg("0 0 24 24", CALENDAR_SVG))
     write_pdf(RESOURCES / "MarsMenu.pdf", 108, "1 0 0 1 4 4 cm\n0 g\n" + mars_path())

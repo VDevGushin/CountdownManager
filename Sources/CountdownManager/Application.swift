@@ -83,6 +83,18 @@ private final class CountdownStatusPanel: NSPanel {
 }
 
 @MainActor
+private final class StatusItemAppearanceView: NSView {
+    var appearanceDidChange: (() -> Void)?
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        appearanceDidChange?()
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+@MainActor
 private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
@@ -168,6 +180,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             button.target = self
             button.action = #selector(togglePanel)
             button.setAccessibilityLabel("Countdown Manager")
+            // Inherit the status button's actual appearance, including its system window.
+            let appearanceView = StatusItemAppearanceView(frame: .zero)
+            appearanceView.setAccessibilityElement(false)
+            button.addSubview(appearanceView)
+            appearanceView.appearanceDidChange = { [weak self] in self?.updateTitle() }
         }
         hostingController = NSHostingController(
             rootView: CountdownManagerRootView(
@@ -294,7 +311,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             button.title = timerTitle
         } else {
             let presentation = store.statusPresentation
-            button.image = presentation.icon.flatMap { StatusBarImages.image(for: $0) }
+            button.image = presentation.icon.flatMap { StatusBarImages.image(for: $0, appearance: button.effectiveAppearance) }
             button.imagePosition = presentation.icon == nil ? .noImage
                 : (presentation.title.isEmpty ? .imageOnly : .imageLeft)
             button.title = presentation.title

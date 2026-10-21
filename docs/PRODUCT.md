@@ -454,7 +454,7 @@ Its normal event representation contains:
 - the event emoji, or the monochrome K1 outline calendar when no additional emoji is stored or the legacy `📅` is stored;
 - `Сегодня` for today, `Завтра` for tomorrow, otherwise remaining calendar days with Russian day forms.
 
-The Mars and K1 menu images are native vector template images, following the menu bar foreground in Light and Dark appearance. Stored event emoji remains unchanged. The application icon uses the approved smooth Mars silhouette in white on a solid blue rounded-square background; menu-bar Mars remains monochrome.
+The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon retains the smooth white Mars on a solid blue rounded-square background.
 
 It does not display:
 

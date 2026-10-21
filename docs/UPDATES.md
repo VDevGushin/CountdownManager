@@ -1,5 +1,11 @@
 # Preparing signed updates
 
+Candidate **1.13.4 / build 26** adds the approved terracotta stripe to the menu-bar Mars.
+Its exact production-channel package passed strict lint, CoreChecks/UIChecks and the native
+appearance-transition/capture mode (2/2, 24 PNGs). Signed ZIP/appcast and archive verification
+are ready. The exact package is installed locally with events/preferences unchanged;
+publication remains pending. See [releases/v1.13.4.md](releases/v1.13.4.md).
+
 Release **1.13.3 / build 25** is published as Latest and installed locally. Its production-channel
 package passed the isolated native menu-identity capture mode (24 PNGs), signed ZIP/appcast
 verification and archive round trip. Anonymous ZIP, version-feed and Latest-feed downloads

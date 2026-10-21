@@ -107,7 +107,7 @@ Run strict SwiftLint and `./verify.sh fast`, then
 isolated timer at launch, exercises the actual `NSStatusBarButton`, and checks bundled vector
 PDF representations rather than accepting fallback symbols. It covers Mars with empty/nonempty
 unfavorited lists, K1 Today/Tomorrow, custom emoji, timer finished/running/delete restoration,
-clearing/deleting favorite and durable selection reload through a fresh Store (not process relaunch). The panel's automatic nearest event is independently
+clearing/deleting favorite and durable selection reload through a fresh Store (not process relaunch). Mars uses non-template Light/Dark PDFs; K1 remains template. The focused mode also checks live appearance-only refresh and visible stripe/body colors. The panel's automatic nearest event is independently
 asserted. Core/UI checks cover invalid/expired favorites, civil boundaries, Russian labels and
 persistence invariants.
 
@@ -122,8 +122,10 @@ shell boundary below; these captures do not claim to re-prove it.
 
 `python3 scripts/generate_icons.py` regenerates editable SVGs, native vector PDFs and the complete
 ICNS size set using system Swift/CoreGraphics and `iconutil`, without Python package dependencies.
-The generator does not read installed application data. Native PDF template drawing supplies the
-antialiasing; there is no PNG threshold mask in the shipped menu images.
+`python3 scripts/generate_icons.py --menu-only` updates only the colored Mars menu SVG/PDF pair,
+without regenerating AppIcon or invoking Swift/iconutil. The generator does not read installed
+application data. Native PDF drawing supplies the antialiasing; there is no PNG threshold mask
+in the shipped menu images.
 
 ## Compact cards and notes
 

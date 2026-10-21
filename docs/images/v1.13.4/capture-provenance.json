@@ -1,0 +1,161 @@
+{
+  "status": "NATIVE_VERIFIED_SIGNED_INSTALLED_NOT_PUBLISHED",
+  "version": "1.13.4",
+  "build": "26",
+  "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.4/Countdown Manager.app",
+  "executable_sha256": "407c48f388e09dd80449f527e78d23891ec3bd348b0f24cee2c94b68cc61c94f",
+  "runtime_mode": "--ui-smoke-menu-identity-captures",
+  "native_result": "UISmoke\n✓ same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation\n✓ actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures\nPASS: 2/2",
+  "resources_sha256": {
+    "MarsMenuLight.pdf": "30de40020c8ea0611168c5be4339aac42beed4a8970ad74c18979acf9fa195ae",
+    "MarsMenuDark.pdf": "441bbb1769e58de2d1867293521432084ccb8ee562bb5d1c87c684e76072b46d",
+    "CalendarMenu.pdf": "34267acec8fc5dea658781545fd2172a17a0ea59d9a2382221aa802c0f46d3e3",
+    "AppIcon.icns": "ff16d173cd66a1f01f2b0abc895bf6556cce406a1822263708d61669ed5b5b04"
+  },
+  "images": {
+    "identity-app-icon-dark.png": {
+      "sha256": "c8620a3486866756eed987e4b99bc24f58a991f5a5c858c98f0befda8f633eef",
+      "width": 320,
+      "height": 320
+    },
+    "identity-app-icon-light.png": {
+      "sha256": "b341bc3006d16edf357f6b69adce8da3da5185b8f5b4e10a8c92b20e6d8c37ea",
+      "width": 320,
+      "height": 320
+    },
+    "identity-panel-empty-dark.png": {
+      "sha256": "c6d467ddfef8dab2372f1dd99e8a0ff54800db55e05b45e92b3c2d6d67f6a13b",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-empty-light.png": {
+      "sha256": "1a060c1f73c04dae1ca6e76048a56a9b206a37e8f6129ddbe6ce80245df09328",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-favorite-dark.png": {
+      "sha256": "938a076154d902d02f96b058d3f00728ecce0a81a9cbeb7f7a982a023b4b6df4",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-favorite-light.png": {
+      "sha256": "eb2cc562cb09887b9037c21229023c62e7db1ab70f94942bbf4f00a8d30ddc1e",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-unfavorited-dark.png": {
+      "sha256": "d26f3872a178cf855ebb461761e6bb6a1b1a648e24f2f14f83acb881e43f64d2",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-unfavorited-light.png": {
+      "sha256": "d46bde041014515b1638c3bc6a3ed9bbd7f5d91a835a1cfe330dab4a562ee37f",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-calendar-today-dark.png": {
+      "sha256": "e321f86b0932c01bd9da979e6baa6d9bc23e6f9a1f1e069aaf7d735fcf8efc60",
+      "width": 186,
+      "height": 44
+    },
+    "menu-calendar-today-light.png": {
+      "sha256": "89f8cb19fd2c9aa0e16fc3a5e7123ed5c432b24d54066f4d3d86b65f80dd8b66",
+      "width": 186,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-dark.png": {
+      "sha256": "16febdbb357494452e7c8946c4bc2549418d492acca76e0affd478c7d089198b",
+      "width": 168,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-light.png": {
+      "sha256": "fde0362285debcac1aac0689d35f34f581b37883237a6a8871ea20501d29e649",
+      "width": 168,
+      "height": 44
+    },
+    "menu-emoji-tomorrow-dark.png": {
+      "sha256": "d292210cdf71e8b9dcee9639632d7f1047635ffbcdf698031b500c7e3ec069b9",
+      "width": 172,
+      "height": 44
+    },
+    "menu-emoji-tomorrow-light.png": {
+      "sha256": "7edb22e6e1f6c9bb15c3caeb14a88115870f12e926c1348232de76a939566dd3",
+      "width": 172,
+      "height": 44
+    },
+    "menu-finished-dark.png": {
+      "sha256": "45bc3c6c72947116aa3892be4f255c3e4ec30f2c4201187b73ebb376fcfe8111",
+      "width": 64,
+      "height": 58
+    },
+    "menu-finished-light.png": {
+      "sha256": "d67ce89bc40ed4a88a5bec29ed420976930029abbb652469a14b19e2740ee914",
+      "width": 64,
+      "height": 58
+    },
+    "menu-identity-comparison.png": {
+      "sha256": "5ddd95c91ebe3fcc735c6864d11a14f9f0e75b46dc9a64b0820160faaa5c94b1",
+      "width": 760,
+      "height": 454
+    },
+    "menu-mars-empty-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-empty-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-unfavorited-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-unfavorited-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "menu-restored-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "menu-restored-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "menu-running-dark.png": {
+      "sha256": "b8b85b6d5959308740a4041bda6589f59a052e5538290ee2f6372b18e7df5a52",
+      "width": 132,
+      "height": 46
+    },
+    "menu-running-light.png": {
+      "sha256": "282f4ec7ec959b5290b065fdb31c5e5c6fb70af4048a283ebadc2c41a7548033",
+      "width": 132,
+      "height": 46
+    }
+  },
+  "design": "User-selected Lavish C; neutral Mars with terracotta/coral band; transparent craters; AppIcon unchanged",
+  "data": "Isolated marked native home; demonstration events; weather OFF; production updater channel configured, networking suppressed by smoke mode",
+  "comparison_composition": "Original2x native status-button PNG pixels alpha-composited without scaling onto#f2f3f4/#202329; comparison labels added",
+  "publication_performed": false,
+  "installation_performed": true,
+  "limits": [
+    "Button cache renders and AppKit ICNS render, not a screenshot of arbitrary menu wallpaper",
+    "Appearance-only callbacks verified directly and through the actual status window; system preference not changed",
+    "No repeat of full Sparkle download/replace/relaunch, VoiceOver speech, external status clicks/Spaces, Intel/older-macOS runtime",
+    "Durable selection reload uses a fresh Store; not a separate process relaunch"
+  ],
+  "installation_verification": {
+    "installed_path": "/Applications/Countdown Manager.app",
+    "executable_sha256": "407c48f388e09dd80449f527e78d23891ec3bd348b0f24cee2c94b68cc61c94f",
+    "events_unchanged": true,
+    "preferences_unchanged": true,
+    "signature_verified": true,
+    "installed_at_utc": "2026-10-21T20:50:41.928649+00:00"
+  }
+}

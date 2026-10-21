@@ -3701,14 +3701,15 @@ final class UISmokeRuntime {
 
 extension UISmokeRuntime {
     private func runMenuIdentityCapture() async throws {
-        for icon in [StatusBarIcon.mars, .calendar] {
-            let url = try requireValue(Bundle.main.url(forResource: icon.rawValue, withExtension: "pdf"), "bundled \(icon.rawValue)")
-            let loaded = try requireValue(NSImage(contentsOf: url), "vector \(icon.rawValue)")
+        for name in ["MarsMenuLight", "MarsMenuDark", "CalendarMenu"] {
+            let url = try requireValue(Bundle.main.url(forResource: name, withExtension: "pdf"), "bundled \(name)")
+            let loaded = try requireValue(NSImage(contentsOf: url), "vector \(name)")
             try require(loaded.representations.contains { $0 is NSPDFImageRep }, "menu resource is not a native PDF")
         }
         try require(timer.phase == .finished, "capture must restore a genuinely finished timer at launch")
         try await captureMenuIdentityState("finished", title: "", icon: nil, timerExpected: true)
         timer.delete()
+        try await requireMarsAppearanceTransitions()
         try await captureMenuIdentityState("mars-empty", title: "", icon: .mars, panel: "empty")
         let nearest = Countdown(title: "Встреча с друзьями", date: store.today, emoji: "🎂")
         let savedNearest = await store.save(nearest, primary: false)
@@ -3751,7 +3752,86 @@ extension UISmokeRuntime {
         try require(restored.data.primaryID == nil && restored.primary?.id == nearest.id
                     && restored.statusPresentation.icon == .mars, "durable reload selected an automatic menu favorite")
         try captureApplicationIdentity()
-        pass("actual native status button: vector Mars/K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures")
+        pass("actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures")
+    }
+
+    private func requireMarsAppearanceTransitions() async throws {
+        try await requireMenuButton(title: "", icon: .mars)
+        let button = try requireValue(statusButton(), "appearance-transition status button")
+        let statusWindow = try requireValue(button.window, "appearance-transition status window")
+        let oldButtonAppearance = button.appearance
+        let oldWindowAppearance = statusWindow.appearance
+        let oldAppAppearance = NSApp.appearance
+        let dataBefore = store.data
+        defer {
+            NSApp.appearance = oldAppAppearance
+            statusWindow.appearance = oldWindowAppearance
+            button.appearance = oldButtonAppearance
+        }
+        let appearances = [NSAppearance.Name.aqua, .darkAqua, .aqua]
+        var lightImage: NSImage?
+        for name in appearances {
+            button.appearance = try requireValue(NSAppearance(named: name), "direct status appearance")
+            try await settleLayout()
+            try require(button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == name,
+                        "direct status appearance did not change")
+            try await requireMenuButton(title: "", icon: .mars)
+            if name == .aqua {
+                if let lightImage { try require(button.image === lightImage, "light Mars was not cached") }
+                lightImage = button.image
+            } else {
+                try require(button.image !== lightImage, "dark appearance retained the light Mars PDF")
+            }
+        }
+        button.appearance = nil
+        for name in appearances {
+            statusWindow.appearance = try requireValue(NSAppearance(named: name), "inherited status appearance")
+            try await settleLayout()
+            try require(button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == name,
+                        "status button did not inherit its window appearance")
+            try await requireMenuButton(title: "", icon: .mars)
+        }
+        statusWindow.appearance = nil
+        for name in appearances {
+            NSApp.appearance = try requireValue(NSAppearance(named: name), "application appearance")
+            try await settleLayout()
+            // The status window may override the app; the image must follow the button itself.
+            try await requireMenuButton(title: "", icon: .mars)
+        }
+        try require(statusButton() === button && store.data == dataBefore,
+                    "appearance transition replaced the status button or changed events")
+        try require(timer.phase == .idle, "appearance transition changed the idle timer")
+        pass("same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation")
+    }
+
+    private func requireColoredMarsPixels(_ button: NSStatusBarButton) throws {
+        let bitmap = try identityBitmap(size: button.bounds.integral.size, scale: 2)
+        button.effectiveAppearance.performAsCurrentDrawingAppearance {
+            button.cacheDisplay(in: button.bounds.integral, to: bitmap)
+        }
+        let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let body: (CGFloat, CGFloat, CGFloat)
+        if dark {
+            body = (240.0 / 255.0, 238.0 / 255.0, 233.0 / 255.0)
+        } else {
+            body = (48.0 / 255.0, 48.0 / 255.0, 56.0 / 255.0)
+        }
+        var stripePixels = 0
+        var bodyPixels = 0
+        for y in 0..<bitmap.pixelsHigh {
+            for x in 0..<bitmap.pixelsWide {
+                guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), color.alphaComponent > 0.8 else { continue }
+                if color.redComponent > color.greenComponent + 0.16 && color.redComponent > color.blueComponent + 0.2 {
+                    stripePixels += 1
+                }
+                if abs(color.redComponent - body.0) < 0.06 && abs(color.greenComponent - body.1) < 0.06
+                    && abs(color.blueComponent - body.2) < 0.06 {
+                    bodyPixels += 1
+                }
+            }
+        }
+        try require(stripePixels >= 2 && bodyPixels >= 2,
+                    "native Mars is missing colored stripe/body pixels for \(dark ? "dark" : "light") appearance: stripe=\(stripePixels) body=\(bodyPixels)")
     }
 
     private func requireTimerRestoresFavorite(title: String, icon: StatusBarIcon?) async throws {
@@ -3766,16 +3846,17 @@ extension UISmokeRuntime {
     private func requireMenuButton(title: String, icon: StatusBarIcon?) async throws {
         try await waitFor("native menu title/image update") {
             guard let button = self.statusButton(), button.title == title else { return false }
-            if let icon { return button.image === StatusBarImages.image(for: icon) }
+            if let icon { return button.image === StatusBarImages.image(for: icon, appearance: button.effectiveAppearance) }
             return button.image == nil
         }
         let button = try requireValue(statusButton(), "native status button")
         try require(button.accessibilityLabel() == "Countdown Manager", "status button lost its app identity")
         if let icon {
-            try require(button.image?.isTemplate == true && button.image?.size == NSSize(width: 18, height: 18),
-                        "menu template size or template rendering changed")
+            try require(button.image?.isTemplate == (icon == .calendar) && button.image?.size == NSSize(width: 18, height: 18),
+                        "menu size or colored-Mars/template-calendar rendering changed")
             try require(button.image?.representations.contains { $0 is NSPDFImageRep } == true,
                         "bundled menu icon fell back to a substitute image")
+            if icon == .mars { try requireColoredMarsPixels(button) }
             try requireMenuImagePlacement(button)
             try require(button.toolTip == (icon == .mars
                 ? (store.active.isEmpty ? "Countdown Manager · нет событий" : "Countdown Manager · нет избранного")
@@ -3802,6 +3883,7 @@ extension UISmokeRuntime {
             try await waitForElement("event.featured.date.\(featured.id.uuidString)")
         }
         let button = try requireValue(statusButton(), "status capture button")
+        let timerImage = timerExpected ? button.image : nil
         if timerExpected {
             try require(button.image != nil && button.title == timer.statusTitle, "timer did not replace the event image/title")
             try requireMenuImagePlacement(button)
@@ -3829,6 +3911,12 @@ extension UISmokeRuntime {
             button.displayIfNeeded()
             try require(button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
                         == (scheme == .dark ? .darkAqua : .aqua), "status button appearance did not update")
+            if timerExpected {
+                try require(button.image === timerImage && button.title == timer.statusTitle,
+                            "appearance callback replaced the active timer image/title")
+            } else {
+                try await requireMenuButton(title: title, icon: icon)
+            }
             try captureNativeMenuButton(button, name: "menu-\(name)-\(theme)", scheme: scheme)
             if let panel { try capture(name: "identity-panel-\(panel)-\(theme)") }
         }
