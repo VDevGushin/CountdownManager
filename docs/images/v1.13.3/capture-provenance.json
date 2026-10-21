@@ -1,5 +1,5 @@
 {
-  "status": "LOCAL_VERIFIED_INSTALLED_SIGNED_RELEASE_NOT_PUBLISHED",
+  "status": "PUBLISHED_VERIFIED_AND_INSTALLED",
   "version": "1.13.3",
   "build": "25",
   "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.3/Countdown Manager.app",
@@ -151,7 +151,7 @@
     "Durable selection reload uses a fresh Store, not actual process relaunch",
     "External status clicks, Spaces, VoiceOver speech, older macOS and Intel not re-tested; existing timer motion/sound behavior unchanged"
   ],
-  "publication_performed": false,
+  "publication_performed": true,
   "installation_performed": true,
   "finder_observation": "Actual Finder window, current dark system appearance, retained tested app shows new Mars. Screenshot captured through CUA; system appearance unchanged. No installed-app icon cache reset or light Finder test.",
   "original_qa_executable_sha256": "84436f4602a519749eb2bf5b872b2661c5b6e1ab464b632599995222edc3c244",
@@ -167,5 +167,19 @@
     "installed_at_utc": "2026-10-21T17:44:54.782460+00:00"
   },
   "visual_evidence_reuse": "All24 exact production-channel package PNGs are byte-identical to the reviewed original capture set; visual review reused. Manifest refreshed from exact package native run.",
-  "original_qa_bundle_removed_after_verified_installation": true
+  "original_qa_bundle_removed_after_verified_installation": true,
+  "native_source_retained": false,
+  "cleanup_note": "Exact native-tested package is installed in /Applications; redundant local packages removed after public archive/feed hashes matched. Images and verification receipts retained.",
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.13.3",
+  "release_commit": "c3c91a378b9baabab03b010f144535dc96e6784d",
+  "signed_public_artifacts": {
+    "CountdownManager-1.13.3-25.zip": {
+      "sha256": "12f0c87d9718e9a70c3c26aecd5d673c39cdf21962bbd398591de3e798fb531e",
+      "bytes": 3137280
+    },
+    "appcast.xml": {
+      "sha256": "3fbd0ad236b3d6cd33b8bd76c6a45d15534064232f2b438f9d67b92195147561",
+      "bytes": 1299
+    }
+  }
 }
