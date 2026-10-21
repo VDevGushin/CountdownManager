@@ -11,6 +11,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
+| Editor workflows | `./verify.sh editor` | Focused native row deletion/subsequent input, field focus, Save/Cancel/reopen and weekday date changes; also included in `ui`/`full` |
 | Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
@@ -98,6 +99,47 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 - persistence coordination visible to the UI layer.
 
 It does not prove real AppKit event routing, external keyboard delivery, system focus, application switching, or Spaces behaviour.
+
+### Regression sequences
+
+The ordinary `fast` gate also runs three focused workflow files:
+
+- `RegressionSequenceChecks.swift` (CoreChecks): rejected multi-field edits preserve the complete
+  snapshot/favorite; foreign, missing and deleted subtask identities preserve neighboring events;
+  replacing a row in a full checklist preserves stable identities/order/completion through JSON;
+  fresh repository instances preserve legacy notes/weather and subsequent expiry; validation and
+  filesystem failures do not advance the accepted revision or damage existing bytes; corrupt JSON
+  stays untouched after a failed read.
+- `RegressionWorkflowChecks.swift` (UIChecks): multi-field edits survive a fresh Store; invalid input
+  and failed writes preserve durable data before an explicit retry; removing the last subtask clears
+  its collapse preference only after successful persistence; failed midnight cleanup can retry
+  without changing a surviving event or its disclosure preference. Repeated row delete/add/type
+  sequences preserve identities, order and completion, reject empty/whitespace replacement rows,
+  and persist the final draft. Thursday/Friday transitions cover ordinary dates, year rollover and
+  leap day; unchanged title commits keep new-day naming automatic, real title edits stop it, and
+  ordinary/existing titles stay explicit.
+- `AsyncWorkflowRegressionChecks.swift` (UIChecks): editing a demanded date during a shared request,
+  adding demand from a fresh cached batch and switching the per-event flag avoid duplicate requests;
+  Moscow → Kazan → Moscow and OFF → ON keep the replacement request authoritative when the old
+  generation receives HTTP 429/503. Controlled continuations and synchronous diagnostic barriers
+  establish request/settlement order; deadlines fail a missing barrier rather than sequence work by
+  sleeping. These one-provider ownership cases complement the existing multi-provider suite.
+
+These checks use temporary files, separate preferences and synthetic weather; they make no native
+location, public-network, process-relaunch or physical keyboard claims. The general native smoke
+also covers failed Save → hide/show → explicit retry → editor reopen with title/note/subtask/favorite
+intact. The three continuity runs start a timer inside an open editor, retain focus/draft and its
+deadline through hide/show, Save and Cancel, then delete the timer without changing event JSON.
+
+`editor` starts with an empty isolated store and exercises new/existing × Cancel/Save paths.
+It deletes the currently focused row, types into a neighbor, adds and deletes another focused row,
+then adds a fresh empty replacement and verifies Save is disabled until text is entered. Native
+title/note/subtask focus handoffs and continued input after hide/show must reach the intended field.
+Cancel preserves original bytes and restores a clean editor; Save preserves UUIDs, completion,
+favorite, text and order through repository reload and native editor reopening. A real NSDatePicker
+action verifies new-day Thursday → Friday → Thursday across title focus and hide/show. After Save,
+an existing event title remains explicit when its date changes; Cancel retains the saved date/title.
+This is in-process native input, with external keyboard delivery covered separately by XCUITest.
 
 ## Mars menu identity
 
@@ -559,6 +601,18 @@ integration or all city/date coverage.
 ## XCUITest
 
 `./run-xcui-tests.sh` builds with temporary DerivedData and isolated test data.
+The Xcode target includes `StatusBarImages.swift` and its three menu PDF resources, matching
+the runtime loader used by the Swift package build.
+
+The focused editor cases `testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave` and
+`testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen` use normal delete buttons
+and subsequent `app.typeText` input in explicitly selected neighbor/title/note fields. They inspect
+durable JSON and the reopened editor, including preserved completion/favorite and a clean new
+draft after Cancel. Their external delivery result must be recorded separately from native smoke.
+On 2026-10-22 both focused cases passed on the logged-in Apple Silicon host: two tests, zero
+failures. The same source passed strict SwiftLint, `verify.sh full` including all four native
+new/existing × Save/Cancel editor paths and Thursday/Friday date actions, and 32 deterministic
+eval-runner checks. This does not establish external date-picker interaction, IME input or Spaces.
 
 Current reliable capabilities include keyboard entry, normal application buttons, and Command-W after the application is active.
 

@@ -371,6 +371,8 @@ enum UIChecks {
         try await testEditingCannotRecreateMissingEvent(in: directory.appendingPathComponent("missing-edit"))
         try await testTodaySaveAndMidnightBoundary(in: directory.appendingPathComponent("today-midnight"))
         try await testClearingFavoritePersistsAndRollsBack(in: directory.appendingPathComponent("clear-favorite"))
+        try await testRegressionWorkflows(in: directory.appendingPathComponent("regression-workflows"))
+        await testAsyncWorkflowRegressions()
         await MainActor.run {
             testIsolatedStoreCannotManageLoginItem(
                 in: directory.appendingPathComponent("isolated-login-item", isDirectory: true)

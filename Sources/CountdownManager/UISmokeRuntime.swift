@@ -22,6 +22,8 @@ struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
+    static let editorWorkflowLaunchArgument = "--ui-smoke-editor-workflows"
+    static var editorWorkflowWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(editorWorkflowLaunchArgument) }
     static let captureLaunchArgument = "--ui-smoke-captures"
     static let weatherLaunchArgument = "--ui-smoke-weather"
     static let weatherCaptureLaunchArgument = "--ui-smoke-weather-captures"
@@ -61,6 +63,7 @@ struct UISmokeConfiguration {
         ProcessInfo.processInfo.arguments.contains(launchArgument)
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
+            || editorWorkflowWasRequested
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
             || compactCaptureWasRequested
             || completedCaptureWasRequested
@@ -124,6 +127,7 @@ struct UISmokeConfiguration {
             launchArgument,
             collapseRegressionLaunchArgument,
             editorScrollRegressionLaunchArgument,
+            editorWorkflowLaunchArgument,
             captureLaunchArgument,
             weatherLaunchArgument,
             weatherCaptureLaunchArgument,
@@ -317,7 +321,9 @@ final class UISmokeRuntime {
                         && (self.controls.entries["event.add"]?.isEnabled == true
                             || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.menuIdentityCaptureWasRequested {
+                if UISmokeConfiguration.editorWorkflowWasRequested {
+                    try await runEditorWorkflowRegressions()
+                } else if UISmokeConfiguration.menuIdentityCaptureWasRequested {
                     try await runMenuIdentityCapture()
                     try writeCaptureManifest()
                 } else if UISmokeConfiguration.completedCaptureWasRequested {
@@ -1049,6 +1055,15 @@ final class UISmokeRuntime {
         try insertText("Session draft")
         try await waitForValue("editor.title", equals: "Session draft")
         let editorOwner = controls.entries["editor.new"]?.ownerID
+        let beforeTimerStart = try Data(contentsOf: configuration.dataURL)
+        try await press("timer.duration.5")
+        try await press("timer.start")
+        let runningDeadline = try requireValue(timer.deadline, "timer started while editing")
+        try require(controls.entries["editor.new"]?.ownerID == editorOwner
+                    && controls.value("editor.title") == "Session draft",
+                    "starting timer replaced the editor or draft")
+        try require(try Data(contentsOf: configuration.dataURL) == beforeTimerStart,
+                    "starting timer committed an open draft or rewrote event JSON")
         hideSurface()
         try await waitFor("editor panel hide") { !self.isSurfaceShown() }
         try require(controls.value("root.window") == rootToken
@@ -1063,6 +1078,7 @@ final class UISmokeRuntime {
         try require(reopenedEditorWindow.contentViewController === shellHost
                     && reopenedEditorWindow.contentView === shellContent,
                     "editor hide reconstructed the hosting hierarchy")
+        try require(timer.deadline == runningDeadline, "editor hide/show restarted or removed the timer")
         try insertText("a")
         try await waitForValue("editor.title", equals: "Session drafta")
         pass("editor panel hide preserves the UI session")
@@ -1078,6 +1094,7 @@ final class UISmokeRuntime {
         try await waitFor("saved after reopen") {
             self.controls.entries["editor.new"] == nil && self.store.active.count == 31
         }
+        try require(timer.deadline == runningDeadline, "saving an event changed the running timer")
         pass("status-item handler preserves editor identity/draft and input; Save after reopen persists")
 
         let item = try requireValue(store.active.last, "saved item")
@@ -1094,6 +1111,13 @@ final class UISmokeRuntime {
         let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
         try require(!persisted.items.contains { $0.title == "Discard this draft" }, "Cancel persisted draft")
         pass("Cancel after reopen destroys draft and retains list position")
+        try require(timer.deadline == runningDeadline, "editing or cancelling an event changed the running timer")
+        let beforeTimerDelete = try Data(contentsOf: configuration.dataURL)
+        timer.delete()
+        try require(timer.phase == .idle && configuration.defaults.object(forKey: CountdownTimer.deadlineKey) == nil,
+                    "timer deletion left a durable deadline")
+        try require(try Data(contentsOf: configuration.dataURL) == beforeTimerDelete, "timer deletion changed saved event data")
+        pass("starting a timer inside an editor preserves input focus/draft; hide/show, Save and Cancel preserve its deadline and event JSON")
     }
 
     private func runCollapseRegression() async throws {
@@ -2530,6 +2554,13 @@ final class UISmokeRuntime {
         try await press("event.edit.\(item.id.uuidString)")
         try await waitForElement("editor.edit")
         try await focusAndReplace("editor.title", with: "Keep unavailable draft")
+        try await replaceEditorNote(with: "Retry preserves this note")
+        let retryTaskField = "editor.subtask.\(task.id.uuidString)"
+        try await focusAndReplace(retryTaskField, with: "Retry preserves this task")
+        try await press("editor.primary")
+        let retryOwner = controls.entries["editor.edit"]?.ownerID
+        try await waitFor("earlier checklist writes are durable") { !self.store.hasPendingPersistence }
+        let beforeFailedSave = store.data
         // Force a write failure only within this explicitly isolated fixture.
         let backup = configuration.dataURL.appendingPathExtension("backup")
         try FileManager.default.moveItem(at: configuration.dataURL, to: backup)
@@ -2545,11 +2576,31 @@ final class UISmokeRuntime {
             self.store.error != nil && self.controls.entries["editor.save"]?.isEnabled == true
         }
         try require(controls.value("editor.title") == "Keep unavailable draft", "write failure discarded draft")
-        try require(store.data.items.first?.title == item.title, "write failure did not roll back stored state")
+        try require(store.data == beforeFailedSave, "write failure did not roll back all event data and favorite")
+        try await hideAndShow(usingStatusItem: true)
+        try require(controls.entries["editor.edit"]?.ownerID == retryOwner
+                    && controls.value("editor.note") == "Retry preserves this note"
+                    && controls.value(retryTaskField) == "Retry preserves this task",
+                    "failed Save lost the editor or sibling draft fields on reopen")
         try FileManager.default.removeItem(at: configuration.dataURL)
         try FileManager.default.moveItem(at: backup, to: configuration.dataURL)
         store.error = nil
-        pass("write failure retains draft and rolls back event data")
+        try await press("editor.save")
+        try await waitFor("retry ends editing after durable Save") {
+            self.controls.entries["editor.edit"] == nil && !self.store.hasPendingPersistence
+        }
+        var retriedItem = item
+        retriedItem.title = "Keep unavailable draft"
+        retriedItem.note = "Retry preserves this note"
+        retriedItem.subtasks[0].text = "Retry preserves this task"
+        let retryJSON = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(retryJSON.items == [retriedItem] && retryJSON.primaryID == item.id
+                    && store.data == retryJSON, "Save retry lost fields, task identities/completion or favorite")
+        try await press("event.edit.\(item.id.uuidString)")
+        try await waitForValue("editor.title", equals: retriedItem.title)
+        try await waitForValue("editor.note", equals: retriedItem.note ?? "")
+        try await waitForValue(retryTaskField, equals: retriedItem.subtasks[0].text)
+        pass("failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it")
         // Simulates domain removal while editing; no production data is involved.
         let removed = await store.delete(item.id)
         try require(removed, "fixture removal failed")
@@ -2576,7 +2627,8 @@ final class UISmokeRuntime {
         try await press("event.delete.confirm")
         try await waitFor("confirmed delete") { self.store.active.isEmpty && self.controls.entries["editor.edit"] == nil }
         pass("inline deletion confirmation preserves cancellation and persists explicit deletion")
-        try verifyDiagnosticsPrivacy(forbidden: ["Window smoke event", "Private synthetic note", "Keep unavailable draft", "Alpha", "😎"])
+        try verifyDiagnosticsPrivacy(forbidden: ["Window smoke event", "Private synthetic note", "Keep unavailable draft",
+                                               "Retry preserves this note", "Retry preserves this task", "Alpha", "😎"])
         pass("diagnostics remain free of private editor input")
         try await verifyDayCreation()
         try await verifyOptionalIconsAndFavorites()
@@ -3011,6 +3063,139 @@ final class UISmokeRuntime {
         try require(deleted, "stable subtask fixture cleanup failed")
         try FileManager.default.removeItem(at: configuration.dataURL)
         pass("editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout")
+    }
+
+    private func runEditorWorkflowRegressions() async throws {
+        for existing in [false, true] {
+            for save in [false, true] {
+                try await verifyEditorRowInput(existing: existing, save: save)
+            }
+        }
+        try await verifyWeekdayEditorRoundTrip()
+    }
+
+    private func verifyEditorRowInput(existing: Bool, save: Bool) async throws {
+        try require(store.active.isEmpty, "editor workflow must start empty")
+        let original = Countdown(title: "Original workflow", note: "Original note", date: Day(store.tomorrow), emoji: "",
+                                 subtasks: try [Subtask(text: "Remove me"), Subtask(text: "Keep completed", isCompleted: true)])
+        if existing {
+            let seeded = await store.save(original, primary: true)
+            try require(seeded, "editor workflow fixture save failed")
+        }
+        let before = store.data
+        let beforeJSON = try? Data(contentsOf: configuration.dataURL)
+        if existing { try await press("event.edit.\(original.id.uuidString)") }
+        else { try await press("event.empty.tomorrow") }
+        let editorID = existing ? "editor.edit" : "editor.new"
+        try await waitForElement(editorID)
+        try await focusAndReplace("editor.title", with: "Workflow title")
+        try await replaceEditorNote(with: "Workflow note")
+        let removed = existing ? "editor.subtask.\(original.subtasks[0].id.uuidString)" : try await addEditorSubtaskAndWait()
+        try await focusAndReplace(removed, with: "Focused row to remove")
+        let retained = existing ? "editor.subtask.\(original.subtasks[1].id.uuidString)" : try await addEditorSubtaskAndWait()
+        try await focusAndReplace(retained, with: "Neighbor before removal")
+        try await press(removed)
+        try await waitForFirstResponder(removed)
+        try await deleteEditorSubtask(removed)
+        try await focusAndReplace(retained, with: "Neighbor after removal")
+        let temporary = try await addEditorSubtaskAndWait()
+        try await waitForFirstResponder(temporary)
+        try insertText("Temporary row")
+        try await waitForValue(temporary, equals: "Temporary row")
+        try await deleteEditorSubtask(temporary)
+        let replacement = try await addEditorSubtaskAndWait()
+        try await waitForFirstResponder(replacement)
+        try await waitFor("empty replacement disables Save") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(replacement != removed && replacement != temporary && replacement != retained,
+                    "adding after deletion reused another row identity")
+        try insertText("Replacement row")
+        try await waitForValue(replacement, equals: "Replacement row")
+        try await focusAndReplace("editor.title", with: "Workflow title after rows")
+        try await replaceEditorNote(with: "Workflow note after rows")
+        try await focusAndReplace(retained, with: "Neighbor after focus changes")
+        try await hideAndShow(usingStatusItem: true)
+        try await waitForFirstResponder(retained)
+        try insertText(" continued")
+        try await waitForValue(retained, equals: "Neighbor after focus changes continued")
+        try require(store.data == before && (try? Data(contentsOf: configuration.dataURL)) == beforeJSON,
+                    "row editing committed draft data before Save")
+
+        try await press(save ? "editor.save" : "editor.cancel")
+        try await waitFor("editor workflow ends") { self.controls.entries[editorID] == nil && !self.store.hasPendingPersistence }
+        if save {
+            let item = try requireValue(store.active.first, "saved editor workflow")
+            let ids = try [retained, replacement].map { field in
+                try requireValue(UUID(uuidString: String(field.dropFirst("editor.subtask.".count))), "workflow row UUID")
+            }
+            try require(item.title == "Workflow title after rows" && item.note == "Workflow note after rows"
+                        && item.subtasks.map(\.id) == ids
+                        && item.subtasks.map(\.text) == ["Neighbor after focus changes continued", "Replacement row"]
+                        && item.subtasks.map(\.isCompleted) == [existing, false], "Save lost row identity, text or completion")
+            let disk = try await CountdownRepository(fileURL: configuration.dataURL).load()
+            try require(disk == store.data && (!existing || disk.primaryID == original.id), "workflow Save is not durable")
+            try await press("event.edit.\(item.id.uuidString)")
+            try await waitForValue("editor.title", equals: item.title)
+            try await waitForValue("editor.note", equals: item.note ?? "")
+            try await waitForValue(retained, equals: item.subtasks[0].text)
+            try await waitForValue(replacement, equals: item.subtasks[1].text)
+            try await focusAndReplace(retained, with: "Discard reopened edit")
+            try await press("editor.cancel")
+            try await waitFor("reopened workflow cancelled") { self.controls.entries["editor.edit"] == nil }
+            try require(store.data == disk, "Cancel of reopened edit changed saved data")
+        } else {
+            try require(store.data == before && (try? Data(contentsOf: configuration.dataURL)) == beforeJSON,
+                        "Cancel changed the original file or event")
+            if existing { try await press("event.edit.\(original.id.uuidString)") }
+            else { try await press("event.empty.tomorrow") }
+            try await waitForElement(editorID)
+            try await waitForValue("editor.subtasks", equals: existing ? "2" : "0")
+            try await waitForValue("editor.title", equals: existing ? original.title : russianWeekdayTitle(Day(store.tomorrow)))
+            if existing {
+                try await waitForValue(removed, equals: original.subtasks[0].text)
+                try await waitForValue(retained, equals: original.subtasks[1].text)
+            }
+            try await press("editor.cancel")
+            try await waitFor("clean editor cancelled") { self.controls.entries[editorID] == nil }
+        }
+        if let item = store.active.first {
+            let deleted = await store.delete(item.id)
+            try require(deleted, "editor workflow cleanup failed")
+        }
+        if FileManager.default.fileExists(atPath: configuration.dataURL.path) { try FileManager.default.removeItem(at: configuration.dataURL) }
+        pass("\(existing ? "existing" : "new") editor \(save ? "Save/reopen" : "Cancel/reopen"): deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input")
+    }
+
+    private func verifyWeekdayEditorRoundTrip() async throws {
+        let offset = (5 - Day.calendar.component(.weekday, from: store.today.date()) + 7) % 7
+        let thursday = Day(try requireValue(Day.calendar.date(byAdding: .day, value: offset, to: store.today.date()), "next Thursday"))
+        let friday = Day(try requireValue(Day.calendar.date(byAdding: .day, value: 1, to: thursday.date()), "next Friday"))
+        try await press("event.empty.chooseDate")
+        try await waitForElement("editor.new")
+        try await selectEditorDate(thursday)
+        try await waitForValue("editor.title", equals: "Четверг")
+        try await press("editor.title")
+        try await waitForFirstResponder("editor.title")
+        try await selectEditorDate(friday)
+        try await waitForValue("editor.title", equals: "Пятница")
+        try await hideAndShow()
+        try await selectEditorDate(thursday)
+        try await waitForValue("editor.title", equals: "Четверг")
+        try await press("editor.save")
+        try await waitFor("Thursday day saved") { self.controls.entries["editor.new"] == nil && !self.store.hasPendingPersistence }
+        let item = try requireValue(store.active.first, "saved Thursday")
+        try await press("event.edit.\(item.id.uuidString)")
+        try await waitForElement("editor.edit")
+        try await selectEditorDate(friday)
+        try await waitForValue("editor.title", equals: "Четверг")
+        try await focusAndReplace("editor.title", with: "Custom weekday plan")
+        try await selectEditorDate(thursday)
+        try await waitForValue("editor.title", equals: "Custom weekday plan")
+        try await press("editor.cancel")
+        try await waitFor("weekday edit cancelled") { self.controls.entries["editor.edit"] == nil }
+        try require(store.active.first == item && item.date == thursday && item.title == "Четверг", "weekday Cancel changed the saved event")
+        let deleted = await store.delete(item.id)
+        try require(deleted, "weekday fixture cleanup failed")
+        pass("new day follows native Thursday/Friday changes through title focus and hide/show; existing saved title remains explicit and Cancel preserves its date")
     }
 
     private func selectEditorDate(_ day: Day) async throws {

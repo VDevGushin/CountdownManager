@@ -155,6 +155,9 @@ from ambiguous shell control flow. Prompts and rubrics remain version 3; runner 
 the corrected judge. Dependency prefetch changes the execution environment, so new live runs must
 be identified separately from earlier runs blocked by unavailable dependencies.
 
+The focused `verify.sh editor` route is also classified as a UI/build operation; read-only
+negative controls reject it even when its process fails.
+
 If a recognizer defect is found in a completed version-2 run, `recheck` creates a separate assessment
 of the same frozen prompts, traces, snapshots and oracle results without making new model calls:
 

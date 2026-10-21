@@ -6,7 +6,7 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state) ;;
+    fast|ui|full|weather|empty-state|editor) ;;
     capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -134,6 +134,8 @@ run_ui_checks() {
     run_smoke full-ui-smoke --ui-smoke
     echo "Verification: collapse/freeze regression"
     run_smoke collapse-regression --ui-smoke-collapse-regression
+    echo "Verification: editor input, row deletion and weekday workflows"
+    run_smoke editor-workflows --ui-smoke-editor-workflows
     for run in 1 2 3; do
         echo "Verification: window/editor/list continuity regression (${run}/3)"
         run_smoke "editor-scroll-regression-$run" --ui-smoke-editor-scroll-regression
@@ -252,6 +254,11 @@ run_capture_checks() {
 case "$mode" in
     fast) run_fast_checks ;;
     ui) run_ui_checks ;;
+    editor)
+        build_ui_app
+        run_smoke editor-workflows --ui-smoke-editor-workflows
+        echo "PASS: focused editor input, row deletion and weekday workflows"
+        ;;
     full)
         run_fast_checks
         run_ui_checks

@@ -445,6 +445,127 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(waitForFavorite(eventID))
     }
 
+    func testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave() throws {
+        let originalBytes = try Data(contentsOf: dataURL)
+        app.launch()
+        openNewEditor()
+        let title = app.textFields["editor.title"]
+        replace(title, with: "Отменяемое событие")
+        let removedID = try addEditorSubtask()
+        let retainedID = try addEditorSubtask()
+        let retained = app.textFields[retainedID]
+        revealInEditor(retained, fullyInViewport: true)
+        replace(retained, with: "Оставшаяся строка")
+        let removed = app.textFields[removedID]
+        revealInEditor(removed, fullyInViewport: true)
+        replace(removed, with: "Фокус перед удалением")
+        let delete = app.buttons["editor.subtask.delete.\(removedID.dropFirst("editor.subtask.".count))"]
+        revealInEditor(delete, fullyInViewport: true)
+        delete.click()
+        XCTAssertTrue(waitForAbsence(removed))
+        appendThroughKeyboard(retained, text: " после удаления", expecting: "Оставшаяся строка после удаления")
+        appendThroughKeyboard(title, text: " изменено", expecting: "Отменяемое событие изменено")
+        let note = app.textViews["editor.note"]
+        revealInEditor(note, fullyInViewport: true)
+        note.click()
+        app.typeText("Первая строка\nВторая строка")
+        XCTAssertTrue(waitForValue(note, equals: "Первая строка\nВторая строка"))
+        XCTAssertTrue(waitForValue(retained, equals: "Оставшаяся строка после удаления"))
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.add"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes)
+
+        openNewEditor()
+        XCTAssertEqual(title.value as? String, "")
+        XCTAssertEqual(note.value as? String, "")
+        XCTAssertFalse(app.textFields[removedID].exists)
+        XCTAssertFalse(retained.exists)
+        let subtaskFields = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "editor.subtask."))
+        XCTAssertEqual(subtaskFields.count, 0, "Cancel must discard every added subtask")
+        replace(title, with: "Сохранённое новое событие")
+        let savedFieldID = try addEditorSubtask()
+        let savedField = app.textFields[savedFieldID]
+        revealInEditor(savedField, fullyInViewport: true)
+        replace(savedField, with: "Новая сохранённая строка")
+        revealInEditor(note, fullyInViewport: true)
+        note.click()
+        app.typeText("Новая заметка")
+        XCTAssertTrue(waitForValue(note, equals: "Новая заметка"))
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.add"].waitForExistence(timeout: 3))
+        let items = try persistedItems()
+        XCTAssertEqual(items.count, 2)
+        let item = try XCTUnwrap(items.first { $0["id"] as? String != eventID })
+        let savedID = try XCTUnwrap(item["id"] as? String)
+        XCTAssertEqual(item["title"] as? String, "Сохранённое новое событие")
+        XCTAssertEqual(item["note"] as? String, "Новая заметка")
+        let tasks = try XCTUnwrap(item["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(tasks.count, 1)
+        XCTAssertEqual(tasks[0]["id"] as? String, String(savedFieldID.dropFirst("editor.subtask.".count)))
+        XCTAssertEqual(tasks[0]["text"] as? String, "Новая сохранённая строка")
+        XCTAssertEqual(tasks[0]["isCompleted"] as? Bool, false)
+        XCTAssertTrue(waitForFavorite(eventID))
+        openEditor(savedID)
+        XCTAssertEqual(title.value as? String, "Сохранённое новое событие")
+        XCTAssertEqual(note.value as? String, "Новая заметка")
+        revealInEditor(savedField, fullyInViewport: true)
+        XCTAssertEqual(savedField.value as? String, "Новая сохранённая строка")
+        app.buttons["editor.cancel"].click()
+    }
+
+    func testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen() throws {
+        app.launch()
+        openEditor()
+        let title = app.textFields["editor.title"]
+        replace(title, with: "Событие после удаления строки")
+        let active = app.textFields["editor.subtask.\(activeSubtaskID)"]
+        revealInEditor(active, fullyInViewport: true)
+        replace(active, with: "Удаляется из фокуса")
+        let delete = app.buttons["editor.subtask.delete.\(activeSubtaskID)"]
+        revealInEditor(delete, fullyInViewport: true)
+        delete.click()
+        XCTAssertTrue(waitForAbsence(active))
+        let completed = app.textFields["editor.subtask.\(completedSubtaskID)"]
+        appendThroughKeyboard(completed, text: " дописано", expecting: "Completed fixture subtask дописано")
+        let note = app.textViews["editor.note"]
+        appendThroughKeyboard(note, text: " и новая заметка", expecting: "Isolated fixture и новая заметка")
+        appendThroughKeyboard(title, text: " готово", expecting: "Событие после удаления строки готово")
+        XCTAssertTrue(waitForValue(completed, equals: "Completed fixture subtask дописано"))
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        let item = try XCTUnwrap(try persistedItems().first)
+        XCTAssertEqual(item["title"] as? String, "Событие после удаления строки готово")
+        XCTAssertEqual(item["note"] as? String, "Isolated fixture и новая заметка")
+        let tasks = try XCTUnwrap(item["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(tasks.count, 1)
+        XCTAssertEqual(tasks[0]["id"] as? String, completedSubtaskID)
+        XCTAssertEqual(tasks[0]["text"] as? String, "Completed fixture subtask дописано")
+        XCTAssertEqual(tasks[0]["isCompleted"] as? Bool, true)
+        XCTAssertTrue(waitForFavorite(eventID))
+        openEditor()
+        XCTAssertEqual(title.value as? String, "Событие после удаления строки готово")
+        XCTAssertEqual(note.value as? String, "Isolated fixture и новая заметка")
+        revealInEditor(completed, fullyInViewport: true)
+        XCTAssertEqual(completed.value as? String, "Completed fixture subtask дописано")
+        XCTAssertFalse(active.exists)
+        app.buttons["editor.cancel"].click()
+    }
+
+    private func openNewEditor() {
+        let add = app.buttons["event.add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        add.click()
+        XCTAssertTrue(app.textFields["editor.title"].waitForExistence(timeout: 3))
+    }
+
+    private func appendThroughKeyboard(_ field: XCUIElement, text: String, expecting value: String) {
+        revealInEditor(field, fullyInViewport: true)
+        field.click()
+        field.typeKey(.rightArrow, modifierFlags: .command)
+        app.typeText(text)
+        XCTAssertTrue(waitForValue(field, equals: value), "Keyboard input must reach the selected editor field")
+    }
+
     private func addEditorSubtask() throws -> String {
         let prefix = "editor.subtask."
         let query = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
@@ -570,9 +691,11 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.descendants(matching: .any)["root.window"]
     }
 
-    private func openEditor() {
-        let edit = app.buttons["event.edit.\(eventID)"]
+    private func openEditor(_ id: String? = nil) {
+        let edit = app.buttons["event.edit.\(id ?? eventID)"]
         XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        for _ in 0..<4 where !edit.isHittable { app.scrollViews["event.list"].swipeUp() }
+        XCTAssertTrue(edit.isHittable)
         edit.click()
         XCTAssertTrue(app.textFields["editor.title"].waitForExistence(timeout: 3))
     }
