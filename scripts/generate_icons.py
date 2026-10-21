@@ -16,8 +16,11 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "Resources"
-BLUE = (22 / 255, 140 / 255, 1)
 KAPPA = 4 * (math.sqrt(2) - 1) / 3
+APP_COLORS = {
+    "Light": ("#b7472c", "#fffaf2", None),
+    "Dark": ("#211c19", "#f2e6d4", None),
+}
 
 
 def number(value):
@@ -26,6 +29,10 @@ def number(value):
 
 def command(*values):
     return " ".join(number(value) if isinstance(value, (int, float)) else value for value in values)
+
+
+def rgb(hex_color):
+    return tuple(int(hex_color[index:index + 2], 16) / 255 for index in (1, 3, 5))
 
 
 def circle(x, y, radius):
@@ -85,9 +92,6 @@ def mars_path():
 
 
 def colored_mars_path(body_color, stripe_color):
-    def rgb(hex_color):
-        return tuple(int(hex_color[index:index + 2], 16) / 255 for index in (1, 3, 5))
-
     # Clip both paints to the planet minus its craters. The stripe is color,
     # while the three craters and everything outside remain truly transparent.
     return "\n".join([
@@ -96,6 +100,14 @@ def colored_mars_path(body_color, stripe_color):
         command(*rgb(body_color), "rg"), circle(50, 50, 47), "f",
         command(*rgb(stripe_color), "rg"), mars_band_path(), "f", "Q",
     ])
+
+
+def colored_mars_svg(body_color, stripe_color):
+    return (
+        '<clipPath id="mars-body"><path clip-rule="evenodd" d="' + MARS_BODY_SVG + '"/></clipPath>'
+        '<g clip-path="url(#mars-body)"><circle cx="50" cy="50" r="47" fill="' + body_color + '"/>'
+        '<path d="' + MARS_BAND_SVG + '" fill="' + stripe_color + '"/></g>'
+    )
 
 
 def write_pdf(path, size, drawing):
@@ -155,21 +167,79 @@ for points in [16, 32, 128, 256, 512] {
 def generate_menu_colors():
     for appearance, (body_color, stripe_color) in MENU_COLORS.items():
         name = f"MarsMenu{appearance}"
-        body = (
-            '<clipPath id="mars-body"><path clip-rule="evenodd" d="' + MARS_BODY_SVG + '"/></clipPath>'
-            '<g clip-path="url(#mars-body)"><circle cx="50" cy="50" r="47" fill="' + body_color + '"/>'
-            '<path d="' + MARS_BAND_SVG + '" fill="' + stripe_color + '"/></g>'
-        )
+        body = colored_mars_svg(body_color, stripe_color)
         RESOURCES.joinpath(f"{name}.svg").write_text(svg("-4 -4 108 108", body))
         write_pdf(RESOURCES / f"{name}.pdf", 108,
                   "1 0 0 1 4 4 cm\n" + colored_mars_path(body_color, stripe_color))
 
 
+def generate_app_icons():
+    with tempfile.TemporaryDirectory(prefix="countdown-icons-") as temporary:
+        stage = Path(temporary)
+        renderer = stage / "render.swift"
+        renderer.write_text(RENDERER)
+        cache = ROOT / ".build/icon-resource-cache"
+        cache.mkdir(parents=True, exist_ok=True)
+        environment = dict(os.environ, CLANG_MODULE_CACHE_PATH=str(cache))
+        preview = ROOT / ".build/icon-previews"
+        preview.mkdir(parents=True, exist_ok=True)
+        composer_assets = RESOURCES / "AppIcon.icon/Assets"
+        composer_assets.mkdir(parents=True, exist_ok=True)
+        for appearance, (background, foreground, stripe) in APP_COLORS.items():
+            name = f"AppIcon{appearance}"
+            # FINAL Lavish geometry: draw the planet minus its crater holes
+            # directly, then paint the band in the tile background. Clipping an
+            # already filled circular edge caused the rejected thin rim.
+            mark_svg = '<path fill="' + foreground + '" fill-rule="evenodd" d="' + MARS_BODY_SVG + '"/><path fill="' + background + '" d="' + MARS_BAND_SVG + '"/>'
+            glyph_svg = svg("0 0 100 100", '<g transform="translate(15 15) scale(.7)">' + mark_svg + "</g>")
+            preview.joinpath(f"Mars{appearance}.svg").write_text(glyph_svg)
+            # Explicit compound-path holes survive Apple's SVG importer; no
+            # even-odd clipPath or outer circle clipping is used here.
+            composer_svg = glyph_svg.replace('<svg ', '<svg width="1024" height="1024" ', 1)
+            composer_assets.joinpath(f"Mars{appearance}.svg").write_text(composer_svg)
+            app_svg = svg("0 0 100 100", '<rect width="100" height="100" rx="22.5" fill="' + background + '"/><g transform="translate(15 15) scale(.7)">' + mark_svg + "</g>")
+            RESOURCES.joinpath(f"{name}.svg").write_text(app_svg)
+            if appearance == "Light":
+                RESOURCES.joinpath("AppIcon.svg").write_text(app_svg)
+            iconset = stage / f"{name}.iconset"
+            iconset.mkdir()
+            icon_pdf = stage / f"{name}.pdf"
+            mark_path = "\n".join([
+                command(*rgb(foreground), "rg"), circle(50, 50, 47),
+                circle(75.5, 23, 7.5), circle(23.5, 64, 5.5), circle(58, 76, 4), "f*",
+                command(*rgb(background), "rg"), mars_band_path(), "f",
+            ])
+            drawing = "\n".join([
+                command(*rgb(background), "rg"), rounded_rect(0, 0, 100, 100, 22.5), "f",
+                "q", ".7 0 0 .7 15 15 cm", mark_path, "Q",
+            ])
+            write_pdf(icon_pdf, 100, drawing)
+            subprocess.run(["swift", "-module-cache-path", str(cache), str(renderer), str(icon_pdf), str(iconset)], check=True, env=environment)
+            appearance_preview = preview / f"{name}.iconset"
+            appearance_preview.mkdir(parents=True, exist_ok=True)
+            for points in [16, 32, 128, 256, 512]:
+                for scale in [1, 2]:
+                    suffix = "@2x" if scale == 2 else ""
+                    filename = f"icon_{points}x{points}{suffix}.png"
+                    appearance_preview.joinpath(filename).write_bytes(iconset.joinpath(filename).read_bytes())
+            preview.joinpath(f"{name}-1024.png").write_bytes(iconset.joinpath("icon_512x512@2x.png").read_bytes())
+            if appearance == "Light":
+                subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(RESOURCES / "AppIcon.icns")], check=True)
+    print("Generated branded AppIcon.icns (Light fallback), AppIconLight/Dark.svg and named PNG previews")
+    print("PNG previews: .build/icon-previews/AppIconLight.iconset/ and AppIconDark.iconset/")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--menu-only", action="store_true",
-                        help="generate only the Light/Dark colored Mars menu PDFs and SVGs; leave the app icon and template assets untouched")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--menu-only", action="store_true",
+                       help="generate only the Light/Dark colored Mars menu PDFs and SVGs; leave the app icon and template assets untouched")
+    modes.add_argument("--app-only", action="store_true",
+                       help="generate only the branded app-icon SVGs, Light fallback ICNS and Light/Dark PNG previews; leave all menu assets untouched")
     arguments = parser.parse_args()
+    if arguments.app_only:
+        generate_app_icons()
+        return
     generate_menu_colors()
     if arguments.menu_only:
         print("Generated MarsMenuLight/Dark.pdf and .svg; app icon and template assets unchanged")
@@ -182,33 +252,7 @@ def main():
         "3 10 m 21 10 l 7 3 m 7 7 l 17 3 m 17 7 l S",
     ])
     write_pdf(RESOURCES / "CalendarMenu.pdf", 24, calendar)
-    RESOURCES.joinpath("AppIcon.svg").write_text(svg("0 0 100 100", '<rect width="100" height="100" rx="22.5" fill="#168cff"/><g transform="translate(15 15) scale(.7)" color="white">' + MARS_SVG + "</g>"))
-    with tempfile.TemporaryDirectory(prefix="countdown-icons-") as temporary:
-        stage = Path(temporary)
-        iconset = stage / "AppIcon.iconset"
-        iconset.mkdir()
-        icon_pdf = stage / "AppIcon.pdf"
-        drawing = "\n".join([
-            command(*BLUE, "rg"), rounded_rect(0, 0, 100, 100, 22.5), "f",
-            "q", ".7 0 0 .7 15 15 cm", "1 g", mars_path(), "Q",
-        ])
-        write_pdf(icon_pdf, 100, drawing)
-        renderer = stage / "render.swift"
-        renderer.write_text(RENDERER)
-        cache = ROOT / ".build/icon-resource-cache"
-        cache.mkdir(parents=True, exist_ok=True)
-        environment = dict(os.environ, CLANG_MODULE_CACHE_PATH=str(cache))
-        subprocess.run(["swift", "-module-cache-path", str(cache), str(renderer), str(icon_pdf), str(iconset)], check=True, env=environment)
-        preview = ROOT / ".build/icon-previews"
-        preview.mkdir(parents=True, exist_ok=True)
-        for points in [16, 32, 128, 256, 512]:
-            for scale in [1, 2]:
-                suffix = "@2x" if scale == 2 else ""
-                filename = f"icon_{points}x{points}{suffix}.png"
-                preview.joinpath(filename).write_bytes(iconset.joinpath(filename).read_bytes())
-        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(RESOURCES / "AppIcon.icns")], check=True)
-    print("Generated MarsMenu.pdf, CalendarMenu.pdf, SVG sources and AppIcon.icns")
-    print("PNG previews: .build/icon-previews/")
+    generate_app_icons()
 
 
 if __name__ == "__main__":

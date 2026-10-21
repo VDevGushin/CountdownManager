@@ -15,6 +15,7 @@ swift build --disable-sandbox -c release --scratch-path "$BUILD_DIR" --product C
 BIN_DIR="$(swift build --disable-sandbox -c release --scratch-path "$BUILD_DIR" --show-bin-path)"
 cp "$BIN_DIR/CountdownManager" "$staged_app/Contents/MacOS/CountdownManager"
 cp Resources/AppIcon.icns "$staged_app/Contents/Resources/AppIcon.icns"
+cp Resources/Assets.car "$staged_app/Contents/Resources/Assets.car"
 cp Resources/MarsMenu.pdf Resources/CalendarMenu.pdf "$staged_app/Contents/Resources/"
 cp Resources/MarsMenuLight.pdf Resources/MarsMenuDark.pdf "$staged_app/Contents/Resources/"
 cp Resources/TimerFinished.mp3 "$staged_app/Contents/Resources/TimerFinished.mp3"

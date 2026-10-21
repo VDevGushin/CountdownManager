@@ -127,6 +127,23 @@ without regenerating AppIcon or invoking Swift/iconutil. The generator does not 
 application data. Native PDF drawing supplies the antialiasing; there is no PNG threshold mask
 in the shipped menu images.
 
+## Branded application icon
+
+`python3 scripts/generate_icons.py --app-only` regenerates the two branded SVGs, ten-size
+Light ICNS fallback and Icon Composer glyph layers without changing any menu resources.
+`python3 scripts/compile_app_icon.py --preview` requires full Xcode 26 or newer; it compiles
+`Resources/AppIcon.icon` into committed `Resources/Assets.car`, checks Aqua/Dark icon stacks
+and legacy MultiSized renditions, and exports Default/Dark source previews. Normal builds only
+copy that catalog. Verify the metadata and resource hashes in the exact production bundle.
+
+Keep source previews distinct from system resolution. Icon Composer PNGs render the source
+document, not the compiled CAR. A standalone AppKit probe may load the actual app through
+`NSWorkspace.icon(forFile:)` and `Bundle.image(forResource:)`, render under local appearances,
+and inspect brand colors/geometry; a generic nonnil image is not acceptance. These APIs may
+keep the current system icon style even when drawing with DarkAqua. Do not claim a forced
+Dark Finder test from two identical Default renders. Check the CAR inventory and explicit
+source appearances separately. Global settings and production data must not be changed for fixtures.
+
 ## Compact cards and notes
 
 Run full lint and `./verify.sh fast`, then `./verify.sh compact-capture <marked-output-directory>`.

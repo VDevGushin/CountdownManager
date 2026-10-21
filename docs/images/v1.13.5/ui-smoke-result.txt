@@ -1,0 +1,4 @@
+UISmoke
+✓ same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation
+✓ actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures
+PASS: 2/2

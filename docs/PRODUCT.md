@@ -454,7 +454,7 @@ Its normal event representation contains:
 - the event emoji, or the monochrome K1 outline calendar when no additional emoji is stored or the legacy `📅` is stored;
 - `Сегодня` for today, `Завтра` for tomorrow, otherwise remaining calendar days with Russian day forms.
 
-The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon retains the smooth white Mars on a solid blue rounded-square background.
+The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon preserves the approved Mars geometry. Its Default appearance uses terracotta `#b7472c` with warm light `#fffaf2`; Dark uses warm dark `#211c19` with cream `#f2e6d4`. In both appearances the band and three craters reveal the background. A system icon catalog provides Default/Dark on macOS 26, alongside compatible legacy renditions and an ICNS fallback. The system icon style may differ from the appearance of application windows.
 
 It does not display:
 

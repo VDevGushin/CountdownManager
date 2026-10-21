@@ -1,0 +1,48 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "extended-srgb:0.71764706,0.27843137,0.17254902,1"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "extended-srgb:0.12941176,0.10980392,0.09803922,1"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "layers": [
+        {
+          "name": "Mars",
+          "glass": false,
+          "image-name-specializations": [
+            {
+              "value": "MarsLight.svg"
+            },
+            {
+              "appearance": "dark",
+              "value": "MarsDark.svg"
+            }
+          ]
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "specular": false,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}

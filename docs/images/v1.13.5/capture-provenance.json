@@ -1,0 +1,194 @@
+{
+  "status": "NATIVE_VERIFIED_SIGNED_INSTALLED_NOT_PUBLISHED",
+  "version": "1.13.5",
+  "build": "27",
+  "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.5/Countdown Manager.app",
+  "executable_sha256": "437d1e62b05dfc56eb0302f3f040039cefd9cded1254aacda739817ebd8e873c",
+  "resources_sha256": {
+    "Assets.car": "5e7ccaeefdad713b6fafce2472b9633e6a349e30c2f2c6320b686dbf0653da2d",
+    "AppIcon.icns": "9abd2f8e59584ec482fa39d2dcebcfe4ce7724c1d73ce5d837e3caedc1098016",
+    "MarsMenuLight.pdf": "30de40020c8ea0611168c5be4339aac42beed4a8970ad74c18979acf9fa195ae",
+    "MarsMenuDark.pdf": "441bbb1769e58de2d1867293521432084ccb8ee562bb5d1c87c684e76072b46d",
+    "CalendarMenu.pdf": "34267acec8fc5dea658781545fd2172a17a0ea59d9a2382221aa802c0f46d3e3"
+  },
+  "images": {
+    "app-icon-source-dark.png": {
+      "sha256": "094981ec13dd8574a15b60941e93ba6e2e2eee7d640e52c637a92bbdcbbb7628",
+      "width": 512,
+      "height": 512
+    },
+    "menu-emoji-tomorrow-light.png": {
+      "sha256": "7edb22e6e1f6c9bb15c3caeb14a88115870f12e926c1348232de76a939566dd3",
+      "width": 172,
+      "height": 44
+    },
+    "menu-running-light.png": {
+      "sha256": "282f4ec7ec959b5290b065fdb31c5e5c6fb70af4048a283ebadc2c41a7548033",
+      "width": 132,
+      "height": 46
+    },
+    "menu-calendar-today-dark.png": {
+      "sha256": "e321f86b0932c01bd9da979e6baa6d9bc23e6f9a1f1e069aaf7d735fcf8efc60",
+      "width": 186,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-dark.png": {
+      "sha256": "16febdbb357494452e7c8946c4bc2549418d492acca76e0affd478c7d089198b",
+      "width": 168,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-light.png": {
+      "sha256": "fde0362285debcac1aac0689d35f34f581b37883237a6a8871ea20501d29e649",
+      "width": 168,
+      "height": 44
+    },
+    "identity-app-icon-dark.png": {
+      "sha256": "c5ca5522aeae8680da4b433d57a5d79dc6c96b62b86ad119ed2fab0ef8e80ec3",
+      "width": 320,
+      "height": 320
+    },
+    "menu-finished-dark.png": {
+      "sha256": "45bc3c6c72947116aa3892be4f255c3e4ec30f2c4201187b73ebb376fcfe8111",
+      "width": 64,
+      "height": 58
+    },
+    "menu-mars-empty-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "identity-app-icon-light.png": {
+      "sha256": "ba1671d276da21048cdaf0c1bda213544b52068c062b7259f0754098dcd0f942",
+      "width": 320,
+      "height": 320
+    },
+    "identity-panel-unfavorited-light.png": {
+      "sha256": "32549e9429e17e68a88e6c89c681d15b5badda1f7b8833df86fc3f48d66a75ad",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-calendar-today-light.png": {
+      "sha256": "89f8cb19fd2c9aa0e16fc3a5e7123ed5c432b24d54066f4d3d86b65f80dd8b66",
+      "width": 186,
+      "height": 44
+    },
+    "actual-bundle-workspace-dark.png": {
+      "sha256": "74285321747b305b4383c9a0d26e1e38a3405052d49cf58bd0a714c5a15b33ce",
+      "width": 512,
+      "height": 512
+    },
+    "identity-panel-empty-light.png": {
+      "sha256": "ee4b1b6b86f34dd7d650a49ef26228abbe30dc9ff8f6e5faddc42de063581953",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-running-dark.png": {
+      "sha256": "b8b85b6d5959308740a4041bda6589f59a052e5538290ee2f6372b18e7df5a52",
+      "width": 132,
+      "height": 46
+    },
+    "app-icon-source-default.png": {
+      "sha256": "d5d63b7fd1d85cd5d176854d90aec82c92a561b7ffee66ddb29ef55b73968745",
+      "width": 512,
+      "height": 512
+    },
+    "identity-panel-favorite-dark.png": {
+      "sha256": "90369aec76349787535d62e6c0e71a338092c281051d4a5bf110e6657caf1e94",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-emoji-tomorrow-dark.png": {
+      "sha256": "d292210cdf71e8b9dcee9639632d7f1047635ffbcdf698031b500c7e3ec069b9",
+      "width": 172,
+      "height": 44
+    },
+    "actual-bundle-named-light.png": {
+      "sha256": "fae6eaa5dc21152fc8bbc8dc0696d9ffe62fc43cc2eaa32858af773528ca4872",
+      "width": 512,
+      "height": 512
+    },
+    "menu-restored-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "identity-panel-favorite-light.png": {
+      "sha256": "7ca9a4153aaf51fb68e7236d1db6436d4b9749b6dab6da07198b0b397bb5f460",
+      "width": 780,
+      "height": 1200
+    },
+    "actual-bundle-workspace-light.png": {
+      "sha256": "83eda38434e425b517707d7d99292b13d3930fd8e5c826ce4f2a94a82cd47151",
+      "width": 512,
+      "height": 512
+    },
+    "identity-panel-empty-dark.png": {
+      "sha256": "c60bba41ccb43b9706ccf4a1fd74564efba1e5d3b86c0539ed114f9408c702a4",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-mars-unfavorited-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "actual-bundle-named-dark.png": {
+      "sha256": "fae6eaa5dc21152fc8bbc8dc0696d9ffe62fc43cc2eaa32858af773528ca4872",
+      "width": 512,
+      "height": 512
+    },
+    "menu-restored-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-empty-light.png": {
+      "sha256": "ca12f6d23cd5b118c964581e22ff9d434400852cf462a321a9fe08954cbcb680",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-unfavorited-dark.png": {
+      "sha256": "6a1c94fee1674e97c2320e0efd3ce55cac87a5738e67a2d02b64ac4f6dfad45c",
+      "width": 68,
+      "height": 44
+    },
+    "menu-finished-light.png": {
+      "sha256": "d67ce89bc40ed4a88a5bec29ed420976930029abbb652469a14b19e2740ee914",
+      "width": 64,
+      "height": 58
+    },
+    "identity-panel-unfavorited-dark.png": {
+      "sha256": "ead6800f3960dc134cf18a0b74c696eee4971d6b339a001df36e4c403e41b9ba",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-identity-comparison.png": {
+      "sha256": "5ddd95c91ebe3fcc735c6864d11a14f9f0e75b46dc9a64b0820160faaa5c94b1",
+      "width": 760,
+      "height": 454
+    }
+  },
+  "native_result": "UISmoke\n✓ same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation\n✓ actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures\nPASS: 2/2",
+  "source_preview": "app-icon-source-default/dark are Icon Composer renders of the exact source used to compile bundled CAR, not screenshots of a forced system icon style",
+  "actual_bundle_probe": "NSWorkspace and named Bundle resource from exact5 package render branded Default in both local drawing appearances. They are not generic icons; global system icon style was not changed.",
+  "gate_reuse": "58Swift/Test/Package/lint inputs equal green1.13.4. Core/UI/lint evidence reused; exact5 metadata/resources/package captured independently.",
+  "publication_performed": false,
+  "installation_performed": true,
+  "limits": [
+    "Actual Dark system icon style and macOS13 runtime not forced/tested; Default/Dark stacks plus legacy renditions verified in CAR",
+    "24 native captures use isolated demo events, no production fixtures",
+    "identity-app-icon-light/dark are fallback ICNS on two backgrounds, not the two native catalog renditions",
+    "No repeated full Sparkle replacement, external keyboard/VoiceOver/Spaces or Gatekeeper first installation"
+  ],
+  "comparison_composition": "Exact5 native status-button PNG pixels composited without resizing onto light/dark solid backgrounds, labels added",
+  "installation_verification": {
+    "version": "1.13.5",
+    "build": "27",
+    "path": "/Applications/Countdown Manager.app",
+    "executable_sha256": "437d1e62b05dfc56eb0302f3f040039cefd9cded1254aacda739817ebd8e873c",
+    "events_unchanged": true,
+    "preferences_unchanged": true,
+    "signature_verified": true,
+    "installed_at_utc": "2026-10-21T21:40:45.712525+00:00"
+  }
+}
