@@ -1,22 +1,22 @@
 # Preparing signed updates
 
-Release **1.13.4 / build 26** is published as Latest and installed locally. The approved terracotta
-stripe adapts to the actual menu-button appearance. The exact production package passed strict
-lint, CoreChecks/UIChecks and native appearance/capture checks (2/2, 24 PNGs). ZIP and signed
-appcast were independently verified; anonymous archive, version-feed and Latest-feed downloads
-returned HTTP 200 and matched the signed hashes. Events, preferences, key and stable feed
-are preserved. See [releases/v1.13.4.md](releases/v1.13.4.md).
+Release **1.13.5 / build 27** is published as Latest and installed locally. The application icon
+uses the approved branded Default/Dark palettes and seam-free original Mars geometry.
+The exact production package passed isolated native checks (2/2, 24 PNGs), icon-catalog inventory,
+current-style native Icon Services resolution and independent signed ZIP/feed verification.
+Anonymous archive, version-feed and Latest-feed downloads returned HTTP 200 and matched
+the signed hashes. Events, preferences, production key and stable feed are preserved.
+See [releases/v1.13.5.md](releases/v1.13.5.md).
 
-Previous release **1.13.3 / build 25** introduced the Mars identity and menu-only explicit favorite.
-Its publication and local installation evidence remains in [releases/v1.13.3.md](releases/v1.13.3.md).
-The local package and public Latest have now been replaced by 1.13.4.
+Previous release **1.13.4 / build 26** introduced the terracotta menu-bar stripe.
+Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 
 ## Channel and signing key
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.4/CountdownManager-1.13.4-26.zip`.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.5/CountdownManager-1.13.5-27.zip`.
 The signed `appcast.xml` and ZIP are published together as Latest. Anonymous downloads
 were verified against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
@@ -77,7 +77,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.13.4 COUNTDOWN_BUILD_NUMBER=26 \
+  COUNTDOWN_VERSION=1.13.5 COUNTDOWN_BUILD_NUMBER=27 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -87,15 +87,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.4/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.5/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.13.4 preparation procedure; preparation evidence is recorded
+The numbers above illustrate the 1.13.5 preparation procedure; preparation evidence is recorded
 in the release notes linked above. They do not establish publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The preceding distributed 1.13.3 uses build 25; 1.13.4 uses build 26. Keep `local.countdownmanager.app`
+build. The preceding distributed 1.13.4 uses build 26; 1.13.5 uses build 27. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.

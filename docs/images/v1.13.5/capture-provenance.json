@@ -1,5 +1,5 @@
 {
-  "status": "NATIVE_VERIFIED_SIGNED_INSTALLED_NOT_PUBLISHED",
+  "status": "PUBLISHED_VERIFIED_AND_INSTALLED",
   "version": "1.13.5",
   "build": "27",
   "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.5/Countdown Manager.app",
@@ -172,7 +172,7 @@
   "source_preview": "app-icon-source-default/dark are Icon Composer renders of the exact source used to compile bundled CAR, not screenshots of a forced system icon style",
   "actual_bundle_probe": "NSWorkspace and named Bundle resource from exact5 package render branded Default in both local drawing appearances. They are not generic icons; global system icon style was not changed.",
   "gate_reuse": "58Swift/Test/Package/lint inputs equal green1.13.4. Core/UI/lint evidence reused; exact5 metadata/resources/package captured independently.",
-  "publication_performed": false,
+  "publication_performed": true,
   "installation_performed": true,
   "limits": [
     "Actual Dark system icon style and macOS13 runtime not forced/tested; Default/Dark stacks plus legacy renditions verified in CAR",
@@ -190,5 +190,20 @@
     "preferences_unchanged": true,
     "signature_verified": true,
     "installed_at_utc": "2026-10-21T21:40:45.712525+00:00"
-  }
+  },
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.13.5",
+  "release_commit": "28cbf8f5087f8a51a8b6a357817892e6c3f66595",
+  "signed_public_artifacts": {
+    "CountdownManager-1.13.5-27.zip": {
+      "bytes": 4650456,
+      "sha256": "28c1fec96aa9186728c4703ab06a5f55153be81a9f64e0b6ed4e76f0e17832e5"
+    },
+    "appcast.xml": {
+      "bytes": 1299,
+      "sha256": "ff2406230d27c22aa3177011f986004727234d9792cc71af8ffe519b274925cc"
+    }
+  },
+  "installed_icon_probe": "Icon Services from /Applications returns byte-identical branded workspace PNGs to staged5 for both local drawing contexts; system icon style unchanged",
+  "native_source_retained": false,
+  "cleanup_note": "Temporary build/cache/prototype/native-home and redundant app/archive copies removed after installed launch and anonymous public hashes were verified. Source, screenshots and receipts retained."
 }
