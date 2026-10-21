@@ -1,33 +1,22 @@
 # Preparing signed updates
 
-Candidate **1.13.4 / build 26** adds the approved terracotta stripe to the menu-bar Mars.
-Its exact production-channel package passed strict lint, CoreChecks/UIChecks and the native
-appearance-transition/capture mode (2/2, 24 PNGs). Signed ZIP/appcast and archive verification
-are ready. The exact package is installed locally with events/preferences unchanged;
-publication remains pending. See [releases/v1.13.4.md](releases/v1.13.4.md).
+Release **1.13.4 / build 26** is published as Latest and installed locally. The approved terracotta
+stripe adapts to the actual menu-button appearance. The exact production package passed strict
+lint, CoreChecks/UIChecks and native appearance/capture checks (2/2, 24 PNGs). ZIP and signed
+appcast were independently verified; anonymous archive, version-feed and Latest-feed downloads
+returned HTTP 200 and matched the signed hashes. Events, preferences, key and stable feed
+are preserved. See [releases/v1.13.4.md](releases/v1.13.4.md).
 
-Release **1.13.3 / build 25** is published as Latest and installed locally. Its production-channel
-package passed the isolated native menu-identity capture mode (24 PNGs), signed ZIP/appcast
-verification and archive round trip. Anonymous ZIP, version-feed and Latest-feed downloads
-returned HTTP 200 and matched the signed local hashes.
-The existing key, feed, event data and preferences are preserved.
-See [releases/v1.13.3.md](releases/v1.13.3.md).
-
-Previous release **1.13.2 / build 24** remains available in release history.
-Its completed-subtask indicator used the previously accepted product code. Anonymous ZIP,
-version-feed and Latest-feed downloads returned HTTP 200 and matched the signed local hashes
-at publication. Its local installation has now been replaced by the verified 1.13.3 package;
-events and preferences were unchanged. The production key and stable feed remain unchanged.
-
-Release status, evidence and limits: [releases/v1.13.3.md](releases/v1.13.3.md).
-Previous release: [releases/v1.13.2.md](releases/v1.13.2.md).
+Previous release **1.13.3 / build 25** introduced the Mars identity and menu-only explicit favorite.
+Its publication and local installation evidence remains in [releases/v1.13.3.md](releases/v1.13.3.md).
+The local package and public Latest have now been replaced by 1.13.4.
 
 ## Channel and signing key
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.3/CountdownManager-1.13.3-25.zip`.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.4/CountdownManager-1.13.4-26.zip`.
 The signed `appcast.xml` and ZIP are published together as Latest. Anonymous downloads
 were verified against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
@@ -88,7 +77,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.13.3 COUNTDOWN_BUILD_NUMBER=25 \
+  COUNTDOWN_VERSION=1.13.4 COUNTDOWN_BUILD_NUMBER=26 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -98,15 +87,15 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.3/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.13.4/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.13.3 preparation procedure; preparation evidence is recorded
+The numbers above illustrate the 1.13.4 preparation procedure; preparation evidence is recorded
 in the release notes linked above. They do not establish publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. The preceding distributed 1.13.2 uses build 24; 1.13.3 uses build 25. Keep `local.countdownmanager.app`
+build. The preceding distributed 1.13.3 uses build 25; 1.13.4 uses build 26. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.

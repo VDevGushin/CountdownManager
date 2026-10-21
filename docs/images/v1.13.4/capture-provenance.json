@@ -1,5 +1,5 @@
 {
-  "status": "NATIVE_VERIFIED_SIGNED_INSTALLED_NOT_PUBLISHED",
+  "status": "PUBLISHED_VERIFIED_AND_INSTALLED",
   "version": "1.13.4",
   "build": "26",
   "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.4/Countdown Manager.app",
@@ -142,7 +142,7 @@
   "design": "User-selected Lavish C; neutral Mars with terracotta/coral band; transparent craters; AppIcon unchanged",
   "data": "Isolated marked native home; demonstration events; weather OFF; production updater channel configured, networking suppressed by smoke mode",
   "comparison_composition": "Original2x native status-button PNG pixels alpha-composited without scaling onto#f2f3f4/#202329; comparison labels added",
-  "publication_performed": false,
+  "publication_performed": true,
   "installation_performed": true,
   "limits": [
     "Button cache renders and AppKit ICNS render, not a screenshot of arbitrary menu wallpaper",
@@ -157,5 +157,19 @@
     "preferences_unchanged": true,
     "signature_verified": true,
     "installed_at_utc": "2026-10-21T20:50:41.928649+00:00"
-  }
+  },
+  "native_source_retained": false,
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.13.4",
+  "release_commit": "2c375cee70de7cde8237d4e32e932193661444c4",
+  "public_artifacts": {
+    "CountdownManager-1.13.4-26.zip": {
+      "bytes": 3151732,
+      "sha256": "f66d076d4e21730178a5ad60dc796ae9acd7657c6ece214e0a681c08d3b1da5e"
+    },
+    "appcast.xml": {
+      "bytes": 1299,
+      "sha256": "8213ac0f9ad66bd1b2a72b9e3b120b2d32984c5a16fa147eb92b5d9fe26f074f"
+    }
+  },
+  "cleanup_note": "Temporary build/cache/native-home and redundant packages removed after installed launch and anonymous public hashes were verified. Screenshots, source and receipts retained."
 }
