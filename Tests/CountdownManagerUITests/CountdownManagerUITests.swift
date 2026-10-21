@@ -59,6 +59,8 @@ enum UIChecks {
         try testPlannerCalendarPresentation()
         try testOptionalIconDrafts()
         try testOptionalFavoritePresentation()
+        try testMenuBarIdentity()
+        try await testMenuBarIdentityTransitions(in: directory.appendingPathComponent("menu-identity"))
         precondition(subtaskDisclosureMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.2))
         precondition(subtaskDisclosureMotion(reduceMotion: true) == .immediate)
         precondition(editorSubtaskMotion(reduceMotion: false) == .heightAndOpacity(duration: 0.1))
@@ -322,8 +324,8 @@ enum UIChecks {
         }
         precondition(restartedValuesAreExpanded)
 
-        // Menu bar contains only the primary emoji and day count / Today.
-        precondition(statusBarTitle(data: data, today: today) == "🚀 1 день")
+        // Menu bar represents only the explicit favorite, with a menu-specific Tomorrow label.
+        precondition(statusBarTitle(data: data, today: today) == "🚀 Завтра")
         var farFuture = CountdownData()
         let in238Days = Day.calendar.date(byAdding: .day, value: 238, to: today.date())!
         let farEvent = Countdown(title: "Hidden from menu bar", date: Day(in238Days), emoji: "☀️")
@@ -333,12 +335,12 @@ enum UIChecks {
         data.primaryID = todayItem.id
         precondition(statusBarTitle(data: data, today: today) == "☀️ Сегодня")
         precondition(!statusBarTitle(data: data, today: today).contains(todayItem.title))
-        precondition(statusBarTitle(data: CountdownData(), today: today) == "◷ Countdown")
+        precondition(statusBarPresentation(data: CountdownData(), today: today).icon == .mars && statusBarTitle(data: CountdownData(), today: today).isEmpty)
         var expiredOnly = CountdownData()
         expiredOnly.items = [expiredItem]
         expiredOnly.primaryID = expiredItem.id
         precondition(activeCountdowns(in: expiredOnly, today: today).isEmpty)
-        precondition(statusBarTitle(data: expiredOnly, today: today) == "◷ Countdown")
+        precondition(statusBarPresentation(data: expiredOnly, today: today).icon == .mars && statusBarTitle(data: expiredOnly, today: today).isEmpty)
 
         // Renaming does not reorder equal dates.
         let equalA = Countdown(title: "Zulu", date: Day(twoDaysDate), emoji: "🎉")
@@ -560,7 +562,8 @@ enum UIChecks {
         precondition(calendarEvent.emoji == "📅")
         precondition(EventEditorDraft(item: calendarEvent).emoji == "📅")
         precondition(EventEditorDraft(day: first.date).emoji.isEmpty)
-        precondition(statusBarTitle(data: data, today: today) == "📅 \(countdownLabel(calendarEvent.date.days(from: today)))")
+        precondition(statusBarPresentation(data: data, today: today).icon == .calendar
+                     && statusBarTitle(data: data, today: today) == countdownLabel(calendarEvent.date.days(from: today)))
         let afterPresentation = try encoder.encode(data)
         precondition(beforePresentation == afterPresentation)
         let roundTrip = try JSONDecoder().decode(CountdownData.self, from: afterPresentation)
@@ -707,7 +710,7 @@ enum UIChecks {
         precondition(data.primaryID == nil)
         precondition(eventListEmoji("") == nil && eventListEmoji("📅") == nil)
         precondition(eventListEmoji("🗓️") == "🗓️")
-        precondition(statusBarTitle(data: data, today: today) == "📅 1 день")
+        precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
         let restored = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
         precondition(restored == data)
     }
@@ -727,7 +730,7 @@ enum UIChecks {
             let row = CountdownRowPresentation(item: event, today: today, primaryID: nil, featuredID: ordered.first?.id)
             precondition(!row.isPrimary && row.isFeatured == (event.id == nearest.id))
         }
-        precondition(statusBarTitle(data: data, today: today) == "📅 Сегодня")
+        precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
         let noneSelected = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
         precondition(noneSelected == data && noneSelected.primaryID == nil)
         try data.save(far, primary: true, today: today)
@@ -738,12 +741,13 @@ enum UIChecks {
         try data.save(far, primary: false, today: today)
         precondition(data.primaryID == nil && activeCountdowns(in: data, today: today).first?.id == nearest.id)
         data.primaryID = UUID()
-        precondition(statusBarTitle(data: data, today: today) == "📅 Сегодня")
+        precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
         data.normalize(today: civilDay(2026, 10, 6))
         precondition(data.items == [far] && data.primaryID == nil)
-        precondition(statusBarTitle(data: data, today: civilDay(2026, 10, 6)) == "🚀 3 дня")
+        precondition(statusBarPresentation(data: data, today: civilDay(2026, 10, 6)).icon == .mars
+                     && statusBarTitle(data: data, today: civilDay(2026, 10, 6)).isEmpty)
         data.delete(far.id, today: today)
-        precondition(statusBarTitle(data: data, today: today) == "◷ Countdown")
+        precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
     }
 
     @MainActor

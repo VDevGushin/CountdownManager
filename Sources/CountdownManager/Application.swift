@@ -259,6 +259,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 configuration: uiSmokeConfiguration,
                 store: store,
                 window: { [weak self] in self?.panel },
+                statusButton: { [weak self] in self?.statusItem.button },
                 hideSurface: { [weak self] in self?.hidePanel(source: "ui-smoke") },
                 showSurface: { [weak self] in self?.showPanel() },
                 isSurfaceShown: { [weak self] in self?.panel.isVisible == true },
@@ -292,12 +293,16 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             button.imagePosition = timerTitle.isEmpty ? .imageOnly : .imageLeft
             button.title = timerTitle
         } else {
-            button.image = nil
-            button.imagePosition = .noImage
-            button.title = store.statusTitle
+            let presentation = store.statusPresentation
+            button.image = presentation.icon.flatMap { StatusBarImages.image(for: $0) }
+            button.imagePosition = presentation.icon == nil ? .noImage
+                : (presentation.title.isEmpty ? .imageOnly : .imageLeft)
+            button.title = presentation.title
         }
-        button.toolTip = timer.statusToolTip
-            ?? (store.primary == nil ? "Добавить событие" : store.statusTitle)
+        let statusDescription = timer.statusToolTip ?? store.statusPresentation.toolTip
+        button.toolTip = statusDescription
+        button.setAccessibilityLabel("Countdown Manager")
+        button.setAccessibilityValue(statusDescription)
         updateTimerAttentionAnimation()
         if case .idle = timer.phase {
             timerCompletionAlert.dismiss()

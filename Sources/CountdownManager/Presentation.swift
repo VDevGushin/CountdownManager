@@ -150,10 +150,43 @@ package func subtaskDisclosureLabel(isExpanded: Bool, completion: String) -> Str
     "\(isExpanded ? "▾" : "▸") \(completion)"
 }
 
+package enum StatusBarIcon: String, Equatable {
+    case mars = "MarsMenu"
+    case calendar = "CalendarMenu"
+}
+
+package struct StatusBarPresentation: Equatable {
+    package let title: String
+    package let icon: StatusBarIcon?
+    package let toolTip: String
+
+    package init(title: String, icon: StatusBarIcon?, toolTip: String) {
+        self.title = title
+        self.icon = icon
+        self.toolTip = toolTip
+    }
+}
+
+package func statusBarPresentation(data: CountdownData, today: Day) -> StatusBarPresentation {
+    guard let favorite = data.items.first(where: { $0.id == data.primaryID && $0.date >= today }) else {
+        let hasEvents = data.items.contains { $0.date >= today }
+        return StatusBarPresentation(
+            title: "",
+            icon: .mars,
+            toolTip: hasEvents ? "Countdown Manager · нет избранного" : "Countdown Manager · нет событий"
+        )
+    }
+    let days = favorite.date.days(from: today)
+    let remaining = days == 1 ? "Завтра" : countdownLabel(days)
+    if eventListEmoji(favorite.emoji) == nil {
+        return StatusBarPresentation(title: remaining, icon: .calendar, toolTip: "Countdown Manager · \(remaining)")
+    }
+    let title = "\(favorite.emoji) \(remaining)"
+    return StatusBarPresentation(title: title, icon: nil, toolTip: title)
+}
+
 package func statusBarTitle(data: CountdownData, today: Day) -> String {
-    guard let primary = activeCountdowns(in: data, today: today).first else { return "◷ Countdown" }
-    let emoji = primary.emoji.isEmpty ? "📅" : primary.emoji
-    return "\(emoji) \(countdownLabel(primary.date.days(from: today)))"
+    statusBarPresentation(data: data, today: today).title
 }
 
 package func activeCountdowns(in data: CountdownData, today: Day) -> [Countdown] {

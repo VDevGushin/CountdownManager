@@ -1,9 +1,15 @@
 # Preparing signed updates
 
-Release **1.13.2 / build 24** is published as Latest and installed locally.
-The completed-subtask indicator uses the previously accepted product code. Anonymous ZIP,
-version-feed and Latest-feed downloads returned HTTP 200 and matched the signed local hashes.
-The exact native-tested executable is running from `/Applications/Countdown Manager.app`;
+Candidate **1.13.3 / build 25** is installed locally. Its production-channel package passed
+the isolated native menu-identity capture mode (24 PNGs); signed ZIP/appcast and archive
+round-trip verification are ready. Publication and anonymous Latest downloads are pending.
+The existing key, feed, event data and preferences are preserved.
+See [releases/v1.13.3.md](releases/v1.13.3.md).
+
+Previous release **1.13.2 / build 24** remains the public Latest pending publication of 1.13.3.
+Its completed-subtask indicator used the previously accepted product code. Anonymous ZIP,
+version-feed and Latest-feed downloads returned HTTP 200 and matched the signed local hashes
+at publication. Its local installation has now been replaced by the verified 1.13.3 package;
 events and preferences were unchanged. The production key and stable feed remain unchanged.
 
 Release status, evidence and limits: [releases/v1.13.2.md](releases/v1.13.2.md).

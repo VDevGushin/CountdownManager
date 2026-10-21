@@ -7,7 +7,7 @@ mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
     fast|ui|full|weather|empty-state) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture)
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -211,6 +211,18 @@ copy_capture_evidence() {
             required_files+=("completed-subtasks-empty-$appearance" "completed-subtasks-high-contrast-$appearance")
         done
     fi
+    if [[ "$mode" == "menu-identity-capture" ]]; then
+        required_files=()
+        for appearance in light dark; do
+            for state in finished mars-empty mars-unfavorited calendar-tomorrow calendar-today emoji-tomorrow running restored; do
+                required_files+=("menu-$state-$appearance")
+            done
+            for state in empty unfavorited favorite; do
+                required_files+=("identity-panel-$state-$appearance")
+            done
+            required_files+=("identity-app-icon-$appearance")
+        done
+    fi
     for required_file in "${required_files[@]}"; do
         [[ -s "$source_dir/$required_file.png" ]] || {
             echo "UISmoke capture is missing: $required_file.png" >&2
@@ -223,7 +235,7 @@ copy_capture_evidence() {
     if [[ "$mode" == "compact-capture" ]]; then
         cp "$source_dir/compact-input-state.json" "$destination_dir/"
     fi
-    if [[ "$mode" == "completed-subtasks-capture" ]]; then
+    if [[ "$mode" == "completed-subtasks-capture" || "$mode" == "menu-identity-capture" ]]; then
         cp "$verify_root/visual-captures/ui-smoke-result.txt" "$destination_dir/"
         ditto "$app_path" "$destination_dir/Countdown Manager.app"
     fi
@@ -252,6 +264,12 @@ case "$mode" in
         run_smoke visual-captures --ui-smoke-compact-captures
         copy_capture_evidence
         echo "PASS: focused compact cards and native note editing"
+        ;;
+    menu-identity-capture)
+        build_ui_app
+        run_smoke visual-captures --ui-smoke-menu-identity-captures
+        copy_capture_evidence
+        echo "PASS: focused native menu identity, transitions and24captures"
         ;;
     completed-subtasks-capture)
         build_ui_app

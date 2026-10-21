@@ -130,7 +130,8 @@ package final class Store: ObservableObject {
         activeCountdowns(in: data, today: today)
     }
     var primary: Countdown? { active.first { $0.id == data.primaryID } ?? active.first }
-    var statusTitle: String { statusBarTitle(data: data, today: today) }
+    var statusPresentation: StatusBarPresentation { statusBarPresentation(data: data, today: today) }
+    var statusTitle: String { statusPresentation.title }
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
 
     package var hasPendingPersistence: Bool {

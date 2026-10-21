@@ -1,0 +1,171 @@
+{
+  "status": "LOCAL_VERIFIED_INSTALLED_SIGNED_RELEASE_NOT_PUBLISHED",
+  "version": "1.13.3",
+  "build": "25",
+  "native_source": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.13.3/Countdown Manager.app",
+  "runtime_mode": "--ui-smoke-menu-identity-captures",
+  "executable_sha256": "71270c09c95a59d04053500621ab2a5bcce446ed10d9d017655fa966086339cb",
+  "resources_sha256": {
+    "MarsMenu.pdf": "64b79dd593ce22511c35e6adff2f672de102a49e7d874280ec1dd4bda64ac10d",
+    "CalendarMenu.pdf": "34267acec8fc5dea658781545fd2172a17a0ea59d9a2382221aa802c0f46d3e3",
+    "AppIcon.icns": "ff16d173cd66a1f01f2b0abc895bf6556cce406a1822263708d61669ed5b5b04"
+  },
+  "native_result": "UISmoke\n✓ actual native status button: vector Mars/K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures\nPASS: 1/1",
+  "data": "Isolated marked temporary home; demonstration events; weather OFF; production update channel configured but suppressed in smoke mode; production data untouched",
+  "images": {
+    "identity-app-icon-dark.png": {
+      "sha256": "c8620a3486866756eed987e4b99bc24f58a991f5a5c858c98f0befda8f633eef",
+      "width": 320,
+      "height": 320
+    },
+    "identity-app-icon-light.png": {
+      "sha256": "b341bc3006d16edf357f6b69adce8da3da5185b8f5b4e10a8c92b20e6d8c37ea",
+      "width": 320,
+      "height": 320
+    },
+    "identity-panel-empty-dark.png": {
+      "sha256": "c6d467ddfef8dab2372f1dd99e8a0ff54800db55e05b45e92b3c2d6d67f6a13b",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-empty-light.png": {
+      "sha256": "1a060c1f73c04dae1ca6e76048a56a9b206a37e8f6129ddbe6ce80245df09328",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-favorite-dark.png": {
+      "sha256": "938a076154d902d02f96b058d3f00728ecce0a81a9cbeb7f7a982a023b4b6df4",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-favorite-light.png": {
+      "sha256": "eb2cc562cb09887b9037c21229023c62e7db1ab70f94942bbf4f00a8d30ddc1e",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-unfavorited-dark.png": {
+      "sha256": "d26f3872a178cf855ebb461761e6bb6a1b1a648e24f2f14f83acb881e43f64d2",
+      "width": 780,
+      "height": 1200
+    },
+    "identity-panel-unfavorited-light.png": {
+      "sha256": "d46bde041014515b1638c3bc6a3ed9bbd7f5d91a835a1cfe330dab4a562ee37f",
+      "width": 780,
+      "height": 1200
+    },
+    "menu-calendar-today-dark.png": {
+      "sha256": "e321f86b0932c01bd9da979e6baa6d9bc23e6f9a1f1e069aaf7d735fcf8efc60",
+      "width": 186,
+      "height": 44
+    },
+    "menu-calendar-today-light.png": {
+      "sha256": "89f8cb19fd2c9aa0e16fc3a5e7123ed5c432b24d54066f4d3d86b65f80dd8b66",
+      "width": 186,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-dark.png": {
+      "sha256": "16febdbb357494452e7c8946c4bc2549418d492acca76e0affd478c7d089198b",
+      "width": 168,
+      "height": 44
+    },
+    "menu-calendar-tomorrow-light.png": {
+      "sha256": "fde0362285debcac1aac0689d35f34f581b37883237a6a8871ea20501d29e649",
+      "width": 168,
+      "height": 44
+    },
+    "menu-emoji-tomorrow-dark.png": {
+      "sha256": "d292210cdf71e8b9dcee9639632d7f1047635ffbcdf698031b500c7e3ec069b9",
+      "width": 172,
+      "height": 44
+    },
+    "menu-emoji-tomorrow-light.png": {
+      "sha256": "7edb22e6e1f6c9bb15c3caeb14a88115870f12e926c1348232de76a939566dd3",
+      "width": 172,
+      "height": 44
+    },
+    "menu-finished-dark.png": {
+      "sha256": "45bc3c6c72947116aa3892be4f255c3e4ec30f2c4201187b73ebb376fcfe8111",
+      "width": 64,
+      "height": 58
+    },
+    "menu-finished-light.png": {
+      "sha256": "d67ce89bc40ed4a88a5bec29ed420976930029abbb652469a14b19e2740ee914",
+      "width": 64,
+      "height": 58
+    },
+    "menu-identity-comparison.png": {
+      "sha256": "8573b09e3c45e43ffa12e558643f4822d60ed3f8692ca138812977ef9c3fdd68",
+      "width": 760,
+      "height": 454
+    },
+    "menu-mars-empty-dark.png": {
+      "sha256": "9d93fe503e68e0efe7388a0ddf62f281f7ffee94dfb2906780b3f50a98ff956a",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-empty-light.png": {
+      "sha256": "9fa7853dd55da82b2f22252eed80ff4a9b93ec3a2e362c5da609fc728b0f268f",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-unfavorited-dark.png": {
+      "sha256": "9d93fe503e68e0efe7388a0ddf62f281f7ffee94dfb2906780b3f50a98ff956a",
+      "width": 68,
+      "height": 44
+    },
+    "menu-mars-unfavorited-light.png": {
+      "sha256": "9fa7853dd55da82b2f22252eed80ff4a9b93ec3a2e362c5da609fc728b0f268f",
+      "width": 68,
+      "height": 44
+    },
+    "menu-restored-dark.png": {
+      "sha256": "9d93fe503e68e0efe7388a0ddf62f281f7ffee94dfb2906780b3f50a98ff956a",
+      "width": 68,
+      "height": 44
+    },
+    "menu-restored-light.png": {
+      "sha256": "9fa7853dd55da82b2f22252eed80ff4a9b93ec3a2e362c5da609fc728b0f268f",
+      "width": 68,
+      "height": 44
+    },
+    "menu-running-dark.png": {
+      "sha256": "b8b85b6d5959308740a4041bda6589f59a052e5538290ee2f6372b18e7df5a52",
+      "width": 132,
+      "height": 46
+    },
+    "menu-running-light.png": {
+      "sha256": "282f4ec7ec959b5290b065fdb31c5e5c6fb70af4048a283ebadc2c41a7548033",
+      "width": 132,
+      "height": 46
+    },
+    "finder-app-icon-dark.png": {
+      "sha256": "9d1687ede4fd91d534bdb38e21fb7a0435ab2218b4dd38c1c8b71a23c928fb03",
+      "width": 1840,
+      "height": 928
+    }
+  },
+  "comparison_composition": "Original 2x native status-button PNG pixels alpha-composited without scaling onto #f2f3f4 / #202329. Labels added for comparison. AppIcon PNG backgrounds drawn by native harness.",
+  "limits": [
+    "24 native button/panel/AppKit captures are not wallpaper-composited full-menu screenshots. Additional Finder screenshot verifies only this retained test app in current dark appearance.",
+    "Aqua/DarkAqua overridden only inside isolated app; actual button effectiveAppearance asserted and recorded in manifest",
+    "Durable selection reload uses a fresh Store, not actual process relaunch",
+    "External status clicks, Spaces, VoiceOver speech, older macOS and Intel not re-tested; existing timer motion/sound behavior unchanged"
+  ],
+  "publication_performed": false,
+  "installation_performed": true,
+  "finder_observation": "Actual Finder window, current dark system appearance, retained tested app shows new Mars. Screenshot captured through CUA; system appearance unchanged. No installed-app icon cache reset or light Finder test.",
+  "original_qa_executable_sha256": "84436f4602a519749eb2bf5b872b2661c5b6e1ab464b632599995222edc3c244",
+  "installation_verification": {
+    "version": "1.13.3",
+    "build": "25",
+    "installed_path": "/Applications/Countdown Manager.app",
+    "executable_sha256": "71270c09c95a59d04053500621ab2a5bcce446ed10d9d017655fa966086339cb",
+    "events_unchanged": true,
+    "preferences_unchanged": true,
+    "production_update_channel_preserved": true,
+    "signature_verified": true,
+    "installed_at_utc": "2026-10-21T17:44:54.782460+00:00"
+  },
+  "visual_evidence_reuse": "All24 exact production-channel package PNGs are byte-identical to the reviewed original capture set; visual review reused. Manifest refreshed from exact package native run.",
+  "original_qa_bundle_removed_after_verified_installation": true
+}

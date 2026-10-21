@@ -56,8 +56,8 @@ Event cards express their civil-day distance as `Сегодня`, `Завтра`
 with correct Russian day forms. The exact date and event title remain visible and unchanged.
 A featured card uses one 21-point Georgia line below the date: green for today and the
 existing terracotta accent for future days. Secondary metadata is ordered `date · relative label`,
-including today; only today's relative label is green. The menu-bar count keeps its existing
-compact numeric format. Labels are derived from the current civil day; expiry rules are unchanged.
+including today; only today's relative label is green. The menu bar uses `Сегодня`, `Завтра`, then its
+compact numeric day format. Labels are derived from the current civil day; expiry rules are unchanged.
 
 The featured title uses 23-point Georgia and a compact 54 × 65 calendar leaf; secondary events
 use 14-point semibold titles and 42 × 51 leaves. The entire secondary header stays 51 points high,
@@ -360,9 +360,9 @@ No timer or duplicate date owner is added to the view. Both lines remain visible
 
 Zero or one event may be explicitly selected as the favorite. It appears first and supplies the event representation in the menu bar when the timer is idle. Clicking its filled star clears the selection; clicking another event's unfilled star selects that event. The editor also permits clearing or setting the choice on Save.
 
-With no favorite, the nearest active event starting with today supplies the menu bar and the large featured block. Equal dates retain stable user order. This automatic display never selects or persists a favorite.
+With no favorite, the nearest active event starting with today supplies the large featured block only. The idle menu bar instead shows the Mars application symbol alone. Equal dates retain stable user order. The featured block never selects or persists a favorite.
 
-Deleting or expiring a selected event clears the choice and returns to automatic display. Existing valid stored selections are preserved; an absent or invalid selection remains absent after normalization and restart.
+Deleting or expiring a selected event clears the choice: the panel returns to its nearest-event featured block and the idle menu bar returns to Mars. Existing valid stored selections are preserved; an absent or invalid selection remains absent after normalization and restart.
 
 ## Event ordering
 
@@ -447,12 +447,14 @@ Expanding and collapsing a checklist uses a short, non-spring transition of heig
 
 ## Menu bar
 
-When the timer is idle, the menu bar represents the favorite, or the nearest active event starting with today when no favorite is selected.
+When the timer is idle, only an active explicitly selected favorite supplies the event representation. With no valid favorite, the menu bar displays the static Mars application symbol alone, whether the list has events or is empty. It never automatically displays the nearest event.
 
 Its normal event representation contains:
 
-- the event emoji, or `📅` when no additional emoji is stored;
-- remaining calendar days, or `Сегодня`.
+- the event emoji, or the monochrome K1 outline calendar when no additional emoji is stored or the legacy `📅` is stored;
+- `Сегодня` for today, `Завтра` for tomorrow, otherwise remaining calendar days with Russian day forms.
+
+The Mars and K1 menu images are native vector template images, following the menu bar foreground in Light and Dark appearance. Stored event emoji remains unchanged. The application icon uses the approved smooth Mars silhouette in white on a solid blue rounded-square background; menu-bar Mars remains monochrome.
 
 It does not display:
 
@@ -463,11 +465,9 @@ It does not display:
 - subtask completion controls;
 - subtask progress.
 
-While the timer is running, its representation temporarily takes precedence and the menu bar displays the system alarm-clock symbol plus the remaining timer value. When the timer is finished but not yet deleted, the menu bar displays the alarm-clock symbol alone. Deleting the timer restores the normal primary-event representation.
+While the timer is running, its representation temporarily takes precedence and the menu bar displays the system alarm-clock symbol plus the remaining timer value. When the timer is finished but not yet deleted, the menu bar displays the alarm-clock symbol alone. Deleting the timer restores the explicit favorite representation, or Mars alone if there is no active favorite.
 
-When no events exist and the timer is idle, the menu bar displays:
-
-`◷ Countdown`
+When no events exist and the timer is idle, the same Mars symbol remains the entry point. There is no `Countdown` label or zero count. Its tooltip distinguishes an empty list from a nonempty list without a favorite; the status control remains accessible as Countdown Manager.
 
 ## Empty state
 

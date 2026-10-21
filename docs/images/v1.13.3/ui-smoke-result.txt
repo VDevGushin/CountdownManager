@@ -1,0 +1,3 @@
+UISmoke
+✓ actual native status button: vector Mars/K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures
+PASS: 1/1

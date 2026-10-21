@@ -11,6 +11,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
+| Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
@@ -98,6 +99,32 @@ It does not prove SwiftUI rendering, AppKit lifecycle, focus, accessibility inte
 
 It does not prove real AppKit event routing, external keyboard delivery, system focus, application switching, or Spaces behaviour.
 
+## Mars menu identity
+
+Run strict SwiftLint and `./verify.sh fast`, then
+`./verify.sh menu-identity-capture <marked-output-directory>` after creating
+`.countdown-ui-capture-output` inside that destination. The focused mode restores an expired
+isolated timer at launch, exercises the actual `NSStatusBarButton`, and checks bundled vector
+PDF representations rather than accepting fallback symbols. It covers Mars with empty/nonempty
+unfavorited lists, K1 Today/Tomorrow, custom emoji, timer finished/running/delete restoration,
+clearing/deleting favorite and durable selection reload through a fresh Store (not process relaunch). The panel's automatic nearest event is independently
+asserted. Core/UI checks cover invalid/expired favorites, civil boundaries, Russian labels and
+persistence invariants.
+
+The 24 PNGs comprise 16 actual native status-button cache renders, six panel captures and two
+AppKit renders of the bundled AppIcon. Light/Dark is explicitly overridden only in the isolated
+application; user/global appearance settings and production data are not changed. Status PNGs
+render a control's model state, not a screen recording of wallpaper compositing or live timer
+animation. The unchanged timer animation has its existing regression checks. The copied manifest
+records version/build and executable SHA-256; the successful result and tested `.app` are retained
+with the images. External status clicks, Spaces and real menu wallpaper contrast retain the manual
+shell boundary below; these captures do not claim to re-prove it.
+
+`python3 scripts/generate_icons.py` regenerates editable SVGs, native vector PDFs and the complete
+ICNS size set using system Swift/CoreGraphics and `iconutil`, without Python package dependencies.
+The generator does not read installed application data. Native PDF template drawing supplies the
+antialiasing; there is no PNG threshold mask in the shipped menu images.
+
 ## Compact cards and notes
 
 Run full lint and `./verify.sh fast`, then `./verify.sh compact-capture <marked-output-directory>`.
@@ -113,8 +140,7 @@ in both themes, an adjacent full-date baseline and no empty separator or duplica
 The same capture mode also checks Today/Tomorrow/Through 2 days in featured, short and long
 cards across Light/Dark and weather ON/OFF, with twelve `relative-day-*` PNGs. Secondary relative
 labels must follow the exact date on the metadata baseline. UI checks cover Russian day forms,
-a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. The status-bar
-formatter remains numeric. These text/layout checks do not require repeating external note entry.
+a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. The menu-bar formatter independently uses Today/Tomorrow, then numeric day forms; the underlying Core countdown formatter is unchanged. These text/layout checks do not require repeating external note entry.
 The focused XCUITest `testNewNoteHardLimitAndNativeFocus` exercises actual keyboard 149→150→151
 rejection, title/note handoff and Undo in a NEW note. Internal native calls do not prove physical IME keyboard delivery,
 VoiceOver announcements, or external keyboard routing; record those separately when exercised.

@@ -82,6 +82,7 @@ Key files:
 - `TimerCompletionAlert.swift`
 - `Store.swift`
 - `Presentation.swift`
+- `StatusBarImages.swift`
 - `Views.swift`
 - `Diagnostics.swift`
 - `DiagnosticPrivacy.swift`
@@ -91,7 +92,7 @@ Key files:
 
 `CountdownRowPresentation` derives card-relative labels from the existing civil-day distance:
 Today/Tomorrow/Through N days with Russian pluralization. Views use this same label in featured
-and secondary cards; the numeric Core formatter remains the status-bar owner. No saved state
+and secondary cards; the independent menu formatter uses Today/Tomorrow then the numeric Core day formatter. No saved state
 or data-format change is needed for these labels.
 
 ### `CountdownManager`
@@ -480,7 +481,7 @@ composes the 60-point timer strip with the 540-point `ManagerView`. The idle tim
 quiet accent surface and outline while Play retains a filled accent; the existing selection,
 matched-geometry motion, keyboard focus and deadline owner are unchanged.
 
-`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the displayed favorite or automatic nearest event and a smaller left-hand leaf for other events. `Store.primary` derives the displayed event without changing the explicit selection. `CountdownRowPresentation` separates `isFeatured` (large presentation) from `isPrimary` (filled star). Menu-bar emoji fallback is `📅`; calendar labels and optional list emoji are derived from `Presentation.swift`; they introduce no separate event state or persisted representation.
+`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the displayed favorite or automatic nearest event and a smaller left-hand leaf for other events. `Store.primary` derives the displayed event without changing the explicit selection. `CountdownRowPresentation` separates `isFeatured` (large presentation) from `isPrimary` (filled star). The menu bar has an independent derived `StatusBarPresentation` in `Presentation.swift`: only the active explicit primaryID supplies an event, while empty/legacy calendar emoji selects K1 and absent favorite selects Mars. This does not change `Store.primary` or introduce saved selection state. Calendar labels and optional list emoji remain derived from `Presentation.swift`.
 
 Event rows use a 23-point Georgia featured title and a 54 × 65 right-hand calendar leaf; secondary
 rows use 14-point titles and 42 × 51 left-hand leaves. Additional emoji is composed with the title;
@@ -580,7 +581,7 @@ File: `Sources/CountdownManager/Application.swift`
 `CountdownTimer`, one `KeepAwakeController` and one hosting controller at startup. It retains them
 through the session, starts diagnostics and supplies isolated test defaults/data when requested.
 
-`AppDelegate` merges Store and timer change notifications to update the status item. A running or finished timer temporarily overrides the normal event status title and shows the `alarm.fill` SF Symbol next to the remaining time; the finished state shows the symbol alone. While the timer runs, the status item breathes with a gentle repeating opacity pulse. The finished alarm receives a repeating Core Animation rock — each tilt pivots on its own bottom corner with a tiny lift, so it hops from foot to foot — until deletion, or an opacity pulse when Reduce Motion is enabled. It subscribes to the timer's one-shot completion event so the five-second application-owned alert and sound are presented while the accessory app is active.
+`AppDelegate` merges Store and timer change notifications to update the status item. Idle updates apply the derived menu title, optional Mars/K1 native template image and tooltip together, clearing the previous image/title when switching to emoji or an image-only state. `StatusBarImages` owns cached 18-point vector PDF images loaded from bundled `MarsMenu.pdf` and `CalendarMenu.pdf`. `Resources/Mars.svg`, `Calendar.svg` and `AppIcon.svg` document the editable identity; `scripts/generate_icons.py` is the shared geometry authoring/generation source; `build.sh` packages both menu PDFs and `AppIcon.icns`. A running or finished timer temporarily overrides the normal event status title and shows the `alarm.fill` SF Symbol next to the remaining time; the finished state shows the symbol alone. While the timer runs, the status item breathes with a gentle repeating opacity pulse. The finished alarm receives a repeating Core Animation rock — each tilt pivots on its own bottom corner with a tiny lift, so it hops from foot to foot — until deletion, or an opacity pulse when Reduce Motion is enabled. It subscribes to the timer's one-shot completion event so the five-second application-owned alert and sound are presented while the accessory app is active.
 
 Status-item actions toggle the requested visibility state immediately. Show orders out any stale visible instance, positions the panel under the current status item, activates the accessory app and makes the panel key/front. Hide, full occlusion while requested visible, application deactivation, active-Space change and Command-W clear requested visibility and call `orderOut`. Ordinary startup does not open it. Isolated harnesses suppress these automatic lifecycle callbacks while verifying retained panel/hosting/root/list/editor state; observable anchoring, app-switch, Space and real status-item interaction remain release manual acceptance.
 

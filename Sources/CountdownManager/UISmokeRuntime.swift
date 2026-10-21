@@ -31,6 +31,10 @@ struct UISmokeConfiguration {
     static var compactCaptureWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(compactCaptureLaunchArgument) }
     static let completedCaptureLaunchArgument = "--ui-smoke-completed-subtasks-captures"
     static var completedCaptureWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(completedCaptureLaunchArgument) }
+    static let menuIdentityCaptureLaunchArgument = "--ui-smoke-menu-identity-captures"
+    static var menuIdentityCaptureWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(menuIdentityCaptureLaunchArgument)
+    }
     static let markerName = ".countdown-ui-smoke-environment"
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
@@ -60,6 +64,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
             || compactCaptureWasRequested
             || completedCaptureWasRequested
+            || menuIdentityCaptureWasRequested
             || weatherWasRequested
             || emptyStateWasRequested
     }
@@ -91,7 +96,7 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested || completedCaptureWasRequested
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested || completedCaptureWasRequested || menuIdentityCaptureWasRequested
     }
 
     static var weatherWasRequested: Bool {
@@ -125,6 +130,7 @@ struct UISmokeConfiguration {
             emptyStateLaunchArgument,
             emptyStateCaptureLaunchArgument,
             completedCaptureLaunchArgument,
+            menuIdentityCaptureLaunchArgument,
         ]
         .filter { ProcessInfo.processInfo.arguments.contains($0) }
         guard smokeArguments.count <= 1 else {
@@ -180,7 +186,7 @@ struct UISmokeConfiguration {
         )
         if compactCaptureWasRequested {
             try configuration.seedCompactCaptureFixture()
-        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested && !completedCaptureWasRequested {
+        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested && !completedCaptureWasRequested && !menuIdentityCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -260,6 +266,7 @@ final class UISmokeRuntime {
     private let configuration: UISmokeConfiguration
     private let store: Store
     private let window: () -> NSWindow?
+    private let statusButton: () -> NSStatusBarButton?
     private let hideSurface: () -> Void
     private let showSurface: () -> Void
     private let isSurfaceShown: () -> Bool
@@ -275,6 +282,7 @@ final class UISmokeRuntime {
     private var captures: [CaptureRecord] = []
 
     init(configuration: UISmokeConfiguration, store: Store, window: @escaping () -> NSWindow?,
+         statusButton: @escaping () -> NSStatusBarButton?,
          hideSurface: @escaping () -> Void,
          showSurface: @escaping () -> Void,
          isSurfaceShown: @escaping () -> Bool,
@@ -287,6 +295,7 @@ final class UISmokeRuntime {
         self.configuration = configuration
         self.store = store
         self.window = window
+        self.statusButton = statusButton
         self.hideSurface = hideSurface
         self.showSurface = showSurface
         self.isSurfaceShown = isSurfaceShown
@@ -308,7 +317,10 @@ final class UISmokeRuntime {
                         && (self.controls.entries["event.add"]?.isEnabled == true
                             || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.completedCaptureWasRequested {
+                if UISmokeConfiguration.menuIdentityCaptureWasRequested {
+                    try await runMenuIdentityCapture()
+                    try writeCaptureManifest()
+                } else if UISmokeConfiguration.completedCaptureWasRequested {
                     try await runCompletedSubtasksCapture()
                     try writeCaptureManifest()
                 } else if UISmokeConfiguration.compactCaptureWasRequested {
@@ -1497,8 +1509,8 @@ final class UISmokeRuntime {
             self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nil
         }
         try require(store.primary?.id == todayPrimary.id && store.primary?.emoji.isEmpty == true
-                    && store.statusTitle == "📅 Сегодня",
-                    "unfavorited iconless today event did not supply the menu display")
+                    && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "unfavorited today event changed the Mars menu identity or the featured event")
         try await settleLayout()
         try capture(name: "16-nearest-today-without-icon")
         for item in store.active {
@@ -1977,7 +1989,7 @@ final class UISmokeRuntime {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
         let isCompact = UISmokeConfiguration.compactCaptureWasRequested
-        let expectedCount = UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31)))
+        let expectedCount = UISmokeConfiguration.menuIdentityCaptureWasRequested ? 24 : (UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31))))
         try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -2668,7 +2680,7 @@ final class UISmokeRuntime {
             self.controls.entries["editor.new"] == nil && self.store.active.count == initialData.items.count + 1
         }
         let ordinary = try requireValue(store.active.first(where: { $0.title == "Ordinary today event" }), "ordinary today event")
-        try require(ordinary.date == today && store.data.primaryID == nil && store.statusTitle == "📅 Сегодня",
+        try require(ordinary.date == today && store.data.primaryID == nil && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
                     "ordinary today event did not retain today semantics")
         let savedData = store.data
         let savedJSON = try Data(contentsOf: configuration.dataURL)
@@ -2765,9 +2777,10 @@ final class UISmokeRuntime {
         }
         let nearest = try requireValue(store.active.first(where: { $0.title == "Nearest without icon" }), "nearest fixture")
         try require(nearest.emoji.isEmpty && store.data.primaryID == nil && store.primary?.id == nearest.id
-                    && store.statusTitle == "📅 1 день", "nearest iconless event did not supply the fallback display")
+                    && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "nearest event should remain featured without supplying the menu display")
         try await waitForValue("event.primary.\(nearest.id.uuidString)", equals: "Не выбрано")
-        pass("ordinary and day creation allow no icon and no favorite while the nearest event supplies the display")
+        pass("ordinary and day creation allow no icon or favorite; nearest stays featured while Mars supplies the menu")
 
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
@@ -2777,7 +2790,17 @@ final class UISmokeRuntime {
         try await waitFor("chosen icon saved") {
             self.controls.entries["editor.edit"] == nil && self.store.primary?.emoji == "🎉"
         }
-        try require(store.statusTitle == "🎉 1 день", "chosen event icon did not replace the menu fallback")
+        try require(store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "an unfavorited event emoji leaked into the menu")
+        let nearestStar = "event.primary.\(nearest.id.uuidString)"
+        try await press(nearestStar)
+        try await waitForValue(nearestStar, equals: "Выбрано")
+        try require(store.statusTitle == "🎉 Завтра" && store.statusPresentation.icon == nil,
+                    "custom favorite emoji and Tomorrow did not supply the menu")
+        try await press(nearestStar)
+        try await waitForValue(nearestStar, equals: "Не выбрано")
+        try require(store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "clearing the custom favorite did not restore Mars")
         let chosenJSON = try Data(contentsOf: configuration.dataURL)
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
@@ -2797,19 +2820,21 @@ final class UISmokeRuntime {
         try await waitFor("icon cleared") {
             self.controls.entries["editor.edit"] == nil && self.store.primary?.emoji.isEmpty == true
         }
-        try require(store.statusTitle == "📅 1 день", "clearing an icon did not restore the fallback")
+        try require(store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "clearing an unfavorited event icon changed the menu identity")
         pass("choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon")
 
         let plannedStar = "event.primary.\(plannedDay.id.uuidString)"
         try await press(plannedStar)
         try await waitForValue(plannedStar, equals: "Выбрано")
         try await settleLayout()
-        try require(store.primary?.id == plannedDay.id && store.statusTitle == "📅 3 дня",
+        try require(store.primary?.id == plannedDay.id && store.statusTitle == "3 дня" && store.statusPresentation.icon == .calendar,
                     "explicit favorite did not override the nearest event")
         try await press(plannedStar)
         try await waitForValue(plannedStar, equals: "Не выбрано")
-        try require(store.data.primaryID == nil && store.primary?.id == nearest.id,
-                    "clearing the filled star selected another explicit favorite")
+        try require(store.data.primaryID == nil && store.primary?.id == nearest.id
+                    && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "clearing the filled star did not restore Mars and preserve the nearest featured event")
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
         try await press("editor.primary")
@@ -2817,6 +2842,8 @@ final class UISmokeRuntime {
         try await waitFor("editor selected favorite") {
             self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nearest.id
         }
+        try require(store.statusPresentation.icon == .calendar && store.statusTitle == "Завтра",
+                    "iconless favorite did not use the schematic calendar and Tomorrow")
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
         try await waitForValue("editor.primary", equals: "Выбрано")
@@ -2826,6 +2853,8 @@ final class UISmokeRuntime {
         try await waitFor("editor cleared favorite") {
             self.controls.entries["editor.edit"] == nil && self.store.data.primaryID == nil
         }
+        try require(store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
+                    "clearing the favorite in the editor did not restore Mars")
         let reopened = try await CountdownRepository(fileURL: configuration.dataURL).load()
         try require(reopened.primaryID == nil && reopened.items.first(where: { $0.id == nearest.id })?.emoji.isEmpty == true,
                     "saved absence of favorite/icon did not survive repository reopening")
@@ -3666,5 +3695,206 @@ final class UISmokeRuntime {
         let message: String
         init(_ message: String) { self.message = message }
         var errorDescription: String? { message }
+    }
+}
+
+
+extension UISmokeRuntime {
+    private func runMenuIdentityCapture() async throws {
+        for icon in [StatusBarIcon.mars, .calendar] {
+            let url = try requireValue(Bundle.main.url(forResource: icon.rawValue, withExtension: "pdf"), "bundled \(icon.rawValue)")
+            let loaded = try requireValue(NSImage(contentsOf: url), "vector \(icon.rawValue)")
+            try require(loaded.representations.contains { $0 is NSPDFImageRep }, "menu resource is not a native PDF")
+        }
+        try require(timer.phase == .finished, "capture must restore a genuinely finished timer at launch")
+        try await captureMenuIdentityState("finished", title: "", icon: nil, timerExpected: true)
+        timer.delete()
+        try await captureMenuIdentityState("mars-empty", title: "", icon: .mars, panel: "empty")
+        let nearest = Countdown(title: "Встреча с друзьями", date: store.today, emoji: "🎂")
+        let savedNearest = await store.save(nearest, primary: false)
+        try require(savedNearest && store.primary?.id == nearest.id, "automatic panel fixture failed")
+        try await captureMenuIdentityState("mars-unfavorited", title: "", icon: .mars, panel: "unfavorited")
+        var favorite = Countdown(title: "Поездка на выходные", date: Day(store.tomorrow), emoji: "")
+        let savedFavorite = await store.save(favorite, primary: true)
+        try require(savedFavorite, "calendar favorite save failed")
+        try await captureMenuIdentityState("calendar-tomorrow", title: "Завтра", icon: .calendar, panel: "favorite")
+        try await requireTimerRestoresFavorite(title: "Завтра", icon: .calendar)
+        favorite.date = store.today
+        let savedToday = await store.save(favorite, primary: true, requireExisting: true)
+        try require(savedToday, "today favorite save failed")
+        try await captureMenuIdentityState("calendar-today", title: "Сегодня", icon: .calendar)
+        favorite.emoji = "🎉"
+        favorite.date = Day(store.tomorrow)
+        let savedEmoji = await store.save(favorite, primary: true, requireExisting: true)
+        try require(savedEmoji, "emoji favorite save failed")
+        try await captureMenuIdentityState("emoji-tomorrow", title: "🎉 Завтра", icon: nil)
+        try await requireTimerRestoresFavorite(title: "🎉 Завтра", icon: nil)
+        await store.clearPrimary()
+        try await requireMenuButton(title: "", icon: .mars)
+        try require(store.primary?.id == nearest.id, "clearing menu favorite changed panel nearest behavior")
+        timer.start(minutes: 5)
+        try await waitFor("actual running timer button") {
+            self.timer.statusTitle?.isEmpty == false && self.statusButton()?.title == self.timer.statusTitle
+        }
+        try await captureMenuIdentityState("running", title: statusButton()?.title ?? "", icon: nil, timerExpected: true)
+        timer.delete()
+        try await captureMenuIdentityState("restored", title: "", icon: .mars)
+        await store.makePrimary(favorite.id)
+        try await requireMenuButton(title: "🎉 Завтра", icon: nil)
+        let deleted = await store.delete(favorite.id)
+        try require(deleted, "favorite delete failed")
+        try await requireMenuButton(title: "", icon: .mars)
+        try require(store.primary?.id == nearest.id, "favorite deletion lost nearest panel card")
+        let restored = Store(fileURL: configuration.dataURL, disclosureDefaults: configuration.defaults,
+                             loginItemManagementIsAvailable: false)
+        try await waitFor("restored menu identity store") { !restored.isLoading }
+        try require(restored.data.primaryID == nil && restored.primary?.id == nearest.id
+                    && restored.statusPresentation.icon == .mars, "durable reload selected an automatic menu favorite")
+        try captureApplicationIdentity()
+        pass("actual native status button: vector Mars/K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures")
+    }
+
+    private func requireTimerRestoresFavorite(title: String, icon: StatusBarIcon?) async throws {
+        timer.start(minutes: 5)
+        try await waitFor("timer replaces selected favorite") {
+            self.statusButton()?.title == self.timer.statusTitle && self.statusButton()?.image != nil
+        }
+        timer.delete()
+        try await requireMenuButton(title: title, icon: icon)
+    }
+
+    private func requireMenuButton(title: String, icon: StatusBarIcon?) async throws {
+        try await waitFor("native menu title/image update") {
+            guard let button = self.statusButton(), button.title == title else { return false }
+            if let icon { return button.image === StatusBarImages.image(for: icon) }
+            return button.image == nil
+        }
+        let button = try requireValue(statusButton(), "native status button")
+        try require(button.accessibilityLabel() == "Countdown Manager", "status button lost its app identity")
+        if let icon {
+            try require(button.image?.isTemplate == true && button.image?.size == NSSize(width: 18, height: 18),
+                        "menu template size or template rendering changed")
+            try require(button.image?.representations.contains { $0 is NSPDFImageRep } == true,
+                        "bundled menu icon fell back to a substitute image")
+            try requireMenuImagePlacement(button)
+            try require(button.toolTip == (icon == .mars
+                ? (store.active.isEmpty ? "Countdown Manager · нет событий" : "Countdown Manager · нет избранного")
+                : "Countdown Manager · \(title)"), "menu tooltip does not describe the current state")
+        } else {
+            try require(button.imagePosition == .noImage, "emoji state retained a native image")
+        }
+    }
+
+    private func requireMenuImagePlacement(_ button: NSStatusBarButton) throws {
+        // AppKit on macOS 26 normalizes imageOnly to imageOverlaps when title becomes empty.
+        // Both draw the sole image; a nonempty title must keep the image on the left.
+        let valid = button.title.isEmpty
+            ? [.imageOnly, .imageOverlaps].contains(button.imagePosition)
+            : button.imagePosition == .imageLeft
+        try require(valid, "native menu image placement changed: \(button.imagePosition.rawValue)")
+    }
+
+    private func captureMenuIdentityState(
+        _ name: String, title: String, icon: StatusBarIcon?, timerExpected: Bool = false, panel: String? = nil
+    ) async throws {
+        if !timerExpected { try await requireMenuButton(title: title, icon: icon) }
+        if panel != nil, let featured = store.primary {
+            try await waitForElement("event.featured.date.\(featured.id.uuidString)")
+        }
+        let button = try requireValue(statusButton(), "status capture button")
+        if timerExpected {
+            try require(button.image != nil && button.title == timer.statusTitle, "timer did not replace the event image/title")
+            try requireMenuImagePlacement(button)
+            try require(button.toolTip == timer.statusToolTip, "timer tooltip changed")
+        }
+        let oldAppAppearance = NSApp.appearance
+        let oldButtonAppearance = button.appearance
+        let oldWindowAppearance = window()?.appearance
+        let oldScheme = visualEnvironment.colorSchemeOverride
+        defer {
+            NSApp.appearance = oldAppAppearance
+            button.appearance = oldButtonAppearance
+            window()?.appearance = oldWindowAppearance
+            visualEnvironment.colorSchemeOverride = oldScheme
+        }
+        for scheme in [ColorScheme.light, .dark] {
+            let theme = scheme == .dark ? "dark" : "light"
+            let appearance = try requireValue(NSAppearance(named: scheme == .dark ? .darkAqua : .aqua), "menu appearance")
+            NSApp.appearance = appearance
+            button.appearance = appearance
+            window()?.appearance = appearance
+            visualEnvironment.colorSchemeOverride = scheme
+            try await settleLayout()
+            button.window?.contentView?.layoutSubtreeIfNeeded()
+            button.displayIfNeeded()
+            try require(button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
+                        == (scheme == .dark ? .darkAqua : .aqua), "status button appearance did not update")
+            try captureNativeMenuButton(button, name: "menu-\(name)-\(theme)", scheme: scheme)
+            if let panel { try capture(name: "identity-panel-\(panel)-\(theme)") }
+        }
+    }
+
+    private func captureNativeMenuButton(_ button: NSStatusBarButton, name: String, scheme: ColorScheme) throws {
+        let bounds = button.bounds.integral
+        let bitmap = try identityBitmap(size: bounds.size, scale: 2)
+        button.effectiveAppearance.performAsCurrentDrawingAppearance {
+            button.cacheDisplay(in: bounds, to: bitmap)
+        }
+        try saveIdentityBitmap(bitmap, name: name, scheme: scheme, owner: "actual-status-item-button",
+                               appearanceName: button.effectiveAppearance.name.rawValue)
+    }
+
+    private func identityBitmap(size: NSSize, scale: CGFloat) throws -> NSBitmapImageRep {
+        let raw = try requireValue(NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: Int((size.width * scale).rounded(.up)),
+            pixelsHigh: Int((size.height * scale).rounded(.up)), bitsPerSample: 8, samplesPerPixel: 4,
+            hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB,
+            bitmapFormat: [], bytesPerRow: 0, bitsPerPixel: 32
+        ), "identity bitmap")
+        let bitmap = try requireValue(raw.retagging(with: .sRGB), "identity sRGB bitmap")
+        bitmap.size = size
+        let pixels = try requireValue(bitmap.bitmapData, "identity pixel storage")
+        pixels.update(repeating: 0, count: bitmap.bytesPerRow * bitmap.pixelsHigh)
+        return bitmap
+    }
+
+    private func saveIdentityBitmap(
+        _ bitmap: NSBitmapImageRep, name: String, scheme: ColorScheme, owner: String, appearanceName: String
+    ) throws {
+        let profile = try requireValue(NSColorSpace.sRGB.iccProfileData, "identity sRGB profile")
+        let png = try requireValue(bitmap.representation(using: .png, properties: [.colorSyncProfileData: profile]),
+                                   "identity PNG")
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try png.write(to: directory.appendingPathComponent("\(name).png"), options: .atomic)
+        let corners = [(0, 0), (bitmap.pixelsWide - 1, 0),
+                       (0, bitmap.pixelsHigh - 1), (bitmap.pixelsWide - 1, bitmap.pixelsHigh - 1)]
+        let opaqueCorners = corners.allSatisfy { (bitmap.colorAt(x: $0.0, y: $0.1)?.alphaComponent ?? 0) >= 0.99 }
+        captures.append(CaptureRecord(
+            name: name, file: "\(name).png", width: bitmap.pixelsWide, height: bitmap.pixelsHigh, scale: 2,
+            opaqueCorners: opaqueCorners, colorSchemeOverride: scheme == .dark ? "dark" : "light",
+            highContrastOverride: false, reduceMotionOverride: nil, windowIdentifier: owner,
+            appearanceName: appearanceName,
+            bitmapColorSpace: bitmap.colorSpace.localizedName, colorProfileEmbedded: true
+        ))
+    }
+
+    private func captureApplicationIdentity() throws {
+        let url = try requireValue(Bundle.main.url(forResource: "AppIcon", withExtension: "icns"), "bundled AppIcon")
+        let image = try requireValue(NSImage(contentsOf: url), "native app icon")
+        for scheme in [ColorScheme.light, .dark] {
+            let bitmap = try identityBitmap(size: NSSize(width: 160, height: 160), scale: 2)
+            let context = try requireValue(NSGraphicsContext(bitmapImageRep: bitmap), "app icon drawing context")
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = context
+            (scheme == .dark ? NSColor(srgbRed: 0.13, green: 0.14, blue: 0.16, alpha: 1)
+                : NSColor(srgbRed: 0.93, green: 0.94, blue: 0.95, alpha: 1)).setFill()
+            NSRect(x: 0, y: 0, width: 160, height: 160).fill()
+            image.draw(in: NSRect(x: 16, y: 16, width: 128, height: 128))
+            NSGraphicsContext.restoreGraphicsState()
+            try saveIdentityBitmap(bitmap, name: "identity-app-icon-\(scheme == .dark ? "dark" : "light")",
+                                   scheme: scheme, owner: "native-bundled-AppIcon.icns-render",
+                                   appearanceName: scheme == .dark ? NSAppearance.Name.darkAqua.rawValue : NSAppearance.Name.aqua.rawValue)
+        }
     }
 }
