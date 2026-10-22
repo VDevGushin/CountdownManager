@@ -1,9 +1,10 @@
 # Preparing signed updates
 
-Release **1.14.1 / build 29** is being prepared with the existing production key and stable feed.
+Release **1.14.1 / build 29** is published as Latest with the existing production key and stable feed.
 Only the explicit favorite receives the large card. Calendar month strips fill the top edge;
 tilt remains, shadows are removed and outlines are inset. Publication status and final evidence
-are tracked in [releases/v1.14.1.md](releases/v1.14.1.md).
+are tracked in [releases/v1.14.1.md](releases/v1.14.1.md). Anonymous archive, version feed and
+Latest feed downloads returned HTTP 200 and matched the locally signed SHA-256 values.
 
 Previous release **1.14.0 / build 28** was published as Latest with the existing production key
 and stable feed. Anonymous archive/version-feed/Latest-feed downloads returned HTTP 200

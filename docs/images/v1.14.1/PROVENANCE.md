@@ -40,4 +40,4 @@ Contour appearance is visually reviewed, not protected by a pixel-golden asserti
 Natural diagonal antialiasing remains. Calendar Increase Contrast was not separately captured.
 Physical Spaces, VoiceOver speech, older macOS, Intel and first-install Gatekeeper were not established.
 Full Sparkle download/replace/relaunch was not repeated; production channel/key and signatures were verified.
-Publication and anonymous-download confirmation are recorded separately after upload.
+Publication and anonymous-download confirmation are recorded in [publication.json](publication.json).
