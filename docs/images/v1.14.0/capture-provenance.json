@@ -2,7 +2,7 @@
   "version": "1.14.0",
   "build": "28",
   "architecture": "arm64",
-  "status": "prepared_signed_unpublished",
+  "status": "published_verified",
   "baseCommit": "2933a22bc2b1eacef577fc31b8aa31b93cbc429f",
   "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727",
   "bundleIdentifier": "local.countdownmanager.app",
@@ -79,5 +79,7 @@
     "No full Sparkle download/replace/relaunch repeated for this release",
     "Current-host arm64 runtime only; older macOS/Intel/Gatekeeper first install not established",
     "Not installed into /Applications by this release task"
-  ]
+  ],
+  "releaseCommit": "68fbdcc880b00293cc54eba00c42258e4164b713",
+  "publicationVerified": true
 }

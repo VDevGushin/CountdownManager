@@ -1,0 +1,34 @@
+{
+  "version": "1.14.0",
+  "build": "28",
+  "published": true,
+  "latest": true,
+  "tag": "v1.14.0",
+  "commit": "68fbdcc880b00293cc54eba00c42258e4164b713",
+  "releaseUrl": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.14.0",
+  "anonymousDownloads": {
+    "archive": {
+      "status": 200,
+      "bytes": 4729910,
+      "sha256": "e92da5a4704a7f730d8a4043267b17a0051bd04aa4d81601890a9d5bb7376b6c",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.14.0/CountdownManager-1.14.0-28.zip",
+      "finalHost": "release-assets.githubusercontent.com"
+    },
+    "version_feed": {
+      "status": 200,
+      "bytes": 1299,
+      "sha256": "ec7d8a28c8ffaf1dc32a65a2e3ed2380b24b5070eeecb61607f81461ff9d758b",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.14.0/appcast.xml",
+      "finalHost": "release-assets.githubusercontent.com"
+    },
+    "latest_feed": {
+      "status": 200,
+      "bytes": 1299,
+      "sha256": "ec7d8a28c8ffaf1dc32a65a2e3ed2380b24b5070eeecb61607f81461ff9d758b",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "finalHost": "release-assets.githubusercontent.com"
+    }
+  },
+  "signedLocalHashesMatchPublic": true,
+  "installedByThisTask": false
+}

@@ -1,7 +1,8 @@
 # Preparing signed updates
 
-Release **1.14.0 / build 28** is prepared for publication with the existing production key
-and stable feed. Automatic/custom event title mode now survives Save and restart; legacy events
+Release **1.14.0 / build 28** is published as Latest with the existing production key
+and stable feed. Anonymous archive/version-feed/Latest-feed downloads returned HTTP 200
+and matched the locally signed SHA-256 values. Automatic/custom event title mode now survives Save and restart; legacy events
 remain custom. The exact production bundle passed seven isolated native scenarios and produced
 six fresh editor captures. Core/UI regressions include negative reset/validation/deletion cases,
 768 seeded actions and eight overlapping-write outcomes. See [releases/v1.14.0.md](releases/v1.14.0.md).
