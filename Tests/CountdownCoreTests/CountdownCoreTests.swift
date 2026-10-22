@@ -496,6 +496,9 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try await checks.testRepositoryRejectedRevisionDoesNotDestroyOrBlockData()
         try await checks.testRepositoryFilesystemFailureCanRetryWithoutDataLoss()
         try await testWeatherFlagPersistence()
+        try testAutomaticTitleLegacyAndJSONCompatibility()
+        try testAutomaticTitleCanonicalSaveAndDateBoundaries()
+        try await testAutomaticTitleRepositorySnapshotsAndRestart()
         print("PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today creation/editing, midnight rejection and expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji")
     }
 }

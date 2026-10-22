@@ -372,6 +372,7 @@ enum UIChecks {
         try await testTodaySaveAndMidnightBoundary(in: directory.appendingPathComponent("today-midnight"))
         try await testClearingFavoritePersistsAndRollsBack(in: directory.appendingPathComponent("clear-favorite"))
         try await testRegressionWorkflows(in: directory.appendingPathComponent("regression-workflows"))
+        try await testAutomaticTitleWorkflows(in: directory.appendingPathComponent("automatic-titles"))
         await testAsyncWorkflowRegressions()
         await MainActor.run {
             testIsolatedStoreCannotManageLoginItem(

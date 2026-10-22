@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-22",
+  "branch": "codex/automatic-event-titles",
+  "baseCommit": "2933a22bc2b1eacef577fc31b8aa31b93cbc429f",
+  "status": "unreleased_working_tree",
+  "version": "1.13.5",
+  "build": "27",
+  "captureExecutableSHA256": "c70608a690ee9d8203dc991676d67d2343ab39ac6d84cb1728888f9d7badfa91",
+  "sourceSHA256": {
+    "Sources/CountdownCore/Countdown.swift": "95826e51424567a3fc709f45a053e2799446c0b54cbe1b8451e7e499505d63d5",
+    "Sources/CountdownManager/Presentation.swift": "b013919152ce6e90d301c847e8e511285e7413e92c0f38f3a70a908fa7ac635d",
+    "Sources/CountdownManager/Views.swift": "caa79f27e72b807ea065fcd651ee4c171396fe42403ce381aa49184d4f34ef24",
+    "Sources/CountdownManager/UISmokeRuntime.swift": "7db32532e90a6794775701506aaed0b7f75fe2081d8029544674fb716c7471d0",
+    "XCUITests/CountdownManagerXCUITests.swift": "e38d016da7432015dd791a3cc912ecc4e9ac2e05a24cb1380a3c9a9b4ebb02f7",
+    "Tests/CountdownCoreTests/AutomaticTitleChecks.swift": "6feb681fb5693297c1881d7294e622c88da9c08ce1d3c248d939739e1f9f26e4",
+    "Tests/CountdownManagerUITests/AutomaticTitleWorkflowChecks.swift": "4730008f6d48653ef5a1b95bab595c3962ee0445e80490af59f7d774e40f712a"
+  },
+  "verification": {
+    "swiftlint": "PASS: 0 violations",
+    "full": "PASS: CoreChecks, UIChecks, native smoke, collapse, editor, continuity x3",
+    "finalFast": "PASS",
+    "seededActions": 768,
+    "overlappingWriteOutcomes": 8,
+    "evalRunnerTests": 32,
+    "nativeCaptures": 6,
+    "visualReview": "PASS: Light, Dark, Light Increase Contrast",
+    "externalRetainedPassingCases": [
+      "testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen",
+      "testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave",
+      "testRepeatedAutomaticTitleCyclesPreserveNewDraftFields"
+    ],
+    "externalLayoutAwarePassingCases": [
+      "testAutomaticTitleResetCancelSaveAndNativeUndo",
+      "testCustomTitleDigitEditAndNativeUndo"
+    ]
+  },
+  "exploratoryFailures": {
+    "literalX": "Not delivered on both feature and pre-feature main 2933a22; digit and Russian phrase delivered. Not a feature regression.",
+    "literalUndoKey": "Literal z failed with selected Russian layout. Layout-aware physical key succeeded.",
+    "undoGrouping": "Prior typing and appended digit coalesced. Permanent ordinary fixture starts from saved title to test one user edit."
+  },
+  "limits": [
+    "No exhaustive enumeration of all user input",
+    "External date picker, IME and VoiceOver speech not established",
+    "Special command keyboard layouts not established",
+    "No production data mutation, installation or release"
+  ]
+}

@@ -233,10 +233,7 @@ package enum EditorFocusTarget: Hashable {
 }
 
 package func russianWeekdayTitle(_ day: Day) -> String {
-    var calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-    let titles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
-    return titles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
+    automaticEventTitle(for: day)
 }
 
 package struct DayCreationPreset: Equatable {
@@ -294,7 +291,7 @@ package struct EventEditorDraft: Equatable {
     package var emoji: String
     package var subtasks: [Subtask]
     package var showsWeather: Bool
-    private var followsDayDate = false
+    package private(set) var usesAutomaticTitle: Bool
 
     package init(item: Countdown?) {
         title = item?.title ?? ""
@@ -302,6 +299,7 @@ package struct EventEditorDraft: Equatable {
         emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
         showsWeather = item?.showsWeather ?? false
+        usesAutomaticTitle = item?.usesAutomaticTitle ?? false
     }
 
     package init(day: Day) {
@@ -310,17 +308,22 @@ package struct EventEditorDraft: Equatable {
         emoji = ""
         subtasks = []
         showsWeather = true
-        followsDayDate = true
+        usesAutomaticTitle = true
     }
 
     package mutating func setTitle(_ title: String) {
         guard title != self.title else { return }
         self.title = title
-        followsDayDate = false
+        usesAutomaticTitle = false
     }
 
     package mutating func updateDayTitle(for day: Day) {
-        guard followsDayDate else { return }
+        guard usesAutomaticTitle else { return }
+        title = russianWeekdayTitle(day)
+    }
+
+    package mutating func useAutomaticTitle(for day: Day) {
+        usesAutomaticTitle = true
         title = russianWeekdayTitle(day)
     }
 
@@ -352,7 +355,8 @@ package struct EventEditorDraft: Equatable {
             date: date,
             emoji: emoji,
             subtasks: subtasks,
-            showsWeather: showsWeather
+            showsWeather: showsWeather,
+            usesAutomaticTitle: usesAutomaticTitle
         )
     }
 }

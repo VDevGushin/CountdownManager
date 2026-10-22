@@ -125,6 +125,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var emoji: String
     public var subtasks: [Subtask]
     public var showsWeather: Bool
+    public var usesAutomaticTitle: Bool
 
     public init(
         id: UUID = UUID(),
@@ -133,7 +134,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         date: Day,
         emoji: String,
         subtasks: [Subtask] = [],
-        showsWeather: Bool = false
+        showsWeather: Bool = false,
+        usesAutomaticTitle: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -142,9 +144,12 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.emoji = emoji
         self.subtasks = subtasks
         self.showsWeather = showsWeather
+        self.usesAutomaticTitle = usesAutomaticTitle
     }
 
-    private enum CodingKeys: String, CodingKey { case id, title, note, date, emoji, subtasks, showsWeather }
+    private enum CodingKeys: String, CodingKey {
+        case id, title, note, date, emoji, subtasks, showsWeather, usesAutomaticTitle
+    }
 
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -155,6 +160,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         emoji = try values.decode(String.self, forKey: .emoji)
         subtasks = try values.decodeIfPresent([Subtask].self, forKey: .subtasks) ?? []
         showsWeather = values.contains(.showsWeather) ? try values.decode(Bool.self, forKey: .showsWeather) : false
+        usesAutomaticTitle = values.contains(.usesAutomaticTitle)
+            ? try values.decode(Bool.self, forKey: .usesAutomaticTitle) : false
         guard subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
     }
 
@@ -167,6 +174,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         try values.encode(emoji, forKey: .emoji)
         try values.encode(subtasks, forKey: .subtasks)
         if showsWeather { try values.encode(true, forKey: .showsWeather) }
+        if usesAutomaticTitle { try values.encode(true, forKey: .usesAutomaticTitle) }
     }
 }
 
@@ -222,7 +230,8 @@ public struct CountdownData: Codable, Equatable {
 
     public mutating func save(_ item: Countdown, primary: Bool, today: Day) throws {
         var cleaned = item
-        cleaned.title = item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        cleaned.title = item.usesAutomaticTitle
+            ? automaticEventTitle(for: item.date) : item.title.trimmingCharacters(in: .whitespacesAndNewlines)
         cleaned.note = item.note?.trimmingCharacters(in: .whitespacesAndNewlines)
         if cleaned.note?.isEmpty == true { cleaned.note = nil }
         cleaned.emoji = item.emoji.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -308,6 +317,13 @@ public struct CountdownData: Codable, Equatable {
             || (value.unicodeScalars.contains { $0.properties.isEmoji }
                 && value.unicodeScalars.contains { $0.value == 0xFE0F || $0.value == 0x20E3 })
     }
+}
+
+public func automaticEventTitle(for day: Day) -> String {
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+    let titles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+    return titles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
 }
 
 public func dayLabel(_ count: Int) -> String {

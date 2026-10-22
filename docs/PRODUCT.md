@@ -189,6 +189,7 @@ The timer is separate from events and subtasks. It does not create an event, a s
 An event contains:
 
 - a title;
+- a persisted automatic-title choice;
 - an optional note;
 - a calendar date;
 - an optional additional emoji;
@@ -218,7 +219,9 @@ The header calendar control, labelled `Создать день`, reveals inline 
 
 All day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
 
-While the title has not been manually edited, changing the date updates the weekday title. After a manual title edit, later date changes preserve that custom title. All ordinary event fields remain editable.
+Day drafts start with automatic titles enabled. Changing the selected event date updates the Russian
+weekday title until a real manual text change switches the draft to a custom title. All ordinary
+event fields remain editable. The title mode is saved with the event and restored when editing it.
 
 Opening a day draft creates no persisted event. Save creates an ordinary event with the existing date, validation, primary-selection and expiry rules. Multiple events on the same date remain allowed. A repeated creation request while an editor is already open preserves that editor and its input rather than replacing it. Hiding and showing the panel also preserve the draft.
 
@@ -231,6 +234,34 @@ An existing event may be edited while it is scheduled for today.
 An active event may be moved to today's date or a future date. An event occurring today may also remain on today's date.
 
 Editing does not change durable event data until the user explicitly saves.
+
+### Automatic event titles
+
+An event's title is either automatic or custom. Automatic means the Russian weekday of its selected
+event date, including after Save, reopening or application restart. Changing the date of an automatic
+event updates the draft title immediately; successful Save commits date, title and mode together.
+The mutation boundary derives the canonical automatic title from the saved date.
+
+Ordinary `+` drafts start with a custom empty title; day-creation drafts start automatic. Existing
+events restore their saved mode. Events whose JSON lacks the mode remain custom, even when their
+title equals a weekday name. No title-based migration or guessing is allowed.
+
+A real user text change immediately switches the current draft to custom mode. Merely focusing or
+selecting text, accepting the same value again, or the application's date-driven update does not.
+Undo may restore text, but does not enable automatic mode. While custom, changing dates preserves
+the user's title. Blank or whitespace-only custom titles cannot be saved.
+
+The editor provides `Название по дате` next to the title for custom drafts, including ordinary and
+legacy events. It immediately replaces the draft title with the selected date's weekday and enables
+automatic mode. It changes no note, emoji, subtask, favorite or weather choice. The new mode and
+replacement text become durable only after successful Save. Cancel restores the saved title/date/mode;
+write failure leaves durable data intact and keeps the entire draft available for an explicit retry.
+Hiding and reopening the panel retains the unsaved draft and its mode. Removed or expired identities
+remain unavailable and cannot be recreated by switching title mode.
+
+Automatic naming does not move an event's date, roll events forward at midnight or alter expiry.
+The event date remains the source of the weekday name; clocks, restarts and panel visibility do not
+reschedule it.
 
 `Показывать погоду для этого дня` is available in the editor for new and existing events. Save
 persists this choice; Cancel keeps the previously saved value. Changing a title or date does not
@@ -543,6 +574,10 @@ The optional JSON `showsWeather` boolean defaults to false when absent. True is 
 false is omitted to preserve legacy-compatible ordinary-event files. Saved event content and
 identities are retained without assigning weather based on title or migrating existing days.
 Weather forecasts and automatic coordinates are not event data.
+
+The optional `usesAutomaticTitle` JSON boolean defaults to false when absent; true is encoded
+explicitly, false is omitted. The textual title is also retained for compatible older readers.
+Unsupported null or non-boolean mode values fail safely rather than guessing the user's intent.
 
 Invalid or corrupted user data must fail safely.
 

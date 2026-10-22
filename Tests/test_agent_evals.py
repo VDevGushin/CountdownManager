@@ -243,7 +243,7 @@ class AgentEvalChecks(unittest.TestCase):
 
     def test_all_focused_ui_modes_are_rejected_by_negative_controls(self):
         self.case["forbidden_checks"] = ["real-ui", "app-build"]
-        for mode in ("weather", "weather-capture", "empty-state", "empty-state-capture", "compact-capture", "editor"):
+        for mode in ("weather", "weather-capture", "empty-state", "empty-state-capture", "compact-capture", "editor", "automatic-title-capture"):
             for exit_code in (0, 1):
                 with self.subTest(mode=mode, exit_code=exit_code):
                     command = "./verify.sh " + mode

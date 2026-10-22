@@ -24,6 +24,10 @@ struct UISmokeConfiguration {
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
     static let editorWorkflowLaunchArgument = "--ui-smoke-editor-workflows"
     static var editorWorkflowWasRequested: Bool { ProcessInfo.processInfo.arguments.contains(editorWorkflowLaunchArgument) }
+    static let automaticTitleCaptureLaunchArgument = "--ui-smoke-automatic-title-captures"
+    static var automaticTitleCaptureWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(automaticTitleCaptureLaunchArgument)
+    }
     static let captureLaunchArgument = "--ui-smoke-captures"
     static let weatherLaunchArgument = "--ui-smoke-weather"
     static let weatherCaptureLaunchArgument = "--ui-smoke-weather-captures"
@@ -64,6 +68,7 @@ struct UISmokeConfiguration {
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || editorWorkflowWasRequested
+            || automaticTitleCaptureWasRequested
             || ProcessInfo.processInfo.arguments.contains(captureLaunchArgument)
             || compactCaptureWasRequested
             || completedCaptureWasRequested
@@ -99,7 +104,7 @@ struct UISmokeConfiguration {
     }
 
     static var captureWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested || completedCaptureWasRequested || menuIdentityCaptureWasRequested
+        ProcessInfo.processInfo.arguments.contains(captureLaunchArgument) || weatherCaptureWasRequested || emptyStateCaptureWasRequested || compactCaptureWasRequested || completedCaptureWasRequested || menuIdentityCaptureWasRequested || automaticTitleCaptureWasRequested
     }
 
     static var weatherWasRequested: Bool {
@@ -128,6 +133,7 @@ struct UISmokeConfiguration {
             collapseRegressionLaunchArgument,
             editorScrollRegressionLaunchArgument,
             editorWorkflowLaunchArgument,
+            automaticTitleCaptureLaunchArgument,
             captureLaunchArgument,
             weatherLaunchArgument,
             weatherCaptureLaunchArgument,
@@ -190,7 +196,7 @@ struct UISmokeConfiguration {
         )
         if compactCaptureWasRequested {
             try configuration.seedCompactCaptureFixture()
-        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested && !completedCaptureWasRequested && !menuIdentityCaptureWasRequested {
+        } else if captureWasRequested && !weatherCaptureWasRequested && !emptyStateCaptureWasRequested && !completedCaptureWasRequested && !menuIdentityCaptureWasRequested && !automaticTitleCaptureWasRequested {
             try configuration.seedTodayCaptureFixture()
         }
         return configuration
@@ -263,6 +269,7 @@ final class UISmokeRuntime {
         let executableSHA256: String?
         let headerSyntheticDays: [String: String]?
         let emptyStateSyntheticDays: [String: String]?
+        let automaticTitleCapture: Bool?
         let weatherForecastSource: String?
         let captures: [CaptureRecord]
     }
@@ -321,7 +328,11 @@ final class UISmokeRuntime {
                         && (self.controls.entries["event.add"]?.isEnabled == true
                             || self.controls.entries["event.empty.today"]?.isEnabled == true)
                 }
-                if UISmokeConfiguration.editorWorkflowWasRequested {
+                if UISmokeConfiguration.automaticTitleCaptureWasRequested {
+                    try await runEditorWorkflowRegressions()
+                    try await captureAutomaticTitleEditors()
+                    try writeCaptureManifest()
+                } else if UISmokeConfiguration.editorWorkflowWasRequested {
                     try await runEditorWorkflowRegressions()
                 } else if UISmokeConfiguration.menuIdentityCaptureWasRequested {
                     try await runMenuIdentityCapture()
@@ -2013,7 +2024,7 @@ final class UISmokeRuntime {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
         let isCompact = UISmokeConfiguration.compactCaptureWasRequested
-        let expectedCount = UISmokeConfiguration.menuIdentityCaptureWasRequested ? 24 : (UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31))))
+        let expectedCount = UISmokeConfiguration.automaticTitleCaptureWasRequested ? 6 : (UISmokeConfiguration.menuIdentityCaptureWasRequested ? 24 : (UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31)))))
         try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -2025,6 +2036,7 @@ final class UISmokeRuntime {
             executableSHA256: executable.map { SHA256.hash(data: $0).map { String(format: "%02x", $0) }.joined() },
             headerSyntheticDays: isWeather ? ["weather-header-before-midnight": "2026-10-14", "weather-header-midnight-empty": "2026-10-15"] : nil,
             emptyStateSyntheticDays: isEmptyState ? ["empty-state-midnight": "2026-10-20"] : nil,
+            automaticTitleCapture: UISmokeConfiguration.automaticTitleCaptureWasRequested ? true : nil,
             weatherForecastSource: isCompact
                 ? "Synthetic +14°C today/day+2, −18°C tomorrow; no HTTP/geolocation"
                 : (isWeather ? "Synthetic +14°C daily maxima; day +2 intentionally absent; no HTTP/geolocation" : nil),
@@ -2607,6 +2619,10 @@ final class UISmokeRuntime {
         try await waitForElement("editor.unavailable")
         try require(controls.value("editor.title") == "Keep unavailable draft", "removed event discarded draft")
         try await waitFor("unavailable Save disabled") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try await press("editor.title.automatic")
+        try await waitForValue("editor.title.mode", equals: "auto")
+        try require(!controls.press("editor.save") && !store.data.items.contains { $0.id == item.id },
+                    "automatic reset recreated a removed identity or enabled its Save")
         try await hideAndShow()
         try require(controls.entries["editor.edit"] != nil, "unavailable editor lost on hide")
         try await press("editor.cancel")
@@ -3173,29 +3189,125 @@ final class UISmokeRuntime {
         try await waitForElement("editor.new")
         try await selectEditorDate(thursday)
         try await waitForValue("editor.title", equals: "Четверг")
+        try await waitForValue("editor.title.mode", equals: "auto")
         try await press("editor.title")
         try await waitForFirstResponder("editor.title")
         try await selectEditorDate(friday)
         try await waitForValue("editor.title", equals: "Пятница")
         try await hideAndShow()
         try await selectEditorDate(thursday)
+        try await press("editor.save")
+        try await waitFor("automatic Thursday saved") { self.controls.entries["editor.new"] == nil && !self.store.hasPendingPersistence }
+        let item = try requireValue(store.active.first, "saved automatic Thursday")
+        try require(item.usesAutomaticTitle, "new day Save lost automatic-title mode")
+        let edit = "event.edit.\(item.id.uuidString)"
+
+        for shouldSave in [false, true, false] {
+            let before = store.data
+            try await press(edit)
+            try await waitForValue("editor.title.mode", equals: "auto")
+            for cycle in 1...2 {
+                try await focusAndReplace("editor.title", with: "Custom cycle \(cycle)")
+                try await waitForValue("editor.title.mode", equals: "custom")
+                try await selectEditorDate(friday)
+                try await waitForValue("editor.title", equals: "Custom cycle \(cycle)")
+                try await press("editor.title.automatic")
+                try await waitForValue("editor.title", equals: "Пятница")
+                try await waitForValue("editor.title.mode", equals: "auto")
+                try await selectEditorDate(thursday)
+                try await waitForValue("editor.title", equals: "Четверг")
+            }
+            if !shouldSave {
+                try await focusAndReplace("editor.title", with: "Unsaved custom mode")
+                try await waitForValue("editor.title.mode", equals: "custom")
+            }
+            try await hideAndShow(usingStatusItem: true)
+            try await waitForValue("editor.title.mode", equals: shouldSave ? "auto" : "custom")
+            try await selectEditorDate(friday)
+            if !shouldSave { try await waitForValue("editor.title", equals: "Unsaved custom mode") }
+            try await press(shouldSave ? "editor.save" : "editor.cancel")
+            try await waitFor("automatic mode cycle ends") { self.controls.entries["editor.edit"] == nil && !self.store.hasPendingPersistence }
+            if shouldSave {
+                let saved = try requireValue(store.active.first, "saved automatic Friday")
+                try require(saved.title == "Пятница" && saved.date == friday && saved.usesAutomaticTitle,
+                            "automatic Save lost date/title/mode consistency")
+            } else {
+                try require(store.data == before, "Cancel persisted an automatic-title cycle")
+            }
+        }
+
+        try await press(edit)
+        try await focusAndReplace("editor.title", with: "Retained custom failure")
+        try await waitForValue("editor.title.mode", equals: "custom")
+        try await selectEditorDate(thursday)
+        let beforeFailure = store.data
+        let backup = configuration.dataURL.appendingPathExtension("automatic-title-backup")
+        try FileManager.default.moveItem(at: configuration.dataURL, to: backup)
+        try FileManager.default.createDirectory(at: configuration.dataURL, withIntermediateDirectories: false)
+        defer {
+            if FileManager.default.fileExists(atPath: backup.path) {
+                try? FileManager.default.removeItem(at: configuration.dataURL)
+                try? FileManager.default.moveItem(at: backup, to: configuration.dataURL)
+            }
+        }
+        try await press("editor.save")
+        try await waitFor("title-mode failure keeps the editor usable") {
+            self.store.error != nil && self.controls.entries["editor.save"]?.isEnabled == true
+        }
+        try require(store.data == beforeFailure && controls.value("editor.title") == "Retained custom failure"
+                    && controls.value("editor.title.mode") == "custom", "failed Save changed mode or discarded title")
+        try FileManager.default.removeItem(at: configuration.dataURL)
+        try FileManager.default.moveItem(at: backup, to: configuration.dataURL)
+        store.error = nil
+        try await press("editor.title.automatic")
         try await waitForValue("editor.title", equals: "Четверг")
         try await press("editor.save")
-        try await waitFor("Thursday day saved") { self.controls.entries["editor.new"] == nil && !self.store.hasPendingPersistence }
-        let item = try requireValue(store.active.first, "saved Thursday")
-        try await press("event.edit.\(item.id.uuidString)")
-        try await waitForElement("editor.edit")
-        try await selectEditorDate(friday)
-        try await waitForValue("editor.title", equals: "Четверг")
-        try await focusAndReplace("editor.title", with: "Custom weekday plan")
-        try await selectEditorDate(thursday)
-        try await waitForValue("editor.title", equals: "Custom weekday plan")
-        try await press("editor.cancel")
-        try await waitFor("weekday edit cancelled") { self.controls.entries["editor.edit"] == nil }
-        try require(store.active.first == item && item.date == thursday && item.title == "Четверг", "weekday Cancel changed the saved event")
+        try await waitFor("retry after mode reset saves") { self.controls.entries["editor.edit"] == nil && !self.store.hasPendingPersistence }
+        let disk = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        let saved = try requireValue(disk.items.first, "automatic retry saved event")
+        try require(disk == store.data && saved.id == item.id && saved.usesAutomaticTitle
+                    && saved.title == "Четверг" && saved.date == thursday
+                    && saved.showsWeather == item.showsWeather && saved.subtasks == item.subtasks
+                    && saved.note == item.note && disk.primaryID == nil, "automatic reset/retry altered sibling fields")
         let deleted = await store.delete(item.id)
         try require(deleted, "weekday fixture cleanup failed")
-        pass("new day follows native Thursday/Friday changes through title focus and hide/show; existing saved title remains explicit and Cancel preserves its date")
+        pass("automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry")
+    }
+
+    private func captureAutomaticTitleEditors() async throws {
+        try require(store.active.isEmpty, "automatic-title captures require an empty isolated store")
+        let contrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let motion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        let oldScheme = visualEnvironment.colorSchemeOverride
+        defer {
+            visualEnvironment.colorSchemeOverride = oldScheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: motion)
+        }
+        try await press("event.empty.tomorrow")
+        try await waitForElement("editor.new")
+        try await replaceEditorNote(with: "Маршрут, документы и время выезда.")
+        let task = try await addEditorSubtaskAndWait()
+        try await focusAndReplace(task, with: "Проверить маршрут")
+        for (scheme, highContrast, suffix) in [(ColorScheme.dark, false, "dark"), (.light, false, "light"),
+                                               (.light, true, "high-contrast")] {
+            visualEnvironment.colorSchemeOverride = scheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: true)
+            if controls.value("editor.title.mode") == "custom" { try await press("editor.title.automatic") }
+            try await waitForValue("editor.title.mode", equals: "auto")
+            try await press("editor.title")
+            try await waitForFirstResponder("editor.title")
+            try scrollEditorToTop()
+            try await settleLayout(waitForAnimation: false)
+            try capture(name: "automatic-title-auto-\(suffix)")
+            try await focusAndReplace("editor.title", with: "Поездка на выходные")
+            try await waitForValue("editor.title.mode", equals: "custom")
+            try scrollEditorToTop()
+            try await settleLayout(waitForAnimation: false)
+            try capture(name: "automatic-title-custom-\(suffix)")
+        }
+        try await press("editor.cancel")
+        try await waitFor("automatic capture draft cancelled") { self.controls.entries["editor.new"] == nil }
+        try require(store.active.isEmpty, "captures persisted demonstration data")
     }
 
     private func selectEditorDate(_ day: Day) async throws {

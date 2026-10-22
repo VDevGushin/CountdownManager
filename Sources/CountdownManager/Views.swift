@@ -906,9 +906,27 @@ struct EditorView: View {
 
     private var titleField: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Название")
-                .font(.system(size: 11))
-                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            HStack(alignment: .firstTextBaseline) {
+                Text("Название")
+                    .font(.system(size: 11))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .accessibilityIdentifier("editor.title.mode")
+                    .accessibilityValue(draft.usesAutomaticTitle ? "Название по дате" : "Своё название")
+                    .uiSmokeControl(id: "editor.title.mode", value: { draft.usesAutomaticTitle ? "auto" : "custom" })
+                Spacer(minLength: 8)
+                if draft.usesAutomaticTitle {
+                    Text("По дате")
+                        .font(.system(size: 11))
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                } else {
+                    Button("Название по дате", action: useAutomaticTitle)
+                        .buttonStyle(.borderless)
+                        .controlSize(.small)
+                        .font(.system(size: 11))
+                        .accessibilityIdentifier("editor.title.automatic")
+                        .uiSmokeControl(id: "editor.title.automatic", action: useAutomaticTitle)
+                }
+            }
             TextField("Например, отпуск", text: Binding(get: { draft.title }, set: { draft.setTitle($0) }))
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 14))
@@ -917,6 +935,10 @@ struct EditorView: View {
                 .accessibilityIdentifier("editor.title")
                 .uiSmokeControl(id: "editor.title", action: { focus(.title, id: "editor.title") }, value: { draft.title })
         }
+    }
+
+    private func useAutomaticTitle() {
+        draft.useAutomaticTitle(for: Day(date))
     }
 
     private var noteControls: some View {

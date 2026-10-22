@@ -12,6 +12,7 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Editor workflows | `./verify.sh editor` | Focused native row deletion/subsequent input, field focus, Save/Cancel/reopen and weekday date changes; also included in `ui`/`full` |
+| Automatic-title captures | `./verify.sh automatic-title-capture <marked-output-directory>` | Editor workflows plus six native automatic/custom title screenshots in Light/Dark/Increase Contrast, manifest and retained tested app |
 | Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
 | Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
@@ -117,7 +118,7 @@ The ordinary `fast` gate also runs three focused workflow files:
   sequences preserve identities, order and completion, reject empty/whitespace replacement rows,
   and persist the final draft. Thursday/Friday transitions cover ordinary dates, year rollover and
   leap day; unchanged title commits keep new-day naming automatic, real title edits stop it, and
-  ordinary/existing titles stay explicit.
+  ordinary/legacy titles stay explicit.
 - `AsyncWorkflowRegressionChecks.swift` (UIChecks): editing a demanded date during a shared request,
   adding demand from a fresh cached batch and switching the per-event flag avoid duplicate requests;
   Moscow → Kazan → Moscow and OFF → ON keep the replacement request authoritative when the old
@@ -138,8 +139,56 @@ title/note/subtask focus handoffs and continued input after hide/show must reach
 Cancel preserves original bytes and restores a clean editor; Save preserves UUIDs, completion,
 favorite, text and order through repository reload and native editor reopening. A real NSDatePicker
 action verifies new-day Thursday → Friday → Thursday across title focus and hide/show. After Save,
-an existing event title remains explicit when its date changes; Cancel retains the saved date/title.
+automatic mode survives reopening, repeated custom/reset/date cycles, Cancel, a real filesystem
+write failure and an explicit reset followed by successful retry. The date/title/mode and sibling
+fields must match the durable snapshot.
 This is in-process native input, with external keyboard delivery covered separately by XCUITest.
+
+### Automatic event titles
+
+Core `AutomaticTitleChecks.swift` checks missing/false/true metadata, malformed present types and
+null, omission of false, raw legacy round-trip, all weekday names, year/leap boundaries, canonical
+Save, rejected past-date snapshot preservation and fresh repository/revision behavior.
+UIChecks `AutomaticTitleWorkflowChecks.swift` covers day/ordinary/legacy entry routes, identical
+commits, Unicode, empty/whitespace text, custom text/Undo-like restoration, explicit reset, both
+directions of failed-write retry and fresh Store reload, expired/deleted identity protection, and
+eight overlapping-write success/failure/completion-order combinations. Four fixed seeds each run
+192 actions against an independent weekday/custom-name oracle. Every step checks draft title/mode,
+Save validity, memory/disk agreement and unaffected sibling fields; failures report seed and trace.
+This is 768 reproducible actions, not a claim to enumerate every possible user input.
+
+Native `editor` exercises actual title focus, repeated custom/reset/date cycles, durable reopening,
+Cancel, panel hide/show and a real isolated filesystem fault with retained draft and retry. The
+`automatic-title-capture` mode also records auto/custom × Dark/Light/Light Increase Contrast, with
+the native title field focused, unchanged note/task siblings, no production data or network, bundle
+version/build and executable hash. It retains its tested app and result beside the six PNGs.
+External XCUITests separately exercise explicit reset/Cancel/Save/reopen and native text Undo,
+then repeated mode cycles with note/task UUID/favorite preservation. In-process date-picker actions
+do not establish external date entry, real IME composition or VoiceOver speech.
+
+On the 2026-10-22 host, a single `x` did not appear through targeted `typeText`, application
+`typeText` or `typeKey("x", [])`, despite a focused title field. A digit and the phrase ` дописано`
+were delivered. The exact same controlled sequence reproduced against an isolated archive of
+pre-feature `main` commit `2933a22`, with Core/Presentation/Views verified byte-for-byte, so this is
+not an automatic-title regression. The cause and real physical-keyboard behavior remain unknown;
+no production menu, focus or event-routing workaround was added. The active input source was
+Russian; a read-only keyboard-table query mapped physical Z to `я` (and to `z` under Command).
+Permanent external edit/Undo checks use digit `1` and derive the Undo key from current layout data,
+without changing the user's input source. Ordinary-title fixtures seed the original title on disk,
+so only one user edit enters the native undo group. Both exact Undo/title-mode checks passed with
+the current Russian/ABC mapping. Special Command layouts, IMEs and physical Latin-key delivery
+remain unverified; this helper is test-driver code only.
+The exploratory failures remain separate evidence, not successful runs. Apple's
+[typeText contract](https://developer.apple.com/documentation/xcuiautomation/xcuielement/typetext(_:))
+requires keyboard focus; an accessibility focus snapshot alone does not prove text delivery.
+
+Acceptance on 2026-10-22: strict SwiftLint, the full Core/UI/native gate, the final fast gate,
+32 eval-runner checks, the focused capture/native workflow and six-image visual review passed.
+Three unchanged external row-edit/mode-cycle cases passed in the final five-case attempt; its
+two literal-key Undo cases failed, were diagnosed as above, and then passed as the focused
+layout-aware two-case suite. Those earlier failures are not counted as PASS. Evidence for the
+three unchanged cases is retained rather than rerunning them after a test-driver-only change.
+That initial feature acceptance is historical: its preview captures retain 1.13.5/27. The 1.14.0 release has fresh exact-package native results and screenshots under docs/images/v1.14.0/.
 
 ## Mars menu identity
 

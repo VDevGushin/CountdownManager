@@ -1,0 +1,83 @@
+{
+  "version": "1.14.0",
+  "build": "28",
+  "architecture": "arm64",
+  "status": "prepared_signed_unpublished",
+  "baseCommit": "2933a22bc2b1eacef577fc31b8aa31b93cbc429f",
+  "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727",
+  "bundleIdentifier": "local.countdownmanager.app",
+  "updaterFeed": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+  "sourceSHA256": {
+    "Sources/CountdownCore/Countdown.swift": "95826e51424567a3fc709f45a053e2799446c0b54cbe1b8451e7e499505d63d5",
+    "Sources/CountdownCore/CountdownRepository.swift": "559a0fe3b58a044773cb064083ec7126248e62ff5cd0298768332b34f3eb5b4f",
+    "Sources/CountdownManager/Application.swift": "3452e076283360b430285711529538c04f2b780bc18bfe9ef58180692490f243",
+    "Sources/CountdownManager/ApplicationUpdates.swift": "a3e5048ef1cafe32f93a10752f925c82fb725a66d9e089f74cc2fad74c4bc6fb",
+    "Sources/CountdownManager/AuroraInstrument.swift": "979b97670ab0301f884bc12e2fa30cdc5e50dc3eeaa2525407462447a419a115",
+    "Sources/CountdownManager/CountdownTimer.swift": "21a3a58c251349e220155fe73bcdd12cd022caa50ed35021cb94675b49958471",
+    "Sources/CountdownManager/DiagnosticArchive.swift": "0b0654b6089abbf2823950704eddb6c004d1462c2d30fb4f6b6df0d5118f601e",
+    "Sources/CountdownManager/DiagnosticPrivacy.swift": "c20ebf44371bc66f94b3238c81abd490820d397b9218c36e1c93005d317427d6",
+    "Sources/CountdownManager/Diagnostics.swift": "8f20725d56a5ff7468e83e1a6b7ab2831283a8545137e060b5b3c4be550a036f",
+    "Sources/CountdownManager/KeepAwake.swift": "efb7e6bff531680c9fd0ea91b9629de01977966366f2d8d37d3d53f02d995142",
+    "Sources/CountdownManager/NoteEditor.swift": "274ecd51ae9023a5e5c67daaa3ba107ac8360d6b1ad118dd4992ed4bd65526ef",
+    "Sources/CountdownManager/Presentation.swift": "b013919152ce6e90d301c847e8e511285e7413e92c0f38f3a70a908fa7ac635d",
+    "Sources/CountdownManager/SettingsView.swift": "dca67c53e4d3e6dfbabe1c8f6150c68102850616a633faf4221e6385aa019275",
+    "Sources/CountdownManager/StatusBarImages.swift": "1eb7b6fabb1baa95e7c7e48bdce6a4e8089d81c11815f200f720f5c37c515d42",
+    "Sources/CountdownManager/Store.swift": "7523fbd977d2f022fca51ce300192aaeaec20c5fe2017f9753c9c5e37b3f3dbb",
+    "Sources/CountdownManager/TimerCompletionAlert.swift": "739c288254f0fe44f56641b772d60fdf31a69107eebff793d5ac3f11811cb162",
+    "Sources/CountdownManager/UISmokeControls.swift": "e0ae2884176bbf213906c9e946f49312fcf35b088976c4fff2b018b7af21ba4d",
+    "Sources/CountdownManager/UISmokeRuntime.swift": "0c3989bc812e112b86be80344b115047b7262b155e4944c8a8aa899b0d13f27c",
+    "Sources/CountdownManager/Views.swift": "caa79f27e72b807ea065fcd651ee4c171396fe42403ce381aa49184d4f34ef24",
+    "Sources/CountdownManager/Weather.swift": "ca19d613515bd4129b9a44c54f5e46eeb60a527edb913cddb246e2b45b28a18f",
+    "Sources/CountdownManager/WeatherDiagnostics.swift": "fe9db0e5ffbbdee5ad682ae8cf1a76e7bad8fec441bef06bb9b25531fdb30a36",
+    "Sources/CountdownManager/WeatherForecasts.swift": "96f35d5e658bdc283fceb7840ed8d1301e401fed4fc43606a72f4c70710f12db",
+    "Sources/CountdownManager/WeatherHTTPMetadata.swift": "d5abf335ea4df2d5ec06081a7029dfc031297eb14398ce4543e699bc18d3c733",
+    "Sources/CountdownManager/WeatherLocation.swift": "9b1071b0bbf436616254b0c9ee9e2a98d414a67dde7ba0c7a3004c253403b23a",
+    "Sources/CountdownManager/WeatherMETNorway.swift": "494a7d7858220d49caa83d4e8b92ca49f1dbb1d0353cd0fd2b8a48d84bbe88a2",
+    "Sources/CountdownManager/WeatherNetwork.swift": "ef4bffa858af28efdd5948e295b4be9a4c4d70229205dc9adad9d8fa1737bcd5",
+    "Sources/CountdownManager/WeatherOpenMeteo.swift": "d248a9bba619ce1a8bec93c163d4655224a43c41097e187e50d638160ccbe382",
+    "Sources/CountdownManager/WeatherRequestPolicy.swift": "581a8416fa00d1a3cc5314f2d28612fa8ff8e94e22dcf5a958215678cef7b9b6",
+    "Sources/CountdownManager/WeatherTransport.swift": "3bc80fdf083907f643082eaede38f1b2f2d205f48b6d4eae1c728eb02a8973f6",
+    "Sources/CountdownManager/WeatherWttr.swift": "3ba9e9755e91d4b264f85898c1e836eb218324bad0d89cbc74551c4cbf74cb7f",
+    "Sources/CountdownManagerApp/App.swift": "947468036cd70aa7bbf8e1001299cd4fae07154e084a84cdc85143544432be63"
+  },
+  "testSHA256": {
+    "Tests/CountdownCoreTests/AutomaticTitleChecks.swift": "0c07d97a23fbdb65c8c70d83b2a41ab2cd3c3e5dbb239365c30a199cfe3a94ee",
+    "Tests/CountdownManagerUITests/AutomaticTitleWorkflowChecks.swift": "4c81cb4178efbfeff963ebe0ed7d3c73467cb5289935405377dcabac40d4ffb6",
+    "XCUITests/CountdownManagerXCUITests.swift": "e38d016da7432015dd791a3cc912ecc4e9ac2e05a24cb1380a3c9a9b4ebb02f7"
+  },
+  "assets": {
+    "CountdownManager-1.14.0-28.zip": {
+      "bytes": 4729910,
+      "sha256": "e92da5a4704a7f730d8a4043267b17a0051bd04aa4d81601890a9d5bb7376b6c"
+    },
+    "appcast.xml": {
+      "bytes": 1299,
+      "sha256": "ec7d8a28c8ffaf1dc32a65a2e3ed2380b24b5070eeecb61607f81461ff9d758b"
+    }
+  },
+  "coverage": {
+    "seededActions": 768,
+    "overlapOutcomes": 8,
+    "coreAndUIChecks": "PASS including final negative validation/reset/deleted-UUID audit additions",
+    "strictLint": "PASS:0",
+    "evalRunnerTests": 32,
+    "updatePackagingTests": 12,
+    "exactProductionNativeScenarios": 7,
+    "freshNativeScreenshots": 6,
+    "externalKeyboardEvidence": "5 passing scenarios retained from unchanged production feature sources; host-specific Undo key translation and exact text/mode assertions",
+    "interruptedAttempt": "Initial dev full native test lost focus during outside interaction. Entire UI matrix rerun on exact production bundle and passed."
+  },
+  "compatibility": {
+    "legacyMissingMode": "custom; no title inference",
+    "archiveOlderReaders": "plain title retained; false mode omitted",
+    "productionDataUsedAsFixture": false
+  },
+  "limits": [
+    "Not exhaustive enumeration of every user action",
+    "No dedicated held-native-write click probe; reset inherits disabled(isSaving) form state",
+    "Physical date entry, IME, special Command layouts, VoiceOver speech and actual Spaces not established",
+    "No full Sparkle download/replace/relaunch repeated for this release",
+    "Current-host arm64 runtime only; older macOS/Intel/Gatekeeper first install not established",
+    "Not installed into /Applications by this release task"
+  ]
+}

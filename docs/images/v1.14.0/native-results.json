@@ -1,0 +1,44 @@
+[
+  {
+    "scenario": "full",
+    "argument": "--ui-smoke",
+    "result": "UISmoke\n✓ real retained editor and running timer postpone update; explicit safe continuation resumes once\n✓ timer preset selection reaches both ends, is last-tap-wins and drives Play\n✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast\n✓ completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion\n✓ completion alert closes on its first click or after five seconds without changing timer state\n✓ native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events\n✓ isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout\n✓ emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show\n✓ five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly\n✓ note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable\n✓ editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout\n✓ single editor persists note, emoji and ten subtasks only on Save\n✓ completion can be toggled and reopened\n✓ failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it\n✓ removed event retains draft and disables Save without resurrection\n✓ inline deletion confirmation preserves cancellation and persists explicit deletion\n✓ diagnostics remain free of private editor input\n✓ tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show\n✓ choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged\n✓ ordinary and day creation allow no icon or favorite; nearest stays featured while Mars supplies the menu\n✓ choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon\n✓ list and editor can select or clear a favorite; no favorite remains durable after reopening\n✓ today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save\nPASS: 23/23",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "collapse",
+    "argument": "--ui-smoke-collapse-regression",
+    "result": "UISmoke\n✓ interrupted checklist transitions honor the last request, reject hidden controls and preserve independent preferences/data\n✓ completed tasks survive disclosure and reopen in stable active/completed order\nPASS: 2/2",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "editor",
+    "argument": "--ui-smoke-editor-workflows",
+    "result": "UISmoke\n✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry\nPASS: 5/5",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "continuity-1",
+    "argument": "--ui-smoke-editor-scroll-regression",
+    "result": "UISmoke\n✓ panel accepts key focus\n✓ settings retain navigation through hide/show, leave the list inactive and restore its scroll position\n✓ host, root State and long-list scroll survive direct hide/show\n✓ main-list panel hide preserves the UI session\n✓ editor panel hide preserves the UI session\n✓ status-item handler preserves editor identity/draft and input; Save after reopen persists\n✓ Cancel after reopen destroys draft and retains list position\n✓ starting a timer inside an editor preserves input focus/draft; hide/show, Save and Cancel preserve its deadline and event JSON\nPASS: 8/8",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "continuity-2",
+    "argument": "--ui-smoke-editor-scroll-regression",
+    "result": "UISmoke\n✓ panel accepts key focus\n✓ settings retain navigation through hide/show, leave the list inactive and restore its scroll position\n✓ host, root State and long-list scroll survive direct hide/show\n✓ main-list panel hide preserves the UI session\n✓ editor panel hide preserves the UI session\n✓ status-item handler preserves editor identity/draft and input; Save after reopen persists\n✓ Cancel after reopen destroys draft and retains list position\n✓ starting a timer inside an editor preserves input focus/draft; hide/show, Save and Cancel preserve its deadline and event JSON\nPASS: 8/8",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "continuity-3",
+    "argument": "--ui-smoke-editor-scroll-regression",
+    "result": "UISmoke\n✓ panel accepts key focus\n✓ settings retain navigation through hide/show, leave the list inactive and restore its scroll position\n✓ host, root State and long-list scroll survive direct hide/show\n✓ main-list panel hide preserves the UI session\n✓ editor panel hide preserves the UI session\n✓ status-item handler preserves editor identity/draft and input; Save after reopen persists\n✓ Cancel after reopen destroys draft and retains list position\n✓ starting a timer inside an editor preserves input focus/draft; hide/show, Save and Cancel preserve its deadline and event JSON\nPASS: 8/8",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  },
+  {
+    "scenario": "captures",
+    "argument": "--ui-smoke-automatic-title-captures",
+    "result": "UISmoke\n✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry\nPASS: 5/5",
+    "executableSHA256": "271849d749f281610227e196c43358677413066083577900a6553543ee043727"
+  }
+]

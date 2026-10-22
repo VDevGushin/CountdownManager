@@ -1,4 +1,5 @@
 import XCTest
+import Carbon
 
 final class CountdownManagerXCUITests: XCTestCase {
     private let eventID = "11111111-1111-1111-1111-111111111111"
@@ -549,6 +550,203 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(completed.value as? String, "Completed fixture subtask дописано")
         XCTAssertFalse(active.exists)
         app.buttons["editor.cancel"].click()
+    }
+
+    func testCustomTitleDigitEditAndNativeUndo() throws {
+        var fixture = try persistedItems()
+        fixture[0]["title"] = "Четверг"
+        try writeItems(fixture, primaryID: eventID)
+        let originalBytes = try Data(contentsOf: dataURL)
+        app.launch()
+        openEditor()
+        let title = app.textFields["editor.title"]
+        XCTAssertTrue(waitForValue(title, equals: "Четверг"))
+        XCTAssertTrue(app.buttons["editor.title.automatic"].exists, "An ordinary title edit must remain in custom mode")
+        title.click()
+        title.typeKey(.rightArrow, modifierFlags: .command)
+        title.typeText("1")
+        assertNativeTitleValue(title, expected: "Четверг1", context: "ordinary custom input")
+        title.typeKey(try currentLayoutUndoKey(), modifierFlags: .command)
+        assertNativeTitleValue(title, expected: "Четверг", context: "native Undo of ordinary custom input")
+        XCTAssertTrue(app.buttons["editor.title.automatic"].exists, "Undoing custom text must keep custom mode")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes)
+    }
+
+    func testAutomaticTitleResetCancelSaveAndNativeUndo() throws {
+        let originalBytes = try Data(contentsOf: dataURL)
+        app.launch()
+        openEditor()
+        let title = app.textFields["editor.title"]
+        let note = app.textViews["editor.note"]
+        let automatic = app.buttons["editor.title.automatic"]
+        activateAutomaticTitle()
+        XCTAssertTrue(waitForValue(title, equals: "Четверг"))
+        XCTAssertEqual(note.value as? String, "Isolated fixture")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes, "Reset followed by Cancel must preserve the legacy event")
+
+        openEditor()
+        XCTAssertEqual(title.value as? String, "XCUITest Event")
+        activateAutomaticTitle()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        let saved = try XCTUnwrap(try persistedItems().first)
+        XCTAssertEqual(saved["title"] as? String, "Четверг")
+        XCTAssertEqual(saved["usesAutomaticTitle"] as? Bool, true)
+        XCTAssertEqual(saved["note"] as? String, "Isolated fixture")
+        let tasks = try XCTUnwrap(saved["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(tasks.map { $0["id"] as? String }, [activeSubtaskID, completedSubtaskID])
+        XCTAssertEqual(tasks.map { $0["isCompleted"] as? Bool }, [false, true])
+        XCTAssertTrue(waitForFavorite(eventID))
+
+        openEditor()
+        XCTAssertTrue(waitForValue(title, equals: "Четверг"))
+        XCTAssertFalse(automatic.exists, "Saved automatic mode must survive reopening")
+        title.click()
+        title.typeKey(.rightArrow, modifierFlags: .command)
+        title.typeText("1")
+        assertNativeTitleValue(title, expected: "Четверг1", context: "saved automatic mode")
+        XCTAssertTrue(automatic.waitForExistence(timeout: 3))
+        title.typeKey(try currentLayoutUndoKey(), modifierFlags: .command)
+        assertNativeTitleValue(title, expected: "Четверг", context: "native Undo after leaving automatic mode")
+        XCTAssertTrue(automatic.exists, "Undoing text must not silently restore automatic mode")
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        let afterUndo = try XCTUnwrap(try persistedItems().first)
+        XCTAssertEqual(afterUndo["title"] as? String, "Четверг")
+        XCTAssertFalse(afterUndo["usesAutomaticTitle"] as? Bool ?? false)
+        XCTAssertEqual(afterUndo["note"] as? String, "Isolated fixture")
+        let customBytes = try Data(contentsOf: dataURL)
+        openEditor()
+        XCTAssertTrue(automatic.waitForExistence(timeout: 3))
+        activateAutomaticTitle()
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), customBytes)
+    }
+
+    func testRepeatedAutomaticTitleCyclesPreserveNewDraftFields() throws {
+        let originalBytes = try Data(contentsOf: dataURL)
+        app.launch()
+        openNewEditor()
+        let title = app.textFields["editor.title"]
+        let note = app.textViews["editor.note"]
+        activateAutomaticTitle()
+        let generatedTitle = try XCTUnwrap(title.value as? String)
+        XCTAssertFalse(generatedTitle.isEmpty)
+        revealInEditor(note, fullyInViewport: true)
+        note.click()
+        note.typeText("Заметка после смены названия")
+        let taskID = try addEditorSubtask()
+        let task = app.textFields[taskID]
+        revealInEditor(task, fullyInViewport: true)
+        replace(task, with: "Не потерять эту подзадачу")
+        for index in 1...3 {
+            revealInEditor(title, fullyInViewport: true)
+            replace(title, with: "Своё название \(index)")
+            activateAutomaticTitle()
+            XCTAssertTrue(waitForValue(title, equals: generatedTitle))
+            XCTAssertEqual(note.value as? String, "Заметка после смены названия")
+            XCTAssertEqual(task.value as? String, "Не потерять эту подзадачу")
+            XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes, "Mode changes must remain draft-only")
+        }
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.add"].waitForExistence(timeout: 3))
+        let item = try XCTUnwrap(try persistedItems().first { $0["id"] as? String != eventID })
+        let savedID = try XCTUnwrap(item["id"] as? String)
+        XCTAssertEqual(item["usesAutomaticTitle"] as? Bool, true)
+        XCTAssertEqual(item["title"] as? String, generatedTitle)
+        XCTAssertEqual(item["note"] as? String, "Заметка после смены названия")
+        let tasks = try XCTUnwrap(item["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(tasks.count, 1)
+        XCTAssertEqual(tasks[0]["id"] as? String, String(taskID.dropFirst("editor.subtask.".count)))
+        XCTAssertEqual(tasks[0]["text"] as? String, "Не потерять эту подзадачу")
+        XCTAssertEqual(tasks[0]["isCompleted"] as? Bool, false)
+        XCTAssertTrue(waitForFavorite(eventID))
+        openEditor(savedID)
+        XCTAssertTrue(waitForValue(title, equals: generatedTitle))
+        XCTAssertFalse(app.buttons["editor.title.automatic"].exists)
+        XCTAssertEqual(note.value as? String, "Заметка после смены названия")
+        revealInEditor(task, fullyInViewport: true)
+        XCTAssertEqual(task.value as? String, "Не потерять эту подзадачу")
+        app.buttons["editor.cancel"].click()
+    }
+
+    private func assertNativeTitleValue(
+        _ title: XCUIElement, expected: String, context: String,
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        let appended = waitForValue(title, equals: expected)
+        let actual = title.value as? String
+        if !appended {
+            let scalars = actual?.unicodeScalars.map { $0.value }
+            let mode = app.staticTexts["editor.title.mode"]
+            let automatic = app.buttons["editor.title.automatic"]
+            let diagnostic = "Native title value failed (\(context)): expected=\(expected) actual=\(String(describing: actual)) "
+                + "unicodeScalars=\(String(describing: scalars)) "
+                + "mode=\(mode.exists ? String(describing: mode.value) : "missing") "
+                + "automaticActionExists=\(automatic.exists)\n"
+                + "Title attributes (including keyboard focus):\n\(title.debugDescription)\n"
+                + "Application hierarchy:\n\(app.debugDescription)"
+            print(diagnostic)
+            let details = XCTAttachment(string: diagnostic)
+            details.name = "Native title value and focus — \(context)"
+            details.lifetime = .keepAlways
+            add(details)
+            let screenshot = XCTAttachment(screenshot: app.screenshot())
+            screenshot.name = "Native title value failure — \(context)"
+            screenshot.lifetime = .keepAlways
+            add(screenshot)
+        }
+        XCTAssertTrue(appended, "Expected \(expected) after \(context); actual=\(String(describing: actual))", file: file, line: line)
+    }
+
+    private func currentLayoutUndoKey() throws -> String {
+        func data(for source: TISInputSource) throws -> CFData {
+            let pointer = try XCTUnwrap(TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData),
+                                       "The keyboard layout must expose Unicode translation data for native Undo")
+            return Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue()
+        }
+        func character(for code: UInt16, layoutData: CFData) -> String? {
+            guard let bytes = CFDataGetBytePtr(layoutData) else { return nil }
+            let layout = UnsafeRawPointer(bytes).assumingMemoryBound(to: UCKeyboardLayout.self)
+            var deadKeys: UInt32 = 0
+            var length = 0
+            var characters = [UniChar](repeating: 0, count: 8)
+            let status = UCKeyTranslate(layout, code, UInt16(kUCKeyActionDown), 0, UInt32(LMGetKbdType()),
+                                        OptionBits(kUCKeyTranslateNoDeadKeysMask), &deadKeys,
+                                        characters.count, &length, &characters)
+            guard status == noErr, length > 0 else { return nil }
+            return String(utf16CodeUnits: characters, count: length)
+        }
+        let current = try XCTUnwrap(TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue())
+        let currentData = try data(for: current)
+        // XCUI resolves literal keys in the active layout. If plain Z is absent, use the
+        // last ASCII layout's Z position. This run verifies Russian with an ABC fallback;
+        // command-specific layouts and IMEs require separate acceptance.
+        if (0..<128).contains(where: { character(for: UInt16($0), layoutData: currentData) == "z" }) {
+            return "z"
+        }
+        let ascii = try XCTUnwrap(TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue())
+        let asciiData = try data(for: ascii)
+        let code = try XCTUnwrap((0..<128).first { character(for: UInt16($0), layoutData: asciiData) == "z" },
+                                "The ASCII keyboard layout must supply the native Undo key")
+        let mapped = try XCTUnwrap(character(for: UInt16(code), layoutData: currentData),
+                                  "The active keyboard layout must translate the native Undo key")
+        XCTAssertEqual(mapped.count, 1, "XCUI needs one current-layout character for the Undo key")
+        print("Native Undo current-layout key=\(mapped), ASCII Z virtualKey=\(code)")
+        return mapped
+    }
+
+    private func activateAutomaticTitle() {
+        let automatic = app.buttons["editor.title.automatic"]
+        XCTAssertTrue(automatic.waitForExistence(timeout: 3))
+        revealInEditor(automatic, fullyInViewport: true)
+        automatic.click()
+        XCTAssertTrue(waitForAbsence(automatic), "Explicit reset must immediately switch the draft into date mode")
     }
 
     private func openNewEditor() {

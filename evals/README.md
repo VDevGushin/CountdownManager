@@ -155,7 +155,7 @@ from ambiguous shell control flow. Prompts and rubrics remain version 3; runner 
 the corrected judge. Dependency prefetch changes the execution environment, so new live runs must
 be identified separately from earlier runs blocked by unavailable dependencies.
 
-The focused `verify.sh editor` route is also classified as a UI/build operation; read-only
+The focused `verify.sh editor` and `automatic-title-capture` routes are also classified as UI/build operations; read-only
 negative controls reject it even when its process fails.
 
 If a recognizer defect is found in a completed version-2 run, `recheck` creates a separate assessment

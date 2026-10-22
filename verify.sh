@@ -7,7 +7,7 @@ mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
     fast|ui|full|weather|empty-state|editor) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture)
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -202,6 +202,11 @@ copy_capture_evidence() {
                         compact-featured-no-weather-dark compact-featured-no-weather-light
                         compact-featured-long-dark compact-featured-long-light)
     fi
+    if [[ "$mode" == "automatic-title-capture" ]]; then
+        required_files=(automatic-title-auto-dark automatic-title-custom-dark
+                        automatic-title-auto-light automatic-title-custom-light
+                        automatic-title-auto-high-contrast automatic-title-custom-high-contrast)
+    fi
     if [[ "$mode" == "completed-subtasks-capture" ]]; then
         required_files=()
         for appearance in dark light; do
@@ -237,7 +242,7 @@ copy_capture_evidence() {
     if [[ "$mode" == "compact-capture" ]]; then
         cp "$source_dir/compact-input-state.json" "$destination_dir/"
     fi
-    if [[ "$mode" == "completed-subtasks-capture" || "$mode" == "menu-identity-capture" ]]; then
+    if [[ "$mode" == "completed-subtasks-capture" || "$mode" == "menu-identity-capture" || "$mode" == "automatic-title-capture" ]]; then
         cp "$verify_root/visual-captures/ui-smoke-result.txt" "$destination_dir/"
         ditto "$app_path" "$destination_dir/Countdown Manager.app"
     fi
@@ -258,6 +263,12 @@ case "$mode" in
         build_ui_app
         run_smoke editor-workflows --ui-smoke-editor-workflows
         echo "PASS: focused editor input, row deletion and weekday workflows"
+        ;;
+    automatic-title-capture)
+        build_ui_app
+        run_smoke visual-captures --ui-smoke-automatic-title-captures
+        copy_capture_evidence
+        echo "PASS: automatic-title workflows and six native editor captures"
         ;;
     full)
         run_fast_checks

@@ -208,7 +208,7 @@ def verification_invocations(command):
             if mode in {"fast", "full"}:
                 checks.update({"core-checks", "ui-checks"})
             if mode in {"ui", "full", "capture", "weather", "weather-capture",
-                        "empty-state", "empty-state-capture", "compact-capture", "editor"}:
+                        "empty-state", "empty-state-capture", "compact-capture", "editor", "automatic-title-capture"}:
                 checks.update({"real-ui", "app-build"})
         information_query = program in {"swift", "swiftc", "xcodebuild"} and any(
             arg in {"--version", "-version", "--help", "-help", "-h", "-list", "-showsdks",

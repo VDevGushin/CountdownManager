@@ -177,6 +177,13 @@ It owns operations including:
 
 It stores the optional explicit favorite in `primaryID`. Normalization clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
 
+`Countdown.usesAutomaticTitle` is persisted with the plain `title`. Missing metadata defaults to
+false and false is omitted on encode; no weekday-text inference is performed. `automaticEventTitle`
+in Core is the sole Russian Gregorian weekday authority. `CountdownData.save` derives an automatic
+title from the selected civil date before committing the candidate snapshot, so title/date/mode
+share the existing atomic persistence/revision boundary. Reading arbitrary stored content does not
+silently rewrite it; an inconsistent automatic title is corrected on explicit Save.
+
 The timer deliberately does not belong to `CountdownData`: events use civil-day semantics, while the timer uses an absolute deadline.
 
 Forecast values and location coordinates also remain outside `CountdownData`. Weather reads
@@ -541,7 +548,21 @@ action with the existing explicit install entry point. Login approval and operat
 visible. There is no settings draft or Save/Cancel; accepted owner state is shown immediately.
 The timer strip stays outside this screen navigation at the top of the same 390 × 600 panel.
 
-The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices; the existing `+` still opens ordinary event creation directly. Day creation supplies transient editor defaults rather than a new persisted event type: today's date for `Сегодня`, tomorrow's date for the other routes, no additional emoji, a Russian weekday title and empty note/subtasks. Ordinary event creation also initially selects tomorrow. The date field allows today and future dates; selecting today reveals an inline explanation of end-of-day expiry, including unfinished subtasks. The choose-date route uses the same editor date field with an explanatory hint. During a new-day draft, date changes regenerate the weekday title until the first manual title edit; existing-event editing never regenerates a stored title. Creation actions preserve an already open editor, and the underlying list stays mounted. Save uses the unchanged Store and `Countdown` persistence boundary, checking against the current calendar day at the mutation boundary; no template library, week state or schema field is introduced.
+The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices;
+the existing `+` still opens ordinary event creation directly. Day creation supplies today's date
+for `Сегодня`, tomorrow for the other routes, no additional emoji, an automatic Russian weekday
+title and empty note/subtasks. Ordinary creation initially selects tomorrow and a custom empty title.
+The same native date field accepts today/future dates and presents today's expiry notice.
+`EventEditorDraft` restores the persisted title mode. Its user-input setter disables automatic naming
+only when text actually changes; date updates and the explicit `Название по дате` action mutate the
+draft directly. The action shares the title's label row, adding no second native field outline or
+additional owner. Automatic mode is displayed there as `По дате`.
+Date changes regenerate automatic names for both new and existing events; manual names remain
+untouched. The explicit reset changes no sibling event fields. Creation actions preserve an open
+editor, and the underlying list stays mounted. Successful Save persists the mode with other fields;
+Cancel or failed persistence preserves the prior durable snapshot. The Store continues checking
+the current civil day and existing identity at its mutation boundary. There is no separate day type,
+week state, title-guessing migration or template library.
 
 The editor uses a 21-point Georgia heading in a 49-point header. Its scrolling form keeps the
 existing retained draft; Delete, Cancel and Save share the 58-point fixed footer, with deletion
