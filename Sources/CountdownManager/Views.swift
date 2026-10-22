@@ -78,7 +78,6 @@ struct ManagerView: View {
 
     private var listScreen: some View {
         let displayed = store.active
-        let featuredID = displayed.first?.id
         let primaryID = store.data.primaryID
         return VStack(spacing: 0) {
             if store.showsEmptyEventList {
@@ -96,7 +95,7 @@ struct ManagerView: View {
                                 ProgressView("Загружаем события…")
                             }
                         }
-                        ForEach(displayed) { item in row(item, featuredID: featuredID, primaryID: primaryID) }
+                        ForEach(displayed) { item in row(item, primaryID: primaryID) }
                     }
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
@@ -115,7 +114,7 @@ struct ManagerView: View {
 
     private var emptyEventList: some View {
         VStack(spacing: 0) {
-            PlannerCalendarDateTile(day: store.today, isFeatured: false)
+            PlannerCalendarDateTile(monthControlID: "event.empty.month", day: store.today, isFeatured: false)
                 .accessibilityHidden(true)
                 .uiSmokeControl(id: "event.empty.date", value: { currentDayHeaderLabel(store.today) })
                 .padding(.bottom, 16)
@@ -238,12 +237,11 @@ struct ManagerView: View {
         AuroraInstrument.stroke(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
     }
 
-    private func row(_ item: Countdown, featuredID: UUID?, primaryID: UUID?) -> some View {
+    private func row(_ item: Countdown, primaryID: UUID?) -> some View {
         let presentation = CountdownRowPresentation(
             item: item,
             today: store.today,
-            primaryID: primaryID,
-            featuredID: featuredID
+            primaryID: primaryID
         )
         return VStack(alignment: .leading, spacing: 0) {
             if presentation.isFeatured {
@@ -277,7 +275,7 @@ struct ManagerView: View {
     private func featuredEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Text(presentation.isPrimary ? "Основное событие" : "Ближайшее событие")
+                Text("Основное событие")
                     .accessibilityIdentifier("event.featured.label.\(item.id.uuidString)")
                     .font(.system(size: 10.5))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -293,9 +291,11 @@ struct ManagerView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
+                        .uiSmokeControl(id: "event.featured.title.\(item.id.uuidString)")
                     eventDate(item, label: presentation.dateLabel)
                 }
                 calendarTile(item, isFeatured: true)
+                    .uiSmokeControl(id: "event.featured.calendar.\(item.id.uuidString)")
             }
             Text(presentation.remainingLabel)
                 .font(.custom("Georgia", size: 21))
@@ -333,6 +333,7 @@ struct ManagerView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(height: wraps ? 34 : 17, alignment: .topLeading)
                                 .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
+                                .uiSmokeControl(id: "event.secondary.title.\(item.id.uuidString)")
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
                                 Text(compactDateLabel(item.date))
                                     .fixedSize()
@@ -378,7 +379,8 @@ struct ManagerView: View {
     }
 
     private func calendarTile(_ item: Countdown, isFeatured: Bool) -> some View {
-        PlannerCalendarDateTile(day: item.date, isFeatured: isFeatured)
+        let role = isFeatured ? "featured" : "secondary"
+        return PlannerCalendarDateTile(monthControlID: "event.\(role).month.\(item.id.uuidString)", day: item.date, isFeatured: isFeatured)
             .accessibilityHidden(true)
             .uiSmokeControl(id: "event.calendar.\(item.id.uuidString)", value: { humanDateLabel(item.date) })
     }
@@ -555,6 +557,7 @@ struct ManagerView: View {
 }
 
 private struct PlannerCalendarDateTile: View {
+    let monthControlID: String
     let day: Day
     let isFeatured: Bool
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
@@ -574,6 +577,7 @@ private struct PlannerCalendarDateTile: View {
                     for: colorScheme,
                     highContrast: accessibilitySettings.prefersHighContrast
                 ))
+                .uiSmokeControl(id: monthControlID)
             Text(presentation.dayLabel)
                 .font(.custom("Georgia", size: isFeatured ? 32 : 25))
                 .tracking(-0.5)
@@ -582,19 +586,18 @@ private struct PlannerCalendarDateTile: View {
                 .padding(.top, 2)
                 .padding(.bottom, isFeatured ? 4 : 3)
         }
-        .frame(width: isFeatured ? 54 : 42, height: isFeatured ? 65 : 51)
+        .frame(width: isFeatured ? 54 : 42, height: isFeatured ? 65 : 51, alignment: .top)
         .background(AuroraInstrument.surface(
             for: colorScheme,
             elevated: false,
             highContrast: accessibilitySettings.prefersHighContrast
         ))
         .clipShape(shape)
-        .overlay(shape.stroke(AuroraInstrument.stroke(
+        .overlay(shape.strokeBorder(AuroraInstrument.stroke(
             for: colorScheme,
             highContrast: accessibilitySettings.prefersHighContrast
         ), lineWidth: 1))
         .rotationEffect(.degrees(isFeatured ? 3 : 2))
-        .shadow(color: .black.opacity(colorScheme == .dark ? 0.12 : 0.08), radius: 2, x: 1, y: 2)
     }
 }
 

@@ -1469,9 +1469,13 @@ final class UISmokeRuntime {
 
     private func requireCalendarAndTitleLayout(_ event: Countdown, featured: Bool) throws {
         let suffix = event.id.uuidString
+        let role = featured ? "featured" : "secondary"
         let card = try requireValue(controls.frame("event.card.\(suffix)"), "compact event card")
-        let calendar = try requireValue(controls.frame("event.calendar.\(suffix)"), "calendar leaf")
-        let title = try requireValue(controls.frame("event.title.\(suffix)"), "event title")
+        let calendar = try requireValue(controls.frame("event.\(role).calendar.\(suffix)"), "calendar leaf")
+        let month = try requireValue(controls.frame("event.\(role).month.\(suffix)"), "calendar month strip")
+        let title = try requireValue(controls.frame("event.\(role).title.\(suffix)"), "event title")
+        try require(month.minY <= calendar.minY + 0.25 && month.width >= calendar.width - 0.25,
+                    "calendar month strip leaves an unfilled gap: month=\(month), leaf=\(calendar)")
         try require(card.contains(calendar) && card.contains(title), "title or calendar escaped the event card")
         try require(abs(calendar.width - (featured ? 54 : 42)) < 1
                     && abs(calendar.height - (featured ? 65 : 51)) < 1,
@@ -1545,7 +1549,8 @@ final class UISmokeRuntime {
         }
         try require(store.primary?.id == todayPrimary.id && store.primary?.emoji.isEmpty == true
                     && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
-                    "unfavorited today event changed the Mars menu identity or the featured event")
+                    "unfavorited today event changed the Mars menu identity or date order")
+        try await requireFavoriteCardStyles()
         try await settleLayout()
         try capture(name: "16-nearest-today-without-icon")
         for item in store.active {
@@ -2829,6 +2834,28 @@ final class UISmokeRuntime {
         }
     }
 
+    private func requireFavoriteCardStyles() async throws {
+        for item in store.active {
+            let isFavorite = store.data.primaryID == item.id
+            let labelID = "event.featured.date.\(item.id.uuidString)"
+            let compactID = "event.header.\(item.id.uuidString)"
+            try await waitFor("event card follows explicit favorite") {
+                (self.controls.entries[labelID] != nil) == isFavorite
+                    && (self.controls.entries[compactID] != nil) == !isFavorite
+            }
+            try await settleLayout(waitForAnimation: false)
+            do {
+                try await waitFor("event card geometry follows settled layout") {
+                    (try? self.requireCalendarAndTitleLayout(item, featured: isFavorite)) != nil
+                }
+            } catch {
+                try requireCalendarAndTitleLayout(item, featured: isFavorite)
+                throw error
+            }
+            try requireCalendarAndTitleLayout(item, featured: isFavorite)
+        }
+    }
+
     private func verifyOptionalIconsAndFavorites() async throws {
         let plannedDay = try requireValue(store.active.first, "unfavorited day fixture")
         try require(plannedDay.emoji.isEmpty && store.data.primaryID == nil,
@@ -2846,9 +2873,10 @@ final class UISmokeRuntime {
         let nearest = try requireValue(store.active.first(where: { $0.title == "Nearest without icon" }), "nearest fixture")
         try require(nearest.emoji.isEmpty && store.data.primaryID == nil && store.primary?.id == nearest.id
                     && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
-                    "nearest event should remain featured without supplying the menu display")
+                    "unfavorited events should retain date order without supplying the menu display")
         try await waitForValue("event.primary.\(nearest.id.uuidString)", equals: "Не выбрано")
-        pass("ordinary and day creation allow no icon or favorite; nearest stays featured while Mars supplies the menu")
+        try await requireFavoriteCardStyles()
+        pass("ordinary and day creation allow no icon or favorite; every card is compact while Mars supplies the menu")
 
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
@@ -2865,10 +2893,12 @@ final class UISmokeRuntime {
         try await waitForValue(nearestStar, equals: "Выбрано")
         try require(store.statusTitle == "🎉 Завтра" && store.statusPresentation.icon == nil,
                     "custom favorite emoji and Tomorrow did not supply the menu")
+        try await requireFavoriteCardStyles()
         try await press(nearestStar)
         try await waitForValue(nearestStar, equals: "Не выбрано")
         try require(store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
                     "clearing the custom favorite did not restore Mars")
+        try await requireFavoriteCardStyles()
         let chosenJSON = try Data(contentsOf: configuration.dataURL)
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
@@ -2902,7 +2932,8 @@ final class UISmokeRuntime {
         try await waitForValue(plannedStar, equals: "Не выбрано")
         try require(store.data.primaryID == nil && store.primary?.id == nearest.id
                     && store.statusPresentation.icon == .mars && store.statusTitle.isEmpty,
-                    "clearing the filled star did not restore Mars and preserve the nearest featured event")
+                    "clearing the filled star did not restore Mars and preserve date order")
+        try await requireFavoriteCardStyles()
         try await press("event.edit.\(nearest.id.uuidString)")
         try await waitForElement("editor.edit")
         try await press("editor.primary")
@@ -2928,6 +2959,7 @@ final class UISmokeRuntime {
                     "saved absence of favorite/icon did not survive repository reopening")
         try await hideAndShow()
         try await waitForValue("event.primary.\(nearest.id.uuidString)", equals: "Не выбрано")
+        try await requireFavoriteCardStyles()
         pass("list and editor can select or clear a favorite; no favorite remains durable after reopening")
     }
 
@@ -3034,11 +3066,17 @@ final class UISmokeRuntime {
                 try require(!controls.press(field) && !controls.press(deleteID), "deleted row still accepts input")
             }
             try await settleLayout(waitForAnimation: false)
+            try await waitFor("rapid row deletion restores the settled block height") {
+                abs((self.controls.frame("editor.subtasks")?.height ?? 0) - oneHeight) < 0.5
+            }
             try require(abs((controls.frame("editor.subtasks")?.height ?? 0) - oneHeight) < 0.5,
                         "inverse rapid row requests did not restore the block height")
             try await deleteEditorSubtask(first)
             try await waitForValue("editor.subtasks", equals: "0")
             try await settleLayout(waitForAnimation: false)
+            try await waitFor("final row deletion restores the settled empty block height") {
+                abs((self.controls.frame("editor.subtasks")?.height ?? 0) - emptyHeight) < 0.5
+            }
             try require(abs((controls.frame("editor.subtasks")?.height ?? 0) - emptyHeight) < 0.5,
                         "removing the final row did not restore the empty block")
             try await waitFor("empty editor restores enabled row addition") {
@@ -3878,7 +3916,7 @@ final class UISmokeRuntime {
                 }.joined(separator: "; ")
             } ?? "none"
             throw Failure("\(error.localizedDescription); primaryID=\(store.data.primaryID?.uuidString ?? "none") "
-                + "featuredID=\(store.primary?.id.uuidString ?? "none") "
+                + "featuredID=\(store.data.primaryID?.uuidString ?? "none") "
                 + "surfaceShown=\(isSurfaceShown()) cards=[\(cards)] scrolls=[\(scrolls)] "
                 + "primaryControls=[\(entries)] nativeNSButtonCount=\(nativeButtons.count) "
                 + "nativePrimaryButtons=[\(native)]")
@@ -3955,6 +3993,13 @@ final class UISmokeRuntime {
     }
 
     private func finishFailure(_ error: Error) {
+        if let content = window()?.contentView,
+           let bitmap = content.bitmapImageRepForCachingDisplay(in: content.bounds) {
+            content.cacheDisplay(in: content.bounds, to: bitmap)
+            if let png = bitmap.representation(using: .png, properties: [:]) {
+                try? png.write(to: configuration.homeURL.appendingPathComponent("failure-panel.png"), options: .atomic)
+            }
+        }
         let frames = ["editor.scroll", "editor.title", "editor.note"]
             .map { "\($0)=\(String(describing: controls.frame($0)))" }
             .joined(separator: ", ")
@@ -4176,8 +4221,8 @@ extension UISmokeRuntime {
         _ name: String, title: String, icon: StatusBarIcon?, timerExpected: Bool = false, panel: String? = nil
     ) async throws {
         if !timerExpected { try await requireMenuButton(title: title, icon: icon) }
-        if panel != nil, let featured = store.primary {
-            try await waitForElement("event.featured.date.\(featured.id.uuidString)")
+        if panel != nil {
+            try await requireFavoriteCardStyles()
         }
         let button = try requireValue(statusButton(), "status capture button")
         let timerImage = timerExpected ? button.image : nil
@@ -4206,6 +4251,7 @@ extension UISmokeRuntime {
             try await settleLayout()
             button.window?.contentView?.layoutSubtreeIfNeeded()
             button.displayIfNeeded()
+            if panel != nil { try await requireFavoriteCardStyles() }
             try require(button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
                         == (scheme == .dark ? .darkAqua : .aqua), "status button appearance did not update")
             if timerExpected {

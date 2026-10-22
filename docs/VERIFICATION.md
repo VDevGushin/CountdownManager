@@ -198,8 +198,10 @@ Run strict SwiftLint and `./verify.sh fast`, then
 isolated timer at launch, exercises the actual `NSStatusBarButton`, and checks bundled vector
 PDF representations rather than accepting fallback symbols. It covers Mars with empty/nonempty
 unfavorited lists, K1 Today/Tomorrow, custom emoji, timer finished/running/delete restoration,
-clearing/deleting favorite and durable selection reload through a fresh Store (not process relaunch). Mars uses non-template Light/Dark PDFs; K1 remains template. The focused mode also checks live appearance-only refresh and visible stripe/body colors. The panel's automatic nearest event is independently
-asserted. Core/UI checks cover invalid/expired favorites, civil boundaries, Russian labels and
+clearing/deleting favorite and durable selection reload through a fresh Store (not process relaunch). Mars uses non-template Light/Dark PDFs; K1 remains template. The focused mode also checks live appearance-only refresh and visible stripe/body colors. Panel styling is independently
+asserted against the explicit favorite: no favorite leaves all rows compact. Calendar month-strip
+geometry must meet the leaf's top edge at full width in both themes, for compact and featured leaves.
+Core/UI checks cover invalid/expired favorites, civil boundaries, Russian labels and
 persistence invariants.
 
 The 24 PNGs comprise 16 actual native status-button cache renders, six panel captures and two

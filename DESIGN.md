@@ -196,15 +196,15 @@ Native semantic red is used for validation and errors; do not replace it with an
 
 The native status-item panel is retained at 390 × 600 points: a 60-point timer strip above a 540-point manager area. List, editor, and settings replace the internal manager screen. There are no responsive web breakpoints; content scrolls within the native panel.
 
-The list starts with the current date and event count, then the featured event, followed by secondary events. The header has 16-point horizontal insets and 12-point vertical padding. The scrolling list uses 12-point side insets, 10-point gaps, and 12-point card padding. The service footer is fixed below the list at 33 points high with 18-point side insets.
+The list starts with the current date and event count, then the selected favorite if any, followed by ordinary events. Without a favorite, all cards remain compact. The header has 16-point horizontal insets and 12-point vertical padding. The scrolling list uses 12-point side insets, 10-point gaps, and 12-point card padding. The service footer is fixed below the list at 33 points high with 18-point side insets.
 
 Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather and favorite checkboxes form the next distinct group after a 13-point gap.
 
 ## Elevation & Depth
 
-Depth is primarily tonal. Event cards are quiet paper surfaces without general drop shadows; Increase Contrast adds a one-point outline. Thin rules separate timer, headings, settings groups, and fixed action regions. Calendar leaves alone carry a small soft black shadow (SwiftUI radius 2, x 1, y 2 points; 8% opacity in light mode and 12% in dark mode) and a restrained rotation (3 degrees featured, 2 degrees secondary).
+Depth is primarily tonal. Event cards are quiet paper surfaces without general drop shadows; Increase Contrast adds a one-point outline. Thin rules separate timer, headings, settings groups, and fixed action regions. Calendar leaves retain a restrained rotation (3 degrees featured, 2 degrees secondary), without a drop shadow. Their one-point outline is inset within the clipped silhouette to keep the edge clean.
 
-**The Paper Depth Rule.** Use tonal surfaces for event grouping and reserve the small paper shadow and rotation for calendar leaves.
+**The Paper Depth Rule.** Use tonal surfaces for event grouping and reserve the slight rotation for calendar leaves; do not add blurred shadows to their edges.
 
 ## Shapes
 
@@ -222,7 +222,7 @@ Seven fixed durations share a 32-point high row with 2-point gaps. The selected 
 
 ### Cards / Containers
 
-Each dated event and its checklist share one card. The first event is featured: Georgia title, larger right-aligned calendar leaf, prominent countdown, and weather beside the countdown. Secondary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators.
+Each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, prominent countdown, and weather beside the countdown. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators.
 
 ### Inputs / Fields
 
@@ -238,7 +238,7 @@ The fixed list footer carries local-storage reassurance, a small settings gear, 
 
 ### Calendar Leaves
 
-A real month label sits in a terracotta strip above the Georgia day numeral, without a leading zero. Featured leaves measure 54 × 65 points; secondary leaves measure 42 × 51. The paper shadow and slight rotation make this the signature material gesture. Optional event emoji belongs immediately before the event title; empty and legacy calendar emoji are omitted in the list because the leaf already carries the date.
+A real month label sits in a terracotta strip above the Georgia day numeral, without a leading zero. The strip fills the top edge and rounded upper corners without an uncolored inset. Featured leaves measure 54 × 65 points; secondary leaves measure 42 × 51. The slight rotation and clean outline make this the signature material gesture, without a shadow. Optional event emoji belongs immediately before the event title; empty and legacy calendar emoji are omitted in the list because the leaf already carries the date.
 
 ## Do's and Don'ts
 

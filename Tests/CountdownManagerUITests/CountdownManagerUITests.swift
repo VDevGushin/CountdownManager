@@ -729,20 +729,31 @@ enum UIChecks {
         data.normalize(today: today)
         let ordered = activeCountdowns(in: data, today: today)
         precondition(ordered.map(\.id) == [nearest.id, equalDate.id, far.id] && data.primaryID == nil)
-        for event in ordered {
-            let row = CountdownRowPresentation(item: event, today: today, primaryID: nil, featuredID: ordered.first?.id)
-            precondition(!row.isPrimary && row.isFeatured == (event.id == nearest.id))
+        let unselectedIDs: [UUID?] = [nil, UUID()]
+        for primaryID in unselectedIDs {
+            for event in ordered {
+                let row = CountdownRowPresentation(item: event, today: today, primaryID: primaryID)
+                precondition(!row.isPrimary && !row.isFeatured,
+                             "Absent or invalid favorites must leave every event compact, including today")
+            }
         }
         precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
         let noneSelected = try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data))
         precondition(noneSelected == data && noneSelected.primaryID == nil)
         try data.save(far, primary: true, today: today)
         precondition(activeCountdowns(in: data, today: today).first?.id == far.id)
-        let favoriteRow = CountdownRowPresentation(item: far, today: today, primaryID: data.primaryID, featuredID: far.id)
+        let favoriteRow = CountdownRowPresentation(item: far, today: today, primaryID: data.primaryID)
         precondition(favoriteRow.isPrimary && favoriteRow.isFeatured)
+        for event in activeCountdowns(in: data, today: today) where event.id != far.id {
+            precondition(!CountdownRowPresentation(item: event, today: today, primaryID: data.primaryID).isFeatured)
+        }
         precondition(statusBarTitle(data: data, today: today) == "🚀 4 дня")
         try data.save(far, primary: false, today: today)
         precondition(data.primaryID == nil && activeCountdowns(in: data, today: today).first?.id == nearest.id)
+        for event in activeCountdowns(in: data, today: today) {
+            precondition(!CountdownRowPresentation(item: event, today: today, primaryID: data.primaryID).isFeatured,
+                         "Clearing the favorite must restore compact cards without losing any event")
+        }
         data.primaryID = UUID()
         precondition(statusBarPresentation(data: data, today: today).icon == .mars && statusBarTitle(data: data, today: today).isEmpty)
         data.normalize(today: civilDay(2026, 10, 6))

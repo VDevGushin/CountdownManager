@@ -191,12 +191,12 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(star.waitForExistence(timeout: 3))
         XCTAssertEqual(star.value as? String, "Не выбрано")
         let heading = app.staticTexts["event.featured.label.\(savedID)"]
-        assertNearestHeading(heading)
+        assertNoFeaturedHeading(heading)
         app.terminate()
         app.launch()
         XCTAssertTrue(star.waitForExistence(timeout: 3))
         XCTAssertEqual(star.value as? String, "Не выбрано")
-        assertNearestHeading(heading)
+        assertNoFeaturedHeading(heading)
         XCTAssertTrue(waitForFavorite(nil))
     }
 
@@ -238,7 +238,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(waitForValue(star, equals: "Не выбрано"))
         XCTAssertTrue(waitForFavorite(nil))
         let heading = app.staticTexts["event.featured.label.\(eventID)"]
-        assertNearestHeading(heading)
+        assertNoFeaturedHeading(heading)
         star.click()
         XCTAssertTrue(waitForValue(star, equals: "Выбрано"))
         XCTAssertTrue(waitForFavorite(eventID))
@@ -258,7 +258,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.buttons["editor.save"].click()
         XCTAssertTrue(waitForValue(star, equals: "Не выбрано"))
         XCTAssertTrue(waitForFavorite(nil))
-        assertNearestHeading(heading)
+        assertNoFeaturedHeading(heading)
         app.terminate()
         app.launch()
         XCTAssertTrue(star.waitForExistence(timeout: 3))
@@ -940,13 +940,10 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "label CONTAINS %@", text), object: element)], timeout: 3) == .completed
     }
 
-    private func assertNearestHeading(_ heading: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertTrue(heading.waitForExistence(timeout: 3), file: file, line: line)
-        let value = heading.value as? String
-        let content = value.flatMap { $0.isEmpty ? nil : $0 } ?? heading.label
-        XCTAssertEqual(content, "Ближайшее событие",
-                       "Native heading label=\(heading.label), value=\(String(describing: heading.value))",
-                       file: file, line: line)
+    private func assertNoFeaturedHeading(_ heading: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let absent = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: heading)
+        XCTAssertEqual(XCTWaiter.wait(for: [absent], timeout: 3), .completed,
+                       "An unfavorited event must not retain the large-card heading", file: file, line: line)
     }
 
     private func waitForValue(_ element: XCUIElement, equals value: String) -> Bool {

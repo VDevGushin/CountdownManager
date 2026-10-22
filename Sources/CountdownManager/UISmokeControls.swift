@@ -94,6 +94,46 @@ final class UISmokeControlRegistry {
 
 private final class UISmokeRegistrationOwner: ObservableObject {}
 
+private struct UISmokeRegistrationView: NSViewRepresentable {
+    let id: String
+    let action: (() -> Void)?
+    let value: (() -> String?)?
+    let observedValue: String?
+    let isEnabled: Bool
+
+    final class Coordinator {
+        var id: String?
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        updateRegistration(context.coordinator)
+        return view
+    }
+
+    func updateNSView(_ view: NSView, context: Context) {
+        updateRegistration(context.coordinator)
+    }
+
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) {
+        if let id = coordinator.id {
+            UISmokeControlRegistry.shared.remove(id: id, owner: coordinator)
+        }
+    }
+
+    private func updateRegistration(_ coordinator: Coordinator) {
+        if let previousID = coordinator.id, previousID != id {
+            UISmokeControlRegistry.shared.remove(id: previousID, owner: coordinator)
+        }
+        coordinator.id = id
+        UISmokeControlRegistry.shared.register(
+            id: id, action: action, value: value, isEnabled: isEnabled, owner: coordinator
+        )
+    }
+}
+
 private struct UISmokeFramePreference: PreferenceKey {
     static var defaultValue: [String: CGRect] = [:]
 
@@ -109,9 +149,20 @@ private struct UISmokeControlModifier: ViewModifier {
     @StateObject private var owner = UISmokeRegistrationOwner()
     @Environment(\.isEnabled) private var isEnabled
 
+    private var usesNativeRegistration: Bool {
+        id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.")
+    }
+
     func body(content: Content) -> some View {
         let currentValue = value?()
         content
+            .background {
+                if usesNativeRegistration {
+                    UISmokeRegistrationView(id: id, action: action, value: value, observedValue: currentValue, isEnabled: isEnabled)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
             .background(
                 GeometryReader { proxy in
                     Color.clear.preference(
@@ -120,13 +171,16 @@ private struct UISmokeControlModifier: ViewModifier {
                     )
                 }
             )
-            .onAppear { register(enabled: isEnabled) }
-            .onDisappear { UISmokeControlRegistry.shared.remove(id: id, owner: owner) }
+            .onAppear {
+                if !usesNativeRegistration { register(enabled: isEnabled) }
+            }
+            .onDisappear {
+                if !usesNativeRegistration { UISmokeControlRegistry.shared.remove(id: id, owner: owner) }
+            }
             .onChange(of: isEnabled) { enabled in
                 UISmokeControlRegistry.shared.updateEnabled(enabled, id: id, owner: owner)
             }
             .onChange(of: currentValue) { changedValue in
-                // Legacy onChange captures the previous modifier; use its supplied new value.
                 UISmokeControlRegistry.shared.updateValue(changedValue, id: id, owner: owner)
             }
             .onPreferenceChange(UISmokeFramePreference.self) { frames in
@@ -138,11 +192,7 @@ private struct UISmokeControlModifier: ViewModifier {
 
     private func register(enabled: Bool) {
         UISmokeControlRegistry.shared.register(
-            id: id,
-            action: action,
-            value: value,
-            isEnabled: enabled,
-            owner: owner
+            id: id, action: action, value: value, isEnabled: enabled, owner: owner
         )
     }
 }

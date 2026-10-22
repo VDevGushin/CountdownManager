@@ -92,13 +92,13 @@ package struct CountdownRowPresentation: Equatable {
     package let dateAndRemainingLabel: String
     package let isToday: Bool
     package let isPrimary: Bool
-    package let isFeatured: Bool
+    package var isFeatured: Bool { isPrimary }
     package let activeSubtasks: [Subtask]
     package let completedSubtasks: [Subtask]
     package let completionLabel: String?
     package var allSubtasksCompleted: Bool { !completedSubtasks.isEmpty && activeSubtasks.isEmpty }
 
-    package init(item: Countdown, today: Day, primaryID: UUID?, featuredID: UUID? = nil) {
+    package init(item: Countdown, today: Day, primaryID: UUID?) {
         remainingDays = item.date.days(from: today)
         note = item.note
         dateLabel = humanDateLabel(item.date)
@@ -110,7 +110,6 @@ package struct CountdownRowPresentation: Equatable {
         dateAndRemainingLabel = "\(dateLabel) · \(remainingLabel)"
         isToday = remainingDays == 0
         isPrimary = primaryID == item.id
-        isFeatured = (featuredID ?? primaryID) == item.id
         activeSubtasks = item.subtasks.filter { !$0.isCompleted }
         completedSubtasks = item.subtasks.filter(\.isCompleted)
         completionLabel = item.subtasks.isEmpty

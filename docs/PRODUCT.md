@@ -50,7 +50,7 @@ Picker disclosure uses a 200-millisecond non-spring height and opacity transitio
 
 Event deletion uses an explicit inline confirmation with a cancel action. Launch at login, diagnostics and Quit remain accessible through ordinary controls. A dedicated Restart action is removed; the application can be quit and launched normally.
 
-Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. The featured event has a larger calendar leaf on its right; other events have smaller calendar leaves on their left. The featured event is the selected favorite, or the nearest event starting with today when no favorite is selected. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor. When no favorite is selected, the featured block is labelled `Ближайшее событие` and every star is unfilled.
+Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a related warm dark appearance and an Increase Contrast adaptation. Only an explicitly selected favorite receives the featured event treatment and larger calendar leaf on its right; other events have smaller calendar leaves on their left. Without a favorite, every event uses the ordinary compact card, including the nearest event and events dated today; every star is unfilled and no featured heading is shown. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor.
 
 Event cards express their civil-day distance as `Сегодня`, `Завтра`, then `Через N дней`
 with correct Russian day forms. The exact date and event title remain visible and unchanged.
@@ -391,9 +391,9 @@ No timer or duplicate date owner is added to the view. Both lines remain visible
 
 Zero or one event may be explicitly selected as the favorite. It appears first and supplies the event representation in the menu bar when the timer is idle. Clicking its filled star clears the selection; clicking another event's unfilled star selects that event. The editor also permits clearing or setting the choice on Save.
 
-With no favorite, the nearest active event starting with today supplies the large featured block only. The idle menu bar instead shows the Mars application symbol alone. Equal dates retain stable user order. The featured block never selects or persists a favorite.
+With no favorite, all active events use ordinary compact cards in ascending date order, starting with today. The idle menu bar shows the Mars application symbol alone. Equal dates retain stable user order. The nearest event is never promoted into the favorite's large presentation or persisted as an automatic selection.
 
-Deleting or expiring a selected event clears the choice: the panel returns to its nearest-event featured block and the idle menu bar returns to Mars. Existing valid stored selections are preserved; an absent or invalid selection remains absent after normalization and restart.
+Deleting or expiring a selected event clears the choice: the panel returns to ordinary compact cards and the idle menu bar returns to Mars. Clearing the star has the same presentation result, including after hiding/reopening or relaunching. Existing valid stored selections are preserved; an absent or invalid selection remains absent after normalization and restart.
 
 ## Event ordering
 

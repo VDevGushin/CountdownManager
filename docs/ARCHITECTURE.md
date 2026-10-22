@@ -488,7 +488,7 @@ composes the 60-point timer strip with the 540-point `ManagerView`. The idle tim
 quiet accent surface and outline while Play retains a filled accent; the existing selection,
 matched-geometry motion, keyboard focus and deadline owner are unchanged.
 
-`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf for the displayed favorite or automatic nearest event and a smaller left-hand leaf for other events. `Store.primary` derives the displayed event without changing the explicit selection. `CountdownRowPresentation` separates `isFeatured` (large presentation) from `isPrimary` (filled star). The menu bar has an independent derived `StatusBarPresentation` in `Presentation.swift`: only the active explicit primaryID supplies an event, while empty/legacy calendar emoji selects K1 and absent favorite selects Mars. This does not change `Store.primary` or introduce saved selection state. Calendar labels and optional list emoji remain derived from `Presentation.swift`.
+`AuroraInstrument` supplies the shared warm light/dark palette, contrast variants and control backgrounds. Event rows compose a larger right-hand calendar leaf only for the explicit favorite and a smaller left-hand leaf for all other events. `CountdownRowPresentation.isFeatured` derives directly from `isPrimary`; no separate first-row or nearest-event identity controls prominence. Without a favorite, every row is compact, including today. `Store.primary` retains its existing favorite-or-nearest lookup for other callers; it does not decide row styling. The menu bar has an independent derived `StatusBarPresentation` in `Presentation.swift`: only the active explicit primaryID supplies an event, while empty/legacy calendar emoji selects K1 and absent favorite selects Mars. No saved selection state is introduced. Calendar labels and optional list emoji remain derived from `Presentation.swift`.
 
 Event rows use a 23-point Georgia featured title and a 54 × 65 right-hand calendar leaf; secondary
 rows use 14-point titles and 42 × 51 left-hand leaves. Additional emoji is composed with the title;
@@ -695,6 +695,13 @@ Files:
 - `Sources/CountdownManager/UISmokeRuntime.swift`
 
 These files provide in-process control and observation surfaces for Real UI Smoke when the dedicated test mode is active.
+
+Event favorite/edit controls register and refresh through an invisible `NSViewRepresentable` lifecycle,
+with coordinator-owned cleanup when their identity changes or their view is dismantled.
+This avoids missing visible event buttons after SwiftUI reuses a compact row without another `onAppear`.
+Other semantic controls retain SwiftUI registration, including offscreen checklist rows.
+Geometry remains observed separately; scenarios wait for the required rendered layout rather
+than assuming that a bound-value update and frame publication occur in the same pass.
 
 Their capabilities, isolation model, and evidentiary limits are defined in `docs/VERIFICATION.md`.
 
