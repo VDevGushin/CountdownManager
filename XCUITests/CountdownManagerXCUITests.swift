@@ -741,9 +741,13 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     private func currentLayoutUndoKey() throws -> String {
+        try currentLayoutShortcutKey("z")
+    }
+
+    private func currentLayoutShortcutKey(_ asciiKey: String) throws -> String {
         func data(for source: TISInputSource) throws -> CFData {
             let pointer = try XCTUnwrap(TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData),
-                                       "The keyboard layout must expose Unicode translation data for native Undo")
+                                       "The keyboard layout must expose Unicode translation data for native shortcuts")
             return Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue()
         }
         func character(for code: UInt16, layoutData: CFData) -> String? {
@@ -760,20 +764,17 @@ final class CountdownManagerXCUITests: XCTestCase {
         }
         let current = try XCTUnwrap(TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue())
         let currentData = try data(for: current)
-        // XCUI resolves literal keys in the active layout. If plain Z is absent, use the
-        // last ASCII layout's Z position. This run verifies Russian with an ABC fallback;
-        // command-specific layouts and IMEs require separate acceptance.
-        if (0..<128).contains(where: { character(for: UInt16($0), layoutData: currentData) == "z" }) {
-            return "z"
+        if (0..<128).contains(where: { character(for: UInt16($0), layoutData: currentData) == asciiKey }) {
+            return asciiKey
         }
         let ascii = try XCTUnwrap(TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue())
         let asciiData = try data(for: ascii)
-        let code = try XCTUnwrap((0..<128).first { character(for: UInt16($0), layoutData: asciiData) == "z" },
-                                "The ASCII keyboard layout must supply the native Undo key")
+        let code = try XCTUnwrap((0..<128).first { character(for: UInt16($0), layoutData: asciiData) == asciiKey },
+                                "The ASCII keyboard layout must supply the native shortcut key")
         let mapped = try XCTUnwrap(character(for: UInt16(code), layoutData: currentData),
-                                  "The active keyboard layout must translate the native Undo key")
-        XCTAssertEqual(mapped.count, 1, "XCUI needs one current-layout character for the Undo key")
-        print("Native Undo current-layout key=\(mapped), ASCII Z virtualKey=\(code)")
+                                  "The active keyboard layout must translate the native shortcut key")
+        XCTAssertEqual(mapped.count, 1, "XCUI needs one current-layout character for the shortcut key")
+        print("Native shortcut current-layout key=\(mapped), ASCII \(asciiKey) virtualKey=\(code)")
         return mapped
     }
 
@@ -897,6 +898,236 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(saved.last?["isCompleted"] as? Bool, false)
     }
 
+    func testDesktopGridListTransitionRetainsSelectionAndSplit() throws {
+        let identifiers = try writeDesktopMotionFixture()
+        let original = try Data(contentsOf: dataURL)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let first = app.buttons["desktop.event.\(identifiers[0])"]
+        let second = app.buttons["desktop.event.\(identifiers[1])"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        XCTAssertTrue(second.waitForExistence(timeout: 3))
+        let detail = app.descendants(matching: .any).matching(identifier: "desktop.detail.\(identifiers[0])").firstMatch
+        XCTAssertTrue(detail.waitForExistence(timeout: 3))
+        let splitter = app.splitters.firstMatch
+        XCTAssertTrue(splitter.exists)
+        let origin = splitter.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        origin.press(forDuration: 0.1, thenDragTo: origin.withOffset(CGVector(dx: 55, dy: 0)))
+        let inspectorX = detail.frame.minX
+        let grid = app.radioButtons["Коллекция"]
+        let list = app.radioButtons["Лента"]
+        XCTAssertTrue(grid.exists)
+        XCTAssertTrue(list.exists)
+        XCTAssertTrue(waitForDesktopArrangement(first: first, second: second, grid: true))
+        attachDesktopMotionSnapshot("Desktop grid before transition")
+
+        list.click()
+        XCTAssertTrue(waitForDesktopArrangement(first: first, second: second, grid: false))
+        XCTAssertTrue(detail.exists)
+        XCTAssertEqual(detail.frame.minX, inspectorX, accuracy: 2)
+        attachDesktopMotionSnapshot("Desktop list after transition")
+        grid.click()
+        XCTAssertTrue(waitForDesktopArrangement(first: first, second: second, grid: true))
+        XCTAssertTrue(detail.exists)
+        XCTAssertEqual(detail.frame.minX, inspectorX, accuracy: 2)
+        attachDesktopMotionSnapshot("Desktop grid after reverse transition")
+
+        for _ in 0..<3 {
+            list.click()
+            grid.click()
+        }
+        list.click()
+        XCTAssertTrue(waitForDesktopArrangement(first: first, second: second, grid: false))
+        let ordered = identifiers.map { app.buttons["desktop.event.\($0)"] }
+        for pair in zip(ordered, ordered.dropFirst()) {
+            XCTAssertLessThan(pair.0.frame.minY, pair.1.frame.minY)
+        }
+        let november = app.staticTexts["desktop.month.25199"]
+        let december = app.staticTexts["desktop.month.25200"]
+        XCTAssertTrue(november.exists)
+        XCTAssertTrue(december.exists)
+        XCTAssertLessThan(november.frame.minY, december.frame.minY)
+        let browser = app.scrollViews.containing(.button, identifier: "desktop.event.\(identifiers[0])").firstMatch
+        XCTAssertTrue(browser.exists)
+        let last = try XCTUnwrap(ordered.last)
+        for _ in 0..<8 where !last.isHittable { browser.swipeUp() }
+        XCTAssertTrue(last.isHittable)
+        attachDesktopMotionSnapshot("Desktop final month at list end")
+        XCTAssertTrue(detail.exists)
+        XCTAssertEqual(detail.frame.minX, inspectorX, accuracy: 2)
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+    }
+
+    func testDesktopChecklistMiddleRowReordersAndReturnsWithoutChangingIdentities() throws {
+        var items = try persistedItems()
+        let identifiers = (1...8).map { "55555555-5555-5555-5555-" + String(format: "%012d", $0) }
+        let labels = ["Подготовить документы", "Проверить маршрут",
+                      "Собрать вещи и проверить необходимое снаряжение",
+                      "Зарядить устройства", "Проверить время встречи",
+                      "Купить билеты", "Подтвердить бронь", "Сохранить адрес"]
+        let tasks: [[String: Any]] = identifiers.enumerated().map { index, identifier in
+            ["id": identifier, "text": labels[index], "isCompleted": index >= 5]
+        }
+        items[0]["subtasks"] = tasks
+        try writeItems(items, primaryID: eventID)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let target = app.checkBoxes.matching(NSPredicate(format: "label == %@", labels[2])).firstMatch
+        let following = app.checkBoxes.matching(NSPredicate(format: "label == %@", labels[3])).firstMatch
+        let lastActive = app.checkBoxes.matching(NSPredicate(format: "label == %@", labels[4])).firstMatch
+        XCTAssertTrue(target.waitForExistence(timeout: 3))
+        XCTAssertTrue(following.exists)
+        XCTAssertLessThan(target.frame.maxY, following.frame.minY)
+        attachDesktopMotionSnapshot("Checklist eight rows before completion")
+        target.click()
+        XCTAssertTrue(waitForSubtaskCompletion(identifiers[2], equals: true))
+        let completedPosition = NSPredicate { _, _ in target.frame.minY > lastActive.frame.maxY }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: completedPosition, object: nil)], timeout: 3), .completed)
+        attachDesktopMotionSnapshot("Checklist middle row completed below unfinished rows")
+        target.click()
+        XCTAssertTrue(waitForSubtaskCompletion(identifiers[2], equals: false))
+        let restoredPosition = NSPredicate { _, _ in target.frame.maxY < following.frame.minY }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: restoredPosition, object: nil)], timeout: 3), .completed)
+        attachDesktopMotionSnapshot("Checklist reopened row restored to original position")
+        let saved = try XCTUnwrap(try persistedItems().first?["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(saved.compactMap { $0["id"] as? String }, identifiers)
+        XCTAssertEqual(saved.compactMap { $0["text"] as? String }, labels)
+        XCTAssertEqual(saved.compactMap { $0["isCompleted"] as? Bool }, tasks.compactMap { $0["isCompleted"] as? Bool })
+        XCTAssertTrue(waitForFavorite(eventID))
+    }
+
+    func testDesktopSettingsBackdropCloseAndEscapePreserveEventsAndEditor() throws {
+        let identifiers = try writeDesktopMotionFixture()
+        let original = try Data(contentsOf: dataURL)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let main = app.windows["desktop.window"]
+        XCTAssertTrue(main.waitForExistence(timeout: 3))
+        let open = main.buttons.matching(NSPredicate(format: "label == %@", "Настройки")).firstMatch
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        let selected = main.descendants(matching: .any).matching(identifier: "desktop.detail.\(identifiers[0])").firstMatch
+        XCTAssertTrue(selected.exists)
+        let inspectorX = selected.frame.minX
+        let coveredPane = CGRect(x: main.frame.midX - 215, y: main.frame.midY - 280, width: 430, height: 560)
+        let alternative = try XCTUnwrap(identifiers.dropFirst().compactMap { identifier -> (String, CGPoint)? in
+            let event = main.buttons["desktop.event.\(identifier)"]
+            guard event.exists && event.isHittable else { return nil }
+            let center = CGPoint(x: event.frame.midX, y: event.frame.midY)
+            return coveredPane.insetBy(dx: -12, dy: -12).contains(center) ? nil : (identifier, center)
+        }.first, "A visible ordinary event outside the centered settings pane is required")
+        let backgroundEvent = main.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: alternative.1.x - main.frame.minX, dy: alternative.1.y - main.frame.minY))
+        open.click()
+        let closeCandidates = main.buttons.matching(NSPredicate(format: "label == %@", "Закрыть настройки"))
+        XCTAssertTrue(closeCandidates.firstMatch.waitForExistence(timeout: 3))
+        let close = try XCTUnwrap(closeCandidates.allElementsBoundByIndex.first {
+            $0.frame.width <= 44 && $0.frame.height <= 44
+        }, "A compact close button must be present separately from the full-window backdrop")
+        XCTAssertFalse(main.buttons.matching(NSPredicate(format: "label == %@", "Назад")).firstMatch.exists)
+        XCTAssertFalse(app.windows["settings.window"].exists)
+        XCTAssertEqual(main.sheets.count, 0)
+        XCTAssertFalse(selected.exists, "Settings must hide underlying event controls from accessibility")
+        let weather = main.checkBoxes.matching(NSPredicate(format: "label == %@", "Показывать погоду в днях")).firstMatch
+        let initialWeather = try XCTUnwrap(checkboxValue(weather))
+        XCTAssertTrue(["0", "1"].contains(initialWeather))
+        close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: -200, dy: 0)).click()
+        XCTAssertTrue(close.exists, "Clicking blank settings header space must not dismiss the pane")
+        close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .withOffset(CGVector(dx: -5, dy: 150)).click()
+        XCTAssertTrue(close.exists, "Clicking blank settings body space must not dismiss the pane")
+        weather.click()
+        XCTAssertTrue(waitForCheckboxValue(weather, equals: initialWeather == "1" ? "0" : "1"))
+        attachDesktopMotionSnapshot("Centered desktop settings overlay")
+        backgroundEvent.click()
+        XCTAssertTrue(waitForAbsence(close))
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        XCTAssertFalse(main.descendants(matching: .any).matching(identifier: "desktop.detail.\(alternative.0)").firstMatch.exists,
+                       "The dismissal click must not select the event under the backdrop")
+        XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2)
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+        open.click()
+        XCTAssertTrue(close.waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForCheckboxValue(weather, equals: initialWeather == "1" ? "0" : "1"))
+        close.click()
+        XCTAssertTrue(waitForAbsence(close))
+        open.click()
+        XCTAssertTrue(close.waitForExistence(timeout: 3))
+        activateForKeyboardInput()
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(close))
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2)
+        let edit = main.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
+        XCTAssertTrue(edit.isEnabled)
+        edit.click()
+        let title = app.textFields["editor.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        activateForKeyboardInput()
+        replace(title, with: "Черновик после настроек")
+        main.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.35)).click()
+        XCTAssertEqual(title.value as? String, "Черновик после настроек",
+                       "Clicking outside the editor sheet must not discard its draft")
+        activateForKeyboardInput()
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(title))
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+        XCTAssertTrue(main.exists)
+    }
+
+    private func checkboxValue(_ checkbox: XCUIElement) -> String? {
+        (checkbox.value as? NSNumber)?.stringValue ?? checkbox.value as? String
+    }
+
+    private func activateForKeyboardInput() {
+        app.activate()
+        let foreground = NSPredicate { _, _ in self.app.state == .runningForeground }
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: foreground, object: nil)], timeout: 3), .completed)
+    }
+
+    private func waitForCheckboxValue(_ checkbox: XCUIElement, equals value: String) -> Bool {
+        let predicate = NSPredicate { _, _ in self.checkboxValue(checkbox) == value }
+        return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: 3) == .completed
+    }
+
+    private func waitForDesktopArrangement(first: XCUIElement, second: XCUIElement, grid: Bool) -> Bool {
+        let predicate = NSPredicate { _, _ in
+            let firstFrame = first.frame
+            let secondFrame = second.frame
+            if grid {
+                return abs(firstFrame.minY - secondFrame.minY) < 2 && secondFrame.minX > firstFrame.maxX
+            }
+            return abs(firstFrame.minX - secondFrame.minX) < 2 && secondFrame.minY > firstFrame.maxY
+        }
+        return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: 3) == .completed
+    }
+
+    private func attachDesktopMotionSnapshot(_ name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func writeDesktopMotionFixture() throws -> [String] {
+        let identifiers = (1...9).map { "44444444-4444-4444-4444-" + String(format: "%012d", $0) }
+        let items: [[String: Any]] = identifiers.enumerated().map { index, identifier in
+            [
+                "id": identifier,
+                "title": index == 2 ? "Очень длинное название события для проверки переноса текста между сеткой и списком" : "Событие \(index + 1)",
+                "note": "Изолированная проверка перехода",
+                "date": ["year": 2099, "month": index < 7 ? 11 : 12, "day": index < 7 ? index + 1 : index - 6],
+                "emoji": index == 2 ? "🎂" : "",
+                "subtasks": index == 0 ? [
+                    ["id": activeSubtaskID, "text": "Незавершённое дело", "isCompleted": false],
+                    ["id": completedSubtaskID, "text": "Завершённое дело", "isCompleted": true]
+                ] : []
+            ]
+        }
+        try writeItems(items, primaryID: nil)
+        return identifiers
+    }
+
     func testSettingsDiagnosticArchiveCancelAndSave() throws {
         let originalEvents = try Data(contentsOf: dataURL)
         let destination = testHome.appendingPathComponent("Countdown-Diagnostics.zip")
@@ -907,9 +1138,9 @@ final class CountdownManagerXCUITests: XCTestCase {
         let export = app.buttons["settings.diagnostics"]
         XCTAssertTrue(export.waitForExistence(timeout: 3))
         export.click()
-        let panel = app.sheets.firstMatch
+        let panel = app.sheets["save-panel"]
         XCTAssertTrue(panel.waitForExistence(timeout: 3), "The native save sheet must be accessible")
-        app.typeKey(.escape, modifierFlags: [])
+        panel.buttons["CancelButton"].click()
         XCTAssertTrue(waitForAbsence(panel))
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
         XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
@@ -918,21 +1149,23 @@ final class CountdownManagerXCUITests: XCTestCase {
 
         export.click()
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
-        let filename = panel.textFields.matching(NSPredicate(
-            format: "value IN %@", ["Countdown-Diagnostics.zip", "Countdown-Diagnostics"] as NSArray
-        )).firstMatch
+        let filename = panel.textFields["saveAsNameTextField"]
         XCTAssertTrue(filename.waitForExistence(timeout: 3))
+        XCTAssertTrue(["Countdown-Diagnostics.zip", "Countdown-Diagnostics"].contains(filename.value as? String ?? ""))
         filename.click()
-        app.typeKey("п", modifierFlags: [.command, .shift])
-        let folder = app.sheets.comboBoxes.firstMatch
+        activateForKeyboardInput()
+        app.typeKey(try currentLayoutShortcutKey("g"), modifierFlags: [.command, .shift])
+        let goToFolder = app.sheets["GoToWindow"]
+        XCTAssertTrue(goToFolder.waitForExistence(timeout: 3))
+        let folder = goToFolder.textFields["PathTextField"]
         XCTAssertTrue(folder.waitForExistence(timeout: 3), "The native Go to Folder field must be accessible")
-        folder.typeKey(.delete, modifierFlags: [])
-        XCTAssertEqual(folder.value as? String, "")
-        folder.typeText(testHome.path)
-        XCTAssertEqual(folder.value as? String, testHome.path)
+        replace(folder, with: testHome.path)
         folder.typeKey(.return, modifierFlags: [])
-        XCTAssertTrue(waitForAbsence(folder))
-        app.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(goToFolder))
+        let save = panel.buttons["OKButton"]
+        let saveEnabled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in save.isEnabled }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [saveEnabled], timeout: 3), .completed)
+        save.click()
         XCTAssertTrue(waitForAbsence(panel))
         let archiveWritten = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             FileManager.default.fileExists(atPath: destination.path)
@@ -966,6 +1199,10 @@ final class CountdownManagerXCUITests: XCTestCase {
             }
         }
         XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+        let archiveEvidence = XCTAttachment(data: try Data(contentsOf: destination), uniformTypeIdentifier: "public.zip-archive")
+        archiveEvidence.name = "Actual isolated native diagnostic export"
+        archiveEvidence.lifetime = .keepAlways
+        add(archiveEvidence)
     }
 
     private var root: XCUIElement {

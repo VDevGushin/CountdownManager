@@ -38,6 +38,24 @@ private actor DesktopSmokeWriteGate {
     }
 }
 
+private actor DesktopSmokeForecastGate {
+    private var response: [String: DailyWeatherForecast]?
+    private var pending: [CheckedContinuation<[String: DailyWeatherForecast], Never>] = []
+
+    func load() async -> [String: DailyWeatherForecast] {
+        if let response { return response }
+        return await withCheckedContinuation { pending.append($0) }
+    }
+
+    func hasRequest() -> Bool { !pending.isEmpty }
+
+    func release(_ response: [String: DailyWeatherForecast]) {
+        self.response = response
+        pending.forEach { $0.resume(returning: response) }
+        pending.removeAll()
+    }
+}
+
 @MainActor
 final class DesktopSmokeRuntime {
     private let configuration: UISmokeConfiguration
@@ -51,6 +69,7 @@ final class DesktopSmokeRuntime {
     private let appearanceSettings: ApplicationAppearance
     private let desktopWindow: () -> NSWindow?
     private let panelWindow: () -> NSWindow?
+    private let statusButton: () -> NSStatusBarButton?
     private let showDesktop: () -> Void
     private let hideDesktop: () -> Void
     private let showPanel: () -> Void
@@ -64,6 +83,7 @@ final class DesktopSmokeRuntime {
          accessibilitySettings: AuroraAccessibilitySettings, visualEnvironment: UISmokeVisualEnvironment,
          appearanceSettings: ApplicationAppearance,
          desktopWindow: @escaping () -> NSWindow?, panelWindow: @escaping () -> NSWindow?,
+         statusButton: @escaping () -> NSStatusBarButton?,
          showDesktop: @escaping () -> Void, hideDesktop: @escaping () -> Void, showPanel: @escaping () -> Void,
          pressStatusItem: @escaping () -> Void) {
         self.configuration = configuration
@@ -77,6 +97,7 @@ final class DesktopSmokeRuntime {
         self.appearanceSettings = appearanceSettings
         self.desktopWindow = desktopWindow
         self.panelWindow = panelWindow
+        self.statusButton = statusButton
         self.showDesktop = showDesktop
         self.hideDesktop = hideDesktop
         self.showPanel = showPanel
@@ -85,7 +106,7 @@ final class DesktopSmokeRuntime {
 
     func start() {
         let resultURL = configuration.resultURL
-        DispatchQueue.global().asyncAfter(deadline: .now() + 43) {
+        DispatchQueue.global().asyncAfter(deadline: .now() + 65) {
             try? "DesktopSmoke\nFAIL: hard timeout".write(to: resultURL, atomically: true, encoding: .utf8)
             Darwin._exit(124)
         }
@@ -158,18 +179,32 @@ final class DesktopSmokeRuntime {
         try await requireTaskOrder(first: remainingTask.id, second: completedTask.id)
         try await captureThemes("desktop-mixed-checklist")
         try await press("desktop.mode")
-        try await press("desktop.subtask.toggle.\(remainingTask.id)")
+        let originalMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        let originalContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrast, reduceMotion: false)
+        try await captureChecklistToggle("desktop-checklist-complete-motion", item: today,
+                                         taskID: remainingTask.id, window: window)
         try await wait("desktop checklist completed") {
             self.store.active.first { $0.id == today.id }?.subtasks.allSatisfy(\.isCompleted) == true
                 && self.controls.entries["desktop.checklist.complete"] != nil
         }
-        try await press("desktop.subtask.toggle.\(remainingTask.id)")
+        try await captureChecklistToggle("desktop-checklist-reopen-motion", item: today,
+                                         taskID: remainingTask.id, window: window)
         try await expect("desktop.subtask.toggle.\(remainingTask.id)", "off")
         try await requireTaskOrder(first: remainingTask.id, second: completedTask.id)
         try require(store.active.first { $0.id == today.id }?.subtasks.map(\.id) == today.subtasks.map(\.id),
                     "display grouping reordered persisted subtask identities")
         try await press("desktop.subtask.toggle.\(remainingTask.id)")
         try await expect("desktop.subtask.toggle.\(remainingTask.id)", "on")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrast, reduceMotion: true)
+        try await captureChecklistToggle("desktop-checklist-reopen-reduced", item: today,
+                                         taskID: remainingTask.id, window: window)
+        try await expect("desktop.subtask.toggle.\(remainingTask.id)", "off")
+        try await requireTaskOrder(first: remainingTask.id, second: completedTask.id)
+        try await captureChecklistToggle("desktop-checklist-complete-reduced", item: today,
+                                         taskID: remainingTask.id, window: window)
+        try await expect("desktop.subtask.toggle.\(remainingTask.id)", "on")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrast, reduceMotion: originalMotion)
         try await requireDivider(divider, in: window, after: "checklist changes")
         passed.append("mixed checklist groups active before completed in both views; reopening regroups without changing stored order")
         showPanel()
@@ -256,17 +291,53 @@ final class DesktopSmokeRuntime {
         passed.append("reverse panel-to-desktop editor exclusion keeps the original draft owner")
 
         try await press("desktop.settings")
-        try await wait("desktop settings sheet") { self.controls.entries["settings.weather.enabled"] != nil }
+        try await wait("centered desktop settings pane") { self.controls.frame("desktop.settings.pane") != nil }
+        let settingsPane = try value(controls.frame("desktop.settings.pane"), "settings pane frame")
+        try require(abs(settingsPane.width - 430) < 1 && abs(settingsPane.height - 560) < 1,
+                    "settings pane lost its usable 430 × 560-point size")
+        try require(window.attachedSheet == nil, "settings still use a native sheet instead of a dismissible overlay")
+        try require(!NSApp.windows.contains { $0.identifier?.rawValue == "settings.window" },
+                    "desktop settings created a separate native window")
+        try require(controls.entries["settings.close"] != nil && controls.entries["settings.back"] == nil,
+                    "desktop settings lost their close button or retained panel-only Back navigation")
+        try require(!controls.press("desktop.event.\(meeting.id)") && !controls.press("desktop.panel"),
+                    "settings overlay left background events or compact navigation interactive")
+        let settingsBeforeEdit = store.data
         try await checkSharedAppearance(window: window, divider: resizedDivider)
-        try require(!controls.press("desktop.panel") && window.isVisible && window.attachedSheet != nil,
-                    "compact-mode button hid an active settings sheet")
+        try await press("desktop.settings.backdrop")
+        try await wait("settings backdrop dismisses pane") { self.controls.entries["desktop.settings.pane"] == nil }
+        try require(store.data == settingsBeforeEdit && controls.entries["desktop.detail.\(today.id)"] != nil,
+                    "settings dismissal activated an underlying event or changed data")
+        try await requireDivider(resizedDivider, in: window, after: "settings backdrop dismissal")
+        try await press("desktop.detail.edit")
+        try await wait("event editor remains a protected sheet") {
+            self.editorSession.desktopIsPresented && window.attachedSheet != nil
+        }
+        try await replaceFocusedText(control: "editor.title", text: "Черновик после настроек")
+        try await captureEditorThemes(window: window)
+        try await press("editor.cancel")
+        try await wait("editor Cancel after settings") { !self.editorSession.hasActiveEditor && window.attachedSheet == nil }
+        try require(store.data == settingsBeforeEdit, "settings/editor Cancel changed events")
+        try await press("desktop.settings")
+        try await press("settings.diagnostics")
+        try await wait("diagnostic Save dialog belongs to desktop host") { window.attachedSheet is NSSavePanel }
+        let diagnosticPanel = try value(window.attachedSheet as? NSSavePanel, "settings diagnostic Save dialog")
+        _ = controls.press("desktop.settings.backdrop")
+        try require(controls.entries["desktop.settings.pane"] != nil && window.attachedSheet === diagnosticPanel,
+                    "settings backdrop dismissed the host of an active diagnostic Save dialog")
+        diagnosticPanel.cancel(nil)
+        try await wait("diagnostic Cancel releases settings") {
+            window.attachedSheet == nil && !self.store.isExportingDiagnostics
+        }
+        try require(store.data == settingsBeforeEdit, "diagnostic Cancel changed event data")
         try await press("settings.weather.enabled")
         try await wait("weather disabled in shared settings") { !self.weather.enabled }
-        try await press("settings.back")
-        try await wait("settings dismissed") { window.attachedSheet == nil }
+        try await press("settings.close")
+        try await wait("settings close button dismisses pane") { self.controls.entries["desktop.settings.pane"] == nil }
         try await requireDivider(resizedDivider, in: window, after: "settings open and close")
         try require(weather.forecast(for: store.today) == nil, "disabled shared weather still supplies a forecast")
         try capture("desktop-weather-off")
+        passed.append("centered settings pane has a close button; backdrop dismisses without activating background events or moving divider, and diagnostic Cancel releases its guard")
         passed.append("desktop settings disable forecast supply through the shared weather owner")
         showPanel()
         try await press("settings.open")
@@ -278,11 +349,25 @@ final class DesktopSmokeRuntime {
         appearanceSettings.setSelection(.system)
         passed.append("system, light and dark preferences propagate through both native windows and both settings hosts")
 
+        try await press("desktop.event.\(today.id)")
+        try await wait("restore today selection after settings dismissal check") {
+            self.controls.entries["desktop.detail.\(today.id)"] != nil
+        }
         timer.start(minutes: 5)
         try require(timer.deadline != nil, "cannot start shared timer")
-        try await requireTimerDeleteSpacing(prefix: "desktop.timer", label: "running", adjacent: true)
-        try capture("desktop-timer-running")
+        try await wait("shared timer rendered in status item before panel interaction") {
+            guard let button = self.statusButton(), let title = self.timer.statusTitle else { return false }
+            return button.title == title && button.toolTip == self.timer.statusToolTip
+                && self.controls.entries["timer.running"] != nil
+        }
+        try require(controls.ids(withPrefix: "desktop.timer.").isEmpty,
+                    "desktop still exposes timer controls")
+        try capture("desktop-no-timer-running")
         let savedDeadline = timer.deadline
+        try await wait("previous panel dismissal reached WindowServer before status interaction") {
+            guard let panel = self.panelWindow() else { return false }
+            return !panel.isVisible && !panel.occlusionState.contains(.visible)
+        }
         pressStatusItem()
         try await wait("status item opens panel without hiding desktop") {
             self.panelWindow()?.isVisible == true && self.panelWindow()?.isKeyWindow == true
@@ -337,6 +422,8 @@ final class DesktopSmokeRuntime {
         try await requireDivider(resizedDivider, in: window, after: "search empty state and creation")
         passed.append("nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions")
         try await verifyPendingDesktopActions()
+        try await verifyMonthlyBrowsing()
+        try await verifyWeatherGeometry()
     }
 
     private func nativeSplit(in view: NSView) -> NSSplitView? {
@@ -344,6 +431,373 @@ final class DesktopSmokeRuntime {
             return split
         }
         return view.subviews.lazy.compactMap { self.nativeSplit(in: $0) }.first
+    }
+
+    private func verifyWeatherGeometry() async throws {
+        let retainedWindow = try value(desktopWindow(), "retained weather geometry window")
+        let suite = configuration.defaultsSuiteName + ".weather-geometry"
+        let defaults = try value(UserDefaults(suiteName: suite), "weather geometry defaults")
+        let fixture = Store(fileURL: configuration.homeURL.appendingPathComponent("WeatherGeometry/events.json"),
+                            disclosureDefaults: defaults, loginItemManagementIsAvailable: false)
+        let gate = DesktopSmokeForecastGate()
+        let fixtureWeather = WeatherController(defaults: defaults, provider: { _ in await gate.load() },
+                                               allowLocationRequests: false)
+        let session = EventEditorSession()
+        let fixtureUpdates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        try await wait("weather geometry store loaded") { !fixture.isLoading }
+        let favorite = Countdown(title: "Главная поездка", note: "Заметка остаётся на месте при загрузке погоды.",
+                                 date: fixture.today, emoji: "", subtasks: [try Subtask(text: "Подготовить вещи")], showsWeather: true)
+        let ordinary = Countdown(title: "Встреча с друзьями с длинным названием для узкой карточки",
+                                 date: Day(fixture.tomorrow), emoji: "☕️", showsWeather: true)
+        let missingDate = Day(try value(Day.calendar.date(byAdding: .day, value: 3, to: fixture.today.date()), "missing forecast day"))
+        let missing = Countdown(title: "Событие без прогноза", date: missingDate, emoji: "", showsWeather: true)
+        for event in [favorite, ordinary, missing] {
+            let saved = await fixture.save(event, primary: event.id == favorite.id)
+            try require(saved, "cannot seed weather geometry fixture")
+        }
+        fixtureWeather.selectLocation(.city(.moscow))
+        fixtureWeather.updateEvents(fixture.active)
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: fixtureUpdates, editorSession: session, keepAwake: keepAwake,
+            weather: fixtureWeather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: fixtureUpdates, weather: fixtureWeather) }
+        ), editorSession: session)
+        let window = try value(controller.window, "weather geometry fixture window")
+        window.setContentSize(NSSize(width: 960, height: 800))
+        retainedWindow.orderOut(nil)
+        controller.show()
+        defer {
+            fixtureWeather.shutdown()
+            Task { await gate.release([:]) }
+            window.close()
+            retainedWindow.makeKeyAndOrderFront(nil)
+            defaults.removePersistentDomain(forName: suite)
+        }
+        try await wait("weather geometry detail rendered") { self.controls.entries["desktop.detail.\(favorite.id)"] != nil }
+        let identifiers = ["desktop.overview.header", "desktop.detail.identity", "desktop.detail.note", "desktop.detail.checklist"]
+            + [favorite, ordinary, missing].map { "desktop.presentation.\($0.id)" }
+        let baseline = try weatherGeometry(identifiers)
+        fixtureWeather.setEnabled(true)
+        let requestDeadline = ProcessInfo.processInfo.systemUptime + 6
+        while !(await gate.hasRequest()) {
+            try require(ProcessInfo.processInfo.systemUptime < requestDeadline, "synthetic weather request did not start")
+            try await Task.sleep(nanoseconds: 10_000_000)
+        }
+        try await expect("desktop.weather.detail.\(favorite.id)", "absent")
+        try await requireWeatherGeometry(baseline, after: "pending forecast")
+        try capture("desktop-weather-pending", window: window)
+        let forecast = try value(DailyWeatherForecast(weatherCode: 1, maximumTemperature: 14), "synthetic daily forecast")
+        await gate.release([weatherDayKey(favorite.date): forecast, weatherDayKey(ordinary.date): forecast])
+        try await expect("desktop.weather.detail.\(favorite.id)", "available")
+        try await expect("desktop.weather.browser.\(missing.id)", "absent")
+        try await requireWeatherGeometry(baseline, after: "pending to available forecast")
+        try capture("desktop-weather-loaded", window: window)
+        for fraction in [CGFloat(0.34), 0.66] {
+            let divider = try await positionDivider(in: window, fraction: fraction)
+            for mode in ["collection", "feed"] {
+                if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
+                try await expect("desktop.mode", mode)
+                try await Task.sleep(nanoseconds: 180_000_000)
+                let stable = try weatherGeometry(identifiers)
+                fixtureWeather.setEnabled(false)
+                try await expect("desktop.weather.overview", "absent")
+                try await expect("desktop.weather.detail.\(favorite.id)", "absent")
+                try await requireWeatherGeometry(stable, after: "global weather OFF in \(mode) at \(fraction)")
+                fixtureWeather.setEnabled(true)
+                try await expect("desktop.weather.detail.\(favorite.id)", "available")
+                try await requireWeatherGeometry(stable, after: "global weather ON in \(mode) at \(fraction)")
+                var hiddenWeather = favorite
+                hiddenWeather.showsWeather = false
+                let hiddenSaved = await fixture.save(hiddenWeather, primary: true)
+                try require(hiddenSaved, "cannot disable isolated per-event weather")
+                fixtureWeather.updateEvents(fixture.active)
+                try await expect("desktop.weather.detail.\(favorite.id)", "absent")
+                try await expect("desktop.weather.browser.\(favorite.id)", "absent")
+                try await requireWeatherGeometry(stable, after: "per-event weather OFF in \(mode) at \(fraction)")
+                let restored = await fixture.save(favorite, primary: true)
+                try require(restored, "cannot restore isolated per-event weather")
+                fixtureWeather.updateEvents(fixture.active)
+                try await expect("desktop.weather.detail.\(favorite.id)", "available")
+                try await requireWeatherGeometry(stable, after: "per-event weather ON in \(mode) at \(fraction)")
+                try await requireDivider(divider, in: window, after: "weather visibility changes")
+                try capture("desktop-weather-stable-\(mode)-\(Int(fraction * 100))", window: window)
+            }
+        }
+        try require(fixture.data.items == [favorite, ordinary, missing] && fixture.data.primaryID == favorite.id,
+                    "weather presentation checks altered event fields or identities")
+        passed.append("synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed")
+    }
+
+    private func weatherGeometry(_ identifiers: [String]) throws -> [String: CGRect] {
+        try Dictionary(uniqueKeysWithValues: identifiers.map { identifier in
+            (identifier, try value(controls.frame(identifier), "weather geometry \(identifier)"))
+        })
+    }
+
+    private func requireWeatherGeometry(_ expected: [String: CGRect], after action: String) async throws {
+        for _ in 0..<3 {
+            try await Task.sleep(nanoseconds: 20_000_000)
+            for (identifier, frame) in expected {
+                let current = try value(controls.frame(identifier), "retained weather geometry \(identifier)")
+                try require(abs(current.minX - frame.minX) < 1 && abs(current.minY - frame.minY) < 1
+                            && abs(current.width - frame.width) < 1 && abs(current.height - frame.height) < 1,
+                            "weather changed \(identifier) geometry after \(action): expected \(frame), actual \(current)")
+            }
+        }
+    }
+
+    private func verifyMonthlyBrowsing() async throws {
+        let retainedWindow = try value(desktopWindow(), "retained monthly window")
+        let fixtureURL = configuration.homeURL.appendingPathComponent("MonthlyBrowsing/events.json")
+        let suite = configuration.defaultsSuiteName + ".monthly-browsing"
+        let defaults = try value(UserDefaults(suiteName: suite), "monthly browsing defaults")
+        let fixture = Store(fileURL: fixtureURL, disclosureDefaults: defaults,
+                            loginItemManagementIsAvailable: false)
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let originalMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        let originalContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let originalScheme = visualEnvironment.colorSchemeOverride
+        try await wait("monthly fixture loaded") { !fixture.isLoading }
+        let anchor = try value(Day.calendar.date(from: DateComponents(year: fixture.today.year,
+                                                                     month: fixture.today.month, day: 1)),
+                               "monthly date anchor")
+        let future = { (months: Int, day: Int) throws -> Day in
+            let month = try self.value(Day.calendar.date(byAdding: .month, value: months, to: anchor),
+                                       "monthly date")
+            return Day(try self.value(Day.calendar.date(byAdding: .day, value: day - 1, to: month),
+                                      "monthly day"))
+        }
+        let favorite = Countdown(title: "Главная поездка", note: "Отдельная карточка, не ещё одна группа месяца.",
+                                 date: try future(1, 12), emoji: "🏍️")
+        let sparse = [
+            Countdown(title: "Планы на сегодня", date: fixture.today, emoji: ""),
+            Countdown(title: "Вечер с друзьями", date: fixture.today, emoji: "☕️"),
+            Countdown(title: "Зимняя прогулка", date: try future(2, 10), emoji: "❄️"),
+            Countdown(title: "Путешествие в новом году", date: try future(14, 15), emoji: "✈️")
+        ]
+        for event in sparse + [favorite] {
+            let saved = await fixture.save(event, primary: event.id == favorite.id)
+            try require(saved, "cannot seed monthly fixture")
+        }
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) }
+        ), editorSession: session)
+        let window = try value(controller.window, "monthly browsing window")
+        window.setContentSize(NSSize(width: 1200, height: 900))
+        retainedWindow.orderOut(nil)
+        controller.show()
+        defer {
+            window.close()
+            retainedWindow.makeKeyAndOrderFront(nil)
+            defaults.removePersistentDomain(forName: suite)
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrast, reduceMotion: originalMotion)
+            visualEnvironment.colorSchemeOverride = originalScheme
+        }
+        try await wait("monthly fixture rendered") { self.controls.entries["desktop.detail.\(favorite.id)"] != nil }
+        let divider = try await positionDivider(in: window, fraction: 0.61)
+        let expected = DesktopEventCollection(items: fixture.active, today: fixture.today, primaryID: favorite.id, query: "")
+        try require(expected.monthSections.count == 3, "sparse fixture does not cross three months and years")
+        for section in expected.monthSections {
+            try await expect("desktop.month.\(section.id)", section.title)
+        }
+        try await wait("favorite precedes chronologically ordered month headings") {
+            let frames = expected.monthSections.compactMap { self.controls.frame("desktop.month.\($0.id)") }
+            guard frames.count == expected.monthSections.count,
+                  let first = frames.first,
+                  let favoriteFrame = self.controls.frame("desktop.event.\(favorite.id)") else { return false }
+            return favoriteFrame.maxY < first.minY && zip(frames, frames.dropFirst()).allSatisfy { pair in
+                pair.0.maxY < pair.1.minY
+            }
+        }
+        let favoriteMonth = favorite.date.year * 12 + favorite.date.month
+        try require(controls.entries["desktop.month.\(favoriteMonth)"] == nil,
+                    "favorite-only month leaves an empty ordinary section")
+        try await expect("desktop.presentation.\(favorite.id)", "favorite")
+        try await captureMonthlyThemes("desktop-monthly-collection", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        try await captureModeSequence("desktop-mode-to-feed", window: window, events: sparse)
+        passed.append("mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents")
+        try await captureMonthlyThemes("desktop-monthly-feed", window: window)
+        for section in expected.monthSections {
+            try await expect("desktop.month.\(section.id)", section.title)
+        }
+        try await requireDivider(divider, in: window, after: "monthly collection/feed transition")
+        passed.append("ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month")
+
+        try await captureModeSequence("desktop-mode-to-collection", window: window, events: sparse)
+        for _ in 0..<7 {
+            try require(controls.press("desktop.mode"), "rapid view switch rejected")
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        try await requireBrowsingMode("feed", events: sparse)
+        try await requireDivider(divider, in: window, after: "rapid alternating modes")
+        try capture("desktop-mode-rapid-last-feed", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try require(accessibilitySettings.prefersReducedMotion, "monthly Reduce Motion override was not applied")
+        try await captureModeSequence("desktop-mode-reduced", window: window, events: sparse)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        try require(controls.press("desktop.mode"), "live motion mode switch rejected")
+        try await Task.sleep(nanoseconds: 35_000_000)
+        try capture("desktop-mode-live-before-reduced", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try capture("desktop-mode-live-after-reduced", window: window)
+        try await Task.sleep(nanoseconds: 35_000_000)
+        try capture("desktop-mode-live-reduced-35ms", window: window)
+        try require(controls.press("desktop.mode"), "live Reduce Motion reverse switch rejected")
+        try await requireBrowsingMode("collection", events: sparse)
+        try capture("desktop-mode-live-reduced", window: window)
+        try await requireDivider(divider, in: window, after: "live Reduce Motion reversal")
+        passed.append("rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider")
+
+        let beforeSearch = fixture.data
+        try await replaceFocusedText(control: "desktop.search", text: "Не существующая группа месяца")
+        try await wait("monthly search removes fixture cards and headings") {
+            (sparse + [favorite]).allSatisfy { self.controls.entries["desktop.event.\($0.id)"] == nil }
+                && expected.monthSections.allSatisfy { self.controls.entries["desktop.month.\($0.id)"] == nil }
+        }
+        try await requireDivider(divider, in: window, after: "monthly search no results")
+        try capture("desktop-monthly-search-empty", window: window)
+        try await replaceFocusedText(control: "desktop.search", text: "")
+        try await requireBrowsingMode("collection", events: sparse)
+        try require(fixture.data == beforeSearch, "monthly browsing changed persisted events")
+        passed.append("search no-results removes empty month headings and restoration preserves events, favorite and split position")
+
+        for index in 0..<40 {
+            let date = Day(try value(Day.calendar.date(byAdding: .day, value: index * 2,
+                                                      to: try future(3, 1).date()), "long-list date"))
+            let event = Countdown(title: "План \(index + 1): подготовить всё необходимое", date: date, emoji: "")
+            let saved = await fixture.save(event, primary: false)
+            try require(saved, "cannot seed long monthly fixture")
+        }
+        let ordinary = DesktopEventCollection(items: fixture.active, today: fixture.today,
+                                              primaryID: favorite.id, query: "").ordinary
+        try await requireBrowsingMode("collection", events: ordinary)
+        let content = try value(window.contentView, "long-list content")
+        let split = try value(nativeSplit(in: content), "long-list split")
+        let scroll = try value(nativeScroll(in: split.arrangedSubviews[0]), "native browser scroll")
+        try await wait("long-list scroll overflow") {
+            (scroll.documentView?.bounds.height ?? 0) > scroll.contentView.bounds.height * 2
+        }
+        try scrollBrowser(scroll, toEnd: true)
+        let last = try value(ordinary.last, "last monthly event")
+        try await requireVisibleBrowserEvent(last.id)
+        try await press("desktop.event.\(last.id)")
+        try await wait("last long-list event selected") { self.controls.entries["desktop.detail.\(last.id)"] != nil }
+        try capture("desktop-monthly-long-end-collection", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        try await captureModeSequence("desktop-mode-long-to-feed", window: window, events: ordinary)
+        try scrollBrowser(scroll, toEnd: true)
+        try await requireVisibleBrowserEvent(last.id)
+        try capture("desktop-monthly-long-end-feed", window: window)
+        try await requireDivider(divider, in: window, after: "long-list scroll, selection and view change")
+        for _ in 0..<7 {
+            try require(controls.press("desktop.mode"), "rapid long-list switch rejected")
+            try await Task.sleep(nanoseconds: 20_000_000)
+        }
+        try await requireBrowsingMode("collection", events: ordinary)
+        try await requireDivider(divider, in: window, after: "rapid long-list mode switching")
+        try scrollBrowser(scroll, toEnd: false)
+        try await expect("desktop.presentation.\(favorite.id)", "favorite")
+        passed.append("forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider")
+    }
+
+    private func captureMonthlyThemes(_ name: String, window: NSWindow) async throws {
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 300_000_000)
+            try capture("\(name)-\(scheme == .dark ? "dark" : "light")", window: window)
+        }
+    }
+
+    private func captureChecklistToggle(_ name: String, item: Countdown, taskID: UUID, window: NSWindow) async throws {
+        let identifiers = item.subtasks.map { "desktop.subtask.toggle.\($0.id)" }
+        let owners = try Dictionary(uniqueKeysWithValues: identifiers.map { identifier in
+            (identifier, try value(controls.entries[identifier]?.ownerID, "checklist row owner \(identifier)"))
+        })
+        let started = ProcessInfo.processInfo.systemUptime
+        try require(controls.press("desktop.subtask.toggle.\(taskID)"), "sampled checklist action rejected")
+        let offsets = accessibilitySettings.prefersReducedMotion ? [0, 30] : [0, 40, 90, 180]
+        for milliseconds in offsets {
+            let delay = started + Double(milliseconds) / 1_000 - ProcessInfo.processInfo.systemUptime
+            try await Task.sleep(nanoseconds: UInt64(max(0.001, delay) * 1_000_000_000))
+            for identifier in identifiers {
+                try require(controls.entries[identifier]?.ownerID == owners[identifier],
+                            "checklist reorder replaced a stable row owner \(identifier)")
+            }
+            try capture("\(name)-\(milliseconds)ms", window: window)
+            captures[captures.count - 1]["requestedOffsetMilliseconds"] = milliseconds
+            captures[captures.count - 1]["elapsedMilliseconds"] = (ProcessInfo.processInfo.systemUptime - started) * 1_000
+            captures[captures.count - 1]["checklistRowY"] = Dictionary(uniqueKeysWithValues: identifiers.map {
+                ($0, controls.frame($0)?.minY ?? -1)
+            })
+        }
+    }
+
+    private func captureModeSequence(_ name: String, window: NSWindow, events: [Countdown]) async throws {
+        let expected = controls.value("desktop.mode") == "collection" ? "feed" : "collection"
+        let owners = try cardContentOwners(events)
+        let started = ProcessInfo.processInfo.systemUptime
+        try require(controls.press("desktop.mode"), "sampled mode switch rejected")
+        for milliseconds in [0, 100, 240] {
+            let delay = started + Double(milliseconds) / 1_000 - ProcessInfo.processInfo.systemUptime
+            try await Task.sleep(nanoseconds: UInt64(max(0.001, delay) * 1_000_000_000))
+            let currentOwners = try cardContentOwners(events)
+            try require(currentOwners == owners, "view mode replaced a card's content hierarchy")
+            try capture("\(name)-\(milliseconds)ms", window: window)
+            captures[captures.count - 1]["requestedOffsetMilliseconds"] = milliseconds
+            let capturedAt = captures[captures.count - 1]["observationUptime"] as? Double ?? started
+            captures[captures.count - 1]["elapsedMilliseconds"] = (capturedAt - started) * 1_000
+        }
+        try await requireBrowsingMode(expected, events: events)
+    }
+
+    private func cardContentOwners(_ events: [Countdown]) throws -> [String: ObjectIdentifier] {
+        let identifiers = events.flatMap { event in
+            ["leaf", "title", "metadata", "completion"].map { "desktop.card.\($0).\(event.id)" }
+                + ["desktop.collection.remaining.\(event.id)"]
+        }
+        return try Dictionary(uniqueKeysWithValues: identifiers.map { identifier in
+            (identifier, try value(controls.entries[identifier]?.ownerID, "card content owner \(identifier)"))
+        })
+    }
+
+    private func requireBrowsingMode(_ expected: String, events: [Countdown]) async throws {
+        try await wait("monthly browser reaches \(expected) without losing event identities") {
+            self.controls.value("desktop.mode") == expected && events.allSatisfy {
+                self.controls.value("desktop.presentation.\($0.id)") == expected
+                    && self.controls.entries["desktop.event.\($0.id)"]?.isEnabled == true
+            }
+        }
+    }
+
+    private func nativeScroll(in view: NSView) -> NSScrollView? {
+        if let scroll = view as? NSScrollView { return scroll }
+        return view.subviews.lazy.compactMap { self.nativeScroll(in: $0) }.first
+    }
+
+    private func requireVisibleBrowserEvent(_ id: UUID) async throws {
+        try await wait("last monthly event is rendered inside browser viewport") {
+            guard let viewport = self.controls.frame("desktop.browser"),
+                  let event = self.controls.frame("desktop.event.\(id)") else { return false }
+            return event.intersection(viewport).height >= min(event.height, viewport.height) - 2
+        }
+    }
+
+    private func scrollBrowser(_ scroll: NSScrollView, toEnd: Bool) throws {
+        let document = try value(scroll.documentView, "browser scroll document")
+        document.layoutSubtreeIfNeeded()
+        let maximum = max(0, document.bounds.height - scroll.contentView.bounds.height)
+        let atMaximum = toEnd == document.isFlipped
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: atMaximum ? maximum : 0))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try require(abs(scroll.contentView.bounds.minY - (atMaximum ? maximum : 0)) < 2,
+                    "native browser did not reach requested scroll endpoint")
     }
 
     private func checkSharedAppearance(window: NSWindow, divider: CGFloat) async throws {
@@ -357,7 +811,21 @@ final class DesktopSmokeRuntime {
                 return window.appearance?.name == expected && self.panelWindow()?.appearance?.name == expected
             }
             try await requireDivider(divider, in: window, after: "appearance \(selection.rawValue)")
-            try capture("desktop-settings-\(selection.rawValue)", window: window.attachedSheet ?? window)
+            try capture("desktop-settings-\(selection.rawValue)", window: window)
+        }
+        visualEnvironment.colorSchemeOverride = originalOverride
+    }
+
+    private func captureEditorThemes(window: NSWindow) async throws {
+        let originalOverride = visualEnvironment.colorSchemeOverride
+        let editor = try value(window.attachedSheet, "editor sheet for palette captures")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await wait("editor theme propagated") {
+                window.appearance?.name == (scheme == .dark ? NSAppearance.Name.darkAqua : .aqua)
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("desktop-editor-\(scheme == .dark ? "dark" : "light")", window: editor)
         }
         visualEnvironment.colorSchemeOverride = originalOverride
     }
@@ -383,27 +851,49 @@ final class DesktopSmokeRuntime {
             let split = try value(nativeSplit(in: content), "retained native horizontal split")
             try require(abs(split.arrangedSubviews[0].frame.maxX - position) < 2,
                         "divider reset after \(action): expected \(position), actual \(split.arrangedSubviews[0].frame.maxX)")
-            try requireDividerGrip(in: window)
+            try requireDividerGrip(in: window, after: action)
         }
     }
 
-    private func requireDividerGrip(in window: NSWindow) throws {
+    private func requireDividerGrip(in window: NSWindow, after action: String = "divider positioning") throws {
         let content = try value(window.contentView, "divider grip content")
         let grip = try value(dividerGrip(in: content), "desktop divider grip")
         grip.refreshSplitView()
         let rect = grip.gripRect
+        let settingsBlocksBackground = controls.frame("desktop.settings.pane") != nil
         try require(abs(rect.width - 12) < 0.5 && rect.height > 200, "divider grip must span a 12pt full-height band")
         for height in [CGFloat(0.15), 0.5, 0.85] {
             for offset in [CGFloat(-5), 0, 5] {
                 let localPoint = NSPoint(x: rect.midX + offset, y: rect.minY + rect.height * height)
                 let point = grip.convert(localPoint, to: content.superview)
-                try require(content.hitTest(point) === grip, "desktop hierarchy does not route the expanded divider band to grip")
+                let hit = content.hitTest(point)
+                let routesAsExpected = settingsBlocksBackground ? (hit != nil && hit !== grip) : hit === grip
+                try require(routesAsExpected, "unexpected expanded divider hit routing after \(action); "
+                            + "expected=\(settingsBlocksBackground ? "blocked by settings" : "divider grip"), "
+                            + "height=\(height), offset=\(offset), localPoint=\(localPoint), point=\(point), gripRect=\(rect), "
+                            + "hit=\(dividerViewDescription(hit)), content=\(dividerViewDescription(content)), "
+                            + "gripHierarchy=\(dividerHierarchyDescription(grip))")
             }
         }
         for offset in [CGFloat(-8), 8] {
             let point = grip.convert(NSPoint(x: rect.midX + offset, y: rect.midY), to: content.superview)
-            try require(content.hitTest(point) !== grip, "divider grip intercepts pane content outside its band")
+            try require(content.hitTest(point) !== grip, "divider grip intercepts pane content outside its band after \(action)")
         }
+    }
+
+    private func dividerViewDescription(_ view: NSView?) -> String {
+        guard let view else { return "nil" }
+        return "\(type(of: view))(frame=\(view.frame), bounds=\(view.bounds), hidden=\(view.isHidden))"
+    }
+
+    private func dividerHierarchyDescription(_ grip: NSView) -> String {
+        var ancestor: NSView? = grip
+        var hierarchy: [String] = []
+        while let view = ancestor, hierarchy.count < 6 {
+            hierarchy.append(dividerViewDescription(view))
+            ancestor = view.superview
+        }
+        return hierarchy.joined(separator: " → ")
     }
 
     private func dividerGrip(in view: NSView) -> DesktopDividerGripView? {
@@ -452,7 +942,7 @@ final class DesktopSmokeRuntime {
         let saved = await fixture.save(event, primary: false)
         try require(saved, "cannot seed pending fixture")
         let fixtureController = DesktopWindowController(rootView: DesktopRootView(
-            store: fixture, timer: finishedTimer, updates: fixtureUpdates, editorSession: session,
+            store: fixture, updates: fixtureUpdates, editorSession: session,
             keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
             visualEnvironment: visualEnvironment, appearanceSettings: ApplicationAppearance(defaults: defaults),
             showPanel: {}, switchToPanel: {},
@@ -469,8 +959,10 @@ final class DesktopSmokeRuntime {
             Task { await gate.release() }
         }
         try await wait("pending fixture rendered") { self.controls.entries["desktop.detail.\(event.id)"] != nil }
-        try await requireTimerDeleteSpacing(prefix: "desktop.timer", label: "finished", adjacent: true)
-        try capture("desktop-timer-finished", window: window)
+        try require(controls.ids(withPrefix: "desktop.timer.").isEmpty,
+                    "desktop exposes finished-timer controls")
+        try require(finishedTimer.phase == .finished, "removing desktop timer UI lost its finished state")
+        try capture("desktop-no-timer-finished", window: window)
         let firstControl = "desktop.subtask.toggle.\(first.id)"
         let secondControl = "desktop.subtask.toggle.\(second.id)"
         let stableIDs = ["desktop.create", "desktop.detail.edit", "desktop.checklist.edit",
@@ -721,7 +1213,54 @@ final class DesktopSmokeRuntime {
             visualEnvironment.colorSchemeOverride = scheme
             desktopWindow()?.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
             try await Task.sleep(nanoseconds: 300_000_000)
+            if name == "desktop-collection" || name == "desktop-unfavorited" {
+                try requireDetailActionPalette(scheme: scheme)
+            }
             try capture("\(name)-\(scheme == .dark ? "dark" : "light")")
+        }
+    }
+
+    private func requireDetailActionPalette(scheme: ColorScheme) throws {
+        let content = try value(desktopWindow()?.contentView, "detail palette content")
+        let split = try value(nativeSplit(in: content), "detail palette native split")
+        let inspector = try value(split.arrangedSubviews.last, "detail palette inspector")
+        let inspectorFrame = inspector.convert(inspector.bounds, to: content)
+        let headerTop = content.isFlipped ? inspectorFrame.minY : content.bounds.maxY - inspectorFrame.maxY
+        let selectedID = try value(controls.value("desktop.inspector"), "detail palette selected event")
+        let isFavorite = store.data.primaryID?.uuidString == selectedID
+        let ink = AuroraInstrument.ink(for: scheme)
+        let favoriteColor = isFavorite
+            ? AuroraInstrument.accent(for: scheme, highContrast: accessibilitySettings.prefersHighContrast) : ink
+        content.layoutSubtreeIfNeeded()
+        let bitmap = try value(content.bitmapImageRepForCachingDisplay(in: content.bounds), "detail palette bitmap")
+        content.cacheDisplay(in: content.bounds, to: bitmap)
+        let scaleX = CGFloat(bitmap.pixelsWide) / content.bounds.width
+        let scaleY = CGFloat(bitmap.pixelsHigh) / content.bounds.height
+        let actions = [("desktop.favorite.\(selectedID)", favoriteColor),
+                       ("desktop.detail.edit", ink), ("desktop.detail.delete", ink)]
+        for (index, action) in actions.enumerated() {
+            let (identifier, color) = action
+            let frame = CGRect(x: inspectorFrame.maxX - 24 - 28 - CGFloat(2 - index) * 36,
+                               y: headerTop + (54 - 28) / 2, width: 28, height: 28)
+            let expected = try value(NSColor(color).usingColorSpace(.sRGB), "expected detail action color")
+            let minX = max(0, Int(floor(frame.minX * scaleX)))
+            let maxX = min(bitmap.pixelsWide, Int(ceil(frame.maxX * scaleX)))
+            let minY = max(0, Int(floor(frame.minY * scaleY)))
+            let maxY = min(bitmap.pixelsHigh, Int(ceil(frame.maxY * scaleY)))
+            try require(minX < maxX && minY < maxY, "detail action palette bounds are empty")
+            var matchingPixels = 0
+            for pixelY in minY..<maxY {
+                for pixelX in minX..<maxX {
+                    guard let actual = bitmap.colorAt(x: pixelX, y: pixelY)?.usingColorSpace(.sRGB) else { continue }
+                    let difference = max(abs(actual.redComponent - expected.redComponent),
+                                         abs(actual.greenComponent - expected.greenComponent),
+                                         abs(actual.blueComponent - expected.blueComponent))
+                    if difference < 0.12 && actual.alphaComponent > 0.9 { matchingPixels += 1 }
+                }
+            }
+            try require(matchingPixels >= 4,
+                        "\(identifier) lacks its expected \(isFavorite ? "favorite" : "neutral") action palette in \(scheme); "
+                            + "frame=\(frame), inspector=\(inspectorFrame), matchingPixels=\(matchingPixels)")
         }
     }
 
@@ -734,6 +1273,7 @@ final class DesktopSmokeRuntime {
             throw Failure("cannot allocate desktop capture")
         }
         content.cacheDisplay(in: content.bounds, to: bitmap)
+        let observedAt = ProcessInfo.processInfo.systemUptime
         guard let png = bitmap.representation(using: .png, properties: [:]) else { throw Failure("cannot encode desktop PNG") }
         let destination = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
         try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
@@ -743,7 +1283,10 @@ final class DesktopSmokeRuntime {
             "scale": window.backingScaleFactor,
             "appearanceName": window.effectiveAppearance.name.rawValue,
             "colorSchemeOverride": visualEnvironment.colorSchemeOverride == .dark ? "dark" : "light",
-            "highContrast": accessibilitySettings.prefersHighContrast
+            "highContrast": accessibilitySettings.prefersHighContrast,
+            "reduceMotion": accessibilitySettings.prefersReducedMotion,
+            "observationUptime": observedAt,
+            "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
         ])
     }
 

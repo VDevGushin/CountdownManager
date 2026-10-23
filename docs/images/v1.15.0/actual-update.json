@@ -1,0 +1,42 @@
+{
+  "actual_update_verified": true,
+  "recorded_at": "2026-10-23T22:31:37.444711+00:00",
+  "bundle_identifier": "local.countdownmanager.update-test",
+  "baseline_pid": 62080,
+  "baseline_build": "29",
+  "baseline_executable_sha256": "3ff4d976c841b14d2ac5b3fea098719ccc48960533d9e0e99da6b1631b5294d3",
+  "baseline_args": "/private/tmp/countdown-1.15.0-rc/update-fixture/older/Countdown Manager.app/Contents/MacOS/CountdownManager --update-test --xcui-testing",
+  "old_auto_hide_suppressed": true,
+  "old_pid_gone": true,
+  "relaunched_pid": 62214,
+  "relaunched_command": "/private/tmp/countdown-1.15.0-rc/update-fixture/older/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "installed_build": "30",
+  "installed_version": "1.15.0",
+  "installed_executable_sha256": "eba5994f80da30afe8e9666e728b63fcaa55883a9cdcc66660fc2fe639b93111",
+  "expected_newer_executable_sha256": "eba5994f80da30afe8e9666e728b63fcaa55883a9cdcc66660fc2fe639b93111",
+  "same_older_bundle_path": "/private/tmp/countdown-1.15.0-rc/update-fixture/older/Countdown Manager.app",
+  "newer_test_isolation_valid": true,
+  "xcui_testing_not_inherited": true,
+  "event_file_before_sha256": "ff3848cb8ca06830ac17ce5f78e4a52e381e97c1c89843da8861cb841683df09",
+  "event_file_after_sha256": "ff3848cb8ca06830ac17ce5f78e4a52e381e97c1c89843da8861cb841683df09",
+  "owner_preferences_before": {
+    "expandedSubtasksByEvent": {
+      "11500000-0000-4000-8000-000000000001": false
+    }
+  },
+  "owner_preferences_after": {
+    "expandedSubtasksByEvent": {
+      "11500000-0000-4000-8000-000000000001": false
+    }
+  },
+  "automatic_relaunch_without_manual_launch": true,
+  "ui_driver": "Root CUA observed real found/download/extract/ready and clicked native SUStatusInstallAndRelaunch",
+  "observer": "Read-only process table, raw bundle plist, SHA-256 and isolated defaults export; no launch/activate/input after installation began",
+  "scope": "Signed local feed download, native install, replacement, automatic relaunch, preserved synthetic event bytes and concrete disclosure preference",
+  "limits": [
+    "Loopback test signing key, not public HTTPS release deployment",
+    "Old host used supported --xcui-testing to suppress auto-hide only; no production old-shell acceptance claimed",
+    "Editor/timer guards covered by separate prior regression; not repeated during this normal update",
+    "Private XCTest attempts were driver failures before update actions and do not count as passing update evidence"
+  ]
+}

@@ -307,13 +307,50 @@ rerun the general panel regression suite; use existing focused panel checks when
 implementation changes.
 
 Desktop-only refinement checks cover emoji/date metadata in browser/details, the absence of
-the redundant favorite-only control, adjacent running/finished timer deletion and the unchanged
-mini-panel timer spacer. A separate native desktop fixture holds a persistence write with a
+the redundant favorite-only control and desktop timer controls, shared running/finished timer
+continuity and the unchanged mini-panel timer spacer. A separate native desktop fixture holds a persistence write with a
 continuation: it observes enabled controls and stable frames during that write, captures before/held
 renders, accepts rapid checklist actions, then opens an editor from the latest saved snapshot.
 The fixture also exercises queued-editor close/compact vetoes, external editor pause/resume and
 failed-save rollback with explicit cancellation of queued follow-ups. These are bounded native
 observations of the reported transient, not proof about every frame or all external interactions.
+
+A separate synthetic monthly-browsing fixture checks ordered month/year headings, a favorite-only
+month without an empty section, search empty/restored state, rapid alternating modes, Reduce Motion
+and live reversal. Forty additional events exercise native scrolling, visible final-event selection
+and divider retention in both modes. A content-owner regression checks that calendar, title,
+metadata, completion and remaining-label hosts survive mode changes; it catches structural
+replacement, not perceived smoothness. Native cache-display series record actual sample uptimes and
+requested offsets around mode changes; they are not compositor recordings or proof of perceived
+smoothness. Inspect intermediate renders and exercise real pointer mode switching on an isolated
+preview before claiming external acceptance. The focused desktop runtime has a 65-second hard
+deadline and a 70-second launch wrapper; other smoke launch timeouts remain 45 seconds.
+
+Desktop checklist completion/reopening also captures bounded normal and Reduce Motion render
+series with actual sample times and retained row hosts. Normal motion is explicitly enabled only
+inside the isolated fixture; system accessibility preferences are not changed. Registry target
+frames and cache-display images do not prove compositor movement. The focused external
+`testDesktopChecklistMiddleRowReordersAndReturnsWithoutChangingIdentities` uses eight synthetic
+tasks, including a long middle label, and checks completion/reopening, grouping and durable field
+identities. Inspect its retained actual screen recording before accepting perceived row movement.
+
+A separate gated-provider desktop fixture compares overview, ordinary/favorite card, identity,
+note and checklist geometry before/after pending-to-loaded forecasts, global weather OFF/ON and
+per-event weather OFF/ON. It includes an event without a forecast and both collection/feed layouts
+at narrow/wide split positions. It makes no public HTTP or location request; only explicit
+per-event fixture writes change isolated JSON. This is a desktop layout check, not a change to or
+re-acceptance of mini-panel weather composition.
+
+`testDesktopGridListTransitionRetainsSelectionAndSplit` adds a focused external synthetic case
+with nine events, a long title and two month headings. It checks native mode controls, selection,
+divider position, ordering, final-month scrolling and unchanged event bytes. XCUI actions wait for
+idle, so repeated clicks here are not sub-200-ms retargeting evidence. For animation acceptance,
+retain an `.xcresult` and actual screen recordings: set `SystemAttachmentLifetime = keepAlways`
+only in the generated temporary `.xctestrun` before `test-without-building`, and export attachments
+with `xcrun xcresulttool export attachments`. Do not alter global Xcode/macOS settings. Review
+source video frames in both directions, not just settled attachments or functional PASS. Record
+the tested Debug/Release executable hash; crop to the synthetic application before publishing any
+recording because raw macOS test videos can include other personal desktop content.
 
 Direct-delete coverage checks request/Cancel without file changes, confirmation tied to the
 selected UUID, duplicate delivery, favorite cleanup, deletion after a held earlier write,
@@ -323,9 +360,23 @@ native `NSSplitView` divider to nondefault legal positions and checks retention 
 mutation, mode/search, editor/settings, deletion and empty-state transitions. Collection cards
 with different titles/forecast eligibility are checked for bottom-aligned relative labels.
 
+Favorite-action palette checks inspect rendered icon regions for selected/unselected events in
+Dark and Light captures. The filled star must contain accent pixels, while the outline star,
+pencil and trash must contain primary-ink pixels. Channel tolerance accounts for native display
+profile conversion; the neutral/accent palettes remain separated. This verifies rendered state
+roles, not exact cross-display screenshot color equivalence.
+
 Appearance preference checks cover default/fallback values, persistence and isolated capture
 override priority. Native desktop smoke switches the shared owner through Dark/Light/System,
-observes both windows' native appearance and both settings hosts, and captures the settings sheet.
+observes the desktop, mini-panel and centered settings pane appearances and both settings hosts.
+It checks usable 430 × 560 settings content, the desktop close button, backdrop dismissal, unchanged selection/divider
+and a mounted but disabled background. It also checks that diagnostic Save/Cancel retains its
+settings host while the native dialog is attached. Current settings/editor Light/Dark captures
+must show the consistent desktop palette; the mini-panel retains its original styling.
+`testDesktopSettingsBackdropCloseAndEscapePreserveEventsAndEditor`
+separately exercises actual backdrop clicks, empty-area clicks inside the pane, the close button, Escape,
+unchanged event data and the editor's retained outside-click protection. These
+checks must establish that settings uses neither a separate window nor a native settings sheet.
 This is owner-to-rendered-UI evidence, not external popup-menu selection. Ordinary full panel
 smoke remains the side-effect check for the shared settings change.
 
@@ -338,7 +389,7 @@ width limits, then confirm ordinary content clicks and retained position.
 The desktop route also exercises the explicit compact-mode footer and the real status-button
 action: only the footer hides the desktop; toggling the status button leaves it visible.
 Return through the panel footer preserves the hosting hierarchy, selected event, view and timer.
-The compact-mode control is rejected while an editor or settings sheet owns the desktop.
+The compact-mode control is rejected while an editor owns the desktop or the settings overlay is open.
 Status-button `performClick` is an in-process action, not proof of physical menu-bar input.
 It additionally asserts unfinished-before-completed row geometry in both modes and after reopening
 a task, without changing stored UUID order. Search-filtered creation checks Cancel,
@@ -752,8 +803,15 @@ integration or all city/date coverage.
 
 The 2026-10-23 [regression campaign](qa/desktop-regression-2026-10-23.md) records 20 successful
 unique external scenarios out of 22 across separately identified runs, not one all-green suite.
-The Latin-input and complete native diagnostics-Save routes remain unaccepted; the source tests
-are retained rather than skipped. Popup city interaction is covered by
+The Latin-input and complete native diagnostics-Save routes were unaccepted in that historical run;
+the source tests were retained rather than skipped. On 2026-10-24 both passed in a focused 1.15.0/30
+preflight with the user's ABC source confirmed: original Latin note limit/focus/Undo, native
+Cancel/reopen, ordinary typed destination path, actual Save and ZIP privacy/data checks. Native
+Save/Go to Folder controls use their observed identifiers; command characters follow the current
+input layout. No clipboard fallback, skipped validation or global input-source change is used.
+Earlier failures reproduced Latin loss in Apple's system PathTextField under Russian input, so
+the successful ABC run is not proof that XCTest supports every layout. This closes those two
+specific gaps, not every manual-only scenario in the broad campaign. Popup city interaction is covered by
 `testWeatherCityMenuSupportsNativeSelection`: actual menu opening, all eleven choices, Moscow
 selection and OFF/ON retention. In-process weather smoke separately changes the shared owner
 and checks native rendering; it does not introspect an unopened dynamic SwiftUI menu.

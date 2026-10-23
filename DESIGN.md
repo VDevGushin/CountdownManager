@@ -200,6 +200,28 @@ The list starts with the current date and event count, then the selected favorit
 
 Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather and favorite checkboxes form the next distinct group after a 13-point gap.
 
+The unreleased desktop window uses a separate browser/details split. Its icon-only native
+segmented control switches collection/grid and feed/list, retaining names and hover help.
+One favorite stays above month-and-year sections; empty months and duplicate favorite rows are
+omitted. Section headings use 20-point Georgia, with 24-point section gaps. Grid cards keep a
+180-point minimum width and 12-point gaps; list rows use 10-point gaps. A short 150 ms
+ease-in-out reflows the same ordinary event identities without scaling text, spring effects or
+fading the entire browser. Calendar, title and metadata remain persistent visual elements;
+text reflows inside clipped moving containers rather than animating individual glyph positions.
+Reduce Motion makes mode changes immediate. The desktop footer
+contains navigation and settings, not timer controls; the compact panel's timer is unchanged.
+
+Desktop checklist completion/reopening animates only the persistent task rows with a 150 ms
+ease-in-out; Reduce Motion disables this movement. It does not animate the entire inspector or
+disable sibling controls. Desktop overview, cards and detail metadata use separate date/weather
+rows with a reserved 16-point weather slot, including when the forecast is absent. This prevents
+weather availability from shifting the calendar, countdown, notes, checklist or neighboring cards.
+The empty slot contains no visible or accessible placeholder. Mini-panel layouts are unchanged.
+
+The desktop detail action group uses neutral primary ink for the outline star, pencil and trash.
+Only a selected, filled favorite star uses the accent color. Color communicates favorite state,
+not a permanent difference between otherwise equal icon actions; mini-panel controls are unchanged.
+
 ## Elevation & Depth
 
 Depth is primarily tonal. Event cards are quiet paper surfaces without general drop shadows; Increase Contrast adds a one-point outline. Thin rules separate timer, headings, settings groups, and fixed action regions. Calendar leaves retain a restrained rotation (3 degrees featured, 2 degrees secondary), without a drop shadow. Their one-point outline is inset within the clipped silhouette to keep the edge clean.
@@ -234,7 +256,7 @@ The `Значок` field is an outlined selection control with label, selected e
 
 ### Navigation
 
-The fixed list footer carries local-storage reassurance, a small settings gear, and Quit. The gear symbol is 14 points in a 22-point activation area. Settings has an explicit back control and a Georgia heading. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
+The fixed list footer carries local-storage reassurance, a small settings gear, and Quit. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
 
 ### Calendar Leaves
 

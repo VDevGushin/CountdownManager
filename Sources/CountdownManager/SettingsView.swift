@@ -58,6 +58,8 @@ struct SettingsView: View {
     @ObservedObject var weather: WeatherController
     let diagnosticsContext: () -> DiagnosticExportContext
     let back: () -> Void
+    var backShortcut: KeyboardShortcut?
+    var showsCloseButton = false
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @EnvironmentObject private var appearanceSettings: ApplicationAppearance
@@ -65,17 +67,10 @@ struct SettingsView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
-                Button(action: back) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .medium))
-                        .frame(width: 22, height: 26)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel("Назад")
-                .accessibilityIdentifier("settings.back")
-                .uiSmokeControl(id: "settings.back", action: back)
+                if !showsCloseButton { navigationButton }
                 Text("Настройки").font(.custom("Georgia", size: 21))
                 Spacer()
+                if showsCloseButton { navigationButton }
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 16)
@@ -154,6 +149,19 @@ struct SettingsView: View {
         .background(AuroraPanelCanvas())
         .accessibilityIdentifier("settings.screen")
         .uiSmokeControl(id: "settings.screen")
+    }
+
+    private var navigationButton: some View {
+        Button(action: back) {
+            Image(systemName: showsCloseButton ? "xmark" : "chevron.left")
+                .font(.system(size: 12, weight: .medium))
+                .frame(width: 22, height: 26)
+                .contentShape(Rectangle())
+        }
+        .keyboardShortcut(backShortcut)
+        .accessibilityLabel(showsCloseButton ? "Закрыть настройки" : "Назад")
+        .accessibilityIdentifier(showsCloseButton ? "settings.close" : "settings.back")
+        .uiSmokeControl(id: showsCloseButton ? "settings.close" : "settings.back", action: back)
     }
 
     private var appearanceChoice: some View {

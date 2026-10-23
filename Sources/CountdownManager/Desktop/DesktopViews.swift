@@ -10,7 +10,6 @@ struct DesktopRootView: View {
     }
 
     @ObservedObject var store: Store
-    @ObservedObject var timer: CountdownTimer
     @ObservedObject var updates: ApplicationUpdates
     @ObservedObject var editorSession: EventEditorSession
     @ObservedObject var keepAwake: KeepAwakeController
@@ -74,16 +73,18 @@ struct DesktopRootView: View {
         .background(AuroraInstrument.canvas(for: colorScheme))
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
+        .disabled(showingSettings)
+        .allowsHitTesting(!showingSettings)
+        .accessibilityHidden(showingSettings)
+        .overlay {
+            if showingSettings { settingsOverlay }
+        }
         .sheet(isPresented: $showingEditor, onDismiss: editorSession.endDesktopEditor) {
             EditorView(store: store, item: editing, dayPreset: dayPreset, selectDayDate: selectDayDate,
                        didSave: eventSaved, done: { showingEditor = false })
                 .frame(width: 430, height: 600)
+                .background(AuroraPanelCanvas())
                 .interactiveDismissDisabled()
-        }
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
-                         diagnosticsContext: diagnosticsContext, back: { showingSettings = false })
-                .frame(width: 430, height: 560)
         }
         .environmentObject(accessibilitySettings)
         .environmentObject(appearanceSettings)
@@ -100,6 +101,46 @@ struct DesktopRootView: View {
         }
         .accessibilityIdentifier("desktop.root")
         .uiSmokeControl(id: "desktop.root")
+    }
+
+    private var settingsOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .contentShape(Rectangle())
+                .onTapGesture(perform: dismissSettings)
+                .accessibilityLabel("Закрыть настройки")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("desktop.settings.backdrop")
+                .uiSmokeControl(id: "desktop.settings.backdrop", action: dismissSettings)
+            SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
+                         diagnosticsContext: diagnosticsContext, back: dismissSettings,
+                         backShortcut: .cancelAction, showsCloseButton: true)
+                .frame(width: 430, height: 560)
+                .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+                .tint(AuroraInstrument.accent(for: colorScheme,
+                                             highContrast: accessibilitySettings.prefersHighContrast))
+                .background {
+                    Rectangle()
+                        .fill(AuroraInstrument.canvas(for: colorScheme))
+                        .contentShape(Rectangle())
+                        .onTapGesture { }
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityHidden(true)
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(AuroraInstrument.stroke(
+                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
+                        ), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+                .shadow(color: .black.opacity(0.2), radius: 16, y: 8)
+                .accessibilityIdentifier("desktop.settings.pane")
+                .uiSmokeControl(id: "desktop.settings.pane")
+        }
+        .accessibilityIdentifier("desktop.settings.overlay")
+        .uiSmokeControl(id: "desktop.settings.overlay")
     }
 
     private var splitContent: some View {
@@ -141,12 +182,16 @@ struct DesktopRootView: View {
         HStack(spacing: 12) {
             Picker("Вид событий", selection: $mode) {
                 ForEach(DesktopEventViewMode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
+                    Label(mode.title, systemImage: mode.systemImage)
+                        .labelStyle(.iconOnly)
+                        .help(mode.title)
+                        .accessibilityLabel(mode.title)
+                        .tag(mode)
                 }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(width: 190)
+            .frame(width: 80)
             .accessibilityLabel("Вид событий")
             .accessibilityIdentifier("desktop.mode")
             .uiSmokeControl(id: "desktop.mode", action: {
@@ -185,11 +230,10 @@ struct DesktopRootView: View {
 
     private var footer: some View {
         HStack(spacing: 16) {
-            CountdownTimerStrip(timer: timer, layout: .desktop).frame(width: 390)
-            Spacer(minLength: 0)
             Label("События хранятся на этом Mac", systemImage: "internaldrive")
                 .font(.system(size: 11))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            Spacer(minLength: 0)
             Button(action: switchSurfaceToPanel) { Label("В мини-панель", systemImage: "menubar.rectangle") }
                 .accessibilityIdentifier("desktop.panel")
                 .uiSmokeControl(id: "desktop.panel", action: switchSurfaceToPanel)
@@ -200,7 +244,8 @@ struct DesktopRootView: View {
                 .uiSmokeControl(id: "desktop.settings", action: presentSettings)
                 .disabled(!canPresentSettings)
         }
-        .padding(.trailing, 18)
+        .padding(.horizontal, 18)
+        .frame(height: 44)
         .background(AuroraInstrument.timerSurface(for: colorScheme))
     }
 
@@ -253,6 +298,11 @@ struct DesktopRootView: View {
     private func presentSettings() {
         guard canPresentSettings else { return }
         showingSettings = true
+    }
+
+    private func dismissSettings() {
+        guard !store.isExportingDiagnostics else { return }
+        showingSettings = false
     }
 
     private func switchSurfaceToPanel() {

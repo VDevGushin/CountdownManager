@@ -29,24 +29,7 @@ struct DesktopEventBrowser: View {
                     if let favorite = collection.favorite {
                         eventButton(favorite, featured: true)
                     }
-                    if !collection.ordinary.isEmpty {
-                        HStack {
-                            Text(collection.favorite == nil ? "Все события" : "И ещё впереди")
-                                .font(.custom("Georgia", size: 20))
-                            Spacer()
-                            Text("По дате").font(.system(size: 11))
-                                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                        }
-                        if mode == .collection {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 12) {
-                                ForEach(collection.ordinary) { item in eventButton(item, featured: false) }
-                            }
-                        } else {
-                            LazyVStack(spacing: 10) {
-                                ForEach(collection.ordinary) { item in eventButton(item, featured: false) }
-                            }
-                        }
-                    }
+                    monthSections
                 }
             }
             .padding(24)
@@ -54,6 +37,23 @@ struct DesktopEventBrowser: View {
         }
         .accessibilityIdentifier("desktop.browser")
         .uiSmokeControl(id: "desktop.browser")
+    }
+
+    private var monthSections: some View {
+        DesktopEventFlowLayout(feedProgress: mode == .feed ? 1 : 0) {
+            ForEach(collection.monthSections) { section in
+                Text(section.title)
+                    .font(.custom("Georgia", size: 20))
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("desktop.month.\(section.id)")
+                    .uiSmokeControl(id: "desktop.month.\(section.id)", value: { section.title })
+                    .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
+                ForEach(section.items) { item in
+                    eventButton(item, featured: false)
+                }
+            }
+        }
+        .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15), value: mode)
     }
 
     private var overview: some View {
@@ -65,16 +65,14 @@ struct DesktopEventBrowser: View {
                     .font(.system(size: 12))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
-            HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(currentDayHeaderLabel(store.today))
                     .font(.system(size: 13, weight: .medium))
-                if let forecast = weather.forecast(for: store.today) {
-                    Text("·").accessibilityHidden(true)
-                    DesktopForecastLabel(forecast: forecast)
-                }
+                DesktopForecastSlot(forecast: weather.forecast(for: store.today), role: "overview")
             }
             .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
         }
+        .uiSmokeControl(id: "desktop.overview.header")
     }
 
     private var emptyState: some View {
@@ -122,6 +120,152 @@ struct DesktopEventBrowser: View {
     }
 }
 
+private struct DesktopMonthHeadingKey: LayoutValueKey {
+    static let defaultValue = false
+}
+
+private struct DesktopEventFlowLayout: Layout {
+    var feedProgress: CGFloat
+
+    var animatableData: CGFloat {
+        get { feedProgress }
+        set { feedProgress = newValue }
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = max(0, proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 180)
+        let frames = frames(width: width, subviews: subviews)
+        return CGSize(width: width, height: frames.last?.maxY ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (subview, frame) in zip(subviews, frames(width: bounds.width, subviews: subviews)) {
+            subview.place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                          anchor: .topLeading, proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    private func frames(width: CGFloat, subviews: Subviews) -> [CGRect] {
+        interpolatedDesktopFrames(collection: frames(width: width, mode: .collection, subviews: subviews),
+                                  feed: frames(width: width, mode: .feed, subviews: subviews),
+                                  progress: feedProgress)
+    }
+
+    private func frames(width: CGFloat, mode: DesktopEventViewMode, subviews: Subviews) -> [CGRect] {
+        let spacing: CGFloat = mode == .collection ? 12 : 10
+        let columns = mode == .collection ? max(1, Int((width + 12) / 192)) : 1
+        let cardWidth = max(0, (width - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+        var frames: [CGRect] = []
+        var position = 0
+        var rowTop: CGFloat = 0
+        while position < subviews.count {
+            if subviews[position][DesktopMonthHeadingKey.self] {
+                if position > 0 { rowTop += 24 }
+                let height = subviews[position].sizeThatFits(ProposedViewSize(width: width, height: nil)).height
+                frames.append(CGRect(x: 0, y: rowTop, width: width, height: height))
+                rowTop += height + 12
+                position += 1
+            } else {
+                var end = position + 1
+                while end < min(position + columns, subviews.count), !subviews[end][DesktopMonthHeadingKey.self] {
+                    end += 1
+                }
+                let height = subviews[position..<end].map {
+                    $0.sizeThatFits(ProposedViewSize(width: cardWidth, height: nil)).height
+                }.max() ?? 0
+                for column in 0..<(end - position) {
+                    frames.append(CGRect(x: CGFloat(column) * (cardWidth + spacing), y: rowTop,
+                                         width: cardWidth, height: height))
+                }
+                rowTop += height
+                position = end
+                if position < subviews.count, !subviews[position][DesktopMonthHeadingKey.self] { rowTop += spacing }
+            }
+        }
+        return frames
+    }
+}
+
+private struct DesktopOrdinaryCardLayout: Layout {
+    var feedProgress: CGFloat
+
+    var animatableData: CGFloat {
+        get { feedProgress }
+        set { feedProgress = newValue }
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = max(0, proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 180)
+        let height = max(0, proposal.height.flatMap { $0.isFinite ? $0 : nil } ?? 0)
+        let frames = frames(width: width, height: height, subviews: subviews)
+        return CGSize(width: width, height: frames.map(\.maxY).max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for (subview, frame) in zip(subviews, frames(width: bounds.width, height: bounds.height, subviews: subviews)) {
+            subview.place(at: CGPoint(x: bounds.minX + frame.minX, y: bounds.minY + frame.minY),
+                          anchor: .topLeading, proposal: ProposedViewSize(frame.size))
+        }
+    }
+
+    private func frames(width: CGFloat, height: CGFloat, subviews: Subviews) -> [CGRect] {
+        interpolatedDesktopFrames(collection: frames(width: width, height: height, feed: false, subviews: subviews),
+                                  feed: frames(width: width, height: height, feed: true, subviews: subviews),
+                                  progress: feedProgress)
+    }
+
+    private func frames(width: CGFloat, height: CGFloat, feed: Bool, subviews: Subviews) -> [CGRect] {
+        guard subviews.count == 5 else { return [] }
+        let leaf = subviews[0].sizeThatFits(.unspecified)
+        if feed {
+            let remainingWidth = min(width * 0.3, subviews[4].sizeThatFits(.unspecified).width)
+            let textX = leaf.width + 16
+            let textWidth = max(0, width - textX - 16 - remainingWidth)
+            let title = subviews[1].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
+            let metadata = subviews[2].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
+            let completion = subviews[3].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
+            let remaining = subviews[4].sizeThatFits(ProposedViewSize(width: remainingWidth, height: nil))
+            let textHeight = title.height + 7 + metadata.height + (completion.height > 0 ? 7 + completion.height : 0)
+            let cardHeight = max(height, max(leaf.height, max(textHeight, remaining.height)))
+            let textTop = (cardHeight - textHeight) / 2
+            return [
+                CGRect(origin: CGPoint(x: 0, y: (cardHeight - leaf.height) / 2), size: leaf),
+                CGRect(x: textX, y: textTop, width: textWidth, height: title.height),
+                CGRect(x: textX, y: textTop + title.height + 7, width: textWidth, height: metadata.height),
+                CGRect(x: textX, y: textTop + title.height + 7 + metadata.height + (completion.height > 0 ? 7 : 0),
+                       width: textWidth, height: completion.height),
+                CGRect(x: width - remainingWidth, y: (cardHeight - remaining.height) / 2,
+                       width: remainingWidth, height: remaining.height)
+            ]
+        }
+        let completion = subviews[3].sizeThatFits(ProposedViewSize(width: max(0, width - leaf.width - 4), height: nil))
+        let headerHeight = max(leaf.height, completion.height)
+        let title = subviews[1].sizeThatFits(ProposedViewSize(width: width, height: nil))
+        let metadata = subviews[2].sizeThatFits(ProposedViewSize(width: width, height: nil))
+        let remaining = subviews[4].sizeThatFits(ProposedViewSize(width: width, height: nil))
+        let titleTop = headerHeight + 14
+        let metadataTop = titleTop + title.height + 14
+        let remainingTop = max(height - remaining.height, metadataTop + metadata.height + 14)
+        return [
+            CGRect(origin: .zero, size: leaf),
+            CGRect(x: 0, y: titleTop, width: width, height: title.height),
+            CGRect(x: 0, y: metadataTop, width: width, height: metadata.height),
+            CGRect(x: width - completion.width, y: 0, width: completion.width, height: completion.height),
+            CGRect(x: 0, y: remainingTop, width: width, height: remaining.height)
+        ]
+    }
+}
+
+private func interpolatedDesktopFrames(collection: [CGRect], feed: [CGRect], progress: CGFloat) -> [CGRect] {
+    let fraction = min(1, max(0, progress))
+    return zip(collection, feed).map { start, end in
+        CGRect(x: start.minX + (end.minX - start.minX) * fraction,
+               y: start.minY + (end.minY - start.minY) * fraction,
+               width: start.width + (end.width - start.width) * fraction,
+               height: start.height + (end.height - start.height) * fraction)
+    }
+}
+
 private struct DesktopEventCard: View {
     let item: Countdown
     let today: Day
@@ -143,9 +287,9 @@ private struct DesktopEventCard: View {
     var body: some View {
         Group {
             if featured { featuredContent }
-            else if feed { feedContent }
-            else { collectionContent }
+            else { ordinaryContent }
         }
+        .transition(.identity)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(featured ? 22 : 16)
         .background(AuroraInstrument.surface(for: colorScheme, elevated: selected,
@@ -180,45 +324,45 @@ private struct DesktopEventCard: View {
         }
     }
 
-    private var collectionContent: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                DesktopCalendarLeaf(item: item, featured: false, role: "browser")
-                Spacer(minLength: 4)
-                DesktopCompletionLabel(presentation: presentation)
-            }
-            Text(item.title).font(.system(size: 15, weight: .semibold))
-                .lineLimit(3).frame(maxWidth: .infinity, alignment: .leading)
-            dateAndWeather
-            Spacer(minLength: 0)
-            Text(presentation.remainingLabel).font(.system(size: 13, weight: .medium))
-                .foregroundStyle(timeColor)
-                .uiSmokeControl(id: "desktop.collection.remaining.\(item.id.uuidString)", value: { presentation.remainingLabel })
-        }
-        .frame(maxHeight: .infinity, alignment: .topLeading)
-    }
-
-    private var feedContent: some View {
-        HStack(alignment: .center, spacing: 16) {
+    private var ordinaryContent: some View {
+        DesktopOrdinaryCardLayout(feedProgress: feed ? 1 : 0) {
             DesktopCalendarLeaf(item: item, featured: false, role: "browser")
-            VStack(alignment: .leading, spacing: 7) {
-                Text(item.title).font(.system(size: 14, weight: .semibold)).lineLimit(2)
-                dateAndWeather
-                DesktopCompletionLabel(presentation: presentation)
+                .uiSmokeControl(id: "desktop.card.leaf.\(item.id)")
+            VStack(alignment: .leading, spacing: 0) {
+                Text(item.title).font(.system(size: 15, weight: .semibold))
+                    .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                    .transaction { $0.animation = nil }
             }
-            Spacer(minLength: 0)
-            Text(presentation.remainingLabel)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(timeColor)
-                .multilineTextAlignment(.trailing)
-                .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
+            .uiSmokeControl(id: "desktop.card.title.\(item.id)")
+            VStack(alignment: .leading, spacing: 0) {
+                dateAndWeather.transaction { $0.animation = nil }
+            }
+                .clipped()
+                .uiSmokeControl(id: "desktop.card.metadata.\(item.id)")
+            VStack(alignment: .leading, spacing: 0) {
+                DesktopCompletionLabel(presentation: presentation).transaction { $0.animation = nil }
+            }
+                .clipped()
+                .uiSmokeControl(id: "desktop.card.completion.\(item.id)")
+            VStack(alignment: feed ? .trailing : .leading, spacing: 0) {
+                Text(presentation.remainingLabel).font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(timeColor)
+                    .multilineTextAlignment(feed ? .trailing : .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .transaction { $0.animation = nil }
+            }
+                .clipped()
+                .uiSmokeControl(id: "desktop.collection.remaining.\(item.id.uuidString)", value: { presentation.remainingLabel })
         }
     }
 
     private var dateAndWeather: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) { eventDate; eventForecast }
-            VStack(alignment: .leading, spacing: 6) { eventDate; eventForecast }
+        VStack(alignment: .leading, spacing: 6) {
+            eventDate
+            DesktopForecastSlot(forecast: item.showsWeather ? weather.forecast(for: item.date) : nil,
+                                role: "browser.\(item.id)")
         }
         .font(.system(size: 11))
         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -226,12 +370,6 @@ private struct DesktopEventCard: View {
 
     private var eventDate: some View {
         DesktopEventDateLabel(item: item, dateLabel: presentation.dateLabel, role: "browser")
-    }
-
-    @ViewBuilder private var eventForecast: some View {
-        if item.showsWeather, let forecast = weather.forecast(for: item.date) {
-            DesktopForecastLabel(forecast: forecast)
-        }
     }
 
     private var timeColor: Color {
@@ -286,6 +424,21 @@ struct DesktopForecastLabel: View {
         Label(forecast.temperatureLabel, systemImage: forecast.symbolName)
             .font(.system(size: 11))
             .accessibilityLabel(forecast.accessibilityDescription)
+    }
+}
+
+struct DesktopForecastSlot: View {
+    let forecast: DailyWeatherForecast?
+    let role: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            if let forecast { DesktopForecastLabel(forecast: forecast).fixedSize() }
+            Spacer(minLength: 0)
+        }
+        .frame(height: 16, alignment: .leading)
+        .accessibilityHidden(forecast == nil)
+        .uiSmokeControl(id: "desktop.weather.\(role)", value: { forecast == nil ? "absent" : "available" })
     }
 }
 

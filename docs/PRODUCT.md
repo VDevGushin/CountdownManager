@@ -112,15 +112,23 @@ The mini-panel remains a transient utility shown on the current Space. See the
 
 The desktop footer action `В мини-панель` explicitly switches to compact mode: it hides the
 retained desktop window and opens the anchored panel without stopping the app or timer.
-It is unavailable while a desktop editor or settings sheet is open. Opening the panel from
+It is unavailable while a desktop editor or settings pane is open. Opening the panel from
 the status-item icon does not hide the desktop window; toggling it again hides only the panel.
 Returning through `Открыть основное окно` hides the panel and restores the retained window state.
 
-The in-window command bar uses native controls for `Коллекция` and `Лента`, search by event title
+The in-window command bar uses an icon-only native segmented control for collection (grid) and
+feed (list), with a visible selected state, hover help and accessible names, search by event title
 or note, and event creation. There is no separate favorite-only filter: only one event can be
 favorite, and both views already show the same featured favorite card above ordinary events;
 the nearest event never substitutes for an absent favorite. Ordinary events follow stable date
-order, preserving existing order for equal dates. Empty search/filter results offer a return to
+order, preserving existing order for equal dates, grouped under month-and-year headings in both
+views. Empty months are omitted; a favorite is not duplicated inside its month. Switching views
+reflows the same event identities in a short, approximately 0.15-second non-spring animation;
+the calendar, title and metadata retain their visual identities instead of instantly replacing
+one card composition with another. Month headings and cards move in the same layout transaction.
+Text is not scaled and the whole list is not faded out. Reduce Motion changes layouts immediately.
+Rapid switching follows the latest selection without changing saved data or the divider.
+Empty search/filter results offer a return to
 all events, rather than implying that saved events were deleted. Selection follows a surviving
 visible identity; if it disappears through filtering, deletion or expiry, the next visible event
 is selected, or the details become empty if none remain. Loading and unavailable/recovering data
@@ -130,29 +138,38 @@ events exist.
 The left side selects events and summarizes their date, remaining time and preparation progress.
 In the collection grid, relative labels (`Сегодня`, `Завтра`, `Через N дней`) sit at the bottom
 of ordinary cards with a consistent inset and align across each row, regardless of title wrapping
-or forecast presence. Exact dates and forecasts remain above them; feed and favorite composition
-are unchanged.
+or forecast presence. Exact dates and forecasts remain above them.
 Checklist checkboxes, favorite changes and editing belong to the right-hand event details,
 consistently in both collection and feed. A complete nonempty checklist has a green completion
-indicator; reopening a task restores the incomplete presentation. A zero-task event has no fake
+indicator; reopening a task restores the incomplete presentation. Completing or reopening a task
+repositions the same row identities in a local 150 ms ease-in-out animation. Reduce Motion makes
+that reordering immediate; persistence, accepted action order and neighboring controls are unchanged.
+A zero-task event has no fake
 `0/0` completion state. The event's additional emoji appears in the secondary date line in
 collection, feed, favorite cards and details, rather than prefixed to its desktop title or attached
 to its calendar leaf. Without an emoji, this line has no reserved icon space. The mini-panel's
 existing emoji placement is unchanged. Notes and preparation remain readable in independently scrolling
 details. Weather appears only when the shared setting and applicable per-event choice allow a
 real eligible forecast; missing data does not produce invented temperatures or placeholders.
+The desktop overview, cards and details reserve a weather row even when no forecast is available
+or weather is disabled. Date and weather use separate rows; arriving, disappearing or disabled
+forecasts must not shift surrounding content for otherwise unchanged events and window geometry.
+This layout rule and checklist animation apply only to the desktop, not the mini-panel.
 
 The desktop details header has three equal icon-only controls: favorite, a simple pencil for
 direct editing, and trash for direct event deletion. There is no persistent editing caption or
-overflow menu; accessible names and hover help identify the actions. Trash opens an
+overflow menu; accessible names and hover help identify the actions. An unselected outline star
+uses the same neutral primary ink as pencil and trash. Only the selected filled star uses accent
+color. This state-based color rule is desktop-only. Trash opens an
 inline confirmation naming the target event and warning that deletion cannot be undone. Only
 explicit confirmation deletes it; Cancel or selecting another event does not change saved data.
 Successful deletion follows the existing visible-selection rules, including an empty collection
 after the final event. The shared editor and persistence guards also apply to this route; a failed
 save reports the error and retains the event. Mini-panel deletion still uses its existing editor.
 
-The desktop timer keeps its delete button immediately after the running or finished time label;
-remaining horizontal space follows that group. The mini-panel retains its existing timer layout.
+The desktop has no timer strip or timer controls. The single timer remains available in the
+mini-panel and menu bar; opening, closing or changing the desktop layout never resets its deadline,
+completion alert or update-restart protection. The mini-panel retains its existing timer layout.
 
 Desktop checklist and favorite actions are processed in acceptance order without briefly disabling
 unrelated controls for each local save. An editor requested during these writes opens only after
@@ -177,13 +194,28 @@ active does not dismiss that draft; finish with Save or Cancel first. The panel 
 open editors simultaneously, and event mutations on the other surface are unavailable until the
 editor finishes. The other interface can still show current data and return to the active editor.
 Both editor owners block update installation/restart. Desktop settings reuse the existing settings
-form in a sheet and bind to the same preferences rather than maintaining a second copy.
+form in a centered 430 × 560-point pane inside the desktop window, bound to the same preferences.
+Its header shows `Настройки` on the left and a close button on the right, and it dims the event interface.
+The close button, Escape or clicking the dimmed area
+closes settings; the outside click is consumed rather than selecting or activating an event behind
+the pane. Clicking inside settings does not close it. The event interface stays mounted but is
+disabled, excluded from hit testing and hidden from accessibility while settings is open. Dismissal
+preserves the selected event, view, search and divider position. There is no separate settings window
+or native settings sheet. The diagnostic Save dialog retains its settings host until it finishes.
+Settings entry does not replace an active editor. The editor's outside-click protection is unchanged.
 
-Command-N creates an event in the desktop window, and Command-comma opens its settings. Ordinary
+Command-N creates an event in the desktop window. The footer Settings button and Command-comma
+open the centered settings pane when no editor is active. Ordinary
 native controls retain keyboard focus and accessibility labels. Collection/feed selection and
 search are window-local browsing choices, not changes to saved event data.
 
 ## Settings
+
+Desktop settings and editor surfaces use the same explicit canvas, primary/secondary ink and accent
+palette in Light/Dark/System appearance. Native field bezels and focus rings remain system controls;
+they are not replaced with custom outlines. The desktop settings pane follows the same appearance
+owner as the main window and mini-panel, without an application-wide override of status-item colors.
+These desktop presentation changes do not alter the mini-panel settings or editor palette.
 
 In the mini-panel, Settings is an internal screen in the same retained 390 × 600 panel. The 60-point timer strip
 remains above the 540-point manager area on both the list and settings screens; timer actions
@@ -223,7 +255,7 @@ follows macOS; an explicit choice applies immediately to both desktop and mini-p
 their settings/editor surfaces, and persists across launches in the same preferences domain.
 Changing application theme does not change macOS appearance or the system menu-bar background.
 
-Settings changes apply immediately without Save/Cancel. `Назад` returns to the same list and its
+Settings changes apply immediately without Save/Cancel. In the mini-panel, `Назад` returns to the same list and its
 browsing position. Hiding and showing the panel retains the current settings screen. Entry is
 available only from the list; it cannot replace an open editor or discard its draft. Settings is
 not an event editor and does not itself block an update restart. Existing timer, editor and

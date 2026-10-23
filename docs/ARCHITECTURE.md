@@ -129,7 +129,8 @@ NSApplication / AppDelegate
 │   └── NSWindow / NSHostingController<DesktopRootView>
 │       ├── window-local mode/search/filter/selection
 │       ├── native split browser + event details
-│       └── reused EditorView / SettingsView sheets
+│       ├── reused EditorView sheet
+│       └── centered SettingsView overlay with close button and dimmed backdrop
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -174,11 +175,29 @@ handoff and panel dismissal. There is no pending downgrade flag or policy-changi
 Desktop collection behavior remains the default, unlike the explicitly current-Space mini-panel;
 no Mission Control preferences are changed. See [the activation and Spaces decision](decisions/desktop-activation-and-spaces.md).
 
-`DesktopRootView` owns only transient window browsing and sheet state. Its in-window command bar
+`DesktopRootView` owns only transient window browsing, editor-sheet and settings-overlay state. Its in-window command bar
 uses native SwiftUI controls directly, without an independent toolbar owner or copied state.
 `DesktopEventCollection`
-derives the active filtered stable-date ordering and favorite/ordinary partition from Store data;
-it does not persist or mutate another copy. `desktopSelection` reconciles missing visible IDs.
+derives the active filtered stable-date ordering, favorite/ordinary partition and month/year sections
+from Store data; it does not persist or mutate another copy. Section identity includes the year.
+`desktopSelection` reconciles missing visible IDs.
+`DesktopEventFlowLayout` places all month headings and ordinary event buttons in one coordinate
+system, as adaptive equal-height grid rows or single-column feed rows. Nested month stacks no
+longer animate their heights independently from event placements. `DesktopOrdinaryCardLayout`
+retains five visual children (calendar, title, metadata, completion container and remaining label)
+and repositions them instead of replacing grid/feed content branches. Title and remaining-label
+fonts stay constant. Only view-mode changes animate, with a 0.15-second ease-in-out; Reduce Motion
+disables that animation. Native divider resizing continues to track the pointer without an added
+width animation. Event contents are measured eagerly; no second displayed-event snapshot,
+geometry-scale transform or animation scheduler exists.
+Both layouts expose a bounded scalar `feedProgress` as `animatableData` and compute intermediate
+placements from the two arrangements. This updates actual layout geometry on each animation frame,
+not just presentation transforms around already-reflowed text. Measurement work remains linear
+in the number of filtered ordinary events; this is not a claim of constant-cost compositor motion.
+Text and metadata reflow inside stable clipped containers with leaf-local `animation = nil`
+transactions. The containers' placement and bounds remain animated by the parent layout; glyphs
+are not individually interpolated between different line breaks or allowed to overflow into
+the neighboring metadata while the container changes size.
 `desktopMinimumPaneWidth` supplies the one-third/320-point constraint to the native `HSplitView`.
 Its direct pane containers retain structural identity; per-event identity is scoped inside the
 right container, so changing or clearing selection resets detail-local state without replacing
@@ -192,11 +211,20 @@ are cleared when the bridge leaves the window; failure to find the split leaves 
 The browser contains selection buttons and summaries; detail actions route favorite, checklist
 and confirmed event deletion through the same Store, with pending-persistence and active-editor guards.
 `DesktopCalendarLeaf` composes the existing native calendar tile without a desktop emoji overlay.
-The footer reuses `CountdownTimerStrip` with its desktop layout; the default panel layout is
-unchanged. Desktop timer controls, including preset buttons, use a separate smoke-ID prefix so
-the two retained surfaces cannot overwrite each other's test actions. There is no second timer
-or forecast scheduler. `DesktopEventDateLabel` owns the shared desktop emoji/date composition
+The desktop footer contains storage information, compact-mode navigation and settings, not a timer.
+`DesktopRootView` no longer observes timer ticks; its diagnostic callback still reads the shared
+timer owner. The mini-panel timer strip, menu-bar countdown, completion alert and restart guards
+are unchanged. There is no second timer or forecast scheduler.
+`DesktopEventDateLabel` owns the shared desktop emoji/date composition
 for collection, feed, favorite and details; the common calendar leaf has no desktop emoji overlay.
+
+`DesktopForecastSlot` owns a permanent 16-point weather row in desktop overview, card metadata and
+details. Only the optional forecast label changes inside it; missing/off forecasts expose no
+placeholder or accessibility content. Date metadata no longer conditionally switches between
+horizontal and vertical arrangements according to forecast availability.
+The details checklist retains one UUID-keyed `ForEach`; a local animation on committed completion
+values moves rows between active/completed ordering over 150 ms. Reduce Motion removes the
+animation transaction. Neither mechanism changes shared mini-panel views, Store ownership or FIFO.
 
 `DesktopRootView` serializes accepted checklist/favorite/deletion actions and editor intents in a
 window-local FIFO, routing mutations through the unchanged Store. Its own writes do not globally
@@ -215,8 +243,21 @@ draft in its hosting surface. Desktop Save/Cancel dismiss the sheet and release 
 interactive dismissal and parent-window close are prevented while that draft is active.
 Panel hide/show retains the existing draft semantics. Both surfaces guard mutations while
 the other editor owns the session, preventing a stale form from overwriting concurrent changes.
-Settings sheets reuse `SettingsView` and its shared owner bindings; their presentation is not
-an event-editor session.
+`DesktopRootView` owns `showingSettings` and presents the existing SettingsView in a centered
+430 × 560-point overlay above the retained event hierarchy. The base hierarchy is disabled,
+excluded from hit testing and hidden from accessibility before the overlay is added, so the
+settings controls remain usable. A full-window dimmed backdrop consumes an outside click and
+dismisses settings without activating an event underneath. The pane's opaque background consumes
+empty-area clicks inside its bounds. The close button and Escape use the same dismissal path; settings entry
+and event mutations retain the existing editor guards. No second NSWindow, settings controller,
+global settings-menu command or native settings sheet is introduced. Diagnostic export still uses
+the existing native Save sheet attached to the desktop window and retains the settings host.
+`SettingsView` reuses one navigation button: the mini-panel keeps Back on the left, while the
+desktop supplies `showsCloseButton` and places an accessible `xmark` close button to the right of
+the heading. Only the desktop supplies the cancel-action keyboard shortcut. DesktopRootView applies
+the editor canvas and settings primary ink/accent at its presentation boundaries, keeping both desktop
+surfaces visually consistent without changing the shared views' original mini-panel palette.
+There is no second settings store or event-editor session.
 
 Views route event mutations through `Store`. `Store` coordinates domain state and asynchronous event persistence; `CountdownData` owns validation/mutations, and `CountdownRepository` owns serialized filesystem access.
 

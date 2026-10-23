@@ -64,6 +64,57 @@ func testDesktopPresentation() throws {
     precondition(DesktopEventViewMode.allCases == [.collection, .feed])
     precondition(DesktopEventViewMode.collection.title == "Коллекция")
     precondition(DesktopEventViewMode.feed.title == "Лента")
+    precondition(DesktopEventViewMode.collection.systemImage == "square.grid.2x2")
+    precondition(DesktopEventViewMode.feed.systemImage == "list.bullet")
+    testDesktopMonthGrouping()
+}
+
+private func testDesktopMonthGrouping() {
+    func date(year: Int, month: Int, day: Int) -> Day {
+        Day(DateComponents(calendar: Day.calendar, year: year, month: month, day: day).date!)
+    }
+    let today = date(year: 2026, month: 10, day: 23)
+    let first = Countdown(title: "Первое", date: today, emoji: "")
+    let equalDate = Countdown(title: "Второе", note: "Точное совпадение", date: today, emoji: "")
+    let lastOctober = Countdown(title: "В конце месяца", date: date(year: 2026, month: 10, day: 31), emoji: "")
+    let favorite = Countdown(title: "Избранное", date: date(year: 2026, month: 11, day: 1), emoji: "")
+    let december = Countdown(title: "Конец года", date: date(year: 2026, month: 12, day: 31), emoji: "")
+    let january = Countdown(title: "Новый год", date: date(year: 2027, month: 1, day: 1), emoji: "")
+    let nextOctober = Countdown(title: "Ещё один октябрь", date: date(year: 2027, month: 10, day: 23), emoji: "")
+    let expired = Countdown(title: "Прошлое", date: date(year: 2026, month: 9, day: 30), emoji: "")
+    let items = [january, first, nextOctober, expired, favorite, lastOctober, equalDate, december]
+    let collection = DesktopEventCollection(items: items, today: today, primaryID: favorite.id, query: "")
+    let sections = collection.monthSections
+    precondition(sections.map(\.title) == ["Октябрь 2026", "Декабрь 2026", "Январь 2027", "Октябрь 2027"])
+    precondition(sections.map(\.id) == [2026 * 12 + 10, 2026 * 12 + 12, 2027 * 12 + 1, 2027 * 12 + 10])
+    precondition(Set(sections.map(\.id)).count == sections.count)
+    precondition(sections.allSatisfy { !$0.items.isEmpty })
+    precondition(sections.flatMap(\.items) == collection.ordinary)
+    precondition(sections[0].items == [first, equalDate, lastOctober])
+    precondition(sections[1].items == [december] && sections[2].items == [january])
+    precondition(!sections.flatMap(\.items).contains { $0.id == favorite.id })
+    let unselected = DesktopEventCollection(items: items, today: today, primaryID: nil, query: "")
+    precondition(unselected.monthSections.map(\.title) == [
+        "Октябрь 2026", "Ноябрь 2026", "Декабрь 2026", "Январь 2027", "Октябрь 2027"
+    ])
+    precondition(unselected.monthSections[1].items == [favorite])
+    let searched = DesktopEventCollection(
+        items: items, today: today, primaryID: favorite.id, query: "точное СОВПАДЕНИЕ"
+    )
+    precondition(searched.monthSections.count == 1)
+    precondition(searched.monthSections[0].items == [equalDate])
+    precondition(searched.monthSections[0].id == sections[0].id)
+    precondition(searched.monthSections[0].title == sections[0].title)
+    let favoriteOnly = DesktopEventCollection(
+        items: items, today: today, primaryID: favorite.id, query: "Избранное"
+    )
+    precondition(favoriteOnly.favorite == favorite && favoriteOnly.monthSections.isEmpty)
+    precondition(DesktopEventCollection(
+        items: items, today: today, primaryID: favorite.id, query: "Нет результатов"
+    ).monthSections.isEmpty)
+    precondition(DesktopEventCollection(
+        items: [], today: today, primaryID: nil, query: ""
+    ).monthSections.isEmpty)
 }
 
 @MainActor

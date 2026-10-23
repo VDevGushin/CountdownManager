@@ -58,8 +58,9 @@ struct DesktopEventDetail: View {
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
-            .foregroundStyle(AuroraInstrument.accent(for: colorScheme,
-                                                     highContrast: accessibilitySettings.prefersHighContrast))
+            .foregroundStyle(presentation.isPrimary
+                ? AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+                : AuroraInstrument.ink(for: colorScheme))
             .accessibilityLabel(presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным")
             .help(presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным")
             .accessibilityIdentifier("desktop.favorite.\(item.id.uuidString)")
@@ -154,13 +155,13 @@ struct DesktopEventDetail: View {
                                                           highContrast: accessibilitySettings.prefersHighContrast)
                             : AuroraInstrument.accent(for: colorScheme,
                                                       highContrast: accessibilitySettings.prefersHighContrast))
-                    if item.showsWeather, let forecast = weather.forecast(for: item.date) {
-                        DesktopForecastLabel(forecast: forecast)
-                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    }
+                    DesktopForecastSlot(forecast: item.showsWeather ? weather.forecast(for: item.date) : nil,
+                                        role: "detail.\(item.id)")
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 }
             }
         }
+        .uiSmokeControl(id: "desktop.detail.identity")
     }
 
     private var note: some View {
@@ -176,6 +177,7 @@ struct DesktopEventDetail: View {
                 Button("Добавить заметку", action: edit).disabled(!canMutate)
             }
         }
+        .uiSmokeControl(id: "desktop.detail.note")
     }
 
     private var checklist: some View {
@@ -208,6 +210,14 @@ struct DesktopEventDetail: View {
                         .disabled(!canMutate)
                     }
                 }
+                .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15),
+                           value: item.subtasks.map(\.isCompleted))
+                .transaction { transaction in
+                    if accessibilitySettings.prefersReducedMotion {
+                        transaction.animation = nil
+                        transaction.disablesAnimations = true
+                    }
+                }
             }
             Button(item.subtasks.isEmpty ? "Добавить подзадачи…" : "Изменить список…", action: edit)
                 .accessibilityIdentifier("desktop.checklist.edit")
@@ -222,6 +232,7 @@ struct DesktopEventDetail: View {
                     .uiSmokeControl(id: "desktop.checklist.complete")
             }
         }
+        .uiSmokeControl(id: "desktop.detail.checklist")
     }
 
     private func sectionLabel(_ title: String) -> some View {

@@ -298,6 +298,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 appearanceSettings: appearanceSettings,
                 desktopWindow: { [weak self] in self?.desktopController?.window },
                 panelWindow: { [weak self] in self?.panel },
+                statusButton: { [weak self] in self?.statusItem.button },
                 showDesktop: { [weak self] in self?.showDesktopWindow() },
                 hideDesktop: { [weak self] in self?.desktopController?.hide() },
                 showPanel: { [weak self] in self?.showPanel() },
@@ -496,7 +497,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             let sharedUpdates: ApplicationUpdates = updates
             let sharedWeather: WeatherController = weather
             let rootView = DesktopRootView(
-                store: store, timer: timer, updates: updates, editorSession: editorSession,
+                store: store, updates: updates, editorSession: editorSession,
                 keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment,
                 appearanceSettings: appearanceSettings,

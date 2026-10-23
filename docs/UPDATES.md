@@ -1,5 +1,10 @@
 # Preparing signed updates
 
+The **1.15.0 / build 30 production candidate** adds the native desktop window alongside the
+menu-bar panel. Its signed ZIP/feed and public-key-only independent audit are prepared; final
+external input, diagnostic Save and genuine older-to-newer updater acceptance have all passed.
+Current candidate status: [releases/v1.15.0.md](releases/v1.15.0.md). This is not a Latest claim.
+
 Release **1.14.1 / build 29** is published as Latest with the existing production key and stable feed.
 Only the explicit favorite receives the large card. Calendar month strips fill the top edge;
 tilt remains, shadows are removed and outlines are inset. Publication status and final evidence
@@ -85,7 +90,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.14.1 COUNTDOWN_BUILD_NUMBER=29 \
+  COUNTDOWN_VERSION=1.15.0 COUNTDOWN_BUILD_NUMBER=30 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -95,12 +100,12 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.14.1/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.14.1 preparation procedure; preparation evidence is recorded
+The numbers above illustrate the 1.15.0 preparation procedure; preparation evidence is recorded
 in the release notes linked above. They do not establish publication. For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
 build. The preceding distributed 1.14.0 uses build 28; 1.14.1 uses build 29. Keep `local.countdownmanager.app`

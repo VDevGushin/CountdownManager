@@ -81,6 +81,8 @@ run_smoke() {
     local result_path="$test_home/ui-smoke-result.txt"
     local stdout_path="$test_home/ui-smoke.stdout"
     local stderr_path="$test_home/ui-smoke.stderr"
+    local timeout_seconds=45
+    if [[ "$launch_argument" == "--ui-smoke-desktop" ]]; then timeout_seconds=70; fi
     mkdir -p "$test_home"
     touch "$test_home/.countdown-ui-smoke-environment"
 
@@ -91,7 +93,7 @@ run_smoke() {
         echo "UISmoke requires a logged-in macOS Aqua session; gui/$(/usr/bin/id -u) is unavailable" >&2
         return 69
     fi
-    if ! run_with_timeout 45 /usr/bin/open -n -W \
+    if ! run_with_timeout "$timeout_seconds" /usr/bin/open -n -W \
         --env "COUNTDOWN_MANAGER_TEST_HOME=$test_home" \
         --stdout "$stdout_path" \
         --stderr "$stderr_path" \

@@ -1,0 +1,21 @@
+{
+  "version": "1.15.0",
+  "build": "30",
+  "external_cases": {
+    "latin_note_limit_focus_undo": "PASS",
+    "native_diagnostic_cancel_reopen_save": "PASS"
+  },
+  "input_source": "com.apple.keylayout.ABC",
+  "input_source_changed_by_user": true,
+  "clipboard_fallback_used": false,
+  "diagnostic_archive_sha256": "1bb01b2d0b1a98559560ab81aeb08744580dd7eebcb8ace04da4bb08beef8f39",
+  "archive_entries": [
+    "Countdown-Diagnostics/",
+    "Countdown-Diagnostics/countdown.log",
+    "Countdown-Diagnostics/summary.txt"
+  ],
+  "event_bytes_unchanged": true,
+  "independent_root_zip_review": true,
+  "test_result": "FinalPreflight.xcresult",
+  "note": "Synthetic fixtures only; archive itself retained privately, not published."
+}

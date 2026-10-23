@@ -11,11 +11,25 @@ package enum DesktopEventViewMode: String, CaseIterable {
         case .feed: "Лента"
         }
     }
+
+    package var systemImage: String {
+        switch self {
+        case .collection: "square.grid.2x2"
+        case .feed: "list.bullet"
+        }
+    }
+}
+
+package struct DesktopEventMonthSection: Equatable, Identifiable {
+    package let id: Int
+    package let title: String
+    package let items: [Countdown]
 }
 
 package struct DesktopEventCollection: Equatable {
     package let favorite: Countdown?
     package let ordinary: [Countdown]
+    package let monthSections: [DesktopEventMonthSection]
 
     package var events: [Countdown] {
         (favorite.map { [$0] } ?? []) + ordinary
@@ -34,6 +48,25 @@ package struct DesktopEventCollection: Equatable {
         }.map(\.element)
         favorite = matching.first { $0.id == primaryID }
         ordinary = matching.filter { $0.id != primaryID }
+        monthSections = Self.groupedByMonth(ordinary)
+    }
+
+    private static func groupedByMonth(_ items: [Countdown]) -> [DesktopEventMonthSection] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.calendar = Day.calendar
+        formatter.timeZone = Day.calendar.timeZone
+        formatter.dateFormat = "LLLL yyyy"
+        return Dictionary(grouping: items) { $0.date.year * 12 + $0.date.month }
+            .sorted { $0.key < $1.key }
+            .map { entry in
+                let label = formatter.string(from: entry.value[0].date.date())
+                return DesktopEventMonthSection(
+                    id: entry.key,
+                    title: label.prefix(1).uppercased() + label.dropFirst(),
+                    items: entry.value
+                )
+            }
     }
 }
 
