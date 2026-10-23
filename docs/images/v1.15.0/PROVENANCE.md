@@ -1,6 +1,6 @@
-# Countdown Manager 1.15.0 / build 30 — candidate evidence
+# Countdown Manager 1.15.0 / build 30 — release evidence
 
-Status: signed production candidate; final external and actual update acceptance passed, publication pending.
+Status: published as Latest; signed production artifacts and anonymous public downloads verified.
 
 The 64 synthetic native PNGs and exact manifest come from
 `/private/tmp/countdown-1.15.0-rc/native-desktop/Captures`, using the actual production-configured
@@ -24,3 +24,7 @@ preference. The older shell's auto-hide was suppressed by a supported test flag;
 launched normally with embedded isolation. `preflight-input-diagnostics.json` records the final
 ABC Latin-input and genuine native diagnostic Save PASS 2/2. Detailed limits belong in
 `docs/releases/v1.15.0.md`.
+
+`publication.json` records the release/tag commit, public asset digests and anonymous ZIP,
+version-feed and stable-feed downloads. All public bytes match the locally signed and independently
+audited artifacts. Screenshots therefore describe the exact published package, not a later rebuild.

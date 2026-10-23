@@ -1,0 +1,33 @@
+{
+  "verified_at": "2026-10-23T22:40:09.233645+00:00",
+  "tag": "v1.15.0",
+  "version": "1.15.0",
+  "build": "30",
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.15.0",
+  "release_id": 422369104,
+  "latest": true,
+  "draft": false,
+  "prerelease": false,
+  "anonymous_downloads_http": 200,
+  "artifact_sha256": {
+    "archive": "4fe119716e848ba154986a50e4d49d7bb3fe6856a9436f014cd62d30227c95a1",
+    "version-feed": "ec8f7f265bfcf830f16a10f432c32dd3d2011621bcf5fc241acfd4fc8b116398",
+    "latest-feed": "ec8f7f265bfcf830f16a10f432c32dd3d2011621bcf5fc241acfd4fc8b116398"
+  },
+  "assets": [
+    {
+      "name": "appcast.xml",
+      "size": 1299,
+      "digest": "sha256:ec8f7f265bfcf830f16a10f432c32dd3d2011621bcf5fc241acfd4fc8b116398",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/appcast.xml"
+    },
+    {
+      "name": "CountdownManager-1.15.0-30.zip",
+      "size": 5400524,
+      "digest": "sha256:4fe119716e848ba154986a50e4d49d7bb3fe6856a9436f014cd62d30227c95a1",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/CountdownManager-1.15.0-30.zip"
+    }
+  ],
+  "signed_bytes_equal_locally_verified_assets": true,
+  "tag_commit": "c5d2ee1672ad1963828a5317aa504785c3fc5c4c"
+}
