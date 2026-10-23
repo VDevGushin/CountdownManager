@@ -1,0 +1,135 @@
+{
+  "applicationBuild" : "29",
+  "applicationVersion" : "1.14.1",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-collection-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-collection-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-feed-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-feed-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-mixed-checklist-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-mixed-checklist-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-linked-panel.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-unfavorited-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-unfavorited-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-weather-off.png",
+      "height" : 1656,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-timer-running.png",
+      "height" : 1656,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-timer-finished.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-checklist-before-write.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-checklist-write-held.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    }
+  ],
+  "executableSHA256" : "45dbefacd9435f8fde4b851b8449f7aeae98ed08cfca78f56cde6f1bb0812cd8",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

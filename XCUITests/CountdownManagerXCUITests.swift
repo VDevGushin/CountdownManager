@@ -32,7 +32,25 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     override func tearDownWithError() throws {
+        if testRun?.hasSucceeded == false, let app {
+            let snapshot = XCTAttachment(screenshot: app.screenshot())
+            snapshot.name = "Failed user scenario"
+            snapshot.lifetime = .keepAlways
+            add(snapshot)
+        }
         app?.terminate()
+        if testRun?.hasSucceeded == false, let testHome {
+            let logURL = testHome.appendingPathComponent("Application Support/CountdownManager/Logs/countdown.log")
+            if let log = try? String(contentsOf: logURL, encoding: .utf8) {
+                let lifecycle = log.split(separator: "\n").filter {
+                    $0.contains("shell.lifecycle") || $0.contains("desktop.")
+                }.joined(separator: "\n")
+                let trace = XCTAttachment(string: lifecycle)
+                trace.name = "Failed scenario lifecycle"
+                trace.lifetime = .keepAlways
+                add(trace)
+            }
+        }
         if let defaultsSuiteName {
             UserDefaults().removePersistentDomain(forName: defaultsSuiteName)
         }
@@ -45,29 +63,42 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     func testNewNoteHardLimitAndNativeFocus() throws {
+        try checkNewNoteLimit(titleText: "New limit")
+    }
+
+    func testCyrillicNewNoteHardLimitAndNativeFocus() throws {
+        try checkNewNoteLimit(titleText: "Проверка лимита", noteTokens: ["а", "б", "в"],
+                              titleSuffix: " заголовок", undoKey: "я")
+    }
+
+    private func checkNewNoteLimit(titleText: String, noteTokens: [String] = ["a", "b", "c"],
+                                   titleSuffix: String = " title", undoKey: String = "z") throws {
         app.launch()
         let add = app.buttons["event.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 3))
         add.click()
         let title = app.textFields["editor.title"]
         XCTAssertTrue(title.waitForExistence(timeout: 3))
-        replace(title, with: "New limit")
+        XCTAssertEqual(title.value as? String, "")
+        title.typeText(titleText)
+        XCTAssertEqual(title.value as? String, titleText)
         let note = app.textViews["editor.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 3))
         note.click()
-        note.typeText(String(repeating: "a", count: 149))
+        let initialNote = String(repeating: noteTokens[0], count: 149)
+        note.typeText(initialNote)
         XCTAssertEqual((note.value as? String)?.count, 149)
-        note.typeText("b")
+        note.typeText(noteTokens[1])
         XCTAssertEqual((note.value as? String)?.count, 150)
-        note.typeText("c")
-        XCTAssertEqual(note.value as? String, String(repeating: "a", count: 149) + "b")
+        note.typeText(noteTokens[2])
+        XCTAssertEqual(note.value as? String, initialNote + noteTokens[1])
         title.click()
-        title.typeText(" title")
-        XCTAssertEqual(title.value as? String, "New limit title")
+        title.typeText(titleSuffix)
+        XCTAssertEqual(title.value as? String, titleText + titleSuffix)
         note.click()
         note.typeKey(.delete, modifierFlags: [])
         XCTAssertEqual((note.value as? String)?.count, 149)
-        note.typeKey("z", modifierFlags: .command)
+        note.typeKey(undoKey, modifierFlags: .command)
         XCTAssertEqual((note.value as? String)?.count, 150)
         app.buttons["editor.cancel"].click()
         XCTAssertEqual(try persistedItems().count, 1)
@@ -147,7 +178,10 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(inactivePageOptionIsAbsent)
         secondPageDot.click()
         XCTAssertTrue(secondPageOption.waitForExistence(timeout: 3))
+        revealInEditor(secondPageOption, fullyInViewport: true)
+        XCTAssertTrue(secondPageOption.isEnabled)
         secondPageOption.click()
+        XCTAssertTrue(waitForLabel(app.buttons["editor.emoji.toggle"], containing: "👶"))
         XCTAssertTrue(waitForAbsence(secondPageOption))
         XCTAssertTrue(waitForAbsence(selectedPreset))
         XCTAssertTrue(waitForAbsence(app.buttons["editor.emoji.more"]))
@@ -182,7 +216,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(app.buttons["editor.emoji.toggle"].exists)
         XCTAssertTrue(app.checkBoxes["editor.primary"].isEnabled)
         app.buttons["editor.save"].click()
-        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAbsence(add))
         let item = try XCTUnwrap(try persistedItems().first)
         let savedID = try XCTUnwrap(item["id"] as? String)
         XCTAssertEqual(item["emoji"] as? String, "")
@@ -295,8 +329,10 @@ final class CountdownManagerXCUITests: XCTestCase {
         revealInEditor(secondPage)
         secondPage.click()
         XCTAssertTrue(option.waitForExistence(timeout: 3))
-        revealInEditor(option)
+        revealInEditor(option, fullyInViewport: true)
+        XCTAssertTrue(option.isEnabled)
         option.click()
+        XCTAssertTrue(waitForLabel(app.buttons["editor.emoji.toggle"], containing: "👶"))
         XCTAssertTrue(waitForAbsence(option))
         XCTAssertTrue(waitForAbsence(preset))
         XCTAssertTrue(waitForAbsence(more))
@@ -813,6 +849,54 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(try persistedItems().isEmpty)
     }
 
+    func testWeatherCityMenuSupportsNativeSelection() throws {
+        app.launch()
+        app.buttons["settings.open"].click()
+        let enabled = app.checkBoxes["settings.weather.enabled"]
+        XCTAssertTrue(enabled.waitForExistence(timeout: 3))
+        let picker = app.popUpButtons["settings.weather.location"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3))
+        XCTAssertFalse(picker.isEnabled)
+        enabled.click()
+        let available = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: picker)
+        XCTAssertEqual(XCTWaiter.wait(for: [available], timeout: 3), .completed)
+        picker.click()
+        let cities = ["Автоматически", "Москва", "Санкт-Петербург", "Казань", "Грозный", "Нижний Новгород",
+                      "Екатеринбург", "Новосибирск", "Самара", "Ростов-на-Дону", "Краснодар"]
+        for city in cities {
+            XCTAssertTrue(app.menuItems[city].waitForExistence(timeout: 3), "Native menu is missing \(city)")
+        }
+        app.menuItems["Москва"].click()
+        XCTAssertTrue(waitForValue(picker, equals: "Москва"))
+        enabled.click()
+        XCTAssertFalse(picker.isEnabled)
+        enabled.click()
+        XCTAssertTrue(waitForValue(picker, equals: "Москва"))
+    }
+
+    func testDesktopChecklistGroupsIncompleteBeforeCompleted() throws {
+        app.launch()
+        let original = try XCTUnwrap(try persistedItems().first?["subtasks"] as? [[String: Any]])
+        app.buttons["desktop.open"].click()
+        let unfinished = app.checkBoxes["desktop.subtask.toggle.\(activeSubtaskID)"]
+        let finished = app.checkBoxes["desktop.subtask.toggle.\(completedSubtaskID)"]
+        XCTAssertTrue(unfinished.waitForExistence(timeout: 3))
+        XCTAssertTrue(finished.waitForExistence(timeout: 3))
+        XCTAssertLessThan(unfinished.frame.minY, finished.frame.minY)
+        unfinished.click()
+        XCTAssertTrue(waitForSubtaskCompletion(activeSubtaskID, equals: true))
+        finished.click()
+        XCTAssertTrue(waitForSubtaskCompletion(completedSubtaskID, equals: false))
+        let regrouped = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            finished.frame.minY < unfinished.frame.minY
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [regrouped], timeout: 3), .completed)
+        let saved = try XCTUnwrap(try persistedItems().first?["subtasks"] as? [[String: Any]])
+        XCTAssertEqual(saved.compactMap { $0["id"] as? String }, original.compactMap { $0["id"] as? String })
+        XCTAssertEqual(saved.first?["isCompleted"] as? Bool, true)
+        XCTAssertEqual(saved.last?["isCompleted"] as? Bool, false)
+    }
+
     func testSettingsDiagnosticArchiveCancelAndSave() throws {
         let originalEvents = try Data(contentsOf: dataURL)
         let destination = testHome.appendingPathComponent("Countdown-Diagnostics.zip")
@@ -825,9 +909,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         export.click()
         let panel = app.sheets.firstMatch
         XCTAssertTrue(panel.waitForExistence(timeout: 3), "The native save sheet must be accessible")
-        let cancel = panel.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "Отменить", "Отмена"] as NSArray)).firstMatch
-        XCTAssertTrue(cancel.waitForExistence(timeout: 3))
-        cancel.click()
+        app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(panel))
         XCTAssertFalse(FileManager.default.fileExists(atPath: destination.path))
         XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
@@ -836,20 +918,21 @@ final class CountdownManagerXCUITests: XCTestCase {
 
         export.click()
         XCTAssertTrue(panel.waitForExistence(timeout: 3))
-        let filename = panel.textFields.matching(NSPredicate(format: "value == %@", "Countdown-Diagnostics.zip")).firstMatch
+        let filename = panel.textFields.matching(NSPredicate(
+            format: "value IN %@", ["Countdown-Diagnostics.zip", "Countdown-Diagnostics"] as NSArray
+        )).firstMatch
         XCTAssertTrue(filename.waitForExistence(timeout: 3))
         filename.click()
-        // Slash invokes the standard Go to Folder sheet without a keyboard-layout-specific letter shortcut.
-        filename.typeText("/")
+        app.typeKey("п", modifierFlags: [.command, .shift])
         let folder = app.sheets.comboBoxes.firstMatch
         XCTAssertTrue(folder.waitForExistence(timeout: 3), "The native Go to Folder field must be accessible")
-        replace(folder, with: testHome.path)
+        folder.typeKey(.delete, modifierFlags: [])
+        XCTAssertEqual(folder.value as? String, "")
+        folder.typeText(testHome.path)
+        XCTAssertEqual(folder.value as? String, testHome.path)
         folder.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(folder))
-        let save = panel.buttons.matching(NSPredicate(format: "label IN %@", ["Save", "Сохранить"] as NSArray)).firstMatch
-        XCTAssertTrue(save.waitForExistence(timeout: 3))
-        XCTAssertTrue(save.isEnabled)
-        save.click()
+        app.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(panel))
         let archiveWritten = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             FileManager.default.fileExists(atPath: destination.path)

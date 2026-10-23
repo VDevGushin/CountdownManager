@@ -1,0 +1,7 @@
+Building for production...
+[1 / 4]
+Build complete! (0,32 с)
+PASS core regression: rejected edits, stale subtask actions and full-checklist replacement
+PASS core regression: fresh-repository lifecycle, rejected revisions, filesystem retry and corrupt JSON preservation
+PASS automatic titles: legacy compatibility, strict metadata, canonical date boundaries, validation guards, expiry without rollover, revision snapshots and restart
+PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today creation/editing, midnight rejection and expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji

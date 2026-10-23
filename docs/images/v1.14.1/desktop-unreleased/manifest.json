@@ -1,0 +1,81 @@
+{
+  "applicationBuild" : "29",
+  "applicationVersion" : "1.14.1",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-collection-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-collection-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-feed-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-feed-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-linked-panel.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-unfavorited-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-unfavorited-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-weather-off.png",
+      "height" : 1656,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 2400
+    }
+  ],
+  "executableSHA256" : "e4df29d331de27ff5438295b5def1239015f7e7c4a0ed256a7d811b07773933e",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

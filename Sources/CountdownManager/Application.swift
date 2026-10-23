@@ -99,6 +99,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
     private var hostingController: NSHostingController<CountdownManagerRootView>!
+    private var desktopController: DesktopWindowController?
     private var store: Store!
     private var timer: CountdownTimer!
     private var updates: ApplicationUpdates!
@@ -107,12 +108,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var keepAwake: KeepAwakeController!
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
+    private var appearanceSettings: ApplicationAppearance!
+    private var appearanceSubscription: AnyCancellable?
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
     private var weatherSubscription: AnyCancellable?
     private var weatherEnvironmentSubscriptions = Set<AnyCancellable>()
     private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
     private var uiSmokeRuntime: UISmokeRuntime?
+    private var desktopSmokeRuntime: DesktopSmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
     private var accessibilityDisplayObserver: NSObjectProtocol?
     private var isPanelRequestedVisible = false
@@ -130,6 +134,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         DiagnosticLog.shared.record("app.launch version=\(version) build=\(build) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
+        appearanceSettings = ApplicationAppearance(defaults: defaults)
         keepAwake = KeepAwakeController(defaults: defaults)
         if UISmokeConfiguration.captureWasRequested {
             defaults.set(Date().addingTimeInterval(-1).timeIntervalSince1970,
@@ -163,14 +168,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                     self.panel.level = .popUpMenu
                 }
             },
-            returnToApplication: { [weak self] in self?.showPanel() }
+            returnToApplication: { [weak self] in self?.returnToActiveEditor() }
         ) { [weak self] in
             guard let self else { return "Приложение завершает работу." }
             if self.store.isExportingDiagnostics { return "Дождитесь сохранения диагностики." }
             let timerIsRunning: Bool
             if case .running = self.timer.phase { timerIsRunning = true } else { timerIsRunning = false }
             return updateRestartBlockReason(
-                editorIsPresented: self.editorSession.isPresented,
+                editorIsPresented: self.editorSession.hasActiveEditor,
                 persistenceIsBusy: self.store.hasPendingPersistence,
                 timerIsRunning: timerIsRunning
             )
@@ -194,8 +199,10 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 editorSession: editorSession,
                 keepAwake: keepAwake,
                 weather: weather,
+                showDesktop: { [weak self] in self?.showDesktopWindow() },
                 accessibilitySettings: accessibilitySettings,
-                visualEnvironment: visualEnvironment
+                visualEnvironment: visualEnvironment,
+                appearanceSettings: appearanceSettings
             )
         )
         panel = CountdownStatusPanel(
@@ -223,6 +230,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.cornerRadius = 12
         hostingController.view.layer?.masksToBounds = true
+        appearanceSubscription = appearanceSettings.$selection.combineLatest(visualEnvironment.$colorSchemeOverride)
+            .sink { [weak self] selection, captureOverride in
+                let scheme = captureOverride ?? selection.colorScheme
+                let appearance = scheme.flatMap { NSAppearance(named: $0 == .dark ? .darkAqua : .aqua) }
+                self?.panel.appearance = appearance
+                self?.desktopController?.window?.appearance = appearance
+            }
         recordShellLifecycle("launch-ready")
         activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
@@ -271,7 +285,26 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 self?.timerCompletionAlert.present()
             }
         updateTitle()
-        if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
+        if let uiSmokeConfiguration, UISmokeConfiguration.desktopWasRequested {
+            desktopSmokeRuntime = DesktopSmokeRuntime(
+                configuration: uiSmokeConfiguration,
+                store: store,
+                timer: timer,
+                editorSession: editorSession,
+                keepAwake: keepAwake,
+                weather: weather,
+                accessibilitySettings: accessibilitySettings,
+                visualEnvironment: visualEnvironment,
+                appearanceSettings: appearanceSettings,
+                desktopWindow: { [weak self] in self?.desktopController?.window },
+                panelWindow: { [weak self] in self?.panel },
+                showDesktop: { [weak self] in self?.showDesktopWindow() },
+                hideDesktop: { [weak self] in self?.desktopController?.hide() },
+                showPanel: { [weak self] in self?.showPanel() },
+                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) }
+            )
+            DispatchQueue.main.async { [weak self] in self?.desktopSmokeRuntime?.start() }
+        } else if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
             uiSmokeRuntime = UISmokeRuntime(
                 configuration: uiSmokeConfiguration,
                 store: store,
@@ -298,7 +331,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         } else if uiSmokeConfiguration != nil,
                   UISmokeConfiguration.visualPreviewWasRequested || UISmokeConfiguration.updateTestWasRequested {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
-                self?.showPanel()
+                if UISmokeConfiguration.visualPreviewWasRequested,
+                   UISmokeConfiguration.desktopPreviewWasRequested,
+                   !UISmokeConfiguration.updateTestWasRequested {
+                    self?.showDesktopWindow()
+                } else {
+                    self?.showPanel()
+                }
             }
         }
     }
@@ -436,8 +475,69 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         panel.level = .normal
     }
 
-    @objc private func hidePanelFromCommand() {
-        hidePanel(source: "command-w")
+    @objc private func closeKeySurface() {
+        guard let keyWindow = NSApp.keyWindow else { return }
+        if keyWindow === panel {
+            hidePanel(source: "command-w")
+        } else if editorSession.desktopIsPresented,
+                  keyWindow === desktopController?.window || keyWindow.sheetParent === desktopController?.window {
+            return
+        } else {
+            keyWindow.performClose(nil)
+        }
+    }
+
+    @objc private func showDesktopWindow() {
+        hidePanel(source: "open-desktop")
+        store.refresh()
+        weather.updateEvents(store.active)
+        if desktopController == nil {
+            let sharedTimer: CountdownTimer = timer
+            let sharedUpdates: ApplicationUpdates = updates
+            let sharedWeather: WeatherController = weather
+            let rootView = DesktopRootView(
+                store: store, timer: timer, updates: updates, editorSession: editorSession,
+                keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
+                visualEnvironment: visualEnvironment,
+                appearanceSettings: appearanceSettings,
+                showPanel: { [weak self] in self?.showPanel() },
+                switchToPanel: { [weak self] in self?.switchToPanel() },
+                diagnosticsContext: {
+                    makeDiagnosticExportContext(timer: sharedTimer, updates: sharedUpdates, weather: sharedWeather)
+                }
+            )
+            desktopController = DesktopWindowController(rootView: rootView, editorSession: editorSession)
+            desktopController?.window?.appearance = appearanceSettings.nativeAppearance(
+                overriding: visualEnvironment.colorSchemeOverride
+            )
+        }
+        desktopController?.show()
+    }
+
+    private func switchToPanel() {
+        guard desktopController?.hideForPanel() == true else { return }
+        showPanel()
+    }
+
+    private func returnToActiveEditor() {
+        if editorSession.desktopIsPresented {
+            showDesktopWindow()
+        } else if editorSession.isPresented {
+            showPanel()
+        } else if desktopController?.window?.isVisible == true {
+            showDesktopWindow()
+        } else {
+            showPanel()
+        }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        showDesktopWindow()
+        return false
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
@@ -447,15 +547,27 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     func windowDidChangeOcclusionState(_ notification: Notification) {
         recordShellLifecycle("panel-occlusion-did-change")
-        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested,
+        guard !UISmokeConfiguration.suppressesShellLifecycleCallbacks,
               isPanelRequestedVisible,
               !panel.occlusionState.contains(.visible) else { return }
         hidePanel(source: "panel-occluded")
     }
 
+    func windowDidResignKey(_ notification: Notification) {
+        guard !UISmokeConfiguration.suppressesShellLifecycleCallbacks,
+              let window = notification.object as? NSWindow, window === panel else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.isPanelRequestedVisible, !self.panel.isKeyWindow,
+                  let desktopWindow = self.desktopController?.window,
+                  let keyWindow = NSApp.keyWindow,
+                  keyWindow === desktopWindow || keyWindow.sheetParent === desktopWindow else { return }
+            self.hidePanel(source: "desktop-focus")
+        }
+    }
+
     func applicationDidResignActive(_ notification: Notification) {
         recordShellLifecycle("application-did-resign-active")
-        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
+        guard !UISmokeConfiguration.suppressesShellLifecycleCallbacks else { return }
         hidePanel(source: "application-deactivation")
     }
 
@@ -467,7 +579,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     private func activeSpaceDidChange() {
         recordShellLifecycle("active-space-did-change")
-        guard !UISmokeConfiguration.isolatedTestEnvironmentWasRequested else { return }
+        guard !UISmokeConfiguration.suppressesShellLifecycleCallbacks else { return }
         hidePanel(source: "active-space-change")
     }
 
@@ -522,9 +634,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         editItem.submenu = editMenu
         menu.addItem(editItem)
         let windowMenu = NSMenu(title: "Окно")
+        let openItem = windowMenu.addItem(
+            withTitle: "Открыть основное окно", action: #selector(showDesktopWindow), keyEquivalent: "0"
+        )
+        openItem.target = self
+        windowMenu.addItem(.separator())
         let closeItem = NSMenuItem(
             title: "Закрыть",
-            action: #selector(hidePanelFromCommand),
+            action: #selector(closeKeySurface),
             keyEquivalent: "w"
         )
         closeItem.target = self
@@ -533,6 +650,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         windowItem.submenu = windowMenu
         menu.addItem(windowItem)
         NSApp.mainMenu = menu
+        NSApp.windowsMenu = windowMenu
     }
 
     func applicationWillTerminate(_ notification: Notification) {

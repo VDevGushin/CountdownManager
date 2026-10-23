@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document maps the current Countdown Manager implementation, including the anchored status-item panel shell and the single countdown timer.
+This document maps the current Countdown Manager implementation, including the anchored status-item panel, retained desktop window and single countdown timer.
 
 It describes where responsibilities live and how the major runtime pieces connect.
 
@@ -89,6 +89,13 @@ Key files:
 - `DiagnosticArchive.swift`
 - `UISmokeControls.swift`
 - `UISmokeRuntime.swift`
+- `Desktop/DesktopWindowController.swift`
+- `Desktop/DesktopDividerGrip.swift`
+- `Desktop/DesktopViews.swift`
+- `Desktop/DesktopEventViews.swift`
+- `Desktop/DesktopPresentation.swift`
+- `Desktop/DesktopEventDetail.swift`
+- `DesktopSmokeRuntime.swift`
 
 `CountdownRowPresentation` derives card-relative labels from the existing civil-day distance:
 Today/Tomorrow/Through N days with Russian pluralization. Views use this same label in featured
@@ -105,7 +112,7 @@ Owns the executable entry point.
 
 ## Shell implementation status
 
-The implementation uses one borderless `NSPanel` anchored to the status item and one long-lived `NSHostingController`, both owned for the application session. See [the accepted shell decision](decisions/status-item-panel-shell.md).
+The panel implementation uses one borderless `NSPanel` anchored to the status item and one long-lived `NSHostingController`, both owned for the application session. See [the accepted shell decision](decisions/status-item-panel-shell.md). An independently retained native desktop window is created lazily on explicit opening; it reuses the same application-state owners rather than constructing another runtime.
 
 ### Ownership
 
@@ -116,6 +123,13 @@ NSApplication / AppDelegate
 ├── CountdownTimer → UserDefaults
 ├── KeepAwakeController → one process-owned IOPM assertion
 ├── WeatherController → location/provider requests and bounded memory cache
+├── EventEditorSession → optional panel/desktop editor owner
+├── ApplicationAppearance → shared persisted system/light/dark choice
+├── DesktopWindowController (lazy, retained)
+│   └── NSWindow / NSHostingController<DesktopRootView>
+│       ├── window-local mode/search/filter/selection
+│       ├── native split browser + event details
+│       └── reused EditorView / SettingsView sheets
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -140,6 +154,69 @@ above the retained `ManagerView`; `ManagerView` keeps the list mounted and prese
 internal event editor. Hidden screen content is disabled, excluded from hit testing and hidden
 from accessibility. Settings navigation is separate from `EventEditorSession` and cannot become
 an updater editor blocker.
+
+### Desktop surface
+
+`DesktopWindowController` owns one titled, resizable `NSWindow` and its hosting hierarchy.
+The first explicit show promotes accessory startup to regular application activation policy;
+subsequent shows retain that policy and use normal key/front presentation. Closing does not
+demote the app, terminate the application or release
+the retained controller/root. Application deactivation and the panel's Space-hide hooks do not
+close this ordinary window. `AppDelegate` routes the panel entry, application menu and Dock reopen
+to the same controller, and passes the existing Store, timer, updater, weather, keep-awake,
+accessibility and visual-environment owners into its root.
+
+The desktop footer's compact-mode callback is distinct from status-item panel toggling.
+Explicit switching hides the retained window before opening the panel, with sheet/editor guards;
+ordinary status-item activation leaves the desktop visible. Both routes reuse the same panel.
+Regular policy persists after the first desktop opening until Quit, including compact-mode
+handoff and panel dismissal. There is no pending downgrade flag or policy-changing hide path.
+Desktop collection behavior remains the default, unlike the explicitly current-Space mini-panel;
+no Mission Control preferences are changed. See [the activation and Spaces decision](decisions/desktop-activation-and-spaces.md).
+
+`DesktopRootView` owns only transient window browsing and sheet state. Its in-window command bar
+uses native SwiftUI controls directly, without an independent toolbar owner or copied state.
+`DesktopEventCollection`
+derives the active filtered stable-date ordering and favorite/ordinary partition from Store data;
+it does not persist or mutate another copy. `desktopSelection` reconciles missing visible IDs.
+`desktopMinimumPaneWidth` supplies the one-third/320-point constraint to the native `HSplitView`.
+Its direct pane containers retain structural identity; per-event identity is scoped inside the
+right container, so changing or clearing selection resets detail-local state without replacing
+the native pane or its user-adjusted divider position.
+`DesktopDividerGrip` adds a transparent AppKit pointer overlay with a 12-point hit band around
+the live divider. It owns only cursor rects and transient drag offset, not a second divider ratio.
+Outside the band its hit test returns nil; dragging calls the existing `NSSplitView.setPosition`
+so the native delegate still constrains the panes. The overlay never replaces SwiftUI's split
+delegate or changes divider drawing. A weak native-view reference and scoped resize observation
+are cleared when the bridge leaves the window; failure to find the split leaves native input intact.
+The browser contains selection buttons and summaries; detail actions route favorite, checklist
+and confirmed event deletion through the same Store, with pending-persistence and active-editor guards.
+`DesktopCalendarLeaf` composes the existing native calendar tile without a desktop emoji overlay.
+The footer reuses `CountdownTimerStrip` with its desktop layout; the default panel layout is
+unchanged. Desktop timer controls, including preset buttons, use a separate smoke-ID prefix so
+the two retained surfaces cannot overwrite each other's test actions. There is no second timer
+or forecast scheduler. `DesktopEventDateLabel` owns the shared desktop emoji/date composition
+for collection, feed, favorite and details; the common calendar leaf has no desktop emoji overlay.
+
+`DesktopRootView` serializes accepted checklist/favorite/deletion actions and editor intents in a
+window-local FIFO, routing mutations through the unchanged Store. Its own writes do not globally
+disable sibling controls. An accepted editor intent reserves `EventEditorSession` immediately,
+so close/compact and cross-surface editing are blocked before the sheet opens. Earlier writes
+drain first, then the editor reads the latest active identity. External owners or pending writes
+pause the queue; ownership changes and deferred Store data publications resume it. Failure clears
+remaining intents, reports them and releases an unpresented desktop reservation. There is no
+second persistence owner or change to panel mutation rules.
+
+`EventEditorSession` is an enum-backed optional surface owner, not a second draft model.
+Panel-compatible `isPresented` reflects only the panel owner; `desktopIsPresented` reflects only
+the desktop owner, and `hasActiveEditor` is the updater safety input. Admission cannot replace
+another owner and cleanup can release only its own surface. `EditorView` retains the actual
+draft in its hosting surface. Desktop Save/Cancel dismiss the sheet and release its owner;
+interactive dismissal and parent-window close are prevented while that draft is active.
+Panel hide/show retains the existing draft semantics. Both surfaces guard mutations while
+the other editor owns the session, preventing a stale form from overwriting concurrent changes.
+Settings sheets reuse `SettingsView` and its shared owner bindings; their presentation is not
+an event-editor session.
 
 Views route event mutations through `Store`. `Store` coordinates domain state and asynchronous event persistence; `CountdownData` owns validation/mutations, and `CountdownRepository` owns serialized filesystem access.
 
@@ -349,6 +426,14 @@ Subtask disclosure state is separate from `CountdownData`.
 `SubtaskDisclosurePersistence` stores per-event values in `UserDefaults` and `SubtaskDisclosureCache` supplies observable per-event state to the SwiftUI layer.
 
 The timer also uses `UserDefaults`, but its deadline is durable timer state rather than an event or checklist preference.
+
+`ApplicationAppearance` in `SettingsView.swift` owns the `appearance.selection` preference and
+publishes `system`, `light` or `dark`. AppDelegate creates one instance from the same standard or
+isolated defaults used for other local preferences and injects it into both interface roots.
+Both roots resolve SwiftUI color scheme through this owner; AppDelegate applies the matching
+native appearance to the panel and retained desktop window. System removes the explicit override.
+The isolated visual override takes priority without changing the stored choice. `NSApp.appearance`
+and system menu-bar styling remain untouched; no parallel appearance owner is introduced.
 
 Global weather enablement and the selected automatic/manual location are local preferences owned
 by `WeatherController`. They are independent of each event's persisted `showsWeather` flag.

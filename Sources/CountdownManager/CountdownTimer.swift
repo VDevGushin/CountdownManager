@@ -147,42 +147,66 @@ struct CountdownManagerRootView: View {
     let editorSession: EventEditorSession
     let keepAwake: KeepAwakeController
     let weather: WeatherController
+    var showDesktop: () -> Void = {}
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
+    @ObservedObject var appearanceSettings: ApplicationAppearance
     @Environment(\.colorScheme) private var systemColorScheme
 
     var body: some View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
             ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake,
-                        weather: weather, diagnosticsContext: makeDiagnosticsContext)
+                        weather: weather, diagnosticsContext: makeDiagnosticsContext, showDesktop: showDesktop)
         }
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())
         .environmentObject(accessibilitySettings)
-        .environment(\.colorScheme, visualEnvironment.colorSchemeOverride ?? systemColorScheme)
+        .environmentObject(appearanceSettings)
+        .environment(\.colorScheme,
+                     appearanceSettings.colorScheme(overriding: visualEnvironment.colorSchemeOverride) ?? systemColorScheme)
     }
 
     private func makeDiagnosticsContext() -> DiagnosticExportContext {
-        let phase: DiagnosticTimerPhase
-        switch timer.phase {
-        case .idle: phase = .idle
-        case .running: phase = .running
-        case .finished: phase = .finished
-        }
-        return DiagnosticExportContext(
-            timerPhase: phase, updaterAvailable: updates.isAvailable, updaterCanCheck: updates.canCheckForUpdates,
-            updaterInstalling: updates.isInstallingUpdate, updaterDeferred: updates.isInstallationDeferred,
-            updaterPresenting: updates.isPresentingUpdateUI, weatherSnapshot: weather.diagnosticSnapshotSummary()
-        )
+        makeDiagnosticExportContext(timer: timer, updates: updates, weather: weather)
     }
 }
 
-private struct CountdownTimerStrip: View {
+@MainActor
+func makeDiagnosticExportContext(
+    timer: CountdownTimer, updates: ApplicationUpdates, weather: WeatherController
+) -> DiagnosticExportContext {
+    let phase: DiagnosticTimerPhase
+    switch timer.phase {
+    case .idle: phase = .idle
+    case .running: phase = .running
+    case .finished: phase = .finished
+    }
+    return DiagnosticExportContext(
+        timerPhase: phase, updaterAvailable: updates.isAvailable, updaterCanCheck: updates.canCheckForUpdates,
+        updaterInstalling: updates.isInstallingUpdate, updaterDeferred: updates.isInstallationDeferred,
+        updaterPresenting: updates.isPresentingUpdateUI, weatherSnapshot: weather.diagnosticSnapshotSummary()
+    )
+}
+
+enum CountdownTimerStripLayout {
+    case panel
+    case desktop
+}
+
+struct CountdownTimerStrip: View {
     @ObservedObject var timer: CountdownTimer
+    let layout: CountdownTimerStripLayout
     @State private var selectedMinutes = 30
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
+
+    init(timer: CountdownTimer, layout: CountdownTimerStripLayout = .panel) {
+        self.timer = timer
+        self.layout = layout
+    }
+
+    private var controlPrefix: String { layout == .desktop ? "desktop.timer" : "timer" }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -199,9 +223,11 @@ private struct CountdownTimerStrip: View {
                         accessibilitySettings.prefersReducedMotion ? nil : .easeOut(duration: 0.1),
                         value: remainingSeconds
                     )
-                    .accessibilityIdentifier("timer.running")
-                Spacer()
+                    .accessibilityIdentifier(controlPrefix + ".running")
+                    .uiSmokeControl(id: controlPrefix + ".running", value: { countdownTimerLabel(remainingSeconds) })
+                if layout == .panel { Spacer() }
                 deleteButton
+                if layout == .desktop { Spacer() }
             case .finished:
                 Text("Время вышло")
                     .font(.system(size: 14, weight: .semibold))
@@ -211,17 +237,19 @@ private struct CountdownTimerStrip: View {
                             highContrast: accessibilitySettings.prefersHighContrast
                         )
                     )
-                    .accessibilityIdentifier("timer.finished")
-                Spacer()
+                    .accessibilityIdentifier(controlPrefix + ".finished")
+                    .uiSmokeControl(id: controlPrefix + ".finished")
+                if layout == .panel { Spacer() }
                 deleteButton
+                if layout == .desktop { Spacer() }
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 60)
         .background(AuroraTimerBackground(appearance: auroraAppearance))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("timer")
-        .uiSmokeControl(id: "timer")
+        .accessibilityIdentifier(controlPrefix)
+        .uiSmokeControl(id: controlPrefix)
     }
 
     private var auroraAppearance: AuroraTimerAppearance {
@@ -255,11 +283,12 @@ private struct CountdownTimerStrip: View {
         HStack(spacing: 8) {
             AuroraTimerPresetSelector(
                 presets: countdownTimerPresetMinutes,
-                selection: $selectedMinutes
+                selection: $selectedMinutes,
+                controlIDPrefix: controlPrefix + ".duration"
             )
             .frame(maxWidth: .infinity)
-            .accessibilityIdentifier("timer.duration")
-            .uiSmokeControl(id: "timer.duration", value: { String(selectedMinutes) })
+            .accessibilityIdentifier(controlPrefix + ".duration")
+            .uiSmokeControl(id: controlPrefix + ".duration", value: { String(selectedMinutes) })
 
             Button {
                 timer.start(minutes: selectedMinutes)
@@ -280,8 +309,8 @@ private struct CountdownTimerStrip: View {
             .buttonStyle(.plain)
             .help("Запустить")
             .accessibilityLabel("Запустить таймер")
-            .accessibilityIdentifier("timer.start")
-            .uiSmokeControl(id: "timer.start", action: { timer.start(minutes: selectedMinutes) })
+            .accessibilityIdentifier(controlPrefix + ".start")
+            .uiSmokeControl(id: controlPrefix + ".start", action: { timer.start(minutes: selectedMinutes) })
         }
     }
 
@@ -298,6 +327,7 @@ private struct CountdownTimerStrip: View {
         .buttonStyle(.plain)
         .help("Удалить таймер")
         .accessibilityLabel("Удалить таймер")
-        .accessibilityIdentifier("timer.delete")
+        .accessibilityIdentifier(controlPrefix + ".delete")
+        .uiSmokeControl(id: controlPrefix + ".delete", action: { timer.delete() })
     }
 }

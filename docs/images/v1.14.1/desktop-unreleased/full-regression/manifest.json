@@ -1,0 +1,99 @@
+{
+  "applicationBuild" : "29",
+  "applicationVersion" : "1.14.1",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-collection-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-collection-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-feed-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-feed-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-mixed-checklist-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-mixed-checklist-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-linked-panel.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-unfavorited-dark.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-unfavorited-light.png",
+      "height" : 1336,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-weather-off.png",
+      "height" : 1656,
+      "highContrast" : false,
+      "scale" : 2,
+      "width" : 2400
+    }
+  ],
+  "executableSHA256" : "c075d9f0b50ab280b9951e4b0317455682107c5604e207765e19da1fbccdf0a8",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

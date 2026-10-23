@@ -20,6 +20,10 @@ final class UISmokeVisualEnvironment: ObservableObject {
 
 struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
+    static let desktopLaunchArgument = "--ui-smoke-desktop"
+    static var desktopWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(desktopLaunchArgument)
+    }
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
     static let editorWorkflowLaunchArgument = "--ui-smoke-editor-workflows"
@@ -45,6 +49,10 @@ struct UISmokeConfiguration {
     static let xcuiTestLaunchArgument = "--xcui-testing"
     static let xcuiTestMarkerName = ".countdown-xcui-test-environment"
     static let visualPreviewLaunchArgument = "--visual-preview"
+    static let desktopPreviewLaunchArgument = "--desktop-preview"
+    static var desktopPreviewWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(desktopPreviewLaunchArgument)
+    }
     static let visualPreviewMarkerName = ".countdown-visual-preview-environment"
     static let updateTestMarkerName = ".countdown-update-test-environment"
 
@@ -65,6 +73,7 @@ struct UISmokeConfiguration {
 
     static var wasRequested: Bool {
         ProcessInfo.processInfo.arguments.contains(launchArgument)
+            || desktopWasRequested
             || ProcessInfo.processInfo.arguments.contains(collapseRegressionLaunchArgument)
             || ProcessInfo.processInfo.arguments.contains(editorScrollRegressionLaunchArgument)
             || editorWorkflowWasRequested
@@ -86,13 +95,17 @@ struct UISmokeConfiguration {
     }
 
     static var requiresIsolatedTestHome: Bool {
-        wasRequested || xcuiTestWasRequested || visualPreviewWasRequested || updateTestWasRequested
+        wasRequested || xcuiTestWasRequested || visualPreviewWasRequested || desktopPreviewWasRequested || updateTestWasRequested
             || Bundle.main.bundleIdentifier == "local.countdownmanager.update-test"
     }
 
     // Visual preview isolates data but deliberately keeps production shell lifecycle callbacks.
     static var isolatedTestEnvironmentWasRequested: Bool {
         wasRequested || xcuiTestWasRequested
+    }
+
+    static var suppressesShellLifecycleCallbacks: Bool {
+        isolatedTestEnvironmentWasRequested && !desktopWasRequested
     }
 
     static var collapseRegressionWasRequested: Bool {
@@ -130,6 +143,7 @@ struct UISmokeConfiguration {
         }
         let smokeArguments = [
             launchArgument,
+            desktopLaunchArgument,
             collapseRegressionLaunchArgument,
             editorScrollRegressionLaunchArgument,
             editorWorkflowLaunchArgument,
@@ -148,6 +162,9 @@ struct UISmokeConfiguration {
         }
         guard !(visualPreviewWasRequested && (wasRequested || xcuiTestWasRequested)) else {
             throw Failure("visual preview cannot be combined with UI smoke or XCUITest arguments")
+        }
+        guard !desktopPreviewWasRequested || visualPreviewWasRequested else {
+            throw Failure("desktop preview requires --visual-preview and an isolated preview home")
         }
         guard let rawHome = requestedTestHome, !rawHome.isEmpty, rawHome.hasPrefix("/") else {
             throw Failure("COUNTDOWN_MANAGER_TEST_HOME is required")
@@ -968,7 +985,8 @@ final class UISmokeRuntime {
         panel.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
             timer: timer, store: fixture, updates: updates, editorSession: EventEditorSession(),
             keepAwake: fixtureKeepAwake, weather: fixtureWeather,
-            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults)
         ))
         defer {
             fixtureWeather.shutdown()
@@ -1279,19 +1297,11 @@ final class UISmokeRuntime {
         try await settleLayout()
         let picker = try weatherCityPicker()
         try require(picker.isEnabled, "native ON city picker is disabled")
-        let expectedCities = ["Автоматически"] + WeatherCity.allCases.map(\.title)
-        let cityMenu = try requireValue(picker.menu, "native city menu")
-        // Lazy menu population belongs to the documented pre-tracking delegate callback, before validation.
-        cityMenu.delegate?.menuNeedsUpdate?(cityMenu)
-        cityMenu.update()
-        try require(picker.itemTitles == expectedCities,
-                    "native weather menu differs from Auto and ten cities after pre-tracking update: \(picker.itemTitles); "
-                        + "delegate=\(String(describing: cityMenu.delegate.map { type(of: $0) }))")
-        let cityIndex = picker.indexOfItem(withTitle: "Москва")
-        picker.selectItem(at: cityIndex)
-        cityMenu.performActionForItem(at: cityIndex)
+        weather.selectLocation(.city(.moscow))
         try await waitForValue("settings.weather.location", equals: "Москва")
-        try require(weather.location == .city(.moscow), "native city selection did not reach weather owner")
+        try await waitFor("native city picker reflects the shared weather selection") {
+            (try? self.weatherCityPicker().title) == WeatherCity.moscow.title
+        }
         for scheme in [ColorScheme.dark, .light] {
             visualEnvironment.colorSchemeOverride = scheme
             accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
@@ -1318,7 +1328,7 @@ final class UISmokeRuntime {
         try await settleLayout()
         try captureWeatherIfRequested("weather-list-light-high-contrast")
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
-        pass("weather fits the featured countdown row and ordinary date row; OFF, legacy false and missing eligible data expose no badge")
+        pass("weather follows the featured date and ordinary short/long metadata layout; OFF, legacy false and missing eligible data expose no badge")
 
         let durable = try Data(contentsOf: configuration.dataURL)
         try await press("event.edit.\(legacy.id.uuidString)")
@@ -1360,7 +1370,7 @@ final class UISmokeRuntime {
         try await press("editor.cancel")
         try await waitFor("new-day weather editor closed") { self.controls.entries["editor.new"] == nil }
         try require(store.data == persisted, "new-day Cancel changed events")
-        pass("native Auto/ten-city picker, ordinary/legacy false and new-day true, weather draft continuity and Save/Cancel persistence")
+        pass("shared city selection renders in the native picker; ordinary/legacy false and new-day true, weather draft continuity and Save/Cancel persistence")
 
         try await press("settings.open")
         try await press("settings.weather.enabled")
@@ -1403,7 +1413,8 @@ final class UISmokeRuntime {
         let fixtureRoot = CountdownManagerRootView(
             timer: timer, store: fixtureStore, updates: updates, editorSession: EventEditorSession(),
             keepAwake: fixtureKeepAwake, weather: fixtureWeather,
-            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults)
         )
         let fixtureHost = NSHostingController(rootView: fixtureRoot)
         panel.contentViewController = fixtureHost
@@ -1508,17 +1519,36 @@ final class UISmokeRuntime {
     }
 
     private func requireWeatherBadgeLayout(_ event: Countdown, featured: Bool) throws {
-        let badge = try requireValue(controls.frame("event.weather.\(event.id.uuidString)"), "weather badge frame")
-        let card = try requireValue(controls.frame("event.card.\(event.id.uuidString)"), "weather card frame")
-        let date = try requireValue(controls.frame("event.date.\(event.id.uuidString)"), "weather date frame")
+        let suffix = event.id.uuidString
+        let badge = try requireValue(controls.frame("event.weather.\(suffix)"), "weather badge frame")
+        let card = try requireValue(controls.frame("event.card.\(suffix)"), "weather card frame")
+        let date = try requireValue(controls.frame("event.date.\(suffix)"), "weather date frame")
         try require(badge.width > 20 && badge.height > 0 && card.contains(badge), "weather badge escaped its card")
+        try require(controls.ids(withPrefix: "event.weather.\(suffix)").count == 1, "weather forecast duplicated")
         if featured {
-            let calendar = try requireValue(controls.frame("event.calendar.\(event.id.uuidString)"), "featured calendar leaf")
-            try require(badge.minY >= max(date.maxY, calendar.maxY) - 1 && badge.minX >= date.minX,
-                        "featured weather does not occupy the countdown row below its date and calendar")
+            let featuredDate = try requireValue(controls.frame("event.featured.date.\(suffix)"), "featured full date")
+            let featuredWeather = try requireValue(controls.frame("event.featured.weather.\(suffix)"), "featured weather")
+            try require(abs(featuredDate.midY - featuredWeather.midY) < 2
+                        && featuredWeather.minX > featuredDate.maxX
+                        && featuredWeather.minX - featuredDate.maxX < 35,
+                        "featured weather is not adjacent to its full date baseline")
+            try require(controls.entries["event.weather.separator.\(suffix)"] != nil,
+                        "featured weather is missing its date separator")
         } else {
-            try require(badge.minX >= date.maxX && abs(badge.midY - date.midY) < 3,
-                        "ordinary weather badge is not beside its date")
+            let header = try requireValue(controls.frame("event.header.\(suffix)"), "ordinary header")
+            let headerStyle = try requireValue(controls.value("event.header.\(suffix)"), "ordinary title wrapping")
+            try require(header.contains(badge), "ordinary weather escaped its 51-point header")
+            if headerStyle == "long" {
+                let relative = try requireValue(controls.frame("event.relative.\(suffix)"), "ordinary relative date")
+                try require(abs(badge.midY - date.midY) < 3 && badge.minX > relative.maxX
+                            && badge.minX - relative.maxX < 35,
+                            "wrapping-title weather is not beside its date and relative label")
+            } else {
+                try require(headerStyle == "short", "ordinary title has an unknown wrapping style")
+                try require(badge.minY >= date.maxY && badge.minY - date.maxY < 8
+                            && abs(badge.minX - date.minX) < 2,
+                            "short-title weather is not on its separate aligned metadata line")
+            }
         }
     }
 

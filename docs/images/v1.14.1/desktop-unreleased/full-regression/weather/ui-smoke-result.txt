@@ -1,0 +1,7 @@
+UISmoke
+✓ nonempty header and empty calendar observe Store midnight/expiry in a native 390-point panel
+✓ failed keep-awake restoration offers reachable retry and explicit saved-ON cancellation without native assertions
+✓ weather follows the featured date and ordinary short/long metadata layout; OFF, legacy false and missing eligible data expose no badge
+✓ shared city selection renders in the native picker; ordinary/legacy false and new-day true, weather draft continuity and Save/Cancel persistence
+✓ weather OFF clears all native badges while retaining saved per-event choices
+PASS: 5/5

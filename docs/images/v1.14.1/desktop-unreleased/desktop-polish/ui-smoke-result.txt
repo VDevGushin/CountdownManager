@@ -1,0 +1,13 @@
+DesktopSmoke
+✓ collection/feed retain one explicit favorite and use the same shared events/weather
+✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order
+✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card
+✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes
+✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity
+✓ reverse panel-to-desktop editor exclusion keeps the original draft owner
+✓ desktop settings disable forecast supply through the shared weather owner
+✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer
+✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles
+✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces
+✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups
+PASS: 11/11

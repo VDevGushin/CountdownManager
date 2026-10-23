@@ -1,0 +1,14 @@
+Building for production...
+[1 / 7]
+[2 / 4] CountdownManagerUI
+[3 / 5] CountdownManagerUI
+[9 / 10] CountdownManagerUI
+[11 / 12] UIChecks-product
+[13 / 15] UIChecks-product
+[14 / 15] UIChecks-product
+Build complete! (67,13 с)
+PASS regression workflows: edited event reload/identity, rejected and failed edit retry, durable checklist preference cleanup, failed midnight normalization retry
+PASS editor draft regression: repeated remove/add and neighbor edits, empty-row Save validation, discard/reopen and durable Save; Thursday/Friday boundary titles and manual override
+PASS automatic titles: draft entry routes, identical/Unicode/manual/reset edits, two-way failed Save retry, Cancel and durable reload, expired/missing identity rejection; 8 overlapping-write outcomes; 4 reproducible seeds × 192 actions
+Async workflow regression checks passed (3 workflows)
+PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor/save and midnight rejection, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; today/tomorrow day defaults, seven Russian weekdays, civil-date boundaries and title override

@@ -41,6 +41,16 @@ This is a risk lens, not a mandatory checklist. Skip dimensions that cannot affe
 
 Prefer observable outcomes over implementation details. Watch for stale state, duplicated effects, lost drafts, incorrect focus, inaccessible controls, animation that ignores Reduce Motion, and regressions in adjacent flows sharing the same state or component.
 
+## Observe transitions, not just settled states
+
+When a changed flow includes asynchronous saves, pending controls, or redraws, observe representative actions during the transition as well as after completion. Include rapid repeated input when relevant. Look for brief flashes, unrelated controls dimming or disabling together, blank frames, layout jumps, and lost focus. A passing end-state assertion or settled screenshot cannot establish that a transition is visually stable.
+
+For a reported visual transient, inspect the supplied recording around the action frame by frame when available. Identify the affected region and timestamps, and distinguish unintended flashes from expected press feedback or modal dimming. Reproduce with isolated data; do not mutate the user's production data to investigate.
+
+Add focused regression coverage for the actual intermediate failure state. Prefer controlled asynchronous boundaries over timing-dependent sleeps. Pair state assertions with bounded render observation or a specific manual transition check when the driver cannot faithfully capture the effect; internal flags alone do not prove the absence of flicker. Preserve persistence, editor ownership, and rapid-input semantics rather than masking the symptom by removing safety guards or silently dropping input.
+
+Apply this proportionately to the affected interaction, not as a requirement to record every task. State which transitions were actually observed and which remain unverified; do not report “no flicker” based only on final-state captures.
+
 ## Preserve valid evidence
 
 Do not rerun evidence that is still valid merely to make the report look complete. Reuse it when the relevant code, configuration, build provenance, environment, and failure mode have not changed.

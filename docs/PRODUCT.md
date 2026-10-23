@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Countdown Manager is a native macOS menu-bar application for tracking today's and future events by calendar day.
+Countdown Manager is a native macOS application for tracking today's and future events by calendar day, with a quick menu-bar panel and a larger desktop window.
 
 The product is intentionally small and quiet. The central concept is an event date and the number of calendar days remaining until that date, including `Сегодня` on the event's date. The application also provides one lightweight countdown timer for short time-based reminders.
 
@@ -15,7 +15,7 @@ Optional weather forecasts require a network connection.
 
 Accepted product contract for the menu-bar panel shell.
 
-The menu-bar entry opens a temporary panel anchored directly below the status item. The application remains a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening the panel.
+The menu-bar entry opens a temporary panel anchored directly below the status item. The application starts as a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening either interface. The first explicit desktop opening makes the application available in the Dock for the rest of that application session. Closing its window, switching to the mini-panel or dismissing the panel changes visibility, not the application's role; Quit ends the session.
 
 - Clicking the status item shows the panel from that status item on the current active macOS Space if hidden; clicking it while visible hides it. Every distinct click determines the next visible/hidden state even when clicks are rapid.
 - The panel has no arrow, title bar or traffic-light controls. It is not draggable and never behaves as a centered or independently positioned utility window.
@@ -24,7 +24,7 @@ The menu-bar entry opens a temporary panel anchored directly below the status it
 - Hide/show preserves list browsing position, the current internal screen, an open editor and its unsaved input during the application session.
 - Automatic hiding, the close command and the status-item toggle never mean Save, Cancel or Discard. Quit ends the editing session, while an active timer continues according to its persisted deadline.
 
-The single timer is shown as a compact strip above the event interface. There is one event editor inside the primary panel. Event creation and editing, including subtask text and emoji selection, use this editor. There are no separate quick-subtask editors, action/context popovers, application-owned emoji popovers or editor sheets. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the list.
+The single timer is shown as a compact strip above the event interface. Event creation and editing, including subtask text and emoji selection, use the internal editor in the panel. There are no separate quick-subtask editors, action/context popovers or application-owned emoji popovers. The desktop window presents the same editor form in a sheet, with only one editing session allowed across both surfaces. Explicit controls replace these secondary flows. Primary-event selection and subtask completion remain directly available in the panel list.
 
 The editor uses a compact 21-point Georgia heading and a scrolling form. Title, note and subtask text fields
 use one native bezel and the native focus ring, without a second custom border. The native note field is
@@ -90,16 +90,110 @@ without treating permitted legacy content as invalid. The counter/input limit co
 Save retains existing outer-whitespace normalization for changed/new notes. An unchanged stored
 note is preserved exactly. Internal newlines remain unchanged.
 
+## Desktop window
+
+The desktop window and mini-panel are two interfaces of one installed application, not separate
+programs. They share the same events, explicit favorite, checklist completion, persistence, timer,
+weather and settings owners. There is no second data file, synchronization service or account.
+Opening a window does not migrate or copy event data.
+
+`Открыть основное окно` opens or brings forward one retained, normally resizable macOS window.
+Opening it hides the temporary panel without ending any panel editor. Dock reopening brings the
+same desktop window forward. Unlike the mini-panel, the desktop window remains visible when
+another application becomes active. Normal close hides the retained window, leaves its Dock entry
+and keeps the menu-bar utility and timer running. Reopening preserves the selected view, search,
+selection and in-memory browsing state. Quit still ends the entire application.
+
+The desktop uses ordinary macOS Spaces behavior, respecting the user's Mission Control and
+Dock assignment settings. Activating an existing window can switch to the Space containing it;
+the app does not force that window onto the current Space or duplicate it across all Spaces.
+The mini-panel remains a transient utility shown on the current Space. See the
+[desktop activation decision](decisions/desktop-activation-and-spaces.md).
+
+The desktop footer action `В мини-панель` explicitly switches to compact mode: it hides the
+retained desktop window and opens the anchored panel without stopping the app or timer.
+It is unavailable while a desktop editor or settings sheet is open. Opening the panel from
+the status-item icon does not hide the desktop window; toggling it again hides only the panel.
+Returning through `Открыть основное окно` hides the panel and restores the retained window state.
+
+The in-window command bar uses native controls for `Коллекция` and `Лента`, search by event title
+or note, and event creation. There is no separate favorite-only filter: only one event can be
+favorite, and both views already show the same featured favorite card above ordinary events;
+the nearest event never substitutes for an absent favorite. Ordinary events follow stable date
+order, preserving existing order for equal dates. Empty search/filter results offer a return to
+all events, rather than implying that saved events were deleted. Selection follows a surviving
+visible identity; if it disappears through filtering, deletion or expiry, the next visible event
+is selected, or the details become empty if none remain. Loading and unavailable/recovering data
+remain distinct from a genuinely empty saved collection; a read failure must not claim that no
+events exist.
+
+The left side selects events and summarizes their date, remaining time and preparation progress.
+In the collection grid, relative labels (`Сегодня`, `Завтра`, `Через N дней`) sit at the bottom
+of ordinary cards with a consistent inset and align across each row, regardless of title wrapping
+or forecast presence. Exact dates and forecasts remain above them; feed and favorite composition
+are unchanged.
+Checklist checkboxes, favorite changes and editing belong to the right-hand event details,
+consistently in both collection and feed. A complete nonempty checklist has a green completion
+indicator; reopening a task restores the incomplete presentation. A zero-task event has no fake
+`0/0` completion state. The event's additional emoji appears in the secondary date line in
+collection, feed, favorite cards and details, rather than prefixed to its desktop title or attached
+to its calendar leaf. Without an emoji, this line has no reserved icon space. The mini-panel's
+existing emoji placement is unchanged. Notes and preparation remain readable in independently scrolling
+details. Weather appears only when the shared setting and applicable per-event choice allow a
+real eligible forecast; missing data does not produce invented temperatures or placeholders.
+
+The desktop details header has three equal icon-only controls: favorite, a simple pencil for
+direct editing, and trash for direct event deletion. There is no persistent editing caption or
+overflow menu; accessible names and hover help identify the actions. Trash opens an
+inline confirmation naming the target event and warning that deletion cannot be undone. Only
+explicit confirmation deletes it; Cancel or selecting another event does not change saved data.
+Successful deletion follows the existing visible-selection rules, including an empty collection
+after the final event. The shared editor and persistence guards also apply to this route; a failed
+save reports the error and retains the event. Mini-panel deletion still uses its existing editor.
+
+The desktop timer keeps its delete button immediately after the running or finished time label;
+remaining horizontal space follows that group. The mini-panel retains its existing timer layout.
+
+Desktop checklist and favorite actions are processed in acceptance order without briefly disabling
+unrelated controls for each local save. An editor requested during these writes opens only after
+earlier accepted actions finish, using the latest event. Existing loading, recovery and cross-surface
+editor restrictions still apply. A failed action reports the failure and any unperformed queued
+actions explicitly rather than silently losing accepted input. This does not change mini-panel
+interaction rules or the shared persistence format.
+
+A native draggable divider resizes the browser and details. Each side retains at least one third
+of usable split width and a 320-point content floor; the desktop window has a 960 × 640-point
+minimum content size. Long notes, lists and titles must not force either pane offscreen.
+The visible divider stays thin, while a 12-point-wide pointer target centered on it supports
+dragging from either side and shows the horizontal resize cursor. Outside that band, ordinary
+content interaction is unchanged.
+The user-adjusted divider position survives ordinary event actions, selection, collection/feed
+switching, searches and editor/settings transitions during the window session. Resizing may clamp
+the panes to their legal minimums, but ordinary content changes must not reset the split.
+
+The existing editor form is reused in a desktop sheet. Save and Cancel are the explicit ways to
+finish or abandon its draft. Closing the desktop window or using Command-W while its editor is
+active does not dismiss that draft; finish with Save or Cancel first. The panel and desktop cannot
+open editors simultaneously, and event mutations on the other surface are unavailable until the
+editor finishes. The other interface can still show current data and return to the active editor.
+Both editor owners block update installation/restart. Desktop settings reuse the existing settings
+form in a sheet and bind to the same preferences rather than maintaining a second copy.
+
+Command-N creates an event in the desktop window, and Command-comma opens its settings. Ordinary
+native controls retain keyboard focus and accessibility labels. Collection/feed selection and
+search are window-local browsing choices, not changes to saved event data.
+
 ## Settings
 
-Settings is an internal screen in the same retained 390 × 600 panel. The 60-point timer strip
+In the mini-panel, Settings is an internal screen in the same retained 390 × 600 panel. The 60-point timer strip
 remains above the 540-point manager area on both the list and settings screens; timer actions
 remain available. Settings navigation does not open another window, sheet or popover. The explicit diagnostic
 export action uses the native macOS save dialog.
 
-The list footer remains a single compact row: `Хранится на этом Mac`, a small settings gear
-immediately before `Выйти`, and `Выйти`. The gear has a 14-point visible symbol and a 22-point
-activation area. The header retains its existing calendar and `+` creation controls.
+The panel list footer remains a single compact row: `Хранится на этом Mac`, an `Открыть основное окно`
+button, a small settings gear immediately before `Выйти`, and `Выйти`. The gear has a 14-point
+visible symbol and a 22-point activation area. The header retains its existing calendar and `+`
+creation controls.
 
 Settings arranges existing controls into three groups:
 
@@ -123,6 +217,11 @@ Settings choices persist across launches and app updates in their existing owner
 in macOS, automatic update checks in Sparkle, and weather/keep-awake preferences in the unchanged
 `local.countdownmanager.app` defaults domain. Updating the bundle does not reset preferences or
 event data. No defaults migration or production-data reset is introduced.
+
+The shared `Тема` setting offers `Системная`, `Светлая` and `Тёмная`. System is the default and
+follows macOS; an explicit choice applies immediately to both desktop and mini-panel, including
+their settings/editor surfaces, and persists across launches in the same preferences domain.
+Changing application theme does not change macOS appearance or the system menu-bar background.
 
 Settings changes apply immediately without Save/Cancel. `Назад` returns to the same list and its
 browsing position. Hiding and showing the panel retains the current settings screen. Entry is

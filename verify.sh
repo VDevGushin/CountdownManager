@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state|editor) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture)
+    fast|ui|full|weather|empty-state|editor|desktop) ;;
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -257,6 +257,21 @@ run_capture_checks() {
 }
 
 case "$mode" in
+    desktop|desktop-capture)
+        build_ui_app
+        run_smoke desktop-smoke --ui-smoke-desktop
+        if [[ "$mode" == "desktop-capture" ]]; then
+            destination_dir="$capture_output_dir/countdown-desktop-captures-$(/bin/date +%Y%m%d-%H%M%S)-$$"
+            test -s "$verify_root/desktop-smoke/Captures/manifest.json"
+            mkdir "$destination_dir"
+            cp "$verify_root/desktop-smoke/Captures/"*.png "$destination_dir/"
+            cp "$verify_root/desktop-smoke/Captures/manifest.json" "$destination_dir/"
+            cp "$verify_root/desktop-smoke/ui-smoke-result.txt" "$destination_dir/"
+            ditto "$app_path" "$destination_dir/Countdown Manager.app"
+            echo "Desktop evidence: $destination_dir"
+        fi
+        echo "PASS: native desktop window and shared menu-panel workflows"
+        ;;
     fast) run_fast_checks ;;
     ui) run_ui_checks ;;
     editor)

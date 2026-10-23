@@ -1,5 +1,55 @@
+import AppKit
 import ServiceManagement
 import SwiftUI
+
+package enum ApplicationAppearanceSelection: String, CaseIterable {
+    case system, light, dark
+
+    package var title: String {
+        switch self {
+        case .system: "Системная"
+        case .light: "Светлая"
+        case .dark: "Тёмная"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
+}
+
+@MainActor
+package final class ApplicationAppearance: ObservableObject {
+    package static let preferenceKey = "appearance.selection"
+    @Published package private(set) var selection: ApplicationAppearanceSelection
+    private let defaults: UserDefaults
+
+    package init(defaults: UserDefaults) {
+        self.defaults = defaults
+        selection = defaults.string(forKey: Self.preferenceKey)
+            .flatMap(ApplicationAppearanceSelection.init(rawValue:)) ?? .system
+    }
+
+    package func setSelection(_ selection: ApplicationAppearanceSelection) {
+        guard self.selection != selection else { return }
+        defaults.set(selection.rawValue, forKey: Self.preferenceKey)
+        self.selection = selection
+    }
+
+    package func colorScheme(overriding captureOverride: ColorScheme?) -> ColorScheme? {
+        captureOverride ?? selection.colorScheme
+    }
+
+    package func nativeAppearance(overriding captureOverride: ColorScheme?) -> NSAppearance? {
+        colorScheme(overriding: captureOverride).flatMap { scheme in
+            NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+        }
+    }
+}
 
 struct SettingsView: View {
     @ObservedObject var store: Store
@@ -10,6 +60,7 @@ struct SettingsView: View {
     let back: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @EnvironmentObject private var appearanceSettings: ApplicationAppearance
 
     var body: some View {
         VStack(spacing: 0) {
@@ -33,6 +84,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     settingsGroup("Приложение") {
+                        appearanceChoice
                         loginChoice
                         Toggle("Автопроверка обновлений", isOn: Binding(
                             get: { updates.automaticallyChecksForUpdates },
@@ -102,6 +154,21 @@ struct SettingsView: View {
         .background(AuroraPanelCanvas())
         .accessibilityIdentifier("settings.screen")
         .uiSmokeControl(id: "settings.screen")
+    }
+
+    private var appearanceChoice: some View {
+        Picker("Тема", selection: Binding(
+            get: { appearanceSettings.selection }, set: { appearanceSettings.setSelection($0) }
+        )) {
+            ForEach(ApplicationAppearanceSelection.allCases, id: \.self) { selection in
+                Text(selection.title).tag(selection)
+                    .uiSmokeControl(id: "settings.appearance.\(selection.rawValue)",
+                                    action: { appearanceSettings.setSelection(selection) })
+            }
+        }
+        .pickerStyle(.menu)
+        .accessibilityIdentifier("settings.appearance")
+        .uiSmokeControl(id: "settings.appearance", value: { appearanceSettings.selection.rawValue })
     }
 
     private var loginChoice: some View {

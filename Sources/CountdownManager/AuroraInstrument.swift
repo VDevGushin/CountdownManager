@@ -189,6 +189,7 @@ struct AuroraTimerBackground: View {
 struct AuroraTimerPresetSelector: View {
     let presets: [Int]
     @Binding var selection: Int
+    var controlIDPrefix = "timer.duration"
 
     @Namespace private var selectionPill
     @FocusState private var focusedPreset: Int?
@@ -245,7 +246,7 @@ struct AuroraTimerPresetSelector: View {
         .accessibilityValue(isSelected ? "Выбрано" : "Не выбрано")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .uiSmokeControl(
-            id: "timer.duration.\(minutes)",
+            id: "\(controlIDPrefix).\(minutes)",
             action: { select(minutes) },
             value: { selection == minutes ? "selected" : "unselected" }
         )

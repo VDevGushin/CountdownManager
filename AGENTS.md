@@ -4,6 +4,7 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 
 ## Router
 
+- Native macOS interface design, UX review, or desktop window/panel mockups: read `.agents/skills/macos-desktop-design/SKILL.md`. A concept alone does not change the accepted product contract or authorize implementation.
 - Swift, SwiftUI, or AppKit implementation and non-trivial code review: read `.agents/skills/swift-code-quality/SKILL.md`.
 - Product acceptance for a feature or fix that changes Countdown Manager's user-visible behaviour: after automated checks are green, read `.agents/skills/product-qa/SKILL.md`.
 - Agent-harness, tooling and documentation-only changes: use their focused checks from `docs/VERIFICATION.md`. Do not apply `product-qa` or run application UI checks when product behaviour is unchanged. Explicit screenshot requests may use isolated capture mode to generate and inspect current images; do not rerun unrelated regression suites for them.

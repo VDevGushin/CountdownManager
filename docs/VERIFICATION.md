@@ -11,11 +11,13 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
 | CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
+| Desktop window Real UI Smoke | `./verify.sh desktop` | Focused isolated native desktop/panel shared-state, editor ownership, window retention and split-layout scenarios |
+| Desktop window captures | `./verify.sh desktop-capture <marked-output-directory>` | The same focused desktop scenarios, retained tested app, native PNGs and executable provenance manifest |
 | Editor workflows | `./verify.sh editor` | Focused native row deletion/subsequent input, field focus, Save/Cancel/reopen and weekday date changes; also included in `ui`/`full` |
 | Automatic-title captures | `./verify.sh automatic-title-capture <marked-output-directory>` | Editor workflows plus six native automatic/custom title screenshots in Light/Dark/Increase Contrast, manifest and retained tested app |
 | Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
-| Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, native city menu, badges and editor persistence |
+| Weather Real UI Smoke | `./verify.sh weather` | Focused isolated weather controls, shared city selection rendered natively, badges and editor persistence; actual popup input is separate XCUITest |
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
@@ -253,8 +255,12 @@ The same capture mode also checks Today/Tomorrow/Through 2 days in featured, sho
 cards across Light/Dark and weather ON/OFF, with twelve `relative-day-*` PNGs. Secondary relative
 labels must follow the exact date on the metadata baseline. UI checks cover Russian day forms,
 a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. The menu-bar formatter independently uses Today/Tomorrow, then numeric day forms; the underlying Core countdown formatter is unchanged. These text/layout checks do not require repeating external note entry.
-The focused XCUITest `testNewNoteHardLimitAndNativeFocus` exercises actual keyboard 149→150→151
-rejection, title/note handoff and Undo in a NEW note. Internal native calls do not prove physical IME keyboard delivery,
+The focused XCUITests `testNewNoteHardLimitAndNativeFocus` and its Cyrillic variant target actual
+keyboard 149→150→151 rejection, title/note handoff and Undo in a NEW note. In the 2026-10-23
+campaign the Cyrillic route passed under the current Russian input source, but the Latin route
+sent a close-command path during XCTest text synthesis and remains unaccepted. See the
+[campaign report](qa/desktop-regression-2026-10-23.md); neither a native API call nor the other
+language variant certifies the unpassed route. Internal native calls do not prove physical IME keyboard delivery,
 VoiceOver announcements, or external keyboard routing; record those separately when exercised.
 The 2026-10-20 host returned `hasMarkedText=false` and a zero-length markedRange at UTF16-end
 after accepted IME commit, both in NoteTextView and in an unmodified NSTextView baseline. This
@@ -275,6 +281,99 @@ Sixteen native PNGs cover Light/Dark × complete/partial/zero × expanded/collap
 theme, plus both contrast overrides. The mode retains its tested app, manifest and native result
 beside the PNGs for independent QA. This does not establish external keyboard or VoiceOver speech;
 no new input route or accessibility control is introduced by the decorative symbol.
+
+## Desktop window
+
+Run full SwiftLint and `./verify.sh fast` before the focused `./verify.sh desktop` runtime.
+UIChecks adds deterministic desktop collection/feed presentation coverage: active-day filtering,
+stable equal-date ordering, trimmed case-insensitive title/note search, favorite pinning without a favorite-only filter,
+no substitute favorite for nil/invalid/expired IDs, visible selection reconciliation and
+one-third/320-point pane constraints. Editor-session checks exercise exclusive panel/desktop
+admission, repeated requests, wrong-owner cleanup, compatibility setters and updater postponement,
+once-only resumption and termination rechecking with either editor owner.
+
+`./verify.sh desktop` uses `--ui-smoke-desktop` with the ordinary isolated home, event file,
+defaults and diagnostics boundaries. It seeds synthetic events, checklists and forecasts only.
+Unlike general smoke/XCUITest modes, focused desktop smoke enables production shell lifecycle
+callbacks. After native readiness, status-panel and compact-panel visibility must remain stable
+through 500 ms of event processing, catching delayed activation/deactivation rather than accepting
+a transient visible frame. This is a bounded temporal assertion, not a presentation delay.
+The focused native scenarios exercise the retained desktop SwiftUI hierarchy in collection/feed,
+shared checklist/favorite propagation between desktop and panel, no-favorite presentation,
+pane geometry at minimum and larger window sizes, desktop editor Save/Cancel and durable JSON,
+parent-window close veto with a draft, reverse panel-editor exclusion, settings/weather OFF,
+retained desktop close/reopen, the shared timer and removed selection. This route does not
+rerun the general panel regression suite; use existing focused panel checks when their shared
+implementation changes.
+
+Desktop-only refinement checks cover emoji/date metadata in browser/details, the absence of
+the redundant favorite-only control, adjacent running/finished timer deletion and the unchanged
+mini-panel timer spacer. A separate native desktop fixture holds a persistence write with a
+continuation: it observes enabled controls and stable frames during that write, captures before/held
+renders, accepts rapid checklist actions, then opens an editor from the latest saved snapshot.
+The fixture also exercises queued-editor close/compact vetoes, external editor pause/resume and
+failed-save rollback with explicit cancellation of queued follow-ups. These are bounded native
+observations of the reported transient, not proof about every frame or all external interactions.
+
+Direct-delete coverage checks request/Cancel without file changes, confirmation tied to the
+selected UUID, duplicate delivery, favorite cleanup, deletion after a held earlier write,
+failed-delete rollback and durable empty state after the last deletion. The detail header's
+edit/delete action bounds are checked in narrow and larger windows. The suite sets the actual
+native `NSSplitView` divider to nondefault legal positions and checks retention across selection,
+mutation, mode/search, editor/settings, deletion and empty-state transitions. Collection cards
+with different titles/forecast eligibility are checked for bottom-aligned relative labels.
+
+Appearance preference checks cover default/fallback values, persistence and isolated capture
+override priority. Native desktop smoke switches the shared owner through Dark/Light/System,
+observes both windows' native appearance and both settings hosts, and captures the settings sheet.
+This is owner-to-rendered-UI evidence, not external popup-menu selection. Ordinary full panel
+smoke remains the side-effect check for the shared settings change.
+
+Divider-grip checks route real root-view hit testing through center/±5-point positions at several
+heights and reject grip capture at ±8 points. They repeat after native divider/layout changes.
+This establishes the transparent overlay's hit band and content pass-through, not real pointer
+tracking. External acceptance must also drag from both sides of the line, far past both legal
+width limits, then confirm ordinary content clicks and retained position.
+
+The desktop route also exercises the explicit compact-mode footer and the real status-button
+action: only the footer hides the desktop; toggling the status button leaves it visible.
+Return through the panel footer preserves the hosting hierarchy, selected event, view and timer.
+The compact-mode control is rejected while an editor or settings sheet owns the desktop.
+Status-button `performClick` is an in-process action, not proof of physical menu-bar input.
+It additionally asserts unfinished-before-completed row geometry in both modes and after reopening
+a task, without changing stored UUID order. Search-filtered creation checks Cancel,
+query retention, durable Save, automatic search reset and shared panel visibility. Both modes
+reject the obsolete favorite-only filter while retaining explicit favorite selection and its card.
+Regression also requires accessory startup before desktop creation and regular activation after
+desktop show, close, compact-mode dismissal and reopen. It rejects forced current/all-Space
+desktop flags. These policy/flag assertions do not prove real Space switching or visual Dock
+presence; exercise those externally under the user's existing Mission Control settings.
+
+`./verify.sh desktop-capture <marked-output-directory>` runs those same scenarios and retains
+the tested application, PNGs and manifest only after PASS. The destination must already contain
+`.countdown-ui-capture-output`. Captures show native collection/feed and no-favorite states in
+Dark/Light, a linked mini-panel after its rendered checklist reaches 2/2, plus shared weather OFF. The manifest records the exercised bundle version/build,
+executable SHA-256, bitmap dimensions and synthetic-data scope. These are unreleased current-source
+desktop renders, not evidence that a desktop feature shipped in the matching released version.
+Inspect the actual images before using them in README and preserve historical release captures.
+
+For human acceptance, launch the retained test bundle with both `--visual-preview --desktop-preview`
+and its marked `COUNTDOWN_MANAGER_TEST_HOME`. This preserves isolated events, preferences and
+synthetic forecasts, while enabling normal production focus/lifecycle callbacks. `--desktop-preview`
+without `--visual-preview` is rejected before Store startup. Never launch a test bundle without
+its isolation environment and flags. Current-source evidence and external-keyboard observations
+are recorded in `docs/images/v1.14.1/desktop-unreleased/PROVENANCE.md`.
+
+Registered in-process controls, native field-editor calls and window APIs prove only the
+corresponding state/layout boundaries, not physical command-bar clicks, external Command-N/Command-comma/
+Command-W delivery, VoiceOver speech, perceived animation smoothness or status-item/Spaces behaviour.
+Initial pane geometry at two sizes does not prove divider dragging at its extrema. Manually
+exercise the divider in both directions, minimum window sizing, long titles/notes and independently
+scrolling preparation. Verify real Dock activation/reopen, window close without quitting, application
+switching with the desktop window left open and the panel still transient, and draft-preserving
+close commands on a provenance-identified isolated bundle. Weather fixtures are not a live forecast,
+provider-availability or native-location permission check. Record actual outcomes separately; the
+presence of this route is not a completed acceptance result.
 
 ## Real UI Smoke
 
@@ -651,6 +750,14 @@ integration or all city/date coverage.
 
 ## XCUITest
 
+The 2026-10-23 [regression campaign](qa/desktop-regression-2026-10-23.md) records 20 successful
+unique external scenarios out of 22 across separately identified runs, not one all-green suite.
+The Latin-input and complete native diagnostics-Save routes remain unaccepted; the source tests
+are retained rather than skipped. Popup city interaction is covered by
+`testWeatherCityMenuSupportsNativeSelection`: actual menu opening, all eleven choices, Moscow
+selection and OFF/ON retention. In-process weather smoke separately changes the shared owner
+and checks native rendering; it does not introspect an unopened dynamic SwiftUI menu.
+
 `./run-xcui-tests.sh` builds with temporary DerivedData and isolated test data.
 The Xcode target includes `StatusBarImages.swift` and its three menu PDF resources, matching
 the runtime loader used by the Swift package build.
@@ -701,7 +808,7 @@ Real UI Smoke and XCUITest require explicit isolated data, defaults, and log loc
 
 Runtime evidence applies only to the bundle that was built and exercised. `./verify.sh ui` builds from the current source tree; `./run-xcui-tests.sh` builds through the current Xcode project. An old `.app` is not evidence for current source unless its provenance is known.
 
-Optional-icon/favorite coverage includes a sixteenth capture, `16-nearest-today-without-icon`: the Today event has no additional emoji and no explicit favorite, with the nearest-event heading and unfilled star. Real UI Smoke exercises empty-icon Save, draft-only clear/Cancel, menu fallback, explicit favorite select/clear in the list and editor, and a fresh repository read preserving absent selection. External XCUITest adds ordinary button and keyboard cases for these flows; it retains the existing lifecycle limitations.
+Optional-icon/favorite coverage includes a sixteenth capture, `16-nearest-today-without-icon`: the historical filename is retained, but the Today event has no additional emoji or explicit favorite and uses an ordinary compact card, no featured heading and an unfilled star. Real UI Smoke exercises empty-icon Save, draft-only clear/Cancel, menu fallback, explicit favorite select/clear in the list and editor, and a fresh repository read preserving absent selection. External XCUITest adds ordinary button and keyboard cases for these flows; it retains the existing lifecycle limitations.
 
 Editor/emoji coverage retains captures 17–24: empty and selected emoji fields, compact presets and the
 full catalog in both Dark and Light appearances. Real UI

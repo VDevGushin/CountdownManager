@@ -4,8 +4,51 @@ import Foundation
 import Sparkle
 
 @MainActor
-final class EventEditorSession: ObservableObject {
-    @Published var isPresented = false
+package final class EventEditorSession: ObservableObject {
+    package enum Surface {
+        case panel
+        case desktop
+    }
+
+    @Published package private(set) var surface: Surface?
+
+    package init() {}
+
+    package var isPresented: Bool {
+        get { surface == .panel }
+        set {
+            if newValue {
+                _ = beginPanelEditor()
+            } else {
+                endPanelEditor()
+            }
+        }
+    }
+
+    package var hasActiveEditor: Bool { surface != nil }
+    package var desktopIsPresented: Bool { surface == .desktop }
+
+    package func beginPanelEditor() -> Bool {
+        guard surface == nil else { return false }
+        surface = .panel
+        return true
+    }
+
+    package func endPanelEditor() {
+        guard surface == .panel else { return }
+        surface = nil
+    }
+
+    package func beginDesktopEditor() -> Bool {
+        guard surface == nil else { return false }
+        surface = .desktop
+        return true
+    }
+
+    package func endDesktopEditor() {
+        guard surface == .desktop else { return }
+        surface = nil
+    }
 }
 
 package struct UpdateConfiguration {

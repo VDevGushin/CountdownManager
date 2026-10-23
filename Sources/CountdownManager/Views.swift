@@ -10,6 +10,7 @@ struct ManagerView: View {
     @ObservedObject var keepAwake: KeepAwakeController
     @ObservedObject var weather: WeatherController
     let diagnosticsContext: () -> DiagnosticExportContext
+    var showDesktop: () -> Void = {}
     @State private var editing: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
@@ -80,12 +81,21 @@ struct ManagerView: View {
         let displayed = store.active
         let primaryID = store.data.primaryID
         return VStack(spacing: 0) {
+            if editorSession.desktopIsPresented {
+                Text("Редактор открыт в основном окне")
+                    .font(.system(size: 11))
+                    .padding(8)
+                    .accessibilityIdentifier("desktop.editor.active")
+            }
             if store.showsEmptyEventList {
                 emptyEventList
+                    .disabled(editorSession.desktopIsPresented)
             } else {
                 header(activeCount: displayed.count)
+                    .disabled(editorSession.desktopIsPresented)
                 if showingDayChoices && !displayed.isEmpty {
                     dayChoices
+                        .disabled(editorSession.desktopIsPresented)
                 }
                 ScrollView {
                     VStack(spacing: 10) {
@@ -106,6 +116,7 @@ struct ManagerView: View {
                 }
                 .accessibilityIdentifier("event.list")
                 .uiSmokeControl(id: "event.list")
+                .disabled(editorSession.desktopIsPresented)
             }
             Divider()
             footer
@@ -250,7 +261,7 @@ struct ManagerView: View {
                 secondaryEvent(item, presentation: presentation)
             }
             if presentation.completionLabel != nil {
-                SubtaskChecklistView(store: store, item: item, presentation: presentation)
+                SubtaskChecklistView(store: store, item: item, presentation: presentation, editorSession: editorSession)
                     .padding(.top, 8)
             }
         }
@@ -464,6 +475,7 @@ struct ManagerView: View {
 
     private func togglePrimary(_ id: UUID) {
         Task {
+            guard !editorSession.hasActiveEditor else { return }
             if store.data.primaryID == id {
                 await store.clearPrimary()
             } else {
@@ -478,6 +490,15 @@ struct ManagerView: View {
                 .font(.system(size: 10))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             Spacer()
+            Button(action: showDesktop) {
+                Image(systemName: "macwindow")
+                    .font(.system(size: 14))
+                    .frame(width: 22, height: 22)
+            }
+            .help("Открыть основное окно")
+            .accessibilityLabel("Открыть основное окно")
+            .accessibilityIdentifier("desktop.open")
+            .uiSmokeControl(id: "desktop.open", action: showDesktop)
             Button(action: openSettings) {
                 Image(systemName: "gearshape")
                     .font(.system(size: 14))
@@ -509,7 +530,7 @@ struct ManagerView: View {
     }
 
     private func finishEditor() {
-        editorSession.isPresented = false
+        editorSession.endPanelEditor()
         editing = nil
         dayPreset = nil
         selectDayDate = false
@@ -520,43 +541,43 @@ struct ManagerView: View {
     }
 
     private func createEvent() {
-        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable else { return }
+        guard !showingSettings, !store.hasPendingPersistence, store.eventCreationIsAvailable,
+              editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
         editing = nil
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
-        editorSession.isPresented = true
     }
 
     private func toggleDayChoices() {
-        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable else { return }
+        guard !editorSession.hasActiveEditor, !showingSettings, store.eventCreationIsAvailable else { return }
         showingDayChoices.toggle()
     }
 
     private func createDay(preset: DayCreationPreset?, selectDate: Bool = false) {
-        guard !showingEditor, !showingSettings, store.eventCreationIsAvailable, let preset else { return }
+        guard !showingSettings, !store.hasPendingPersistence, store.eventCreationIsAvailable, let preset,
+              editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
         editing = nil
         dayPreset = preset
         selectDayDate = selectDate
         showingDayChoices = false
-        editorSession.isPresented = true
     }
 
     private func edit(_ id: UUID) {
-        guard !showingEditor, !showingSettings,
-              let item = store.active.first(where: { $0.id == id }) else { return }
+        guard !showingSettings, !store.hasPendingPersistence,
+              let item = store.active.first(where: { $0.id == id }),
+              editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=edit id=\(item.id.uuidString)")
         editing = item
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
-        editorSession.isPresented = true
     }
 }
 
-private struct PlannerCalendarDateTile: View {
+struct PlannerCalendarDateTile: View {
     let monthControlID: String
     let day: Day
     let isFeatured: Bool
@@ -605,6 +626,7 @@ private struct SubtaskChecklistView: View {
     let store: Store
     let item: Countdown
     let presentation: CountdownRowPresentation
+    @ObservedObject var editorSession: EventEditorSession
 
     @ObservedObject private var disclosureState: SubtaskDisclosureState
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
@@ -613,11 +635,13 @@ private struct SubtaskChecklistView: View {
     init(
         store: Store,
         item: Countdown,
-        presentation: CountdownRowPresentation
+        presentation: CountdownRowPresentation,
+        editorSession: EventEditorSession
     ) {
         self.store = store
         self.item = item
         self.presentation = presentation
+        self.editorSession = editorSession
         _disclosureState = ObservedObject(wrappedValue: store.disclosureState(for: item.id))
     }
 
@@ -705,7 +729,7 @@ private struct SubtaskChecklistView: View {
             HStack(spacing: 0) {
                 Toggle(isOn: Binding(
                     get: { subtask.isCompleted },
-                    set: { _ in Task { await store.toggleSubtask(eventID: item.id, subtaskID: subtask.id) } }
+                    set: { _ in toggleSubtask(subtask.id) }
                 )) {
                     Text(subtask.text)
                         .font(.system(size: 12))
@@ -727,7 +751,7 @@ private struct SubtaskChecklistView: View {
                 .accessibilityIdentifier("subtask.toggle.\(subtask.id.uuidString)")
                 .uiSmokeControl(
                     id: "subtask.toggle.\(subtask.id.uuidString)",
-                    action: { Task { await store.toggleSubtask(eventID: item.id, subtaskID: subtask.id) } },
+                    action: { toggleSubtask(subtask.id) },
                     value: {
                         let isCompleted = store.active
                             .first(where: { $0.id == item.id })?
@@ -745,6 +769,13 @@ private struct SubtaskChecklistView: View {
 
     private func toggleDisclosure() {
         disclosureState.setExpanded(!disclosureState.isExpanded)
+    }
+
+    private func toggleSubtask(_ id: UUID) {
+        Task {
+            guard !editorSession.hasActiveEditor else { return }
+            _ = await store.toggleSubtask(eventID: item.id, subtaskID: id)
+        }
     }
 
 }

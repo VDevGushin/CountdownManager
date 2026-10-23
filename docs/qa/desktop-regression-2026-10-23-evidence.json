@@ -1,0 +1,200 @@
+{
+  "native": [
+    {
+      "suite": "automatic",
+      "accepted": true,
+      "groups": 5,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/automatic/ui-smoke-result.txt"
+    },
+    {
+      "suite": "collapse",
+      "accepted": true,
+      "groups": 2,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/collapse/ui-smoke-result.txt"
+    },
+    {
+      "suite": "compact",
+      "accepted": true,
+      "groups": 7,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/compact/ui-smoke-result.txt"
+    },
+    {
+      "suite": "completed",
+      "accepted": true,
+      "groups": 2,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/completed/ui-smoke-result.txt"
+    },
+    {
+      "suite": "continuity-1",
+      "accepted": true,
+      "groups": 8,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/continuity-1/ui-smoke-result.txt"
+    },
+    {
+      "suite": "continuity-2",
+      "accepted": true,
+      "groups": 8,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/continuity-2/ui-smoke-result.txt"
+    },
+    {
+      "suite": "continuity-3",
+      "accepted": true,
+      "groups": 8,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/continuity-3/ui-smoke-result.txt"
+    },
+    {
+      "suite": "desktop",
+      "accepted": true,
+      "groups": 10,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/desktop/ui-smoke-result.txt"
+    },
+    {
+      "suite": "editor",
+      "accepted": true,
+      "groups": 5,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/editor/ui-smoke-result.txt"
+    },
+    {
+      "suite": "empty",
+      "accepted": true,
+      "groups": 2,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/empty/ui-smoke-result.txt"
+    },
+    {
+      "suite": "full",
+      "accepted": true,
+      "groups": 23,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/full/ui-smoke-result.txt"
+    },
+    {
+      "suite": "identity",
+      "accepted": true,
+      "groups": 2,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/identity/ui-smoke-result.txt"
+    },
+    {
+      "suite": "panel-captures",
+      "accepted": true,
+      "groups": 5,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/final/native/panel-captures/ui-smoke-result.txt"
+    },
+    {
+      "suite": "weather",
+      "accepted": true,
+      "groups": 5,
+      "result": "/private/tmp/countdown-full-regression.SBufkW/weather-current/native/ui-smoke-result.txt"
+    }
+  ],
+  "external": {
+    "testAccessibilityDescribesPrimaryAndCurrentEmoji": {
+      "status": "passed",
+      "run": "xcui-focused",
+      "durationSeconds": 27.721
+    },
+    "testAddedSubtaskDeletePreservesNeighborTextOnSave": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 23.545
+    },
+    "testAutomaticTitleResetCancelSaveAndNativeUndo": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 39.336
+    },
+    "testCustomTitleDigitEditAndNativeUndo": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 11.112
+    },
+    "testDeleteConfirmationCancelAndConfirm": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 11.402
+    },
+    "testEmojiDisclosurePreservesDraftAndHidesInactiveControls": {
+      "status": "passed",
+      "run": "xcui-focused",
+      "durationSeconds": 42.199
+    },
+    "testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 25.101
+    },
+    "testFavoriteCanBeClearedFromListAndEditor": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 33.309
+    },
+    "testFirstEventWithoutIconOrFavoriteRemainsNearestAfterRelaunch": {
+      "status": "passed",
+      "run": "xcui-focused",
+      "durationSeconds": 18.726
+    },
+    "testLongListPositionSurvivesEditorCancel": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 12.916
+    },
+    "testNewEventCancelDoesNotLeakDraft": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 8.631
+    },
+    "testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 46.131
+    },
+    "testNewNoteHardLimitAndNativeFocus": {
+      "status": "failed",
+      "run": "xcui-layout",
+      "durationSeconds": 7.675
+    },
+    "testOptionalIconClearCancelAndSavePreserveStoredChoice": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 35.295
+    },
+    "testRepeatedAutomaticTitleCyclesPreserveNewDraftFields": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 41.053
+    },
+    "testSettingsDiagnosticArchiveCancelAndSave": {
+      "status": "failed",
+      "run": "xcui-russian",
+      "durationSeconds": 17.135
+    },
+    "testSubtaskEditCancelSaveAndCompletion": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 25.866
+    },
+    "testUtilityChromeAndKeyboardClose": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 8.859
+    },
+    "testWholeSubtaskRowHitAreasAndDisclosureIsolation": {
+      "status": "passed",
+      "run": "xcui-run",
+      "durationSeconds": 18.865
+    },
+    "testDesktopChecklistGroupsIncompleteBeforeCompleted": {
+      "status": "passed",
+      "run": "xcui-focused",
+      "durationSeconds": 10.615
+    },
+    "testWeatherCityMenuSupportsNativeSelection": {
+      "status": "passed",
+      "run": "xcui-focused",
+      "durationSeconds": 24.261
+    },
+    "testCyrillicNewNoteHardLimitAndNativeFocus": {
+      "status": "passed",
+      "run": "xcui-russian",
+      "durationSeconds": 12.854
+    }
+  }
+}

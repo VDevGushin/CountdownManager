@@ -1,6 +1,6 @@
 ---
 name: swift-code-quality
-description: Write and review Countdown Manager Swift, SwiftUI, and AppKit code using current platform best practices, explicit ownership, simple architecture, and testable boundaries.
+description: Implement and review Countdown Manager native macOS desktop and menu-bar features in Swift, SwiftUI, and AppKit, with explicit ownership, simple architecture, and testable boundaries.
 ---
 
 # Swift Code Quality
@@ -8,6 +8,8 @@ description: Write and review Countdown Manager Swift, SwiftUI, and AppKit code 
 ## Purpose
 
 Use this skill for implementation and non-trivial code review in Countdown Manager.
+
+This includes desktop windows and interfaces shared with the menu-bar panel when the requested product change authorizes them. For native interface design or mockups, use `.agents/skills/macos-desktop-design/SKILL.md`; a design proposal alone does not authorize adding a window.
 
 The goal is production-quality Swift that is clear, idiomatic, maintainable, platform-correct, and no more abstract than the current problem requires.
 
@@ -154,6 +156,8 @@ When bridging SwiftUI and AppKit, make it clear which side owns:
 - callbacks and cleanup.
 
 Do not compensate for uncertain platform behaviour with complex custom machinery before verifying the platform semantics.
+
+When an approved change adds another application surface, reuse the existing domain, persistence, timer, and service owners. Keep per-surface selection and browsing state separate where appropriate, and define an explicit editor-session policy for overlapping edits. Review close versus Quit, reopen, activation, and focus against the requested contract; do not inherit temporary-panel dismissal rules blindly in a persistent window.
 
 ## 8 — Add abstractions only for real boundaries
 
