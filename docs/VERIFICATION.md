@@ -258,9 +258,12 @@ a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. Th
 The focused XCUITests `testNewNoteHardLimitAndNativeFocus` and its Cyrillic variant target actual
 keyboard 149→150→151 rejection, title/note handoff and Undo in a NEW note. In the 2026-10-23
 campaign the Cyrillic route passed under the current Russian input source, but the Latin route
-sent a close-command path during XCTest text synthesis and remains unaccepted. See the
-[campaign report](qa/desktop-regression-2026-10-23.md); neither a native API call nor the other
-language variant certifies the unpassed route. Internal native calls do not prove physical IME keyboard delivery,
+sent a close-command path during XCTest text synthesis and was not accepted in that run. See the
+[campaign report](qa/desktop-regression-2026-10-23.md). The focused 2026-10-24 preflight on
+1.15.0/30 subsequently passed the Latin limit/focus/Undo route with the user's ABC input source;
+[the protocol](images/v1.15.0/preflight-input-diagnostics.json) records that source and the absence
+of a clipboard fallback. This closes that route for the exercised configuration, not every input
+layout. Internal native calls do not prove physical IME keyboard delivery,
 VoiceOver announcements, or external keyboard routing; record those separately when exercised.
 The 2026-10-20 host returned `hasMarkedText=false` and a zero-length markedRange at UTF16-end
 after accepted IME commit, both in NoteTextView and in an unmodified NSTextView baseline. This
@@ -404,16 +407,20 @@ presence; exercise those externally under the user's existing Mission Control se
 the tested application, PNGs and manifest only after PASS. The destination must already contain
 `.countdown-ui-capture-output`. Captures show native collection/feed and no-favorite states in
 Dark/Light, a linked mini-panel after its rendered checklist reaches 2/2, plus shared weather OFF. The manifest records the exercised bundle version/build,
-executable SHA-256, bitmap dimensions and synthetic-data scope. These are unreleased current-source
-desktop renders, not evidence that a desktop feature shipped in the matching released version.
+executable SHA-256, bitmap dimensions and synthetic-data scope. These captures identify the
+exercised source build; they do not by themselves establish publication or a match to a released
+package. The [1.15.0/30 release evidence](images/v1.15.0/PROVENANCE.md) separately identifies
+the exact published candidate and its native captures.
 Inspect the actual images before using them in README and preserve historical release captures.
 
 For human acceptance, launch the retained test bundle with both `--visual-preview --desktop-preview`
 and its marked `COUNTDOWN_MANAGER_TEST_HOME`. This preserves isolated events, preferences and
 synthetic forecasts, while enabling normal production focus/lifecycle callbacks. `--desktop-preview`
 without `--visual-preview` is rejected before Store startup. Never launch a test bundle without
-its isolation environment and flags. Current-source evidence and external-keyboard observations
-are recorded in `docs/images/v1.14.1/desktop-unreleased/PROVENANCE.md`.
+its isolation environment and flags. Current release captures and acceptance protocols are recorded
+in [the 1.15.0 provenance](images/v1.15.0/PROVENANCE.md). The earlier
+[desktop development evidence](images/v1.14.1/desktop-unreleased/PROVENANCE.md), including external
+keyboard observations and recordings, remains historical evidence with its original build limits.
 
 Registered in-process controls, native field-editor calls and window APIs prove only the
 corresponding state/layout boundaries, not physical command-bar clicks, external Command-N/Command-comma/
@@ -650,9 +657,13 @@ sheet detachment, released exporting state, unchanged event JSON and absence of 
 It deliberately does not call `NSSavePanel.ok(nil)`. An isolated AppKit probe completed Cancel and
 immediate reopening but hung on that programmatic Save call; this is a driver limitation, not proof
 that the physical Save control fails. Fast checks exercise the ZIP worker, redaction and archive
-failure/cancellation paths independently. Physical Save is still unconfirmed: the attempted
-XCUITest acceptance timed out entering automation mode, so the added external Save case supplies
-no successful interaction evidence. Preserve this distinction until a real native Save succeeds.
+failure/cancellation paths independently. The earlier XCUITest attempt timed out entering
+automation mode and supplied no successful Save interaction evidence. The focused 2026-10-24
+1.15.0/30 preflight subsequently passed native Cancel → reopen → typed destination → actual Save
+with the user's ABC input source. Its [protocol](images/v1.15.0/preflight-input-diagnostics.json)
+records independent ZIP inspection, unchanged event bytes and no clipboard fallback. This is
+external evidence for that identified build and input source; general in-process smoke still
+proves only its Cancel routes, and other input layouts remain outside that acceptance.
 
 ## Weather verification
 

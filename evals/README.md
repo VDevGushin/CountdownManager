@@ -106,6 +106,9 @@ SwiftPM runs satisfy the same CoreChecks/UIChecks expectations. Reading or echoi
 For the repository's fail-fast `verify.sh fast/full` route, successful exit plus its final
 `PASS UI state:` also certifies the preceding CoreChecks gate when log tailing omitted its earlier
 marker. This ordering is not inferred for arbitrary direct commands or loops.
+All supported `verify.sh` UI and capture modes, including desktop, are classified as `real-ui`
+and `app-build` attempts. Deterministic runner checks compare that coverage with the modes in
+`verify.sh` and ensure forbidden attempts fail grading even when the command itself fails.
 Forbidden verification attempts are counted even if they fail. Required-read detection uses successful
 command path mentions; it is supporting evidence, not proof of comprehension, and unusual equivalent
 read/command syntax can require inspection. Before/after snapshots detect final additions, deletions

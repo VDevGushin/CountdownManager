@@ -69,7 +69,7 @@ Key files:
 
 - `Application.swift`
 - `CountdownTimer.swift`
-- `KeepAwakeController.swift`
+- `KeepAwake.swift`
 - `Weather.swift`
 - `WeatherLocation.swift`
 - `WeatherForecasts.swift`
@@ -433,11 +433,14 @@ Explicit panel reopening keeps the retained hierarchy and ordinary level during 
 `standardUserDriverWillFinishUpdateSession` restores `.popUpMenu` on the next main-queue turn after
 Sparkle's window-closing callback unwinds, without showing the panel. No Sparkle window is inspected,
 reordered or assigned another level. The application-owned deferred-install modal uses the same
-hide boundary and returns to the retained panel through an explicit button; it never retries itself.
+hide boundary. Its explicit return button calls `AppDelegate.returnToActiveEditor()`: an active
+desktop editor takes priority, followed by an active panel editor, an already visible desktop
+window, then the panel. The modal never retries itself.
 
-`AppDelegate` owns `EventEditorSession`, the single observable owner of editor visibility shared
-with `ManagerView`. Draft fields remain owned by the existing editor. The updater reads that session,
-the timer phase and `Store.hasPendingPersistence` through an explicit main-actor safety closure.
+`AppDelegate` owns `EventEditorSession`, the single observable owner of the active editor surface shared with
+`ManagerView` and `DesktopRootView`. Draft fields remain owned by the `EditorView` on the admitted
+surface. The updater reads that session, the timer phase and `Store.hasPendingPersistence` through
+an explicit main-actor safety closure.
 It stores Sparkle's native postponement continuation while blocked. Explicit Install rechecks
 safety before consuming the continuation once. `willInstallUpdate` marks update termination;
 `applicationShouldTerminate` cancels it if activity appears in the remaining installation window.
@@ -717,7 +720,7 @@ removed row finishes its transition; setters ignore absent UUIDs. Removed rows l
 accessibility eligibility immediately. Deferred Add focus checks membership before scrolling or
 focusing. Typing does not change the identity array and therefore does not animate the block.
 
-`EditorView` owns one transient picker state: closed, compact presets or a catalog page. The selector starts closed; `Все значки` advances from compact presets to the inline catalog. The catalog retains five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`), conventional previous/next controls, page dots and horizontal drag navigation. Grid dimensions fit the scrolling editor's inner width. Choosing or clearing an emoji replaces only the draft value and closes the picker, resetting navigation. Native layout/opacity transitions animate disclosure for 200 milliseconds while page changes slide horizontally; both respect live Reduce Motion. The stable picker boundary excludes closed content from hit testing and accessibility, including during removal transitions. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. No editor sheets or application-owned action/emoji popovers remain.
+`EditorView` owns one transient picker state: closed, compact presets or a catalog page. The selector starts closed; `Все значки` advances from compact presets to the inline catalog. The catalog retains five named six-row/eight-column sets (`Общие`, `Дети`, `Работа`, `Транспорт`, `Праздники`), conventional previous/next controls, page dots and horizontal drag navigation. Grid dimensions fit the scrolling editor's inner width. Choosing or clearing an emoji replaces only the draft value and closes the picker, resetting navigation. Native layout/opacity transitions animate disclosure for 200 milliseconds while page changes slide horizontally; both respect live Reduce Motion. The stable picker boundary excludes closed content from hit testing and accessibility, including during removal transitions. Emoji selection does not use an editable text field, first-responder handoff or an application-owned popover. Subtask text changes use the same editor; primary selection and completion remain in the list. Errors are presented inline. The mini-panel presents its editor internally without a sheet; the desktop presents the same `EditorView` in a sheet. Neither surface uses application-owned action/emoji popovers.
 
 ## AppKit application shell
 
@@ -732,7 +735,7 @@ through the session, starts diagnostics and supplies isolated test defaults/data
 
 Status-item actions toggle the requested visibility state immediately. Show orders out any stale visible instance, positions the panel under the current status item, activates the accessory app and makes the panel key/front. Hide, full occlusion while requested visible, application deactivation, active-Space change and Command-W clear requested visibility and call `orderOut`. Ordinary startup does not open it. Isolated harnesses suppress these automatic lifecycle callbacks while verifying retained panel/hosting/root/list/editor state; observable anchoring, app-switch, Space and real status-item interaction remain release manual acceptance.
 
-A standard AppKit application menu supplies text-editing commands, Quit and the native close command. The panel's native occlusion callback closes a visually departed panel even when a rapid Space transition is reversed before the workspace posts its completed-change notification. There is no window centering, movement, frame persistence, mouse monitor, workspace polling, key/responder-driven visibility hook, sheet-end observer, forced first-responder assignment or root reconstruction.
+A standard AppKit application menu supplies text-editing commands, Quit and the native close command. The panel's native occlusion callback closes a visually departed panel even when a rapid Space transition is reversed before the workspace posts its completed-change notification. The mini-panel has no centering, user movement, frame persistence, mouse monitor, workspace polling, key/responder-driven visibility hook, sheet-end observer, forced first-responder assignment or root reconstruction. The retained desktop window is centered once when created and uses ordinary native window movement and resizing; its separate lifecycle is described above.
 
 Product semantics live in `PRODUCT.md`; accepted rationale lives in `decisions/status-item-panel-shell.md`. The superseded standalone-window, popover and historical popup decisions retain prior evidence only.
 

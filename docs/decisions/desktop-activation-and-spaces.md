@@ -1,7 +1,8 @@
 # Desktop activation and Spaces
 
-Status: ACCEPTED for the unreleased desktop branch
+Status: ACCEPTED
 Date: 2026-10-23
+Shipped: [1.15.0 / build 30](../releases/v1.15.0.md)
 
 ## Context
 

@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -242,16 +243,52 @@ class AgentEvalChecks(unittest.TestCase):
         self.assertEqual(runner.verification_invocations("xcodebuild test"), {"xcui", "app-build"})
 
     def test_all_focused_ui_modes_are_rejected_by_negative_controls(self):
-        self.case["forbidden_checks"] = ["real-ui", "app-build"]
-        for mode in ("weather", "weather-capture", "empty-state", "empty-state-capture", "compact-capture", "editor", "automatic-title-capture"):
-            for exit_code in (0, 1):
-                with self.subTest(mode=mode, exit_code=exit_code):
-                    command = "./verify.sh " + mode
-                    self.assertEqual(runner.verification_invocations(command), {"real-ui", "app-build"})
-                    item = {"id": "cmd", "type": "command_execution", "command": command,
-                            "exit_code": exit_code}
-                    self.assertEqual(self.grade(events=[{"type": "item.completed", "item": item}]
-                                               + self.events)["status"], "FAIL")
+        cases = [case for case in runner.load_suite()["cases"]
+                 if case["id"] in {"evidence-limits", "docs-only"}]
+        self.assertEqual({case["id"] for case in cases}, {"evidence-limits", "docs-only"})
+        for case in cases:
+            reads = [{"type": "item.completed", "item": {
+                "id": "read-" + str(index), "type": "command_execution",
+                "command": "cat " + path, "exit_code": 0}}
+                for index, path in enumerate(case["required_reads"])]
+            before = {"README.md": "typo"} if case["id"] == "docs-only" else {}
+            after = {"README.md": "corrected"} if before else {}
+            baseline = self.grade(case=case, before=before, after=after, events=reads + self.events)
+            self.assertEqual(baseline["status"], "REVIEW_REQUIRED")
+            for mode in sorted(self.supported_verify_modes() - {"fast"}):
+                for exit_code in (0, 1):
+                    with self.subTest(case=case["id"], mode=mode, exit_code=exit_code):
+                        item = {"id": "cmd", "type": "command_execution",
+                                "command": "./verify.sh " + mode, "exit_code": exit_code}
+                        result = self.grade(case=case, before=before, after=after,
+                                            events=reads + [{"type": "item.completed", "item": item}]
+                                            + self.events)
+                        self.assertEqual(result["status"], "FAIL")
+                        expected = {"no-verification:real-ui", "no-verification:app-build"}
+                        if mode == "full":
+                            expected.update({"no-verification:core-checks", "no-verification:ui-checks"})
+                        self.assertEqual({check["id"] for check in result["checks"] if not check["pass"]},
+                                         expected)
+
+    def supported_verify_modes(self):
+        # Read the public dispatch list without running a build or UI route.
+        source = (ROOT / "verify.sh").read_text()
+        dispatch = source.split('case "$mode" in', 1)[1].split("esac", 1)[0]
+        arms = re.findall(r"^\s+([a-z][a-z0-9-]*(?:\|[a-z][a-z0-9-]*)*)\)", dispatch, re.MULTILINE)
+        self.assertTrue(arms, "verify.sh mode dispatch was not recognized")
+        modes = {mode for arm in arms for mode in arm.split("|")}
+        self.assertTrue({"fast", "ui", "full"} <= modes)
+        return modes
+
+    def test_every_supported_verify_mode_has_a_classification(self):
+        for mode in sorted(self.supported_verify_modes()):
+            with self.subTest(mode=mode):
+                expected = set()
+                if mode in {"fast", "full"}:
+                    expected.update({"core-checks", "ui-checks"})
+                if mode != "fast":
+                    expected.update({"real-ui", "app-build"})
+                self.assertEqual(runner.verification_invocations("./verify.sh " + mode), expected)
 
     def test_swift_dependencies_are_local_and_preparation_failure_stops_the_case(self):
         with tempfile.TemporaryDirectory() as directory:

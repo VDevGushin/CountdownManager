@@ -57,7 +57,7 @@ typography:
     fontWeight: 400
   countdown:
     fontFamily: "Georgia"
-    fontSize: "27pt"
+    fontSize: "21pt"
     fontWeight: 400
   body:
     fontFamily: "system-ui"
@@ -151,7 +151,7 @@ A warm ivory and terracotta palette is paired with warm brown dark surfaces; gre
 ### Primary
 
 - **Terracotta:** creation controls, selected timer presets, calendar month bars, focus outlines, and favorite stars. Dark mode uses its lighter counterpart; Increase Contrast selects the explicit contrast branch.
-- **Accent Ink:** the remaining-day numeral and selected preset text. Light mode has its own darker text color; dark mode reuses the accent.
+- **Accent Ink:** the future-day relative label and selected preset text. Light mode has its own darker text color; dark mode reuses the accent.
 
 ### Secondary
 
@@ -182,8 +182,8 @@ Native semantic red is used for validation and errors; do not replace it with an
 
 - **Display:** featured calendar day (32 points); secondary leaf day uses 25 points, both with compact negative tracking.
 - **Headline:** featured event title (23 points), negative tracking, and up to two lines. Empty-state heading uses 24-point Georgia.
-- **Title:** editor and settings headings, plus featured `Сегодня` (21 points).
-- **Countdown:** featured remaining-day numeral (27 points).
+- **Title:** editor and settings headings (21 points).
+- **Countdown:** the mini-panel's full featured relative label, `Сегодня`, `Завтра`, or `Через N дней`, in 21-point Georgia. Today uses green; future days use accent ink.
 - **Body:** settings use 13-point system text; form content and checklist text mostly use 12 points; secondary event names use 14-point semibold.
 - **Label:** metadata and secondary labels mostly use 11 points. Current-date heading is 15-point semibold. The functional featured-state label uses 10.5 points; small service text uses 10 points. Calendar month labels use 10-point semibold on featured leaves and 9-point semibold on secondary leaves, with tracking of 0.7 and 0.5 points respectively.
 - **Timer:** running countdown uses 23-point semibold tabular numerals; preset values use 11-point medium or semibold when selected.
@@ -200,7 +200,7 @@ The list starts with the current date and event count, then the selected favorit
 
 Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather and favorite checkboxes form the next distinct group after a 13-point gap.
 
-The unreleased desktop window uses a separate browser/details split. Its icon-only native
+The desktop window uses a separate browser/details split. Its icon-only native
 segmented control switches collection/grid and feed/list, retaining names and hover help.
 One favorite stays above month-and-year sections; empty months and duplicate favorite rows are
 omitted. Section headings use 20-point Georgia, with 24-point section gaps. Grid cards keep a
@@ -244,23 +244,23 @@ Seven fixed durations share a 32-point high row with 2-point gaps. The selected 
 
 ### Cards / Containers
 
-Each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, prominent countdown, and weather beside the countdown. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators.
+In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. The desktop's separate date and reserved weather rows follow the layout described above.
 
 ### Inputs / Fields
 
 Title, note and subtask text fields use the native rounded-border bezel and native focus ring only. Do not overlay a second border or accent focus outline on these controls. The separate emoji selection control owns its custom outline. Date selection stays a native field-style DatePicker; weather/favorite and settings toggles stay native checkboxes. Native focus, selection, accessibility, validation, and disabled presentation remain authoritative.
 
-The optional note field is always visible, including when empty. Its label is `Заметка · необязательно`, its placeholder is `Пара слов о событии`, and its counter starts at `0/280`. The label and counter use native caption and caption2 roles; the multiline native text field inherits the editor’s 13-point body text and displays two to three lines. There is no note disclosure action.
+The optional note field is always visible, including when empty. Its label is `Заметка · необязательно`, its placeholder is `Пара слов о событии`, and its counter starts at `0/150`. The label and counter use native caption and caption2 roles; the multiline native text field inherits the editor’s 13-point body text, reserves three lines, grows to six, then scrolls vertically. New notes accept up to 150 graphemes. Existing longer notes remain fully visible and may be preserved or shortened under the [saved-note allowance in PRODUCT.md](docs/PRODUCT.md#primary-interface). There is no note disclosure action.
 
 The `Значок` field is an outlined selection control with label, selected emoji or `Без значка`, disclosure chevron, and a separate clear target when selected. Clearing does not disclose the picker. Its inline picker uses eight compact presets followed by the larger catalog. Disclosure uses height and opacity over 200 ms; selected-value opacity takes 120 ms. Reduce Motion makes both immediate. The inline catalog uses the same paper surface and border language rather than a separate window.
 
 ### Navigation
 
-The fixed list footer carries local-storage reassurance, a small settings gear, and Quit. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
+The mini-panel's fixed list footer carries local-storage reassurance, an `Открыть основное окно` button, a small settings gear, and Quit. The window button opens or brings forward the retained desktop window. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
 
 ### Calendar Leaves
 
-A real month label sits in a terracotta strip above the Georgia day numeral, without a leading zero. The strip fills the top edge and rounded upper corners without an uncolored inset. Featured leaves measure 54 × 65 points; secondary leaves measure 42 × 51. The slight rotation and clean outline make this the signature material gesture, without a shadow. Optional event emoji belongs immediately before the event title; empty and legacy calendar emoji are omitted in the list because the leaf already carries the date.
+A real month label sits in a terracotta strip above the Georgia day numeral, without a leading zero. The strip fills the top edge and rounded upper corners without an uncolored inset. Featured leaves measure 54 × 65 points; secondary leaves measure 42 × 51. The slight rotation and clean outline make this the signature material gesture, without a shadow. In the mini-panel, optional event emoji belongs immediately before the event title. In the desktop collection, feed, favorite cards and details, it belongs in the secondary date line, with no reserved icon space when absent. Empty and legacy calendar emoji are omitted from these event presentations because the leaf already carries the date; stored values remain available in the editor.
 
 ## Do's and Don'ts
 
