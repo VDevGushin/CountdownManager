@@ -1,12 +1,12 @@
 # Preparing signed updates
 
-## Preparing 1.18.0 / build 33
+## Published 1.18.0 / build 33
 
-The next minor release adds the attachment shelf, compact desktop details and embedded native
+This minor release adds the attachment shelf, compact desktop details and embedded native
 quick preview. The production candidate uses the existing bundle ID, stable feed and signing key.
 Its exact executable is `e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5`.
-Release validation and publication are in progress; the currently public Latest remains 1.17.0/32.
-[Release preparation](releases/v1.18.0.md).
+Release 1.18.0/33 is published as Latest. Anonymous ZIP, version feed and stable feed returned HTTP 200 with exact signed SHA-256 values.
+[Release status](releases/v1.18.0.md) and [publication receipt](images/v1.18.0/publication.json).
 
 Fresh exact-candidate native desktop passed **27/27 in 53.080 seconds** (110 PNGs), and focused
 attachments passed **7/7 in 21.023 seconds** (42 PNGs), with unchanged executable hashes and no
@@ -27,7 +27,7 @@ ABC run; the only failed Diagnostic Save case passed a focused 1/1 repeat after 
 GoToFolder text clearing. These are 28 unique successful scenarios, not one clean 28-case run.
 Final strict lint is 0/75 and CoreChecks/UIChecks exit 0. Genuine isolated 1.17.0/32 → 1.18.0/33
 Sparkle install and automatic relaunch preserved synthetic events/preferences and all 35 files.
-[Update receipt](images/v1.18.0/genuine-update.json). Anonymous public delivery remains pending publication.
+[Update receipt](images/v1.18.0/genuine-update.json). Anonymous public delivery passed after publication.
 
 ## Previous 1.17.0 / build 32 — retained publication evidence
 

@@ -1,12 +1,12 @@
 {
-  "status": "READY_TO_PUBLISH",
+  "status": "PUBLISHED_VERIFIED",
   "version": "1.18.0",
   "build": "33",
   "executableSHA256": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
-  "published": false,
+  "published": true,
   "lastConfirmedPublicRelease": {
-    "version": "1.17.0",
-    "build": "32"
+    "version": "1.18.0",
+    "build": "33"
   },
   "freshNative": {
     "desktop": {
@@ -59,10 +59,8 @@
     "publicKeyOnly": true,
     "receipt": "artifact-audit.json"
   },
-  "pending": [
-    "anonymous public HTTPS ZIP/version-feed/stable-feed verification and Latest confirmation after publication"
-  ],
-  "evidenceScope": "All listed local gates, six native routes, combined28 unique external cases, genuine isolated upgrade and artifact audit accepted. Public delivery awaits actual publication.",
+  "pending": [],
+  "evidenceScope": "All listed local gates, six native routes, combined 28 unique external cases, genuine isolated upgrade, artifact audit and anonymous public HTTPS/Latest delivery accepted; documented platform limits remain.",
   "externalXCUITest": {
     "status": "PASS_COMBINED",
     "uniqueCasesCovered": 28,
@@ -104,5 +102,7 @@
     "count": 4,
     "manifest": "desktop/manifest.json",
     "scope": "Actual photo/PDF/movie-poster/mini-photo compositor pixels; no universal inline-playback claim"
-  }
+  },
+  "publicationReceipt": "publication.json",
+  "sourceCommit": "b8ae9a87f1e38d38c2c930d7fad6bda641ae32eb"
 }

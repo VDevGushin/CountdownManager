@@ -1,7 +1,7 @@
 # Countdown Manager 1.18.0 / build 33 — release preflight evidence
 
-Date: 2026-10-26. Status: **READY_TO_PUBLISH**, not published by this snapshot.
-The last confirmed public release remains 1.17.0 / build 32. The current release state belongs
+Date: 2026-10-26. Status: **PUBLISHED_VERIFIED**, Latest is 1.18.0 / build 33.
+The current release state belongs
 in [the release document](../../releases/v1.18.0.md), while [acceptance.json](acceptance.json)
 keeps completed and pending surfaces separate.
 
@@ -78,13 +78,13 @@ under `/private/tmp/countdown-shelf-preview-qa.1iakbI/manual-home`. They prove t
 pixels, not playback of every provider. The isolated app was quit; Russian input was restored
 through the UI and verified read-only as `com.apple.keylayout.Russian`.
 
-## Public delivery pending and scope limits
+## Public delivery and scope limits
 
 All listed local gates, six native routes, combined external case coverage, actual upgrade and
-public-key-only artifact audit are accepted in this snapshot. The remaining publication gate is
-anonymous public archive/version-feed/stable-feed access and Latest confirmation after actual
-publication. The auditor itself neither published nor accessed a private key. Neither the local
-HTTP upgrade nor signed local files establish public HTTPS delivery or first-install trust.
+public-key-only artifact audit are accepted. [Anonymous public delivery](publication.json) also
+passed after publication: ZIP/version feed/stable feed are HTTP 200 with exact signed hashes;
+Latest resolves to v1.18.0. The independent artifact auditor did not publish or access a private
+key. Signed delivery and the isolated HTTP upgrade do not establish first-install trust.
 
 The preflight runtime is macOS 26.6.2 / 25G83 / arm64. Metadata and Mach-O declare macOS 13.0
 and arm64, not execution on every supported OS. Hosted clock expiry does not change the system
@@ -92,3 +92,9 @@ clock or prove a real midnight/Space transition. VoiceOver, password-protected d
 all third-party Quick Look providers and manually started inline media playback retain their
 documented acceptance boundaries. Ad-hoc plus Sparkle authenticity is separate from Apple
 notarization or first-install Gatekeeper acceptance.
+
+## Publication acceptance
+
+Published as Latest. Anonymous ZIP, version feed and stable feed returned HTTP 200 and exact
+locally signed bytes. Annotated tag points to the released source commit; public Latest redirect
+resolves to v1.18.0. See [publication receipt](publication.json). The receipt closes the public-delivery gate.
