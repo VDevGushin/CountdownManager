@@ -3,10 +3,15 @@
 These evals assess the agent maintaining Countdown Manager: scoped repairs, evidence-based reviews,
 verification choices, data protection and state ownership. They do not replace application tests.
 
-Version 3 has seven cases in `cases.json`. Two inject repairable defects; two inject defects for
+Version 4 has seven cases in `cases.json`. Two inject repairable defects; two inject defects for
 read-only review; two test evidence interpretation and product/architecture reasoning; one checks
 that a documentation-only correction avoids unrelated skills and application checks. Prompts are
 in Russian, matching normal project work. Criteria are fixed before the subject runs.
+
+Version 4 updates `favorite-ownership` to the current explicit-favorite contract: without a
+selection, events stay ordinary and the idle menu bar shows Mars alone. It requires reading the
+presentation paths as well as the helper fallback. Frozen version-3 runs keep their original
+criteria and results; this revision does not reassess them.
 
 ## Run
 

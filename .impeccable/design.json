@@ -571,18 +571,7 @@
         "purpose": "Running timer with monospaced digits."
       }
     },
-    "shadows": [
-      {
-        "name": "calendar-paper-light",
-        "value": "SwiftUI .shadow(color: .black.opacity(0.08), radius: 2, x: 1, y: 2)",
-        "purpose": "Only calendar leaves; native point units."
-      },
-      {
-        "name": "calendar-paper-dark",
-        "value": "SwiftUI .shadow(color: .black.opacity(0.12), radius: 2, x: 1, y: 2)",
-        "purpose": "Dark calendar leaves; native point units."
-      }
-    ],
+    "shadows": [],
     "motion": [
       {
         "name": "timer-preset-selection",
@@ -631,7 +620,7 @@
         "Button.borderedProminent"
       ],
       "focus": "Native text fields own their bezel and focus ring; no second custom outline. The separate emoji selection control retains its custom border.",
-      "previewLimitations": "HTML/CSS snippets are illustrative light-mode translations using CSS pixels for native points; native control rendering and SwiftUI shadow radius are not pixel-equivalent CSS specifications. They were not separately browser rendered.",
+      "previewLimitations": "HTML/CSS snippets are illustrative light-mode translations using CSS pixels for native points; native control rendering and inset outlines are not pixel-equivalent CSS specifications. They were not separately browser rendered.",
       "tonalRampPolicy": "Synthesized OKLCH lightness strips for sidecar display only; runtime appearance pairs and Increase Contrast branches in DESIGN.md remain authoritative.",
       "sourceFiles": [
         "Sources/CountdownManager/AuroraInstrument.swift",
@@ -673,7 +662,7 @@
       "refersTo": "featured-calendar-leaf",
       "description": "Illustrative calendar-paper geometry; CSS pixels stand in for native points.",
       "html": "<div class=\"ds-leaf\"><div class=\"ds-month\">ОКТ</div><div class=\"ds-day\">16</div></div>",
-      "css": ".ds-leaf{width:54px;height:65px;border-radius:5px;overflow:hidden;background:rgb(100% 98% 95%);border:1px solid rgb(68% 55% 36% / 30%);transform:rotate(3deg);box-shadow:1px 2px 2px rgb(0 0 0 / 8%)}.ds-month{padding:3px 0;background:rgb(71.8% 27.8% 17.3%);color:white;text-align:center;font:600 10px system-ui;letter-spacing:.7px}.ds-day{padding:2px 0 4px;text-align:center;font:32px Georgia;color:rgb(19% 15% 13%);letter-spacing:-.5px}"
+      "css": ".ds-leaf{position:relative;width:54px;height:65px;border-radius:5px;overflow:hidden;background:rgb(100% 98% 95%);transform:rotate(3deg)}.ds-leaf::after{content:\"\";position:absolute;inset:0;border:1px solid rgb(68% 55% 36% / 30%);border-radius:inherit;box-sizing:border-box;pointer-events:none}.ds-month{padding:3px 0;background:rgb(71.8% 27.8% 17.3%);color:white;text-align:center;font:600 10px system-ui;letter-spacing:.7px}.ds-day{padding:2px 0 4px;text-align:center;font:32px Georgia;color:rgb(19% 15% 13%);letter-spacing:-.5px}"
     },
     {
       "name": "Event Card",
@@ -720,7 +709,7 @@
       },
       {
         "name": "The Paper Depth Rule",
-        "body": "Use tonal surfaces for event grouping and reserve the small paper shadow and rotation for calendar leaves.",
+        "body": "Use tonal surfaces for event grouping and reserve the slight rotation for calendar leaves; use an inset outline without blurred edge shadows.",
         "section": "elevation"
       }
     ],

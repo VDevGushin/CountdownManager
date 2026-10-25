@@ -219,9 +219,10 @@ remain stable when weather is absent, disabled or loaded; absent weather exposes
 Ordinary feed rows align the calendar with the top of the title; their remaining-day label
 sits at the upper right. Date and eligible weather share one line, with temperature after
 the date, and checklist progress/paperclip count share one horizontal summary. Rows use a
-compact height without a separate weather slot or vertically stacked counts. Grid cards,
-the featured favorite and detail metadata retain separate date/weather rows with a reserved
-16-point weather slot, including when the forecast is absent. The empty slot contains no
+compact height without a separate weather slot or vertically stacked counts. The featured
+favorite places date and weather inline on a full-width row below its title/calendar identity.
+Ordinary grid cards and detail metadata retain separate date/weather rows with a reserved
+16-point weather slot, including when the forecast is absent. That empty slot contains no
 visible or accessible placeholder. Mini-panel layouts are unchanged.
 
 The desktop detail action group uses neutral primary ink for the outline star, pencil and trash.
@@ -250,7 +251,7 @@ Seven fixed durations share a 32-point high row with 2-point gaps. The selected 
 
 ### Cards / Containers
 
-In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. Desktop event cards and details retain the separate date and reserved weather rows described above.
+In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. Desktop ordinary grid cards and details retain separate date and reserved weather rows; feed rows and the featured favorite use inline date/weather as described above.
 
 ### Inputs / Fields
 
@@ -306,9 +307,9 @@ capacity and add nothing. Legacy collections above 15 are displayed in full, pre
 files and allow removal/unrelated edits; their counter must not imply corruption or force truncation.
 
 Desktop browser cards also show a neutral 11-point paperclip/count summary only when attachments
-exist, separately from the user's emoji. Ordinary grid/feed cards stack it below checklist progress
-inside the existing status host, so narrow cards can fit both; the featured favorite uses one
-compact status row. Zero attachments add neither a visible symbol nor an accessible zero state.
+exist, separately from the user's emoji. Ordinary grid cards stack it below checklist progress
+inside the existing status host, so narrow cards can fit both. Feed cards and the featured favorite
+use one compact status row. Zero attachments add neither a visible symbol nor an accessible zero state.
 
 The featured desktop favorite places date and forecast inline on their own full-width row
 below title/calendar identity. This preserves room for both in a narrow browser pane; ordinary

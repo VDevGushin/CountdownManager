@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "cases": [
     {
       "id": "fix-today-label",
@@ -78,12 +78,12 @@
       "fixture": null,
       "prompt": "Оцени техническое упрощение: если primaryID отсутствует, в normalize записывать туда ID ближайшего события, чтобы список и строка меню читали одно сохранённое значение. Подойдёт ли это текущему продукту? Ничего не меняй. Проверь реальные владельцы состояния и предложи минимальный вариант, соответствующий существующим требованиям.",
       "allowed_changes": [],
-      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "docs/PRODUCT.md", "Sources/CountdownCore/Countdown.swift", "Sources/CountdownManager/Store.swift"],
+      "required_reads": [".agents/skills/swift-code-quality/SKILL.md", "docs/PRODUCT.md", "Sources/CountdownCore/Countdown.swift", "Sources/CountdownManager/Store.swift", "Sources/CountdownManager/Presentation.swift", "Sources/CountdownManager/Views.swift"],
       "required_checks": [],
       "oracle": null,
       "rubric": [
-        {"id": "contract", "requirement": "Объясняет различие явного favorite и автоматического отображения; отсутствующий primaryID должен оставаться отсутствующим после normalize и restart."},
-        {"id": "ownership", "requirement": "Проверяет текущую реализацию fallback и предлагает производное отображение без нового persisted state или второго владельца."},
+        {"id": "contract", "requirement": "При отсутствии явного favorite сохраняет обычные компактные карточки и Mars без события в idle-строке меню; ближайшее событие не получает роль избранного. Отсутствующий primaryID остаётся отсутствующим после normalize и restart."},
+        {"id": "ownership", "requirement": "Различает вспомогательный fallback Store.primary и пользовательское отображение по явному primaryID; проверяет presentation-пути и не предлагает автоматически показывать ближайшее событие, новое persisted state или второго владельца."},
         {"id": "scope", "requirement": "Не переопределяет продукт ради удобства кода и не предлагает большую миграцию хранения."}
       ]
     },
