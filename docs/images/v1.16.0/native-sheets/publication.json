@@ -1,0 +1,43 @@
+{
+  "verified_at": "2026-10-25T00:10:06.055429+00:00",
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.16.0",
+  "tag": "v1.16.0",
+  "latest_confirmed_by_anonymous_https_redirect": true,
+  "latest_http_status": 200,
+  "published_confirmed_by_browser": true,
+  "latest_badge_confirmed_by_browser": true,
+  "source_commit": "91b20285f2a1983021357b0bf624e6dd5bd787db",
+  "downloads": [
+    {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip",
+      "http_status": 200,
+      "sha256": "fc4375aec4f8a710cfae4f907a76c3718407e790a9b2405c43c11fe2174465ad",
+      "bytes": 5830567,
+      "matches_signed_local_artifact": true,
+      "redirect_host": "release-assets.githubusercontent.com",
+      "authorization_or_cookies_used": false
+    },
+    {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/appcast.xml",
+      "http_status": 200,
+      "sha256": "1fa6cea02b023a85fd67af7cd34550a2f9d3971ca27c411091cdb82958c0fb4d",
+      "bytes": 1299,
+      "matches_signed_local_artifact": true,
+      "redirect_host": "release-assets.githubusercontent.com",
+      "authorization_or_cookies_used": false
+    },
+    {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "http_status": 200,
+      "sha256": "1fa6cea02b023a85fd67af7cd34550a2f9d3971ca27c411091cdb82958c0fb4d",
+      "bytes": 1299,
+      "matches_signed_local_artifact": true,
+      "redirect_host": "release-assets.githubusercontent.com",
+      "authorization_or_cookies_used": false
+    }
+  ],
+  "stable_feed_version": "1.16.0",
+  "stable_feed_build": "31",
+  "stable_feed_enclosure_matches_archive": true,
+  "api_limitation": "Anonymous GitHub API returned403 rate limit; successful public web redirect and assets were verified independently."
+}

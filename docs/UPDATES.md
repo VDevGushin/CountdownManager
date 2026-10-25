@@ -1,6 +1,6 @@
 # Preparing signed updates
 
-Version **1.16.0 / build 31 has verified final artifacts; publication is authorized and pending confirmation**. It includes task-first
+Release **1.16.0 / build 31 is published as Latest; anonymous ZIP and appcasts are verified**. It includes task-first
 ordering, a 15-file cap, 36-point mini previews and separate searchable file libraries.
 The current desktop library uses the same native SwiftUI sheet as Settings and the editor,
 with a right-side close button and parent-content outside-click dismissal. Mini Back matches Settings; both surfaces keep counts only in the footer.
@@ -59,9 +59,16 @@ passed; these unchanged storage/opening workflows are reused with their RC1 orig
 remains explicitly uncertified. The [priority/limit acceptance receipt](images/v1.16.0/priority-limit/acceptance.json)
 separates fresh follow-up gates from reused RC1 workflows; the [RC2 receipt](images/v1.16.0/acceptance.json)
 remains historical evidence.
+Anonymous ZIP, version-specific appcast and stable Latest appcast returned HTTP 200 and
+match the signed local SHA-256 values. The stable feed contains 1.16.0/build 31 and the expected
+enclosure. Latest is confirmed by the anonymous public HTTPS redirect and browser badge;
+the anonymous API was rate-limited with 403. No authorization or cookies were used.
+[Publication receipt](images/v1.16.0/native-sheets/publication.json) identifies source commit
+`91b20285f2a1983021357b0bf624e6dd5bd787db` and tag `v1.16.0`.
+Preparation receipts below retain their original statuses and timestamps.
 Final artifact hashes and release status: [releases/v1.16.0.md](releases/v1.16.0.md).
 
-Release **1.15.0 / build 30 is published as Latest** and adds the native desktop window alongside
+Previous release **1.15.0 / build 30 was published as Latest** and added the native desktop window alongside
 the menu-bar panel. Signed ZIP/feed, public-key-only audit, external input, diagnostic Save and
 genuine isolated older-to-newer updater acceptance passed. Anonymous archive, version-feed and
 stable-feed downloads returned HTTP 200 and match the signed artifacts.
@@ -90,14 +97,10 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The published 1.15.0 version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/CountdownManager-1.15.0-30.zip`.
-The planned 1.16.0 archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip`;
-preparing artifacts for this URL does not make it available. Keep the canonical stable feed above
-unchanged while preparing the candidate; publication is a separate authorized operation.
-Publish the signed `appcast.xml` and ZIP together as Latest, then verify anonymous downloads
-against the locally signed SHA-256 values.
+The current published version-specific archive URL is
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip`.
+The signed `appcast.xml` and ZIP are published together as Latest; anonymous downloads match
+the locally signed SHA-256 values. Keep the canonical stable feed above unchanged for future releases.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -175,7 +178,7 @@ The numbers above configure the local 1.16.0 / build 31 preparation procedure; i
 is tracked in [releases/v1.16.0.md](releases/v1.16.0.md). They do not establish publication.
 For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. Distributed 1.15.0 uses build 30; the 1.16.0 candidate uses build 31. Keep `local.countdownmanager.app`
+build. Distributed 1.16.0 uses build 31; previous 1.15.0 uses build 30. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
@@ -184,8 +187,8 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Published release status is recorded in [releases/v1.15.0.md](releases/v1.15.0.md);
-the unpublished candidate is tracked in [releases/v1.16.0.md](releases/v1.16.0.md).
+Current published release status is recorded in [releases/v1.16.0.md](releases/v1.16.0.md);
+previous release evidence is retained in [releases/v1.15.0.md](releases/v1.15.0.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus
