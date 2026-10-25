@@ -11,6 +11,9 @@ struct DesktopEventDetail: View {
     let toggleFavorite: () -> Void
     let delete: () -> Void
     let toggleSubtask: (UUID) -> Void
+    let openAttachment: (EventAttachment) -> Void
+    let attachmentThumbnailURL: @MainActor (EventAttachment) async -> URL?
+    let showAttachments: () -> Void
     @State private var confirmingDeletion = false
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
@@ -32,6 +35,10 @@ struct DesktopEventDetail: View {
                     eventIdentity
                     note
                     checklist
+                    SavedAttachmentSection(item: item, compact: false,
+                                           open: openAttachment, thumbnailURL: attachmentThumbnailURL,
+                                           showAll: showAttachments)
+                        .id(item.id)
                 }
                 .padding(26)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -104,7 +111,7 @@ struct DesktopEventDetail: View {
                 .font(.system(size: 13, weight: .semibold))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Событие и все подзадачи будут удалены. Восстановить их нельзя.")
+            Text("Событие, все подзадачи и прикреплённые копии файлов будут удалены. Восстановить их нельзя. Исходные файлы сохранятся.")
                 .font(.system(size: 12))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
@@ -174,7 +181,6 @@ struct DesktopEventDetail: View {
                 Text("Можно добавить пару слов о событии.")
                     .font(.system(size: 13))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                Button("Добавить заметку", action: edit).disabled(!canMutate)
             }
         }
         .uiSmokeControl(id: "desktop.detail.note")
@@ -183,7 +189,8 @@ struct DesktopEventDetail: View {
     private var checklist: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                sectionLabel("Подготовиться")
+                sectionLabel("Подзадачи")
+                    .uiSmokeControl(id: "desktop.subtasks.heading.\(item.id.uuidString)")
                 Spacer()
                 DesktopCompletionLabel(presentation: presentation)
                     .uiSmokeControl(id: "desktop.checklist.progress", value: {
@@ -219,10 +226,6 @@ struct DesktopEventDetail: View {
                     }
                 }
             }
-            Button(item.subtasks.isEmpty ? "Добавить подзадачи…" : "Изменить список…", action: edit)
-                .accessibilityIdentifier("desktop.checklist.edit")
-                .uiSmokeControl(id: "desktop.checklist.edit", action: edit)
-                .disabled(!canMutate)
             if presentation.allSubtasksCompleted {
                 Label("Всё готово", systemImage: "checkmark.circle.fill")
                     .font(.system(size: 13, weight: .medium))
@@ -237,6 +240,6 @@ struct DesktopEventDetail: View {
 
     private func sectionLabel(_ title: String) -> some View {
         Text(title).font(.system(size: 12, weight: .semibold))
-            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
     }
 }

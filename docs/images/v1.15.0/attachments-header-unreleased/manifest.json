@@ -1,0 +1,93 @@
+{
+  "applicationBuild": "30",
+  "applicationVersion": "1.15.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachments-dark.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 336803.7666373334,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 2400
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachments-light.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 336804.17933758337,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 2400
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "mini-attachments-dark.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 336805.43645858334,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "mini-attachments-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 336805.62127783336,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachments-editor-dark.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 336804.73183875,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 860
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachments-editor-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 336804.91268420836,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 860
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-weather-loaded.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 336815.3507564167,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    }
+  ],
+  "executableSHA256": "e5a6e47d558c5fc1f59dba1ab57741eaf33968faee371dd002bb92a4bd4a5d1b",
+  "scope": "Unreleased working source; isolated synthetic data; selected native captures only",
+  "syntheticData": true
+}

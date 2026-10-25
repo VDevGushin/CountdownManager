@@ -460,7 +460,8 @@ class AgentEvalChecks(unittest.TestCase):
             root = Path(directory)
             source = root / "Sources/CountdownCore/Countdown.swift"
             source.parent.mkdir(parents=True)
-            shutil.copy2(ROOT / "Sources/CountdownCore/Countdown.swift", source)
+            for core_source in (ROOT / "Sources/CountdownCore").glob("*.swift"):
+                shutil.copy2(core_source, source.parent / core_source.name)
             original = source.read_text()
             result = runner.oracle(case, root, root)
             self.assertEqual(result["phase"], "runtime", (root / "oracle-build.stderr").read_text())

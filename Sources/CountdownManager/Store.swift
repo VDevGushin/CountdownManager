@@ -26,6 +26,172 @@ package final class SubtaskDisclosureState: ObservableObject {
     }
 }
 
+private enum StoreAttachmentPersistenceError: LocalizedError {
+    case overriddenWriter
+
+    var errorDescription: String? {
+        "Тестовая подмена записи не поддерживает сохранение вложений."
+    }
+}
+
+extension Store {
+    package func beginAttachmentDraft(_ draftID: UUID) async -> Bool {
+        guard eventCreationIsAvailable else { return false }
+        if attachmentDrafts.contains(draftID) { return true }
+        attachmentDrafts.insert(draftID)
+        attachmentOperationCount += 1
+        defer { attachmentOperationCount -= 1 }
+        do {
+            try await repository.beginAttachmentDraft(draftID)
+            guard attachmentDrafts.contains(draftID) else {
+                do { try await repository.discardAttachmentDraft(draftID) }
+                catch { reportAttachmentCleanupFailure() }
+                return false
+            }
+            return true
+        } catch {
+            attachmentDrafts.remove(draftID)
+            recordDiagnostic("attachments.draft failure category=storage")
+            self.error = "Не удалось подготовить вложения. Повторите попытку."
+            return false
+        }
+    }
+
+    package func importAttachment(from source: URL, draftID: UUID) async -> EventAttachment? {
+        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        attachmentOperationCount += 1
+        let scopedAccess = source.startAccessingSecurityScopedResource()
+        defer {
+            if scopedAccess { source.stopAccessingSecurityScopedResource() }
+            attachmentOperationCount -= 1
+        }
+        do {
+            let attachment = try await repository.importAttachment(from: source, draftID: draftID)
+            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            return attachment
+        } catch {
+            guard attachmentDrafts.contains(draftID) else { return nil }
+            recordDiagnostic("attachments.import failure category=storage")
+            self.error = "Не удалось скопировать файл. Проверьте доступ к нему и свободное место на диске."
+            return nil
+        }
+    }
+
+    package func discardAttachmentDraft(_ draftID: UUID) async {
+        guard attachmentDrafts.remove(draftID) != nil else { return }
+        if attachmentPicker?.draftID == draftID { attachmentPicker?.panel.cancel(nil) }
+        attachmentOperationCount += 1
+        defer { attachmentOperationCount -= 1 }
+        do { try await repository.discardAttachmentDraft(draftID) }
+        catch { reportAttachmentCleanupFailure() }
+    }
+
+    package func chooseAttachments(draftID: UUID, currentAttachments: [EventAttachment]) async -> [EventAttachment] {
+        guard attachmentDrafts.contains(draftID), attachmentPicker == nil, !isImportingAttachments else { return [] }
+        guard currentAttachments.count < EventAttachment.maximumCount else {
+            error = "Достигнут лимит \(EventAttachment.maximumCount) файлов. Уберите вложение, чтобы добавить другое."
+            return []
+        }
+        let host = NSApp.keyWindow
+        let panel = NSOpenPanel()
+        panel.title = "Добавить вложения"
+        panel.prompt = "Добавить"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = true
+        attachmentPicker = (draftID, panel)
+        attachmentOperationCount += 1
+        defer {
+            attachmentPicker = nil
+            attachmentOperationCount -= 1
+        }
+        let response = await withCheckedContinuation { continuation in
+            let completion: (NSApplication.ModalResponse) -> Void = { response in
+                panel.orderOut(nil)
+                continuation.resume(returning: response)
+            }
+            if let host, host.isVisible, NSApp.windows.contains(where: { $0 === host }) {
+                panel.beginSheetModal(for: host, completionHandler: completion)
+            } else {
+                panel.begin(completionHandler: completion)
+            }
+        }
+        guard response == .OK, !Task.isCancelled, attachmentDrafts.contains(draftID) else { return [] }
+        return await importAttachments(from: panel.urls, draftID: draftID, currentAttachments: currentAttachments)
+    }
+
+    package func importAttachments(from sources: [URL], draftID: UUID,
+                                   currentAttachments: [EventAttachment]) async -> [EventAttachment] {
+        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return [] }
+        let remaining = max(0, EventAttachment.maximumCount - currentAttachments.count)
+        guard sources.count <= remaining else {
+            error = "Выбрано файлов: \(sources.count). Свободных мест: \(remaining). Ничего не добавлено — уменьшите выбор."
+            return []
+        }
+        var imported: [EventAttachment] = []
+        for source in sources {
+            guard attachmentDrafts.contains(draftID) else { return [] }
+            guard let attachment = await importAttachment(from: source, draftID: draftID) else { break }
+            imported.append(attachment)
+        }
+        return !Task.isCancelled && attachmentDrafts.contains(draftID) ? imported : []
+    }
+
+    package func openAttachment(_ attachment: EventAttachment, eventID: UUID) async {
+        guard attachmentIsActive(attachment, eventID: eventID) else {
+            error = "Вложение больше недоступно для этого события."
+            return
+        }
+        do {
+            let url = try await repository.attachmentURL(for: attachment)
+            guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else {
+                error = "Вложение больше недоступно для этого события."
+                return
+            }
+            if !NSWorkspace.shared.open(url) {
+                error = "Не удалось открыть вложение. Проверьте, что на Mac есть приложение для этого файла."
+            }
+        } catch {
+            recordDiagnostic("attachments.open failure category=storage")
+            self.error = "Копия вложения недоступна. Исходный файл не изменён."
+        }
+    }
+
+    package func editorAttachmentThumbnailURL(_ attachment: EventAttachment, eventID: UUID?, draftID: UUID) async -> URL? {
+        if let eventID, attachmentIsActive(attachment, eventID: eventID) {
+            return await attachmentThumbnailURL(attachment, eventID: eventID)
+        }
+        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        do {
+            let url = try await repository.draftAttachmentURL(for: attachment, draftID: draftID)
+            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    func attachmentThumbnailURL(_ attachment: EventAttachment, eventID: UUID) async -> URL? {
+        guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else { return nil }
+        do {
+            let url = try await repository.attachmentURL(for: attachment)
+            guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else { return nil }
+            return url
+        } catch {
+            return nil
+        }
+    }
+
+    private func attachmentIsActive(_ attachment: EventAttachment, eventID: UUID) -> Bool {
+        data.items.contains { $0.id == eventID && $0.date >= Day(now()) && $0.attachments.contains(attachment) }
+    }
+
+    private func reportAttachmentCleanupFailure() {
+        recordDiagnostic("attachments.cleanup failure category=storage")
+        error = "Не удалось удалить неиспользуемые копии вложений. Очистка повторится при следующем сохранении или запуске."
+    }
+}
+
 @MainActor
 package final class SubtaskDisclosureCache {
     private let persistence: SubtaskDisclosurePersistence
@@ -76,6 +242,9 @@ package final class Store: ObservableObject {
     private var needsDeferredNormalization = false
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
+    private var attachmentDrafts: Set<UUID> = []
+    private var attachmentPicker: (draftID: UUID, panel: NSOpenPanel)?
+    @Published private var attachmentOperationCount = 0
 
     package init(
         fileURL: URL? = nil,
@@ -115,6 +284,7 @@ package final class Store: ObservableObject {
             let loaded = try await repository.load()
             data = loaded
             durableData = loaded
+            if await repository.attachmentCleanupFailed { reportAttachmentCleanupFailure() }
             isLoading = false
             recordDiagnostic("data.load success items=\(data.items.count)")
             refresh()
@@ -136,7 +306,10 @@ package final class Store: ObservableObject {
 
     package var hasPendingPersistence: Bool {
         isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
+            || isImportingAttachments
     }
+
+    package var isImportingAttachments: Bool { attachmentOperationCount > 0 }
 
     package var eventCreationIsAvailable: Bool {
         !isLoading && !readFailed && !isRecoveringPersistence && !recoveryMutationInFlight
@@ -238,9 +411,14 @@ package final class Store: ObservableObject {
         do {
             let didWrite: Bool
             if let persistenceSaveOverride {
+                guard updated.items.allSatisfy({ $0.attachments.isEmpty }),
+                      durableData.items.allSatisfy({ $0.attachments.isEmpty }) else {
+                    throw StoreAttachmentPersistenceError.overriddenWriter
+                }
                 didWrite = try await persistenceSaveOverride(updated, writeRevision)
             } else {
                 didWrite = try await repository.save(updated, revision: writeRevision)
+                if await repository.attachmentCleanupFailed { reportAttachmentCleanupFailure() }
             }
             if didWrite, writeRevision >= durableRevision {
                 durableRevision = writeRevision

@@ -1,10 +1,71 @@
 # Preparing signed updates
 
+Version **1.16.0 / build 31 has verified final artifacts; publication is authorized and pending confirmation**. It includes task-first
+ordering, a 15-file cap, 36-point mini previews and separate searchable file libraries.
+The current desktop library uses the same native SwiftUI sheet as Settings and the editor,
+with a right-side close button and parent-content outside-click dismissal. Mini Back matches Settings; both surfaces keep counts only in the footer.
+The current follow-up also removes duplicate saved-section editor links; the event header
+pencil is the sole editor entry. All three desktop routes share native sheet appearance and
+system animation; macOS owns timing and Reduce Motion. Route ownership persists until native
+onDismiss. Editor drafts still require Save/Cancel, and a nested diagnostic Save panel retains
+Settings. Shared editor rows now have 36-point previews before Save and after reopening; every
+format requests a best-effort native preview, with a fallback when unavailable. Mini attachment disclosure
+keeps heading/count positions fixed. Ordinary feed rows use top-aligned calendar/title,
+upper-right remaining time, date/weather in one line and horizontal checklist/file summaries;
+ordinary grid/details retain their layout. The featured favorite places date/weather inline
+on a full-width row below its title/calendar identity, preserving room in narrow panes.
+The exact `5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254` bundle passed
+native desktop **27/27** in **52.034 seconds**, exit 0, unchanged executable and no stall/timeout;
+strict lint reports **0/71** and final CoreChecks/UIChecks passed with exit 0.
+[Current native-sheet provenance](images/v1.16.0/native-sheets/PROVENANCE.md) identifies
+42 selected images from 110 native PNGs and the separate physical-click platform probe.
+These are not a new full mini/editor suite or a compositor-animation recording.
+A fresh genuine isolated **1.15.0/30 → final 1.16.0/31** Sparkle update passed Download,
+Install and Relaunch: old PID 19194 became automatically relaunched PID 19340 at the same
+application path, with unchanged synthetic JSON (two events, checklist and favorite) and
+preserved Dark preference. [Final update receipt](images/v1.16.0/native-sheets/genuine-update-final.json)
+and [payload isolation](images/v1.16.0/native-sheets/genuine-update-payload-isolation.json)
+identify separate test IDs, a marked isolated home and unchanged unsigned production code.
+The disposable test key and local HTTP are separate from production signing/public HTTPS;
+[local downloads](images/v1.16.0/native-sheets/genuine-update-local-downloads.json) match test artifacts.
+The [first attempt](images/v1.16.0/native-sheets/genuine-update-first-attempt-failure.json)
+remains FAIL because two host processes were observed; the cause is unresolved. The accepted
+repeat omitted all UI state reads or application reacquisition between the final Install click
+and independent relaunch observation and found one host process. This does not certify first
+installation, old macOS, Intel or public HTTPS availability.
+The previous `69c29794…` candidate passed native
+desktop **27/27** (55.659 seconds, exit 0, unchanged executable, no stall/timeout) and strict
+lint **0/70**; final CoreChecks/UIChecks also passed with exit 0.
+[Historical desktop-polish acceptance](images/v1.16.0/desktop-polish/acceptance.json) retains exact origins and limits.
+[Historical desktop-polish provenance](images/v1.16.0/desktop-polish/PROVENANCE.md) identifies
+54 selected/124 full native images and the [historical public-only artifact audit](images/v1.16.0/desktop-polish/artifact-audit.json).
+Cache-render observation times exceeded requested motion offsets; no new first-200-ms
+compositor-fluency or full mini/editor-suite claim is made for this executable.
+The preceding exact `5836d970…` candidate passed strict lint (0/70), CoreChecks/UIChecks, native desktop
+27/27, mini 23/23 and a public-key-only signed-artifact audit.
+[Previous overlay provenance](images/v1.16.0/attachment-overlay/PROVENANCE.md) records 17 new
+native images and exact bundle/artifact hashes. Scoped external CUA acceptance also passed
+inside/outside/cross/Escape dismissal and mini Back/search/clear on an isolated probe with
+identical unsigned code; it is recorded in the [overlay receipt](images/v1.16.0/attachment-overlay/acceptance.json).
+The preceding
+[priority/limit candidate](images/v1.16.0/priority-limit/PROVENANCE.md) remains historical evidence.
+
+Previous RC2 signing/archive audit and native routes are retained historical evidence;
+they do not certify the follow-up. RC2 desktop/mini/editor routes passed 27/27, 23/23 and 5/5. Genuine isolated
+1.15.0-to-1.16.0 RC1 install/relaunch passed with a disposable test key and local HTTP; that is
+reused pipeline evidence, not a new upgrade run for RC2 or production HTTPS publication.
+RC1 PDF/PNG opening in Preview, warm movie-row opening in QuickTime, playback and full restart
+passed; these unchanged storage/opening workflows are reused with their RC1 origin stated. Cold first-launch default-app opening
+remains explicitly uncertified. The [priority/limit acceptance receipt](images/v1.16.0/priority-limit/acceptance.json)
+separates fresh follow-up gates from reused RC1 workflows; the [RC2 receipt](images/v1.16.0/acceptance.json)
+remains historical evidence.
+Final artifact hashes and release status: [releases/v1.16.0.md](releases/v1.16.0.md).
+
 Release **1.15.0 / build 30 is published as Latest** and adds the native desktop window alongside
 the menu-bar panel. Signed ZIP/feed, public-key-only audit, external input, diagnostic Save and
 genuine isolated older-to-newer updater acceptance passed. Anonymous archive, version-feed and
 stable-feed downloads returned HTTP 200 and match the signed artifacts.
-Current status: [releases/v1.15.0.md](releases/v1.15.0.md).
+Published status: [releases/v1.15.0.md](releases/v1.15.0.md).
 
 Previous release **1.14.1 / build 29** was published as Latest with the existing production key and stable feed.
 Only the explicit favorite receives the large card. Calendar month strips fill the top edge;
@@ -29,8 +90,12 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The version-specific archive URL is
+The published 1.15.0 version-specific archive URL is
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/CountdownManager-1.15.0-30.zip`.
+The planned 1.16.0 archive URL is
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip`;
+preparing artifacts for this URL does not make it available. Keep the canonical stable feed above
+unchanged while preparing the candidate; publication is a separate authorized operation.
 Publish the signed `appcast.xml` and ZIP together as Latest, then verify anonymous downloads
 against the locally signed SHA-256 values.
 Keep archive URLs tied to their version tags; keep the
@@ -91,7 +156,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.15.0 COUNTDOWN_BUILD_NUMBER=30 \
+  COUNTDOWN_VERSION=1.16.0 COUNTDOWN_BUILD_NUMBER=31 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -101,15 +166,16 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.15.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above illustrate the 1.15.0 preparation procedure; preparation evidence is recorded
-in the release notes linked above. They do not establish publication. For subsequent releases, change the version,
+The numbers above configure the local 1.16.0 / build 31 preparation procedure; its evidence
+is tracked in [releases/v1.16.0.md](releases/v1.16.0.md). They do not establish publication.
+For subsequent releases, change the version,
 build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. Distributed 1.14.1 uses build 29; 1.15.0 uses build 30. Keep `local.countdownmanager.app`
+build. Distributed 1.15.0 uses build 30; the 1.16.0 candidate uses build 31. Keep `local.countdownmanager.app`
 and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
@@ -118,7 +184,8 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current release status is recorded in [releases/v1.15.0.md](releases/v1.15.0.md).
+Published release status is recorded in [releases/v1.15.0.md](releases/v1.15.0.md);
+the unpublished candidate is tracked in [releases/v1.16.0.md](releases/v1.16.0.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus

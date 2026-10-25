@@ -1,0 +1,49 @@
+[
+  {
+    "clipBounds" : [
+      0,
+      4168.5,
+      731,
+      800
+    ],
+    "documentBounds" : [
+      0,
+      0,
+      731,
+      4968.5
+    ],
+    "documentFrame" : [
+      0,
+      0,
+      731,
+      4968.5
+    ],
+    "documentIsFlipped" : true,
+    "event" : [
+      24,
+      742,
+      683,
+      89
+    ],
+    "nativeViewport" : [
+      0,
+      55,
+      731,
+      800
+    ],
+    "rootIsFlipped" : true,
+    "scrollFrame" : [
+      0,
+      0,
+      731,
+      800
+    ],
+    "uptime" : 367516.65052304167,
+    "viewport" : [
+      0,
+      55,
+      731,
+      800
+    ]
+  }
+]

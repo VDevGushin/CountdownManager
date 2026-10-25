@@ -1,0 +1,26 @@
+[
+  {
+    "documentHeight" : 4602,
+    "expectedRowWidth" : 683,
+    "lastRowWidth" : 266.5,
+    "uptime" : 367516.44287145836
+  },
+  {
+    "documentHeight" : 4968.5,
+    "expectedRowWidth" : 683,
+    "lastRowWidth" : 683,
+    "uptime" : 367516.53503841668
+  },
+  {
+    "documentHeight" : 4968.5,
+    "expectedRowWidth" : 683,
+    "lastRowWidth" : 683,
+    "uptime" : 367516.58852137503
+  },
+  {
+    "documentHeight" : 4968.5,
+    "expectedRowWidth" : 683,
+    "lastRowWidth" : 683,
+    "uptime" : 367516.64198341669
+  }
+]

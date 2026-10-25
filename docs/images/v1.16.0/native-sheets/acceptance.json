@@ -1,0 +1,80 @@
+{
+  "recorded_at_utc": "2026-10-24T23:41:33.836388+00:00",
+  "status": "PREPARED LOCALLY / NOT PUBLISHED",
+  "version": "1.16.0",
+  "build": "31",
+  "executable_sha256": "5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254",
+  "automated": {
+    "swiftlint": "PASS: 0 violations in71files",
+    "fast": "PASS: CoreChecks+UIChecks, exit0",
+    "native_desktop": {
+      "mode": "desktop",
+      "app": "/private/tmp/countdown-native-sheets.25je0w/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254",
+      "executable_after": "5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke-desktop",
+      "isolated_home": "/private/tmp/countdown-native-sheets.25je0w/native-desktop-previews-window-scoped-previews-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 52.034,
+      "status": "PASS",
+      "result": "DesktopSmoke\n✓ collection/feed retain one explicit favorite and use the same shared events/weather\n✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order\n✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card\n✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes\n✓ divider grip covers a 12pt band at native divider positions and passes pane content through\n✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity\n✓ reverse panel-to-desktop editor exclusion keeps the original draft owner\n✓ settings and editor attach native sheets to the retained desktop; settings close preserves selection/divider and nested diagnostic Cancel releases its guard\n✓ desktop settings disable forecast supply through the shared weather owner\n✓ system, light and dark preferences propagate through both native windows and both settings hosts\n✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer\n✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles\n✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces\n✓ nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions\n✓ attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width\n✓ shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation\n✓ 0/3/4/15 attachments: hidden empty sections, desktop44/panel36 quick files and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup\n✓ note/preparation/files order and matching headings; both editors show 36pt previews and aligned names, while editor15/15 admission guard, fourteen-file retry and Cancel preserve durable fifteen files\n✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups\n✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state\n✓ mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents\n✓ ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month\n✓ rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider\n✓ search no-results removes empty month headings and restoration preserves events, favorite and split position\n✓ forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider\n✓ synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed\n✓ overview and favorite date/weather share unclipped horizontal rows with stable pending/loaded/off geometry in narrow/wide collection and feed\nPASS: 27/27"
+    }
+  },
+  "native_images": {
+    "all_count": 110,
+    "selected_count": 42,
+    "hashes_and_dimensions_verified": true,
+    "manifest_sha256": "b490693c6dbd71804e069a8eba78257753f3f46d5d25ebfffcbdf400e5e744e0"
+  },
+  "preview_provider_results": {
+    "PNG": "ready",
+    "PDF_first_page": "ready",
+    "MP4": "ready",
+    "TXT": "ready",
+    "RTF": "ready in focused fast checks",
+    "corrupt_PNG": "fallback",
+    "unknown_extension": "fallback"
+  },
+  "scope": [
+    "One shared native SwiftUI sheet for desktop editor/settings/files; no custom animation/timer",
+    "Scoped parent click dismissal settings/files; editor protected; nested diagnostic sheet guard",
+    "36pt shared editor previews beforeSave+reopen using exactdraft pins or currentevent references",
+    "QuickLook attempt for all nonPDF formats, bounded native PDF firstpage, fallback on failure",
+    "Favorite date/weather inline in narrow/wide layouts"
+  ],
+  "physical_parent_click": "platform-probe.json (isolated prototype human clicks; source/log origin retained)",
+  "artifact_audit": "artifact-audit.json",
+  "source_hashes_rechecked": true,
+  "source_inputs_sha256": "19aba15a6320b9483910e52213520737363ceb776ab9c3f12c0342c9cfe56088",
+  "retained_attempts": [
+    {
+      "attempt": "accepted-aqua",
+      "executable": "3183005c...",
+      "failure": "after3 broad newfavorite nativeframe prefix included oldheader button; narrowed toidentity/metadata only"
+    },
+    {
+      "attempt": "favorite-frame-fixed-aqua",
+      "executable": "0e43a540...",
+      "failure": "after7 parent hitTest nil undernative modal is expected; drivercriterion now uses actualattachedSheet; fullrouting requiredafterdismiss"
+    },
+    {
+      "attempt": "native-divider-fixed-aqua",
+      "executable": "7dc275d7...",
+      "failure": "after12 driverinserted text into retainedparentsearch beforeactualsheet becamekey; now awaits realnativekey+focus"
+    },
+    {
+      "attempt": "native-focus-ready-aqua",
+      "executable": "3c77fe0f...",
+      "failure": "after16 savedrow registryID shared between desktop/mini; rowIDs now surface-specific (AXIDs unchanged), nativeframe probes preservelogicalowner; editor captures now select exactcurrentwindow scroll+rescroll aftereachtheme"
+    }
+  ],
+  "limits": [
+    "Nativeinprocess scenarios do not establish physical pointer delivery; separate isolated platformprobe is distinguished from productionintegration.",
+    "Full VoiceOver, Intel, older macOS, first-install Gatekeeper and fresh genuine updater/default-app opening were not re-certified."
+  ]
+}

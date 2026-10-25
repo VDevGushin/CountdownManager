@@ -1,0 +1,76 @@
+{
+  "stage": "after",
+  "recorded_at": "2026-10-25T00:00:36.284333+00:00",
+  "app": "/private/tmp/countdown-final-genuine-update-r2._qmy0spm/older/Countdown Manager.app",
+  "version": "1.16.0",
+  "build": "31",
+  "pid": 19340,
+  "process": "19340 /private/tmp/countdown-final-genuine-update-r2._qmy0spm/older/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "host_sha256": "f44665267deea8d31542b74480a32f55ae825ee2dd07e3095fdc993044bc8829",
+  "data_sha256": "2a9b65bf7102d2bbc838181f35b203d9a9e77a5f894bf342dfd118ff4562dbdd",
+  "data": {
+    "primaryID": "11500000-0000-4000-8000-000000000001",
+    "items": [
+      {
+        "id": "11500000-0000-4000-8000-000000000001",
+        "title": "Проверка обновления 1.16",
+        "note": "Только вымышленные данные для проверки Sparkle.",
+        "date": {
+          "year": 2026,
+          "month": 11,
+          "day": 24
+        },
+        "emoji": "📦",
+        "showsWeather": false,
+        "usesAutomaticTitle": false,
+        "subtasks": [
+          {
+            "id": "11500000-0000-4000-8000-000000000011",
+            "text": "Сохранить контрольные данные",
+            "isCompleted": true
+          },
+          {
+            "id": "11500000-0000-4000-8000-000000000012",
+            "text": "Проверить перезапуск",
+            "isCompleted": false
+          }
+        ]
+      },
+      {
+        "id": "11500000-0000-4000-8000-000000000002",
+        "title": "Следующее событие",
+        "date": {
+          "year": 2026,
+          "month": 12,
+          "day": 24
+        },
+        "emoji": "",
+        "showsWeather": false,
+        "usesAutomaticTitle": false,
+        "subtasks": []
+      }
+    ]
+  },
+  "preferences_suite": "local.countdownmanager.ui-smoke.countdown-final-genuine-update-r2._qmy0spm.test-home",
+  "preferences": {
+    "appearance.selection": "dark"
+  },
+  "embedded_isolated_home": "/private/tmp/countdown-final-genuine-update-r2._qmy0spm/test-home",
+  "codesign_deep_strict": true,
+  "same_application_path": true,
+  "production_private_key_accessed": false,
+  "production_app_or_data_modified": false,
+  "old_pid": 19194,
+  "automatic_relaunch_pid": 19340,
+  "unsigned_candidate_code_unchanged_in_test_fixture": true,
+  "synthetic_events_and_checklist_preserved": true,
+  "synthetic_json_bytes_unchanged": true,
+  "dark_preference_preserved": true,
+  "disposable_test_key_only": true,
+  "operator_saw_automatic_relaunch": true,
+  "actual_update_verified": true,
+  "technical_status": "PASS",
+  "public_https_or_first_install_acceptance": false,
+  "genuine_published_baseline_host_sha256": "d7486a2ac7f394b794cad2463bce60a4ff261e9e80e23a0eb4eae9e2dd4eb25d",
+  "production_candidate_host_sha256": "5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254"
+}

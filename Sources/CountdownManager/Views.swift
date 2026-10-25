@@ -15,11 +15,16 @@ struct ManagerView: View {
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
     @State private var showingSettings = false
+    @State private var attachmentListEventID: UUID?
     @State private var dayPreset: DayCreationPreset?
     @State private var selectDayDate = false
     @State private var rootIdentity = UUID()
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
+
+    private var attachmentListEvent: Countdown? {
+        store.active.first { $0.id == attachmentListEventID && !$0.attachments.isEmpty }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,10 +45,19 @@ struct ManagerView: View {
             }
             ZStack {
                 listScreen
-                    .opacity(showingEditor || showingSettings ? 0 : 1)
-                    .disabled(showingEditor || showingSettings)
-                    .allowsHitTesting(!showingEditor && !showingSettings)
-                    .accessibilityHidden(showingEditor || showingSettings)
+                    .opacity(showingEditor || showingSettings || attachmentListEvent != nil ? 0 : 1)
+                    .disabled(showingEditor || showingSettings || attachmentListEvent != nil)
+                    .allowsHitTesting(!showingEditor && !showingSettings && attachmentListEvent == nil)
+                    .accessibilityHidden(showingEditor || showingSettings || attachmentListEvent != nil)
+                if let item = attachmentListEvent, !showingEditor, !showingSettings {
+                    AttachmentListView(item: item, compact: true, back: { attachmentListEventID = nil },
+                                       open: { attachment in
+                        Task { await store.openAttachment(attachment, eventID: item.id) }
+                    }, thumbnailURL: { attachment in
+                        await store.attachmentThumbnailURL(attachment, eventID: item.id)
+                    })
+                    .id(item.id)
+                }
                 if showingSettings {
                     SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
                                  diagnosticsContext: diagnosticsContext) {
@@ -75,6 +89,8 @@ struct ManagerView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("root.window")
         .uiSmokeControl(id: "root.window", value: { rootIdentity.uuidString })
+        .onChange(of: store.data) { _ in closeUnavailableAttachmentList() }
+        .onChange(of: store.today) { _ in closeUnavailableAttachmentList() }
     }
 
     private var listScreen: some View {
@@ -263,6 +279,14 @@ struct ManagerView: View {
             if presentation.completionLabel != nil {
                 SubtaskChecklistView(store: store, item: item, presentation: presentation, editorSession: editorSession)
                     .padding(.top, 8)
+            }
+            if !item.attachments.isEmpty {
+                SavedAttachmentSection(item: item, compact: true, open: { attachment in
+                    Task { await store.openAttachment(attachment, eventID: item.id) }
+                }, thumbnailURL: { attachment in
+                    await store.attachmentThumbnailURL(attachment, eventID: item.id)
+                }, showAll: { showAttachmentList(item.id) })
+                .padding(.top, 8)
             }
         }
         .padding(12)
@@ -526,7 +550,18 @@ struct ManagerView: View {
 
     private func openSettings() {
         guard !showingEditor else { return }
+        attachmentListEventID = nil
         showingSettings = true
+    }
+
+    private func showAttachmentList(_ id: UUID) {
+        guard !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
+              store.active.contains(where: { $0.id == id && !$0.attachments.isEmpty }) else { return }
+        attachmentListEventID = id
+    }
+
+    private func closeUnavailableAttachmentList() {
+        if attachmentListEventID != nil, attachmentListEvent == nil { attachmentListEventID = nil }
     }
 
     private func finishEditor() {
@@ -657,6 +692,9 @@ private struct SubtaskChecklistView: View {
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .accessibilityHidden(true)
                     Text("Подзадачи")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+                        .uiSmokeControl(id: "panel.subtasks.heading.\(item.id.uuidString)")
                     Spacer()
                     HStack(spacing: 4) {
                         if presentation.allSubtasksCompleted {
@@ -791,6 +829,8 @@ struct EditorView: View {
     @State private var date: Date
     @State private var primary: Bool
     @State private var isSaving = false
+    @State private var isImportingAttachments = false
+    @StateObject private var attachmentSession = EditorAttachmentSession()
     @State private var confirmingDeletion = false
     @State private var emojiPicker: EditorEmojiPickerState = .closed
     @State private var noteFocusRequest = 0
@@ -904,6 +944,15 @@ struct EditorView: View {
                             editorSubtasks(scrollProxy: proxy)
                         }
                         .padding(.top, 2)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Divider().padding(.bottom, 13)
+                            EditorAttachmentSection(attachments: $draft.attachments,
+                                                    isImporting: isImportingAttachments, add: addAttachments,
+                                                    thumbnailURL: { attachment in
+                                await store.editorAttachmentThumbnailURL(attachment, eventID: item?.id,
+                                                                         draftID: attachmentSession.id)
+                            })
+                        }
                     }
                     .padding(.top, 12)
                     .padding(.bottom, 15)
@@ -914,7 +963,7 @@ struct EditorView: View {
                 .accessibilityIdentifier("editor.scroll")
                 .uiSmokeControl(id: "editor.scroll")
             }
-            .disabled(isSaving)
+            .disabled(isSaving || isImportingAttachments)
             editorActions
         }
         .font(.system(size: 13))
@@ -1068,7 +1117,7 @@ struct EditorView: View {
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .accessibilityIdentifier("event.delete")
                     .uiSmokeControl(id: "event.delete", action: { confirmingDeletion = true })
-                    .disabled(isSaving || confirmingDeletion)
+                    .disabled(isSaving || isImportingAttachments || confirmingDeletion)
                 }
                 Spacer(minLength: 0)
                 Button("Отмена", action: cancel)
@@ -1089,7 +1138,7 @@ struct EditorView: View {
                 .keyboardShortcut(.defaultAction)
                 .accessibilityIdentifier("editor.save")
                 .uiSmokeControl(id: "editor.save", action: save)
-                .disabled(!canSave || isSaving || confirmingDeletion)
+                .disabled(!canSave || isSaving || isImportingAttachments || confirmingDeletion)
             }
             .controlSize(.regular)
             .font(.system(size: 12))
@@ -1100,7 +1149,8 @@ struct EditorView: View {
 
     private var deletionControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Удалить событие без возможности восстановления?").font(.system(size: 11))
+            Text("Удалить событие, подзадачи и прикреплённые копии файлов без возможности восстановления? Исходные файлы сохранятся.")
+                .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 16) {
                 Button("Не удалять") { confirmingDeletion = false }
                     .accessibilityIdentifier("event.delete.cancel")
@@ -1117,14 +1167,17 @@ struct EditorView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AuroraInstrument.surface(for: colorScheme, elevated: false,
                                             highContrast: accessibilitySettings.prefersHighContrast))
-        .disabled(isSaving)
+        .disabled(isSaving || isImportingAttachments)
     }
 
     private func delete() {
-        guard let item, !isUnavailable, !isSaving else { return }
+        guard let item, !isUnavailable, !isSaving, !isImportingAttachments else { return }
         isSaving = true
         Task {
-            if await store.delete(item.id) { done() }
+            if await store.delete(item.id) {
+                await attachmentSession.discard(in: store)
+                done()
+            }
             isSaving = false
         }
     }
@@ -1137,7 +1190,9 @@ struct EditorView: View {
     private func editorSubtasks(scrollProxy: ScrollViewProxy) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Text("Подзадачи").font(.system(size: 12))
+                Text("Подзадачи").font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+                    .uiSmokeControl(id: "editor.subtasks.heading")
                 Spacer()
                 Text("\(draft.subtasks.count)/\(Subtask.maximumCount)").font(.caption2).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
@@ -1629,11 +1684,24 @@ struct EditorView: View {
     private func cancel() {
         guard !isSaving else { return }
         DiagnosticLog.shared.record("editor.cancel mode=\(item == nil ? "new" : "edit")")
+        attachmentSession.cancel()
         done()
     }
 
+    private func addAttachments() {
+        guard !isSaving, !isImportingAttachments, !isUnavailable, !confirmingDeletion,
+              draft.attachments.count < EventAttachment.maximumCount else { return }
+        isImportingAttachments = true
+        let draftBinding = $draft
+        let importingBinding = $isImportingAttachments
+        attachmentSession.importFiles(in: store, currentAttachments: draft.attachments) { imported in
+            draftBinding.wrappedValue.attachments.append(contentsOf: imported)
+            importingBinding.wrappedValue = false
+        }
+    }
+
     private func save() {
-        guard canSave, !isSaving, !confirmingDeletion else { return }
+        guard canSave, !isSaving, !isImportingAttachments, !confirmingDeletion else { return }
         if let item, item.date < Day(Date()) {
             store.refresh()
             return
@@ -1642,6 +1710,7 @@ struct EditorView: View {
         isSaving = true
         Task {
             if await store.save(countdown, primary: primary, requireExisting: item != nil) {
+                await attachmentSession.discard(in: store)
                 didSave(countdown)
                 done()
             }

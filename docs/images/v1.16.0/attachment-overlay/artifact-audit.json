@@ -1,0 +1,44 @@
+{
+  "audited_at": "2026-10-24T21:42:02.668913+00:00",
+  "version": "1.16.0",
+  "build": "31",
+  "identifier": "local.countdownmanager.app",
+  "archive": "/private/tmp/countdown-attachment-overlay.YbsaYR/release/CountdownManager-1.16.0-31.zip",
+  "archive_sha256": "3eca26a65657bda0c905fcb96ee2189e0ffc22fdc295db9dd08c642254422259",
+  "archive_bytes": 5778958,
+  "feed": "/private/tmp/countdown-attachment-overlay.YbsaYR/release/appcast.xml",
+  "feed_sha256": "21e3a0311711b72507f6f7d0415d5e59229e8a77c7ae5f852e8b4aa2652d0494",
+  "feed_bytes": 1299,
+  "host_sha256": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+  "public_key_sha256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "cryptographic_verification": {
+    "artifacts": [
+      {
+        "name": "archive",
+        "rejectsDamagedMessage": true,
+        "rejectsDamagedSignature": true,
+        "signedBytes": 5778958,
+        "valid": true
+      },
+      {
+        "name": "feed",
+        "rejectsDamagedMessage": true,
+        "rejectsDamagedSignature": true,
+        "signedBytes": 1155,
+        "valid": true
+      }
+    ],
+    "privateKeyAccessed": false,
+    "verifier": "Apple CryptoKit Curve25519.Signing.PublicKey.isValidSignature"
+  },
+  "feed_signed_prefix_length": 1155,
+  "feed_signature_trailer_exactly_bounded": true,
+  "production_channel_matches_published_baseline_public_key": true,
+  "no_test_flags_or_loopback_exemptions": true,
+  "extracted_codesign_deep_strict_verified": true,
+  "extracted_tree_matches_candidate": true,
+  "tree_entries": 166,
+  "published_by_auditor": false,
+  "private_key_accessed_by_auditor": false,
+  "note": "Independent public-key-only artifact audit; not GUI installation, notarization or public-download acceptance."
+}

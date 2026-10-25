@@ -1,0 +1,141 @@
+{
+  "applicationBuild": "30",
+  "applicationVersion": "1.15.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachment-indicators-collection-dark.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339353.026969125,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachment-indicators-collection-light.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339353.43167,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachment-indicators-feed-dark.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339354.0223615417,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachment-indicators-feed-light.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339354.42861225,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachments-dark.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339355.102897625,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachments-light.png",
+      "height": 1576,
+      "highContrast": false,
+      "observationUptime": 339355.5073892917,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "mini-attachments-dark.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 339356.763024125,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "mini-attachments-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 339356.94622208335,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-attachments-editor-dark.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 339356.05911920837,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 860
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-attachments-editor-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "observationUptime": 339356.24059237505,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 860
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "desktop-weather-loaded.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 339366.8349010834,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920
+    }
+  ],
+  "executableSHA256": "2d3b46dff6fbc22a56eef38e0a5eceaf7c72edbd166c4cc85cf743dc3cefa67c",
+  "scope": "Unreleased attachment-card indicators and compact-editor-entry cleanup; synthetic native renders",
+  "syntheticData": true
+}

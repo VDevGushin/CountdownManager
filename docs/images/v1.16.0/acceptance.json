@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "candidate": "RC2",
+  "version": "1.16.0",
+  "build": "31",
+  "published": false,
+  "installed_in_applications": false,
+  "production_data_mutated": false,
+  "executable_sha256": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+  "archive_sha256": "765f50a7ce2c7a35945ca8793fc776dec7f67bdc4f83e61958b6d0ba8b71e47a",
+  "feed_sha256": "4a387e1add8488a1847dc9f02661e68e05ea1bce41074770fc56f9654747c5ff",
+  "source_input_digest": "13bb24b5a051996223510d6e6ef6d1113f9233e60ff6420a1751b2d0b9eb8758",
+  "automated_gates": {
+    "strict_swiftlint": "PASS, 0 violations in70 files",
+    "fast_core_and_ui": "PASS"
+  },
+  "native_runs": [
+    {
+      "mode": "desktop",
+      "app": "/private/tmp/countdown-1.16.0-rc2.joYRN1/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "executable_after": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke-desktop",
+      "isolated_home": "/private/tmp/countdown-1.16.0-rc2.joYRN1/native-desktop-previews-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 40.143,
+      "status": "PASS",
+      "result": "DesktopSmoke\n✓ collection/feed retain one explicit favorite and use the same shared events/weather\n✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order\n✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card\n✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes\n✓ divider grip covers a 12pt band at native divider positions and passes pane content through\n✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity\n✓ reverse panel-to-desktop editor exclusion keeps the original draft owner\n✓ centered settings pane has a close button; backdrop dismisses without activating background events or moving divider, and diagnostic Cancel releases its guard\n✓ desktop settings disable forecast supply through the shared weather owner\n✓ system, light and dark preferences propagate through both native windows and both settings hosts\n✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer\n✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles\n✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces\n✓ nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions\n✓ attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width\n✓ shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation\n✓ real PNG/PDF/video previews and corrupt fallback; 0/4/5/15 files, four/all/collapse, selection reset, 44pt geometry and unchanged mini-panel rows\n✓ compact editor and mini-panel align image/PDF/movie/generic name and size columns, including two-line filenames\n✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups\n✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state\n✓ mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents\n✓ ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month\n✓ rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider\n✓ search no-results removes empty month headings and restoration preserves events, favorite and split position\n✓ forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider\n✓ synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed\n✓ overview date and weather share one unclipped row with stable loaded/off geometry in narrow/wide collection and feed\nPASS: 27/27"
+    },
+    {
+      "mode": "mini",
+      "app": "/private/tmp/countdown-1.16.0-rc2.joYRN1/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "executable_after": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke",
+      "isolated_home": "/private/tmp/countdown-1.16.0-rc2.joYRN1/native-mini-previews-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 28.606,
+      "status": "PASS",
+      "result": "UISmoke\n✓ real retained editor and running timer postpone update; explicit safe continuation resumes once\n✓ timer preset selection reaches both ends, is last-tap-wins and drives Play\n✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast\n✓ completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion\n✓ completion alert closes on its first click or after five seconds without changing timer state\n✓ native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events\n✓ isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout\n✓ emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show\n✓ five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly\n✓ note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable\n✓ editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout\n✓ single editor persists note, emoji and ten subtasks only on Save\n✓ completion can be toggled and reopened\n✓ failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it\n✓ removed event retains draft and disables Save without resurrection\n✓ inline deletion confirmation preserves cancellation and persists explicit deletion\n✓ diagnostics remain free of private editor input\n✓ tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show\n✓ choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged\n✓ ordinary and day creation allow no icon or favorite; every card is compact while Mars supplies the menu\n✓ choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon\n✓ list and editor can select or clear a favorite; no favorite remains durable after reopening\n✓ today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save\nPASS: 23/23"
+    },
+    {
+      "mode": "editor",
+      "app": "/private/tmp/countdown-1.16.0-rc2.joYRN1/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "executable_after": "cb2723661e394f1a9e0de09349fde688b2f40bf4d9c83ad0a184fab023d401e4",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke-editor-workflows",
+      "isolated_home": "/private/tmp/countdown-1.16.0-rc2.joYRN1/native-editor-previews-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 9.116,
+      "status": "PASS",
+      "result": "UISmoke\n✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry\nPASS: 5/5"
+    }
+  ],
+  "fresh_native_selected_pngs": 27,
+  "archive_public_key_only_audit": "artifact-audit.json",
+  "reused_workflow_evidence": [
+    {
+      "file": "genuine-update-rc1.json",
+      "description": "Genuine published1.15-to-1.16RC1 download/install/automaticrelaunch; subsequent change limited to compact icon geometry and measurement hooks."
+    },
+    {
+      "file": "media-acceptance-rc1.json",
+      "description": "Native multi-file import/save, default-app opening and full app restart onRC1; persistence/opening/thumbnailservice unchanged byRC2compactalignmentfix."
+    }
+  ],
+  "manual_limits": [
+    "Cold first launch of default applications not certified",
+    "Mid-copy cancellation not forced on fast filesystem",
+    "macOS13/Intel/Gatekeeperfirstinstall/Spaces/fullVoiceOver not certified"
+  ]
+}

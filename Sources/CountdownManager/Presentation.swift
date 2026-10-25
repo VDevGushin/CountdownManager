@@ -7,7 +7,7 @@ package enum EventUIStrings {
     package static let editEvent = "Редактировать событие"
     package static let createDay = "Создать день"
     package static let newDay = "Новый день"
-    package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи."
+    package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся."
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
     package static let emptyMessage = "Выбери день события.\nНазвание и детали можно изменить."
@@ -289,6 +289,7 @@ package struct EventEditorDraft: Equatable {
     package var note: String
     package var emoji: String
     package var subtasks: [Subtask]
+    package var attachments: [EventAttachment]
     package var showsWeather: Bool
     package private(set) var usesAutomaticTitle: Bool
 
@@ -297,6 +298,7 @@ package struct EventEditorDraft: Equatable {
         note = item?.note ?? ""
         emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
+        attachments = item?.attachments ?? []
         showsWeather = item?.showsWeather ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
     }
@@ -306,6 +308,7 @@ package struct EventEditorDraft: Equatable {
         note = ""
         emoji = ""
         subtasks = []
+        attachments = []
         showsWeather = true
         usesAutomaticTitle = true
     }
@@ -355,7 +358,8 @@ package struct EventEditorDraft: Equatable {
             emoji: emoji,
             subtasks: subtasks,
             showsWeather: showsWeather,
-            usesAutomaticTitle: usesAutomaticTitle
+            usesAutomaticTitle: usesAutomaticTitle,
+            attachments: attachments
         )
     }
 }

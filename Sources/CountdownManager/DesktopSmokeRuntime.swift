@@ -291,53 +291,63 @@ final class DesktopSmokeRuntime {
         passed.append("reverse panel-to-desktop editor exclusion keeps the original draft owner")
 
         try await press("desktop.settings")
-        try await wait("centered desktop settings pane") { self.controls.frame("desktop.settings.pane") != nil }
-        let settingsPane = try value(controls.frame("desktop.settings.pane"), "settings pane frame")
-        try require(abs(settingsPane.width - 430) < 1 && abs(settingsPane.height - 560) < 1,
-                    "settings pane lost its usable 430 × 560-point size")
-        try require(window.attachedSheet == nil, "settings still use a native sheet instead of a dismissible overlay")
+        let settingsSheet = try await requireNativeSheet(host: window, paneID: "desktop.settings.pane",
+                                                        size: NSSize(width: 430, height: 560))
         try require(!NSApp.windows.contains { $0.identifier?.rawValue == "settings.window" },
-                    "desktop settings created a separate native window")
-        try require(controls.entries["settings.close"] != nil && controls.entries["settings.back"] == nil,
-                    "desktop settings lost their close button or retained panel-only Back navigation")
+                    "desktop settings created a separate settings window")
+        try await wait("desktop settings close button registered") { self.controls.entries["settings.close"] != nil }
+        try require(controls.entries["settings.back"] == nil,
+                    "desktop settings retained panel-only Back navigation")
         try require(!controls.press("desktop.event.\(meeting.id)") && !controls.press("desktop.panel"),
-                    "settings overlay left background events or compact navigation interactive")
+                    "settings sheet left background events or compact navigation interactive")
         let settingsBeforeEdit = store.data
         try await checkSharedAppearance(window: window, divider: resizedDivider)
-        try await press("desktop.settings.backdrop")
-        try await wait("settings backdrop dismisses pane") { self.controls.entries["desktop.settings.pane"] == nil }
+        try await press("settings.close")
+        try await requireNativeSheetDismissal(settingsSheet, host: window, description: "settings close")
         try require(store.data == settingsBeforeEdit && controls.entries["desktop.detail.\(today.id)"] != nil,
                     "settings dismissal activated an underlying event or changed data")
-        try await requireDivider(resizedDivider, in: window, after: "settings backdrop dismissal")
+        try await requireDivider(resizedDivider, in: window, after: "settings sheet dismissal")
         try await press("desktop.detail.edit")
-        try await wait("event editor remains a protected sheet") {
-            self.editorSession.desktopIsPresented && window.attachedSheet != nil
+        try await wait("event editor remains a protected native sheet") {
+            self.editorSession.desktopIsPresented && window.attachedSheet?.isVisible == true
         }
+        let sharedEditorSheet = try value(window.attachedSheet, "editor after settings")
+        try require(sharedEditorSheet.sheetParent === window, "event editor detached from its desktop owner")
         try await replaceFocusedText(control: "editor.title", text: "Черновик после настроек")
         try await captureEditorThemes(window: window)
         try await press("editor.cancel")
-        try await wait("editor Cancel after settings") { !self.editorSession.hasActiveEditor && window.attachedSheet == nil }
+        try await requireNativeSheetDismissal(sharedEditorSheet, host: window, description: "editor Cancel after settings")
+        try await wait("editor ownership released after settings") { !self.editorSession.hasActiveEditor }
         try require(store.data == settingsBeforeEdit, "settings/editor Cancel changed events")
         try await press("desktop.settings")
+        let diagnosticHost = try await requireNativeSheet(host: window, paneID: "desktop.settings.pane",
+                                                         size: NSSize(width: 430, height: 560))
+        try await wait("settings sheet becomes the diagnostic input host") {
+            diagnosticHost.isKeyWindow && NSApp.keyWindow === diagnosticHost
+        }
         try await press("settings.diagnostics")
-        try await wait("diagnostic Save dialog belongs to desktop host") { window.attachedSheet is NSSavePanel }
-        let diagnosticPanel = try value(window.attachedSheet as? NSSavePanel, "settings diagnostic Save dialog")
-        _ = controls.press("desktop.settings.backdrop")
-        try require(controls.entries["desktop.settings.pane"] != nil && window.attachedSheet === diagnosticPanel,
-                    "settings backdrop dismissed the host of an active diagnostic Save dialog")
+        try await wait("diagnostic Save dialog belongs to settings sheet") { diagnosticHost.attachedSheet is NSSavePanel }
+        let diagnosticPanel = try value(diagnosticHost.attachedSheet as? NSSavePanel, "settings diagnostic Save dialog")
+        try require(window.attachedSheet === diagnosticHost && diagnosticHost.isVisible,
+                    "diagnostic Save detached or hid its settings host")
+        try await press("settings.close")
+        try require(window.attachedSheet === diagnosticHost && diagnosticHost.isVisible
+                    && diagnosticHost.attachedSheet === diagnosticPanel,
+                    "settings close dismissed the host of an active diagnostic Save dialog")
         diagnosticPanel.cancel(nil)
         try await wait("diagnostic Cancel releases settings") {
-            window.attachedSheet == nil && !self.store.isExportingDiagnostics
+            diagnosticHost.attachedSheet == nil && !self.store.isExportingDiagnostics
+                && window.attachedSheet === diagnosticHost && diagnosticHost.isVisible
         }
         try require(store.data == settingsBeforeEdit, "diagnostic Cancel changed event data")
         try await press("settings.weather.enabled")
         try await wait("weather disabled in shared settings") { !self.weather.enabled }
         try await press("settings.close")
-        try await wait("settings close button dismisses pane") { self.controls.entries["desktop.settings.pane"] == nil }
+        try await requireNativeSheetDismissal(diagnosticHost, host: window, description: "settings close after diagnostic Cancel")
         try await requireDivider(resizedDivider, in: window, after: "settings open and close")
         try require(weather.forecast(for: store.today) == nil, "disabled shared weather still supplies a forecast")
         try capture("desktop-weather-off")
-        passed.append("centered settings pane has a close button; backdrop dismisses without activating background events or moving divider, and diagnostic Cancel releases its guard")
+        passed.append("settings and editor attach native sheets to the retained desktop; settings close preserves selection/divider and nested diagnostic Cancel releases its guard")
         passed.append("desktop settings disable forecast supply through the shared weather owner")
         showPanel()
         try await press("settings.open")
@@ -421,9 +431,744 @@ final class DesktopSmokeRuntime {
         try await checkFilteredCreation(divider: resizedDivider, window: window)
         try await requireDivider(resizedDivider, in: window, after: "search empty state and creation")
         passed.append("nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions")
+        try await verifyAttachments()
+        try await verifyAttachmentThumbnails()
         try await verifyPendingDesktopActions()
         try await verifyMonthlyBrowsing()
         try await verifyWeatherGeometry()
+    }
+
+    private func verifyAttachments() async throws {
+        let window = try value(desktopWindow(), "attachment desktop window")
+        let sources = configuration.homeURL.appendingPathComponent("AttachmentSources", isDirectory: true)
+        try FileManager.default.createDirectory(at: sources, withIntermediateDirectories: true)
+        let source = sources.appendingPathComponent("Переписка.txt")
+        let secondSource = sources.appendingPathComponent("Документы для встречи.txt")
+        let bytes = Data("Изолированный пример переписки для события.".utf8)
+        try bytes.write(to: source)
+        try Data("Список документов: заявление и подтверждение.".utf8).write(to: secondSource)
+        let token = UUID()
+        let began = await store.beginAttachmentDraft(token)
+        try require(began, "cannot start isolated attachment import")
+        let first = try value(await store.importAttachment(from: source, draftID: token), "first imported attachment")
+        let second = try value(await store.importAttachment(from: secondSource, draftID: token), "second imported attachment")
+        let event = Countdown(title: "Документы к встрече", note: "Переписка и нужные файлы рядом с событием.",
+                              date: store.today, emoji: "📎", attachments: [first, second])
+        let saved = await store.save(event, primary: true)
+        try require(saved, "cannot save isolated event with attachments")
+        await store.discardAttachmentDraft(token)
+        let copies = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/Attachments")
+        let firstCopy = copies.appendingPathComponent(first.id.uuidString).appendingPathComponent(first.name)
+        let secondCopy = copies.appendingPathComponent(second.id.uuidString).appendingPathComponent(second.name)
+        try require(FileManager.default.fileExists(atPath: firstCopy.path), "saved attachment copy missing")
+        try await press("desktop.event.\(event.id)")
+        try await expect("desktop.attachments.\(event.id)", "2")
+        try await verifyAttachmentIndicators(event: event, window: window)
+        try await requireSingleEditorEntry(eventID: event.id)
+        try await captureThemes("desktop-attachments")
+        let dataURL = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+        let beforeCancel = try Data(contentsOf: dataURL)
+        try await press("desktop.detail.edit")
+        try await expect("editor.attachments", "2")
+        try await expect("editor.note", event.note ?? "")
+        try await expect("editor.subtasks", "0")
+        let editor = try value(window.attachedSheet, "attachment editor sheet")
+        let editorContent = try value(editor.contentView, "attachment editor content")
+        let editorScroll = try value(nativeScroll(in: editorContent), "attachment editor scroll")
+        try scrollBrowser(editorScroll, toEnd: true)
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            editor.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            try capture("desktop-attachments-editor-\(scheme == .dark ? "dark" : "light")", window: editor)
+        }
+        try await press("editor.attachments.remove.\(first.id)")
+        try await expect("editor.attachments", "1")
+        try require(FileManager.default.fileExists(atPath: firstCopy.path), "draft removal deleted a saved copy")
+        try await press("editor.cancel")
+        try await wait("attachment editor cancel") { !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence }
+        let afterCancel = try Data(contentsOf: dataURL)
+        try require(beforeCancel == afterCancel, "attachment Cancel changed durable JSON")
+        try await expect("desktop.attachments.\(event.id)", "2")
+        try await press("desktop.panel")
+        try await wait("attachment mini-panel shown") { self.panelWindow()?.isVisible == true && !window.isVisible }
+        let panel = try value(panelWindow(), "attachment mini-panel window")
+        try await expect("panel.attachments.\(event.id)", "2")
+        try await verifyAttachmentDisclosureAlignment(eventID: event.id, panel: panel)
+        try require(controls.entries["panel.attachments.edit.\(event.id)"] == nil,
+                    "mini-panel exposes a duplicate attachment edit action outside the pencil editor")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            try capture("mini-attachments-\(scheme == .dark ? "dark" : "light")", window: panel)
+        }
+        try await press("event.edit.\(event.id)")
+        try await expect("editor.attachments", "2")
+        try await press("editor.attachments.remove.\(first.id)")
+        try await expect("editor.attachments", "1")
+        try await press("editor.save")
+        try await wait("attachment panel Save committed") {
+            !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence
+                && self.store.active.first(where: { $0.id == event.id })?.attachments == [second]
+        }
+        try require(!FileManager.default.fileExists(atPath: firstCopy.path)
+                    && FileManager.default.fileExists(atPath: secondCopy.path), "attachment Save removed the wrong copy")
+        try await press("desktop.open")
+        try await expect("desktop.attachments.\(event.id)", "1")
+        for mode in ["collection", "feed"] {
+            if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
+            try await expect("desktop.mode", mode)
+            try await expect("desktop.attachments.indicator.\(event.id)", "1")
+        }
+        let deleted = await store.delete(event.id)
+        try require(deleted && !FileManager.default.fileExists(atPath: secondCopy.path), "event deletion retained its attachment copy")
+        let original = try Data(contentsOf: source)
+        try require(original == bytes && FileManager.default.fileExists(atPath: secondSource.path),
+                    "attachment workflow modified an original source")
+        passed.append("shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation")
+    }
+
+    private func requireNativeSheet(host: NSWindow, paneID: String, size: NSSize) async throws -> NSWindow {
+        try await wait("native \(paneID) sheet attached and laid out") {
+            guard let sheet = host.attachedSheet, sheet.isVisible, sheet.sheetParent === host,
+                  let pane = self.controls.frame(paneID) else { return false }
+            return abs(pane.width - size.width) < 1 && abs(pane.height - size.height) < 1
+        }
+        let sheet = try value(host.attachedSheet, "native \(paneID) sheet")
+        let content = try value(sheet.contentView, "native \(paneID) content")
+        try require(content.bounds.width >= size.width - 1 && content.bounds.height >= size.height - 1,
+                    "native sheet clips its required content size")
+        return sheet
+    }
+
+    private func requireNativeSheetDismissal(_ sheet: NSWindow, host: NSWindow, description: String) async throws {
+        try await wait(description + " detaches and hides retained native sheet") {
+            host.attachedSheet == nil && sheet.sheetParent == nil && !sheet.isVisible && host.isVisible
+                && self.controls.entries["desktop.settings"]?.isEnabled == true
+        }
+    }
+
+    private func verifyAttachmentDisclosureAlignment(eventID: UUID, panel: NSWindow) async throws {
+        let content = try value(panel.contentView, "attachment disclosure panel content")
+        try scrollBrowser(try value(nativeScroll(in: content), "attachment disclosure scroll"), toEnd: false)
+        let toggleID = "panel.attachments.toggle.\(eventID)"
+        let headingID = "panel.attachments.heading.\(eventID)"
+        try await expect(toggleID, "collapsed")
+        try await wait("collapsed attachment heading laid out") { self.controls.frame(headingID) != nil }
+        let heading = try value(controls.frame(headingID), "collapsed attachment heading")
+        let row = try value(controls.frame(toggleID), "collapsed attachment disclosure row")
+        let oldMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        let oldContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: oldContrast, reduceMotion: oldMotion) }
+        for reduced in [false, true] {
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: oldContrast, reduceMotion: reduced)
+            for expanded in [true, false, true, false] {
+                try await press(toggleID)
+                try await expect(toggleID, expanded ? "expanded" : "collapsed")
+                content.layoutSubtreeIfNeeded()
+                content.display()
+                try await Task.sleep(nanoseconds: 20_000_000)
+                try await wait("attachment disclosure retains heading and counter-row geometry") {
+                    guard let currentHeading = self.controls.frame(headingID),
+                          let currentRow = self.controls.frame(toggleID) else { return false }
+                    return abs(currentHeading.minX - heading.minX) < 0.75
+                        && abs(currentHeading.midY - heading.midY) < 0.75
+                        && abs(currentRow.minX - row.minX) < 0.75 && abs(currentRow.width - row.width) < 0.75
+                }
+            }
+        }
+        try await press(toggleID)
+        try await expect(toggleID, "expanded")
+    }
+
+    private func verifyAttachmentThumbnails() async throws {
+        let window = try value(desktopWindow(), "thumbnail desktop window")
+        let sources = try UISmokeAttachmentMedia.make(in: configuration.homeURL.appendingPathComponent("ThumbnailMedia"))
+        let originalBytes = try sources.map { try Data(contentsOf: $0) }
+        let token = UUID()
+        let began = await store.beginAttachmentDraft(token)
+        try require(began, "cannot prepare isolated thumbnail draft")
+        var attachments: [EventAttachment] = []
+        for source in sources {
+            attachments.append(try value(await store.importAttachment(from: source, draftID: token), "thumbnail import"))
+        }
+        let task = try Subtask(text: "Проверить документы перед встречей")
+        var event = Countdown(title: "Файлы к встрече", note: "Фото, PDF и видео остаются рядом с подготовкой.",
+                              date: store.today, emoji: "📎", subtasks: [task])
+        let initialSaved = await store.save(event, primary: true)
+        try require(initialSaved, "cannot save empty thumbnail fixture")
+        try await press("desktop.event.\(event.id)")
+        try await wait("empty desktop attachment section hidden") {
+            self.controls.entries["desktop.attachments.\(event.id)"] == nil
+        }
+        try await requireThumbnailRows(eventID: event.id, attachments: [])
+        try await press("desktop.panel")
+        try await wait("empty panel attachment section hidden") {
+            self.controls.entries["panel.attachments.\(event.id)"] == nil
+        }
+        try await press("desktop.open")
+
+        for count in [3, 4, 15] {
+            event.attachments = Array(attachments.prefix(count))
+            let saved = await store.save(event, primary: true, requireExisting: true)
+            try require(saved, "cannot save thumbnail count boundary")
+            try await expect("desktop.attachments.\(event.id)", String(count))
+            try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(min(4, count))))
+            for attachment in attachments.prefix(3) {
+                try await expect("desktop.attachment.thumbnail.\(event.id).\(attachment.id)", "ready")
+            }
+            if count >= 4 {
+                try await expect("desktop.attachment.thumbnail.\(event.id).\(attachments[3].id)", "fallback")
+            }
+            try await requireAttachmentSectionOrder(eventID: event.id, surface: "desktop")
+            try await requireSingleEditorEntry(eventID: event.id)
+            if count == 3 { try await captureThemes("desktop-single-edit-filled") }
+            if count <= 4 {
+                try require(controls.entries["desktop.attachments.all.\(event.id)"] == nil,
+                            "three/four files expose an unnecessary full-list action")
+            }
+        }
+        await store.discardAttachmentDraft(token)
+        let dataURL = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+        let durableBytes = try Data(contentsOf: dataURL)
+        let content = try value(window.contentView, "attachment summary content")
+        let split = try value(nativeSplit(in: content), "attachment summary split")
+        let inspector = try value(split.arrangedSubviews.last, "attachment summary inspector")
+        try scrollBrowser(try value(nativeScroll(in: inspector), "attachment summary scroll"), toEnd: true)
+        try await captureThemes("desktop-attachment-previews-four")
+        try await verifyAttachmentLibrary(event: event, surface: "desktop", host: window)
+        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)))
+        let afterDesktopSearch = try Data(contentsOf: dataURL)
+        try require(afterDesktopSearch == durableBytes && store.active.first(where: { $0.id == event.id }) == event,
+                    "read-only desktop attachment search changed the event or preparation")
+
+        let alignmentFiles = [attachments[0], attachments[1], attachments[2], attachments[4], attachments[5]]
+        try await press("desktop.detail.edit")
+        try await expect("editor.attachments", "15")
+        try await expect("editor.note", event.note ?? "")
+        try await expect("editor.subtasks", "1")
+        try await expect("editor.attachments.count", "15/15")
+        try await expect("editor.attachments.limit", "15")
+        try await wait("editor retains the attachment expiry policy") {
+            self.controls.entries["editor.attachments.expiry"] != nil
+        }
+        try await wait("attachment Add disabled at fifteen") { self.controls.entries["editor.attachments.add"]?.isEnabled == false }
+        try require(!controls.press("editor.attachments.add"), "full attachment draft opened the native picker")
+        try await requireAttachmentSectionOrder(eventID: event.id, surface: "editor")
+        try await requireCompactAttachmentAlignment(attachments: alignmentFiles, prefix: "editor.attachment.label.")
+        try await requireEditorThumbnails(attachments: Array(attachments.prefix(6)), surface: "desktop")
+        let editor = try value(window.attachedSheet, "compact attachment editor")
+        let editorContent = try value(editor.contentView, "compact attachment editor content")
+        let editorTasks = try value(controls.frame("editor.subtasks.heading"), "editor preparation heading")
+        let editorViewport = try value(controls.frame("editor.scroll"), "editor limit viewport")
+        let editorScroll = try value(nativeScroll(in: editorContent), "editor limit native scroll")
+        editorScroll.contentView.scroll(to: CGPoint(
+            x: 0, y: editorScroll.contentView.bounds.minY + max(0, editorTasks.minY - editorViewport.minY - 16)
+        ))
+        editorScroll.reflectScrolledClipView(editorScroll.contentView)
+        try await captureWindowThemes("editor-attachment-limit-and-order", window: editor)
+        try await captureCompactAttachmentAlignment(attachments: alignmentFiles, prefix: "editor.attachment.label.",
+                                                   viewportID: "editor.scroll", content: editorContent,
+                                                   window: editor, name: "editor-attachment-alignment")
+        try await press("editor.attachments.remove.\(attachments[14].id)")
+        try await expect("editor.attachments.count", "14/15")
+        try await wait("removing a file restores attachment admission") {
+            self.controls.entries["editor.attachments.add"]?.isEnabled == true
+                && self.controls.entries["editor.attachments.limit"] == nil
+        }
+        let overflowDraft = UUID()
+        let overflowBegan = await store.beginAttachmentDraft(overflowDraft)
+        try require(overflowBegan, "cannot prepare isolated batch-rejection check")
+        let rejected = await store.importAttachments(from: Array(sources.prefix(2)), draftID: overflowDraft,
+                                                    currentAttachments: Array(attachments.prefix(14)))
+        try require(rejected.isEmpty, "a two-file selection exceeded the single remaining slot")
+        try await expect("desktop.error", "Выбрано файлов: 2. Свободных мест: 1. Ничего не добавлено — уменьшите выбор.")
+        try await wait("foreground editor overflow banner laid out") {
+            (self.controls.frame("desktop.error")?.width ?? 0) > 0
+        }
+        let foregroundError = try value(controls.frame("desktop.error"), "foreground editor overflow explanation")
+        try require(foregroundError.width > 0 && foregroundError.width <= 430,
+                    "batch overflow explanation belongs to the background desktop instead of the editor sheet")
+        try await expect("editor.attachments.count", "14/15")
+        try await captureWindowThemes("editor-batch-overflow", window: editor)
+        try await press("desktop.error.dismiss")
+        await store.discardAttachmentDraft(overflowDraft)
+        try await expect("editor.attachments.count", "14/15")
+        try await press("editor.cancel")
+        try await wait("editor Cancel hides its retained sheet and restores the saved owner") {
+            window.attachedSheet == nil && !editor.isVisible && !self.editorSession.hasActiveEditor
+                && window.isVisible && self.controls.value("desktop.inspector") == event.id.uuidString
+                && self.controls.value("desktop.attachments.\(event.id)") == "15"
+        }
+        let editorObservation: [String: Any] = [
+            "sheetAttached": window.attachedSheet != nil, "retainedEditorVisible": editor.isVisible,
+            "editorOwnerActive": editorSession.hasActiveEditor,
+            "retainedExpiryRegistryEntry": controls.entries["editor.attachments.expiry"] != nil,
+            "savedOwnerRestored": controls.value("desktop.inspector") == event.id.uuidString
+        ]
+        try JSONSerialization.data(withJSONObject: editorObservation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("desktop-editor-cancel-observation.json"))
+        let afterCancel = try Data(contentsOf: dataURL)
+        try require(afterCancel == durableBytes, "Cancel committed the fourteen-file draft")
+        try await expect("desktop.attachments.\(event.id)", "15")
+        try await captureThemes("desktop-saved-no-expiry")
+
+        try await press("desktop.panel")
+        try await expect("panel.attachments.\(event.id)", "15")
+        try await press("panel.attachments.toggle.\(event.id)")
+        try await expect("panel.attachments.toggle.\(event.id)", "expanded")
+        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)), surface: "panel", pointSize: 36)
+        try await requireAttachmentSectionOrder(eventID: event.id, surface: "panel")
+        let mini = try value(panelWindow(), "attachment mini-panel")
+        try await captureWindowThemes("mini-attachment-previews-four", window: mini)
+        try await press("event.edit.\(event.id)")
+        try await expect("editor.attachments", "15")
+        try await requireEditorThumbnails(attachments: Array(attachments.prefix(6)), surface: "mini")
+        let miniContent = try value(mini.contentView, "mini editor thumbnail content")
+        try await captureCompactAttachmentAlignment(attachments: alignmentFiles, prefix: "editor.attachment.label.",
+                                                   viewportID: "editor.scroll", content: miniContent,
+                                                   window: mini, name: "mini-editor-attachment-previews")
+        try await press("editor.cancel")
+        try await wait("mini thumbnail editor Cancel preserves saved owner") {
+            !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence
+                && self.controls.value("panel.attachments.\(event.id)") == "15"
+        }
+        let afterMiniEditorCancel = try Data(contentsOf: dataURL)
+        try require(afterMiniEditorCancel == durableBytes,
+                    "mini thumbnail editor Cancel changed durable attachment data")
+        try await verifyAttachmentLibrary(event: event, surface: "panel", host: mini)
+        try await expect("panel.attachments.toggle.\(event.id)", "expanded")
+        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)), surface: "panel", pointSize: 36)
+        let afterMiniSearch = try Data(contentsOf: dataURL)
+        try require(afterMiniSearch == durableBytes && store.active.first(where: { $0.id == event.id })?.subtasks == [task],
+                    "Back from the mini file library lost the event or its preparation")
+        try await press("panel.attachments.all.\(event.id)")
+        try await expect("panel.attachments.list.\(event.id)", "15/15")
+        let deleted = await store.delete(event.id)
+        try require(deleted, "cannot delete the mini-library owner")
+        try await wait("mini library closes when its owning event disappears") {
+            self.controls.entries["panel.attachments.list.\(event.id)"] == nil
+                && self.controls.entries["event.list"]?.isEnabled == true
+        }
+        try await press("desktop.open")
+        try await verifyRemovedDesktopLibraryOwner(sources: Array(sources.prefix(5)))
+        let unchanged = try sources.map { try Data(contentsOf: $0) }
+        try require(originalBytes == unchanged, "thumbnail/list workflow modified source media")
+        passed.append("0/3/4/15 attachments: hidden empty sections, desktop44/panel36 quick files and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup")
+        passed.append("note/preparation/files order and matching headings; both editors show 36pt previews and aligned names, while editor15/15 admission guard, fourteen-file retry and Cancel preserve durable fifteen files")
+    }
+
+    private func verifyAttachmentLibrary(event: Countdown, surface: String, host: NSWindow) async throws {
+        let prefix = surface + ".attachments.list"
+        try await press("\(surface).attachments.all.\(event.id)")
+        try await expect("\(prefix).\(event.id)", "15/15")
+        try await expect("\(prefix).summary.\(event.id)", "Файлов: 15")
+        let renderWindow: NSWindow
+        if surface == "desktop" {
+            renderWindow = try await requireDesktopAttachmentSheet(event: event, host: host)
+        } else {
+            renderWindow = host
+            try await expect("\(prefix).title.\(event.id)", "Вложения")
+            try require(controls.entries["\(prefix).back.\(event.id)"] != nil
+                        && controls.entries["\(prefix).close.\(event.id)"] == nil,
+                        "mini attachment header changed its title or Back navigation")
+        }
+        try await captureWindowThemes(surface + "-attachment-library-all", window: renderWindow)
+        try await replaceFocusedText(control: "\(prefix).search.\(event.id)", text: "   ")
+        try await expect("\(prefix).\(event.id)", "15/15")
+        try await expect("\(prefix).summary.\(event.id)", "Файлов: 15")
+        try await replaceFocusedText(control: "\(prefix).search.\(event.id)", text: "материал 15")
+        try await expect("\(prefix).\(event.id)", "1/15")
+        try await expect("\(prefix).summary.\(event.id)", "Найдено: 1 из 15")
+        let last = try value(event.attachments.last, "search target attachment")
+        try await wait("search exposes the matching real file row") {
+            self.controls.entries["\(prefix).open.\(event.id).\(last.id)"] != nil
+        }
+        try await wait("search thumbnail completes a bounded preview attempt") {
+            ["ready", "fallback"].contains(self.controls.value("\(surface).attachment.list.thumbnail.\(event.id).\(last.id)") ?? "")
+        }
+        let thumbnail = try value(controls.frame("\(surface).attachment.list.thumbnail.\(event.id).\(last.id)"), "search thumbnail")
+        let size: CGFloat = surface == "panel" ? 36 : 44
+        try require(abs(thumbnail.width - size) < 1 && abs(thumbnail.height - size) < 1,
+                    "file-library thumbnail uses the wrong desktop/mini size")
+        try await captureWindowThemes(surface + "-attachment-library-search", window: renderWindow)
+        if surface == "desktop" {
+            try await verifyMissingReaderCopy(eventID: event.id, attachment: last, window: renderWindow)
+        }
+        try await replaceFocusedText(control: "\(prefix).search.\(event.id)", text: "Несуществующий файл ZZZ")
+        try await expect("\(prefix).\(event.id)", "0/15")
+        try await expect("\(prefix).summary.\(event.id)", "Найдено: 0 из 15")
+        try await wait("empty attachment-search result is visible") {
+            self.controls.entries["\(prefix).empty.\(event.id)"] != nil
+        }
+        try await captureWindowThemes(surface + "-attachment-library-empty", window: renderWindow)
+        try await press("\(prefix).clear.\(event.id)")
+        try await expect("\(prefix).search.\(event.id)", "")
+        try await expect("\(prefix).\(event.id)", "15/15")
+        try await expect("\(prefix).summary.\(event.id)", "Файлов: 15")
+        if surface == "desktop" {
+            let before = store.data
+            try await press("\(prefix).close.\(event.id)")
+            try await requireDesktopAttachmentDismissal(event: event, host: host, sheet: renderWindow)
+            try await press("desktop.attachments.all.\(event.id)")
+            try await expect("\(prefix).\(event.id)", "15/15")
+            try await expect("\(prefix).search.\(event.id)", "")
+            let reopenedSheet = try await requireDesktopAttachmentSheet(event: event, host: host)
+            try await press("\(prefix).close.\(event.id)")
+            try await requireDesktopAttachmentDismissal(event: event, host: host, sheet: reopenedSheet)
+            try require(store.data == before, "attachment close/reopen changed stored events")
+            let observation: [String: Any] = [
+                "hostVisible": host.isVisible, "sheetAttached": host.attachedSheet != nil,
+                "retainedFirstSheetVisible": renderWindow.isVisible, "retainedReopenedSheetVisible": reopenedSheet.isVisible,
+                "retainedRegistryEntry": controls.entries["\(prefix).\(event.id)"] != nil,
+                "ownerRestored": controls.value("desktop.inspector") == event.id.uuidString,
+                "eventsUnchanged": store.data == before
+            ]
+            try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent("desktop-library-close-observation.json"))
+        } else {
+            try require(controls.entries["\(prefix).close.\(event.id)"] == nil,
+                        "mini attachment screen acquired a desktop-only close button")
+            try await press("\(prefix).back.\(event.id)")
+            try await wait("mini library Back removes its internal screen") {
+                self.controls.entries["\(prefix).\(event.id)"] == nil
+            }
+        }
+    }
+
+    private func requireDesktopAttachmentSheet(event: Countdown, host: NSWindow) async throws -> NSWindow {
+        let sheet = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane",
+                                               size: NSSize(width: 540, height: 540))
+        try await expect("desktop.attachments.list.title.\(event.id)", "Вложение")
+        try await wait("desktop library close button registered") {
+            self.controls.entries["desktop.attachments.list.close.\(event.id)"] != nil
+        }
+        try require(controls.entries["desktop.attachments.list.back.\(event.id)"] == nil,
+                    "desktop attachment header retained Back navigation")
+        let title = try value(controls.frame("desktop.attachments.list.title.\(event.id)"), "attachment title")
+        let close = try value(controls.frame("desktop.attachments.list.close.\(event.id)"), "attachment close")
+        try require(title.maxX < close.minX && abs(title.midY - close.midY) < 4,
+                    "attachment header title and trailing close button are not aligned")
+        let otherEvent = try value(store.active.first { $0.id != event.id }, "event behind attachment sheet")
+        try require(!controls.press("desktop.event.\(otherEvent.id)") && !controls.press("desktop.panel")
+                    && !controls.press("desktop.settings") && !controls.press("desktop.detail.edit"),
+                    "attachment sheet left background event, editor or navigation controls interactive")
+        try require(controls.value("desktop.inspector") == event.id.uuidString,
+                    "attachment sheet activated a background event")
+        return sheet
+    }
+
+    private func requireDesktopAttachmentDismissal(event: Countdown, host: NSWindow, sheet: NSWindow) async throws {
+        try await requireNativeSheetDismissal(sheet, host: host, description: "desktop attachment close")
+        try await wait("desktop attachment sheet restores its current owner") {
+            self.controls.value("desktop.inspector") == event.id.uuidString
+                && self.controls.value("desktop.attachments.\(event.id)") == "15"
+                && self.controls.entries["desktop.attachments.all.\(event.id)"]?.isEnabled == true
+        }
+    }
+
+    private func verifyMissingReaderCopy(eventID: UUID, attachment: EventAttachment, window: NSWindow) async throws {
+        let manager = FileManager.default
+        let ownedCopy = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/Attachments")
+            .appendingPathComponent(attachment.id.uuidString).appendingPathComponent(attachment.name)
+        let originalBytes = try Data(contentsOf: ownedCopy)
+        let backupDirectory = configuration.homeURL.appendingPathComponent("ReaderMissingCopyBackup", isDirectory: true)
+        try manager.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
+        let backup = backupDirectory.appendingPathComponent(attachment.id.uuidString)
+        try manager.moveItem(at: ownedCopy, to: backup)
+        do {
+            try require(!manager.fileExists(atPath: ownedCopy.path), "missing-copy fixture still exists before open")
+            try await press("desktop.attachments.list.open.\(eventID).\(attachment.id)")
+            try await expect("desktop.attachments.list.error.\(eventID)",
+                             "Копия вложения недоступна. Исходный файл не изменён.")
+            try await wait("reader foreground error is laid out") {
+                (self.controls.frame("desktop.attachments.list.error.\(eventID)")?.width ?? 0) > 0
+            }
+            let errorFrame = try value(controls.frame("desktop.attachments.list.error.\(eventID)"), "reader open error")
+            try require(errorFrame.width <= 540, "file-open error is hidden in the background desktop")
+            try await captureWindowThemes("desktop-attachment-library-open-error", window: window)
+            try await press("desktop.attachments.list.error.dismiss.\(eventID)")
+            try await wait("reader error dismissed without closing the library") {
+                self.controls.entries["desktop.attachments.list.error.\(eventID)"] == nil
+                    && self.controls.value("desktop.attachments.list.\(eventID)") == "1/15"
+            }
+        } catch {
+            let verificationError = error
+            do { try manager.moveItem(at: backup, to: ownedCopy) }
+            catch { throw Failure("Cannot restore isolated missing-copy fixture; backup remains retained") }
+            throw verificationError
+        }
+        try manager.moveItem(at: backup, to: ownedCopy)
+        let restoredBytes = try Data(contentsOf: ownedCopy)
+        try require(restoredBytes == originalBytes, "reader open-error fixture damaged the owned file copy")
+    }
+
+    private func verifyRemovedDesktopLibraryOwner(sources: [URL]) async throws {
+        let token = UUID()
+        let began = await store.beginAttachmentDraft(token)
+        try require(began, "cannot prepare desktop library removal fixture")
+        var attachments: [EventAttachment] = []
+        for source in sources {
+            attachments.append(try value(await store.importAttachment(from: source, draftID: token), "owner-removal import"))
+        }
+        let event = Countdown(title: "Проверка владельца списка", date: store.today, emoji: "", attachments: attachments)
+        let saved = await store.save(event, primary: false)
+        try require(saved, "cannot save desktop library owner")
+        await store.discardAttachmentDraft(token)
+        try await press("desktop.event.\(event.id)")
+        try await press("desktop.attachments.all.\(event.id)")
+        try await expect("desktop.attachments.list.\(event.id)", "5/5")
+        let host = try value(desktopWindow(), "desktop library owner window")
+        let readerSheet = try await requireDesktopAttachmentSheet(event: event, host: host)
+        let deleted = await store.delete(event.id)
+        try require(deleted, "cannot delete desktop library owner")
+        try await wait("desktop library closes when its owning event disappears") {
+            guard let selected = self.controls.value("desktop.inspector"), let selectedID = UUID(uuidString: selected) else {
+                return false
+            }
+            return host.attachedSheet == nil && !readerSheet.isVisible && readerSheet.sheetParent == nil && host.isVisible
+                && !self.store.active.contains(where: { $0.id == event.id }) && selectedID != event.id
+                && self.store.active.contains(where: { $0.id == selectedID })
+        }
+        let observation: [String: Any] = [
+            "sheetAttached": host.attachedSheet != nil,
+            "retainedSheetVisible": readerSheet.isVisible,
+            "retainedRegistryEntry": controls.entries["desktop.attachments.list.\(event.id)"] != nil,
+            "deletedOwnerAbsent": !store.active.contains(where: { $0.id == event.id }),
+            "selectionReconciled": controls.value("desktop.inspector") != event.id.uuidString
+        ]
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("desktop-library-owner-removal-observation.json"))
+    }
+
+    private func requireAttachmentSectionOrder(eventID: UUID, surface: String) async throws {
+        let tasksID = surface == "editor" ? "editor.subtasks.heading" : "\(surface).subtasks.heading.\(eventID)"
+        let filesID = surface == "editor" ? "editor.attachments.heading" : "\(surface).attachments.heading.\(eventID)"
+        let noteID = surface == "desktop" ? "desktop.detail.note" : (surface == "panel" ? "event.note.\(eventID)" : "editor.note")
+        try await wait("ordered note, preparation and attachment headings") {
+            guard let note = self.controls.frame(noteID), let tasks = self.controls.frame(tasksID),
+                  let files = self.controls.frame(filesID) else { return false }
+            return note.maxY < tasks.minY && tasks.maxY < files.minY
+        }
+        let tasks = try value(controls.frame(tasksID), "preparation heading")
+        let files = try value(controls.frame(filesID), "attachment heading")
+        try require(abs(tasks.height - files.height) < 1.5, "preparation/attachment headings have inconsistent native type size")
+    }
+
+    private func captureWindowThemes(_ name: String, window: NSWindow) async throws {
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            try capture("\(name)-\(scheme == .dark ? "dark" : "light")", window: window)
+        }
+    }
+
+    private func requireEditorThumbnails(attachments: [EventAttachment], surface: String) async throws {
+        for (index, attachment) in attachments.enumerated() {
+            let identifier = "editor.attachment.thumbnail." + attachment.id.uuidString
+            if index < 3 {
+                try await expect(identifier, "ready")
+            } else if index == 3 {
+                try await expect(identifier, "fallback")
+            } else {
+                try await wait("editor document preview completes a bounded attempt") {
+                    ["ready", "fallback"].contains(self.controls.value(identifier) ?? "")
+                }
+            }
+            let frame = try value(controls.frame(identifier), "editor thumbnail frame")
+            try require(abs(frame.width - 36) < 1 && abs(frame.height - 36) < 1,
+                        "editor thumbnail does not use the mini-panel's 36pt preview size")
+        }
+        let observation = attachments.map { attachment in
+            ["name": attachment.name, "state": controls.value("editor.attachment.thumbnail." + attachment.id.uuidString) ?? "missing"]
+        }
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent(surface + "-editor-thumbnail-observation.json"))
+    }
+
+    private func requireCompactAttachmentAlignment(attachments: [EventAttachment], prefix: String) async throws {
+        try await wait("compact attachment name and size frames") {
+            attachments.allSatisfy {
+                (self.controls.frame("editor.attachment.thumbnail." + $0.id.uuidString)?.width ?? 0) > 0
+                    && (self.controls.frame(prefix + $0.id.uuidString + ".text")?.height ?? 0) > 0
+            }
+        }
+        let first = try value(attachments.first, "compact alignment first attachment")
+        let baseline = try value(controls.frame(prefix + first.id.uuidString + ".text"), "compact filename baseline")
+        for attachment in attachments {
+            let icon = try value(controls.frame("editor.attachment.thumbnail." + attachment.id.uuidString), "compact file icon frame")
+            let text = try value(controls.frame(prefix + attachment.id.uuidString + ".text"), "compact name and size frame")
+            try require(abs(icon.width - 36) < 1 && abs(icon.height - 36) < 1
+                        && abs(text.minX - baseline.minX) < 0.75 && abs(text.minX - icon.maxX - 8) < 0.75,
+                        "editor preview size or shared name/size column alignment changed with file type")
+        }
+        let long = try value(attachments.last, "two-line attachment")
+        let longText = try value(controls.frame(prefix + long.id.uuidString + ".text"), "two-line filename frame")
+        try require(longText.height > baseline.height + 8, "alignment fixture did not exercise a two-line filename")
+    }
+
+    private func captureCompactAttachmentAlignment(
+        attachments: [EventAttachment], prefix: String,
+        viewportID: String, content: NSView, window: NSWindow, name: String
+    ) async throws {
+        let first = try value(attachments.first, "capture alignment attachment")
+        let thumbnailID = "editor.attachment.thumbnail." + first.id.uuidString
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            let observation = try await scrollEditorPreviewIntoView(thumbnailID: thumbnailID, viewportID: viewportID,
+                                                                    content: content, window: window)
+            let captureName = "\(name)-\(scheme == .dark ? "dark" : "light")"
+            try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent(captureName + "-scroll-observation.json"))
+            try await requireCompactAttachmentAlignment(attachments: attachments, prefix: prefix)
+            let preview = try value(controls.frame(thumbnailID), "captured editor preview")
+            let viewport = try value(controls.frame(viewportID), "captured editor viewport")
+            try require(viewport.insetBy(dx: -1, dy: -1).contains(preview),
+                        "editor preview scrolled out of its viewport before capture")
+            try capture(captureName, window: window)
+        }
+    }
+
+    private func scrollEditorPreviewIntoView(
+        thumbnailID: String, viewportID: String, content: NSView, window: NSWindow
+    ) async throws -> [String: Any] {
+        let root = try value(window.contentView, "current editor window content")
+        var selectedScroll: NSScrollView?
+        try await wait("current editor scroll matches its registered viewport") {
+            guard let viewport = self.controls.frame(viewportID) else { return false }
+            selectedScroll = self.nativeScrolls(in: content).first { scroll in
+                guard scroll.window === window else { return false }
+                let frame = scroll.convert(scroll.bounds, to: root)
+                return abs(frame.minX - viewport.minX) < 1 && abs(frame.minY - viewport.minY) < 1
+                    && abs(frame.width - viewport.width) < 1 && abs(frame.height - viewport.height) < 1
+            }
+            return selectedScroll != nil
+        }
+        let scroll = try value(selectedScroll, "matched editor native scroll")
+        let icon = try value(controls.frame(thumbnailID), "alignment capture first row")
+        let viewport = try value(controls.frame(viewportID), "alignment capture viewport")
+        let before = editorScrollObservation(scroll: scroll, root: root, viewportID: viewportID, thumbnailID: thumbnailID)
+        let targetY = max(0, scroll.contentView.bounds.minY + icon.minY - viewport.minY - 30)
+        scroll.contentView.scroll(to: CGPoint(x: 0, y: targetY))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try await wait("first editor preview is visible in the matched viewport") {
+            guard let preview = self.controls.frame(thumbnailID),
+                  let viewport = self.controls.frame(viewportID) else { return false }
+            return viewport.insetBy(dx: -1, dy: -1).contains(preview)
+        }
+        return ["before": before,
+                "after": editorScrollObservation(scroll: scroll, root: root, viewportID: viewportID, thumbnailID: thumbnailID)]
+    }
+
+    private func editorScrollObservation(scroll: NSScrollView, root: NSView, viewportID: String, thumbnailID: String) -> [String: Any] {
+        let rect = { (value: CGRect) in [value.minX, value.minY, value.width, value.height] }
+        return ["scrollFrame": rect(scroll.convert(scroll.bounds, to: root)),
+                "clipBounds": rect(scroll.contentView.bounds),
+                "documentBounds": scroll.documentView.map { rect($0.bounds) } ?? [],
+                "viewport": controls.frame(viewportID).map(rect) ?? [],
+                "firstThumbnail": controls.frame(thumbnailID).map(rect) ?? [],
+                "scrollWindowMatchesCapture": scroll.window === root.window]
+    }
+
+    private func nativeScrolls(in view: NSView) -> [NSScrollView] {
+        let own = (view as? NSScrollView).map { [$0] } ?? []
+        return own + view.subviews.flatMap { nativeScrolls(in: $0) }
+    }
+
+    private func requireThumbnailRows(
+        eventID: UUID, attachments: [EventAttachment], surface: String = "desktop", pointSize: CGFloat = 44
+    ) async throws {
+        let prefix = "\(surface).attachment.thumbnail.\(eventID)."
+        let expected = Set(attachments.map { prefix + $0.id.uuidString })
+        func observation() -> [[String: Any]] {
+            attachments.map { attachment in
+                let rect = { (value: CGRect?) in value.map { [$0.minX, $0.minY, $0.width, $0.height] } ?? [] }
+                return ["surface": surface, "attachmentID": attachment.id.uuidString,
+                        "thumbnail": rect(self.controls.frame(prefix + attachment.id.uuidString)),
+                        "row": rect(self.controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)"))]
+            }
+        }
+        do {
+            try await wait("thumbnail rows settle with their exact preview size and containment") {
+                Set(self.controls.ids(withPrefix: prefix)) == expected && attachments.allSatisfy { attachment in
+                    guard let thumbnail = self.controls.frame(prefix + attachment.id.uuidString),
+                          let row = self.controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)") else { return false }
+                    return abs(thumbnail.width - pointSize) < 1 && abs(thumbnail.height - pointSize) < 1
+                        && row.insetBy(dx: -1, dy: -1).contains(thumbnail)
+                }
+            }
+        } catch {
+            try? JSONSerialization.data(withJSONObject: observation(), options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent(surface + "-thumbnail-row-failure.json"))
+            throw error
+        }
+        for attachment in attachments {
+            let thumbnail = try value(controls.frame(prefix + attachment.id.uuidString), "thumbnail frame")
+            let row = try value(controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)"), "thumbnail row frame")
+            try require(abs(thumbnail.width - pointSize) < 1 && abs(thumbnail.height - pointSize) < 1
+                        && row.insetBy(dx: -1, dy: -1).contains(thumbnail),
+                        "\(surface) thumbnail \(attachment.id) is not a contained \(pointSize)pt preview: thumbnail=\(thumbnail), row=\(row)")
+        }
+    }
+
+    private func verifyAttachmentIndicators(event: Countdown, window: NSWindow) async throws {
+        let empty = try value(store.active.first { $0.id != event.id && $0.attachments.isEmpty && $0.subtasks.isEmpty },
+                              "zero-attachment event")
+        let originalMode = try value(controls.value("desktop.mode"), "initial attachment card mode")
+        window.setContentSize(NSSize(width: 960, height: 760))
+        _ = try await positionDivider(in: window, fraction: 0.34)
+        var withChecklist = event
+        withChecklist.subtasks = try (1...10).map { try Subtask(text: "Подготовить пункт \($0)", isCompleted: $0 <= 4) }
+        let checklistSaved = await store.save(withChecklist, primary: true, requireExisting: true)
+        try require(checklistSaved, "cannot seed attachment/checklist card signals")
+        for mode in ["collection", "feed"] {
+            if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
+            try await expect("desktop.mode", mode)
+            try await expect("desktop.attachments.indicator.\(event.id)", "2")
+            try require(controls.entries["desktop.attachments.indicator.\(empty.id)"] == nil,
+                        "ordinary zero-attachment event shows an indicator")
+            await store.makePrimary(empty.id)
+            try require(store.data.primaryID == empty.id, "cannot select zero-attachment favorite fixture")
+            try await expect("desktop.attachments.indicator.\(event.id)", "2")
+            try require(controls.entries["desktop.attachments.indicator.\(empty.id)"] == nil,
+                        "favorite zero-attachment event shows an indicator")
+            try await wait("visible attachment indicator in \(mode)") {
+                guard let frame = self.controls.frame("desktop.attachments.indicator.\(event.id)") else { return false }
+                return frame.width > 0 && frame.height > 0
+            }
+            try await captureThemes("desktop-attachment-indicators-\(mode)")
+            if mode == "feed" {
+                try requireFeedCardGeometry(eventID: event.id)
+                try await captureThemes("desktop-feed-inline-narrow")
+                window.setContentSize(NSSize(width: 1200, height: 800))
+                _ = try await positionDivider(in: window, fraction: 0.66)
+                try await captureThemes("desktop-feed-inline-wide")
+                try requireFeedCardGeometry(eventID: event.id)
+                window.setContentSize(NSSize(width: 960, height: 760))
+                _ = try await positionDivider(in: window, fraction: 0.34)
+            }
+            await store.makePrimary(event.id)
+            try require(store.data.primaryID == event.id, "cannot select attachment favorite fixture")
+            try await expect("desktop.attachments.indicator.\(event.id)", "2")
+        }
+        let restored = await store.save(event, primary: false, requireExisting: true)
+        try require(restored, "cannot restore attachment-only event")
+        await store.clearPrimary()
+        try require(store.data.primaryID == nil, "cannot clear favorite for attachment-only ordinary fixture")
+        for mode in ["collection", "feed"] {
+            if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
+            try await expect("desktop.mode", mode)
+            try await expect("desktop.attachments.indicator.\(event.id)", "2")
+        }
+        await store.makePrimary(event.id)
+        try await press("desktop.event.\(event.id)")
+        if controls.value("desktop.mode") != originalMode { try await press("desktop.mode") }
+        try await expect("desktop.mode", originalMode)
+        passed.append("attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width")
     }
 
     private func nativeSplit(in view: NSView) -> NSSplitView? {
@@ -461,22 +1206,32 @@ final class DesktopSmokeRuntime {
             store: fixture, updates: fixtureUpdates, editorSession: session, keepAwake: keepAwake,
             weather: fixtureWeather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
             appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
-            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: fixtureUpdates, weather: fixtureWeather) }
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: fixtureUpdates, weather: fixtureWeather) },
+            smokeControlScope: "weather-fixture."
         ), editorSession: session)
         let window = try value(controller.window, "weather geometry fixture window")
         window.setContentSize(NSSize(width: 960, height: 800))
         retainedWindow.orderOut(nil)
         controller.show()
+        var succeeded = false
         defer {
+            if !succeeded { try? capture("failure-weather-fixture", window: window) }
             fixtureWeather.shutdown()
             Task { await gate.release([:]) }
             window.close()
             retainedWindow.makeKeyAndOrderFront(nil)
             defaults.removePersistentDomain(forName: suite)
         }
-        try await wait("weather geometry detail rendered") { self.controls.entries["desktop.detail.\(favorite.id)"] != nil }
-        let identifiers = ["desktop.overview.header", "desktop.detail.identity", "desktop.detail.note", "desktop.detail.checklist"]
-            + [favorite, ordinary, missing].map { "desktop.presentation.\($0.id)" }
+        try await wait("weather geometry detail rendered") {
+            self.controls.entries[self.weatherControlID("desktop.detail.\(favorite.id)")] != nil
+        }
+        let identifiers = (["desktop.overview.header", "desktop.overview.date", "desktop.weather.overview",
+                           "desktop.detail.identity", "desktop.detail.note", "desktop.detail.checklist",
+                           "desktop.favorite.identity.\(favorite.id)", "desktop.favorite.metadata.\(favorite.id)",
+                           "desktop.date.browser.\(favorite.id)", "desktop.weather.browser.\(favorite.id)"]
+            + [favorite, ordinary, missing].map { "desktop.presentation.\($0.id)" }).map(weatherControlID)
+        try requireOverviewWeatherRow(after: "initial weather OFF")
+        try requireFavoriteWeatherRow(eventID: favorite.id, after: "initial weather OFF")
         let baseline = try weatherGeometry(identifiers)
         fixtureWeather.setEnabled(true)
         let requestDeadline = ProcessInfo.processInfo.systemUptime + 6
@@ -484,49 +1239,105 @@ final class DesktopSmokeRuntime {
             try require(ProcessInfo.processInfo.systemUptime < requestDeadline, "synthetic weather request did not start")
             try await Task.sleep(nanoseconds: 10_000_000)
         }
-        try await expect("desktop.weather.detail.\(favorite.id)", "absent")
-        try await requireWeatherGeometry(baseline, after: "pending forecast")
+        try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+        try await requireWeatherGeometry(baseline, favoriteID: favorite.id, after: "pending forecast")
         try capture("desktop-weather-pending", window: window)
         let forecast = try value(DailyWeatherForecast(weatherCode: 1, maximumTemperature: 14), "synthetic daily forecast")
         await gate.release([weatherDayKey(favorite.date): forecast, weatherDayKey(ordinary.date): forecast])
-        try await expect("desktop.weather.detail.\(favorite.id)", "available")
-        try await expect("desktop.weather.browser.\(missing.id)", "absent")
-        try await requireWeatherGeometry(baseline, after: "pending to available forecast")
+        try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+        try await expect(weatherControlID("desktop.weather.browser.\(missing.id)"), "absent")
+        try await requireWeatherGeometry(baseline, favoriteID: favorite.id, after: "pending to available forecast")
         try capture("desktop-weather-loaded", window: window)
         for fraction in [CGFloat(0.34), 0.66] {
-            let divider = try await positionDivider(in: window, fraction: fraction)
+            let divider = try await positionDivider(in: window, fraction: fraction, controlScope: "weather-fixture.")
             for mode in ["collection", "feed"] {
-                if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
-                try await expect("desktop.mode", mode)
+                if controls.value(weatherControlID("desktop.mode")) != mode { try await press(weatherControlID("desktop.mode")) }
+                try await expect(weatherControlID("desktop.mode"), mode)
                 try await Task.sleep(nanoseconds: 180_000_000)
-                let stable = try weatherGeometry(identifiers)
+                try requireOverviewWeatherRow(after: "divider resize in \(mode) at \(fraction)")
+                try requireFavoriteWeatherRow(eventID: favorite.id, after: "divider resize in \(mode) at \(fraction)")
+                let feedIdentifiers = mode == "feed" ? ["desktop.card.leaf.", "desktop.card.title.",
+                    "desktop.card.metadata.", "desktop.card.completion.", "desktop.collection.remaining.",
+                    "desktop.date.browser.", "desktop.weather.browser."].map { weatherControlID($0 + ordinary.id.uuidString) } : []
+                let stable = try weatherGeometry(identifiers + feedIdentifiers)
+                if mode == "feed" { try requireFeedCardGeometry(eventID: ordinary.id, scope: "weather-fixture.") }
                 fixtureWeather.setEnabled(false)
-                try await expect("desktop.weather.overview", "absent")
-                try await expect("desktop.weather.detail.\(favorite.id)", "absent")
-                try await requireWeatherGeometry(stable, after: "global weather OFF in \(mode) at \(fraction)")
+                try await expect(weatherControlID("desktop.weather.overview"), "absent")
+                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+                try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "global weather OFF in \(mode) at \(fraction)")
                 fixtureWeather.setEnabled(true)
-                try await expect("desktop.weather.detail.\(favorite.id)", "available")
-                try await requireWeatherGeometry(stable, after: "global weather ON in \(mode) at \(fraction)")
+                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+                try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "global weather ON in \(mode) at \(fraction)")
+                if mode == "feed" { try requireFeedCardGeometry(eventID: ordinary.id, scope: "weather-fixture.") }
                 var hiddenWeather = favorite
                 hiddenWeather.showsWeather = false
                 let hiddenSaved = await fixture.save(hiddenWeather, primary: true)
                 try require(hiddenSaved, "cannot disable isolated per-event weather")
                 fixtureWeather.updateEvents(fixture.active)
-                try await expect("desktop.weather.detail.\(favorite.id)", "absent")
-                try await expect("desktop.weather.browser.\(favorite.id)", "absent")
-                try await requireWeatherGeometry(stable, after: "per-event weather OFF in \(mode) at \(fraction)")
+                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+                try await expect(weatherControlID("desktop.weather.browser.\(favorite.id)"), "absent")
+                try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "per-event weather OFF in \(mode) at \(fraction)")
                 let restored = await fixture.save(favorite, primary: true)
                 try require(restored, "cannot restore isolated per-event weather")
                 fixtureWeather.updateEvents(fixture.active)
-                try await expect("desktop.weather.detail.\(favorite.id)", "available")
-                try await requireWeatherGeometry(stable, after: "per-event weather ON in \(mode) at \(fraction)")
-                try await requireDivider(divider, in: window, after: "weather visibility changes")
+                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+                try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "per-event weather ON in \(mode) at \(fraction)")
+                try await requireDivider(divider, in: window, after: "weather visibility changes", controlScope: "weather-fixture.")
                 try capture("desktop-weather-stable-\(mode)-\(Int(fraction * 100))", window: window)
             }
         }
         try require(fixture.data.items == [favorite, ordinary, missing] && fixture.data.primaryID == favorite.id,
                     "weather presentation checks altered event fields or identities")
         passed.append("synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed")
+        passed.append("overview and favorite date/weather share unclipped horizontal rows with stable pending/loaded/off geometry in narrow/wide collection and feed")
+        succeeded = true
+    }
+
+    private func requireFeedCardGeometry(eventID: UUID, scope: String = "") throws {
+        let frame = { (role: String) throws -> CGRect in
+            try self.value(self.controls.frame(scope + role + eventID.uuidString), "feed geometry " + role)
+        }
+        let card = try frame("desktop.event.")
+        let leaf = try frame("desktop.card.leaf.")
+        let title = try frame("desktop.card.title.")
+        let metadata = try frame("desktop.card.metadata.")
+        let signals = try frame("desktop.card.completion.")
+        let remaining = try frame("desktop.collection.remaining.")
+        let date = try frame("desktop.date.browser.")
+        let weather = try frame("desktop.weather.browser.")
+        let observation: [String: Any] = [
+            "eventID": eventID.uuidString, "scope": scope,
+            "frames": ["card": card, "leaf": leaf, "title": title, "metadata": metadata,
+                       "signals": signals, "remaining": remaining, "date": date, "weather": weather]
+                .mapValues { [$0.minX, $0.minY, $0.width, $0.height] }
+        ]
+        let observationName = "feed-geometry-\(scope.isEmpty ? "primary" : "weather")-\(Int(card.width.rounded()))-\(eventID).json"
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent(observationName))
+        try require(abs(leaf.minY - title.minY) < 2 && abs(title.minY - remaining.minY) < 2,
+                    "feed calendar, title and remaining label are not top-aligned: leaf=\(leaf), title=\(title), remaining=\(remaining)")
+        try require(title.minX >= leaf.maxX + 8 && title.maxX <= remaining.minX - 7,
+                    "feed title overlaps its calendar or remaining label")
+        try require(metadata.minY >= max(title.maxY, remaining.maxY) + 4
+                    && date.minX >= title.minX - 1 && abs(date.midY - weather.midY) < 4
+                    && weather.minX >= date.maxX + 6,
+                    "feed date/weather are not a separate inline metadata row")
+        try require(metadata.insetBy(dx: -1, dy: -1).contains(date)
+                    && metadata.insetBy(dx: -1, dy: -1).contains(weather)
+                    && date.height <= 22 && weather.width >= 51,
+                    "feed metadata wraps, clips or lacks stable forecast space")
+        if signals.height > 0 {
+            try require(signals.minY >= metadata.maxY + 4 && signals.height <= 18,
+                        "feed progress/file indicators do not fit one row below metadata")
+            if let attachment = controls.frame(scope + "desktop.attachments.indicator." + eventID.uuidString) {
+                try require(signals.insetBy(dx: -1, dy: -1).contains(attachment)
+                            && abs(attachment.midY - signals.midY) < 2,
+                            "feed paperclip left the shared progress row")
+            }
+        }
+        for content in [leaf, title, metadata, signals, remaining] where content.height > 0 {
+            try require(card.insetBy(dx: -1, dy: -1).contains(content), "feed content escaped its card bounds")
+        }
     }
 
     private func weatherGeometry(_ identifiers: [String]) throws -> [String: CGRect] {
@@ -535,7 +1346,9 @@ final class DesktopSmokeRuntime {
         })
     }
 
-    private func requireWeatherGeometry(_ expected: [String: CGRect], after action: String) async throws {
+    private func weatherControlID(_ identifier: String) -> String { "weather-fixture." + identifier }
+
+    private func requireWeatherGeometry(_ expected: [String: CGRect], favoriteID: UUID, after action: String) async throws {
         for _ in 0..<3 {
             try await Task.sleep(nanoseconds: 20_000_000)
             for (identifier, frame) in expected {
@@ -544,7 +1357,42 @@ final class DesktopSmokeRuntime {
                             && abs(current.width - frame.width) < 1 && abs(current.height - frame.height) < 1,
                             "weather changed \(identifier) geometry after \(action): expected \(frame), actual \(current)")
             }
+            try requireOverviewWeatherRow(after: action)
+            try requireFavoriteWeatherRow(eventID: favoriteID, after: action)
         }
+    }
+
+    private func requireFavoriteWeatherRow(eventID: UUID, after action: String) throws {
+        let frame = { (role: String) throws -> CGRect in
+            try self.value(self.controls.frame(self.weatherControlID(role + eventID.uuidString)), "favorite geometry " + role)
+        }
+        let card = try frame("desktop.presentation.")
+        let identity = try frame("desktop.favorite.identity.")
+        let metadata = try frame("desktop.favorite.metadata.")
+        let date = try frame("desktop.date.browser.")
+        let weather = try frame("desktop.weather.browser.")
+        try require(metadata.minY >= identity.maxY + 4 && abs(date.midY - weather.midY) < 4
+                    && weather.minX >= date.maxX + 6 && date.height <= 22 && weather.width >= 51,
+                    "favorite date/weather fail their shared row below the calendar/title after \(action)")
+        try require(metadata.insetBy(dx: -1, dy: -1).contains(date)
+                    && metadata.insetBy(dx: -1, dy: -1).contains(weather)
+                    && card.insetBy(dx: -1, dy: -1).contains(metadata),
+                    "favorite date/weather clip or escape their full-width metadata row after \(action)")
+    }
+
+    private func requireOverviewWeatherRow(after action: String) throws {
+        let header = try value(controls.frame(weatherControlID("desktop.overview.header")), "overview header after \(action)")
+        let date = try value(controls.frame(weatherControlID("desktop.overview.date")), "overview date after \(action)")
+        let weather = try value(controls.frame(weatherControlID("desktop.weather.overview")), "overview weather after \(action)")
+        let label = try value(controls.value(weatherControlID("desktop.overview.date")), "overview date label after \(action)")
+        let naturalDate = (label as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: 13, weight: .medium)])
+        try require(date.width >= naturalDate.width - 1 && date.height <= naturalDate.height + 2,
+                    "overview date wraps or clips after \(action): \(date)")
+        try require(abs(date.midY - weather.midY) < 4 && abs(weather.minX - date.maxX - 10) < 1,
+                    "overview date and weather do not share one spaced row after \(action): date=\(date), weather=\(weather), header=\(header)")
+        try require(header.insetBy(dx: -1, dy: -1).contains(date)
+                    && header.insetBy(dx: -1, dy: -1).contains(weather) && weather.width >= 64,
+                    "overview date/weather row escapes the header or lacks forecast space after \(action)")
     }
 
     private func verifyMonthlyBrowsing() async throws {
@@ -685,14 +1533,15 @@ final class DesktopSmokeRuntime {
         }
         try scrollBrowser(scroll, toEnd: true)
         let last = try value(ordinary.last, "last monthly event")
-        try await requireVisibleBrowserEvent(last.id)
+        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll)
         try await press("desktop.event.\(last.id)")
         try await wait("last long-list event selected") { self.controls.entries["desktop.detail.\(last.id)"] != nil }
         try capture("desktop-monthly-long-end-collection", window: window)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
         try await captureModeSequence("desktop-mode-long-to-feed", window: window, events: ordinary)
+        try await waitForFeedLayoutBeforeScrolling(lastID: last.id, scroll: scroll)
         try scrollBrowser(scroll, toEnd: true)
-        try await requireVisibleBrowserEvent(last.id)
+        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll)
         try capture("desktop-monthly-long-end-feed", window: window)
         try await requireDivider(divider, in: window, after: "long-list scroll, selection and view change")
         for _ in 0..<7 {
@@ -781,12 +1630,64 @@ final class DesktopSmokeRuntime {
         return view.subviews.lazy.compactMap { self.nativeScroll(in: $0) }.first
     }
 
-    private func requireVisibleBrowserEvent(_ id: UUID) async throws {
-        try await wait("last monthly event is rendered inside browser viewport") {
-            guard let viewport = self.controls.frame("desktop.browser"),
-                  let event = self.controls.frame("desktop.event.\(id)") else { return false }
-            return event.intersection(viewport).height >= min(event.height, viewport.height) - 2
+    private func waitForFeedLayoutBeforeScrolling(lastID: UUID, scroll: NSScrollView) async throws {
+        var previousHeight: CGFloat?
+        var stableSamples = 0
+        var samples: [[String: Any]] = []
+        // The mode value changes before animated row widths and the document extent reach their final layout.
+        try await wait("full-width feed rows and stable scroll extent") {
+            guard let height = scroll.documentView?.bounds.height,
+                  let row = self.controls.frame("desktop.event.\(lastID)") else { return false }
+            let expectedWidth = scroll.contentView.bounds.width - 48
+            samples.append(["uptime": ProcessInfo.processInfo.systemUptime, "documentHeight": height,
+                            "lastRowWidth": row.width, "expectedRowWidth": expectedWidth])
+            if abs(row.width - expectedWidth) < 1 {
+                stableSamples = previousHeight.map { abs($0 - height) < 0.25 } == true ? stableSamples + 1 : 1
+            } else {
+                stableSamples = 0
+            }
+            previousHeight = height
+            return stableSamples >= 3
         }
+        try JSONSerialization.data(withJSONObject: samples, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("feed-scroll-layout-settled.json"))
+    }
+
+    private func requireVisibleBrowserEvent(_ id: UUID, window: NSWindow, scroll: NSScrollView) async throws {
+        let mode = controls.value("desktop.mode") ?? "unknown"
+        var samples: [[String: Any]] = []
+        func observation() -> [String: Any] {
+            let rect = { (frame: CGRect?) -> [CGFloat] in
+                guard let frame else { return [] }
+                return [frame.minX, frame.minY, frame.width, frame.height]
+            }
+            return [
+                "uptime": ProcessInfo.processInfo.systemUptime,
+                "event": rect(controls.frame("desktop.event.\(id)")),
+                "viewport": rect(controls.frame("desktop.browser")),
+                "documentBounds": rect(scroll.documentView?.bounds),
+                "documentFrame": rect(scroll.documentView?.frame),
+                "clipBounds": rect(scroll.contentView.bounds), "scrollFrame": rect(scroll.frame),
+                "nativeViewport": rect(window.contentView.map { scroll.contentView.convert(scroll.contentView.bounds, to: $0) }),
+                "rootIsFlipped": window.contentView?.isFlipped ?? false,
+                "documentIsFlipped": scroll.documentView?.isFlipped ?? false
+            ]
+        }
+        do {
+            try await wait("last monthly event is rendered inside browser viewport") {
+                samples.append(observation())
+                guard let viewport = self.controls.frame("desktop.browser"),
+                      let event = self.controls.frame("desktop.event.\(id)") else { return false }
+                return event.intersection(viewport).height >= min(event.height, viewport.height) - 2
+            }
+        } catch {
+            try JSONSerialization.data(withJSONObject: samples, options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent("browser-visibility-\(mode)-failure.json"))
+            try capture("failure-monthly-visibility-\(mode)", window: window)
+            throw error
+        }
+        try JSONSerialization.data(withJSONObject: samples, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("browser-visibility-\(mode).json"))
     }
 
     private func scrollBrowser(_ scroll: NSScrollView, toEnd: Bool) throws {
@@ -811,7 +1712,10 @@ final class DesktopSmokeRuntime {
                 return window.appearance?.name == expected && self.panelWindow()?.appearance?.name == expected
             }
             try await requireDivider(divider, in: window, after: "appearance \(selection.rawValue)")
-            try capture("desktop-settings-\(selection.rawValue)", window: window)
+            let settingsSheet = try value(window.attachedSheet, "settings sheet for appearance capture")
+            try require(settingsSheet.sheetParent === window && settingsSheet.isVisible,
+                        "shared appearance detached the settings sheet")
+            try capture("desktop-settings-\(selection.rawValue)", window: settingsSheet)
         }
         visualEnvironment.colorSchemeOverride = originalOverride
     }
@@ -830,7 +1734,7 @@ final class DesktopSmokeRuntime {
         visualEnvironment.colorSchemeOverride = originalOverride
     }
 
-    private func positionDivider(in window: NSWindow, fraction: CGFloat) async throws -> CGFloat {
+    private func positionDivider(in window: NSWindow, fraction: CGFloat, controlScope: String = "") async throws -> CGFloat {
         let content = try value(window.contentView, "split content")
         content.layoutSubtreeIfNeeded()
         let split = try value(nativeSplit(in: content), "native horizontal split")
@@ -839,11 +1743,11 @@ final class DesktopSmokeRuntime {
         try await wait("native divider accepts nondefault position") {
             abs(split.arrangedSubviews[0].frame.maxX - position) < 2
         }
-        try requireDividerGrip(in: window)
+        try requireDividerGrip(in: window, controlScope: controlScope)
         return split.arrangedSubviews[0].frame.maxX
     }
 
-    private func requireDivider(_ position: CGFloat, in window: NSWindow, after action: String) async throws {
+    private func requireDivider(_ position: CGFloat, in window: NSWindow, after action: String, controlScope: String = "") async throws {
         for _ in 0..<3 {
             try await Task.sleep(nanoseconds: 20_000_000)
             let content = try value(window.contentView, "retained split content")
@@ -851,25 +1755,25 @@ final class DesktopSmokeRuntime {
             let split = try value(nativeSplit(in: content), "retained native horizontal split")
             try require(abs(split.arrangedSubviews[0].frame.maxX - position) < 2,
                         "divider reset after \(action): expected \(position), actual \(split.arrangedSubviews[0].frame.maxX)")
-            try requireDividerGrip(in: window, after: action)
+            try requireDividerGrip(in: window, after: action, controlScope: controlScope)
         }
     }
 
-    private func requireDividerGrip(in window: NSWindow, after action: String = "divider positioning") throws {
+    private func requireDividerGrip(in window: NSWindow, after action: String = "divider positioning", controlScope: String = "") throws {
         let content = try value(window.contentView, "divider grip content")
         let grip = try value(dividerGrip(in: content), "desktop divider grip")
         grip.refreshSplitView()
         let rect = grip.gripRect
-        let settingsBlocksBackground = controls.frame("desktop.settings.pane") != nil
+        let hasNativeSheet = window.attachedSheet != nil
         try require(abs(rect.width - 12) < 0.5 && rect.height > 200, "divider grip must span a 12pt full-height band")
         for height in [CGFloat(0.15), 0.5, 0.85] {
             for offset in [CGFloat(-5), 0, 5] {
                 let localPoint = NSPoint(x: rect.midX + offset, y: rect.minY + rect.height * height)
                 let point = grip.convert(localPoint, to: content.superview)
                 let hit = content.hitTest(point)
-                let routesAsExpected = settingsBlocksBackground ? (hit != nil && hit !== grip) : hit === grip
+                let routesAsExpected = hasNativeSheet ? hit == nil : hit === grip
                 try require(routesAsExpected, "unexpected expanded divider hit routing after \(action); "
-                            + "expected=\(settingsBlocksBackground ? "blocked by settings" : "divider grip"), "
+                            + "expected=\(hasNativeSheet ? "blocked by native sheet" : "divider grip"), "
                             + "height=\(height), offset=\(offset), localPoint=\(localPoint), point=\(point), gripRect=\(rect), "
                             + "hit=\(dividerViewDescription(hit)), content=\(dividerViewDescription(content)), "
                             + "gripHierarchy=\(dividerHierarchyDescription(grip))")
@@ -965,7 +1869,7 @@ final class DesktopSmokeRuntime {
         try capture("desktop-no-timer-finished", window: window)
         let firstControl = "desktop.subtask.toggle.\(first.id)"
         let secondControl = "desktop.subtask.toggle.\(second.id)"
-        let stableIDs = ["desktop.create", "desktop.detail.edit", "desktop.checklist.edit",
+        let stableIDs = ["desktop.create", "desktop.detail.edit",
                          "desktop.favorite.\(event.id)", firstControl, secondControl]
         let frames = try Dictionary(uniqueKeysWithValues: stableIDs.map { id in
             (id, try value(controls.frame(id), "stable control frame \(id)"))
@@ -980,7 +1884,7 @@ final class DesktopSmokeRuntime {
             for id in stableIDs {
                 try require(controls.entries[id]?.isEnabled == true, "pending checklist write disabled unrelated control \(id)")
             }
-            for id in ["desktop.create", "desktop.detail.edit", "desktop.checklist.edit"] {
+            for id in ["desktop.create", "desktop.detail.edit"] {
                 try require(controls.frame(id) == frames[id], "pending checklist write moved unrelated control \(id)")
             }
             fixtureHost.view.layoutSubtreeIfNeeded()
@@ -1192,7 +2096,32 @@ final class DesktopSmokeRuntime {
             self.controls.entries["event.edit.\(created.id)"] != nil
         }
         showDesktop()
+        try await requireSingleEditorEntry(eventID: created.id)
+        try await captureThemes("desktop-single-edit-empty")
+        let beforePencil = try Data(contentsOf: configuration.dataURL)
+        try await press("desktop.detail.edit")
+        try await expect("editor.note", "")
+        try await expect("editor.subtasks", "0")
+        try await expect("editor.attachments", "0")
+        try await press("editor.cancel")
+        try await wait("empty detail pencil Cancel restores the saved event") {
+            !self.editorSession.hasActiveEditor && window.attachedSheet == nil
+                && self.controls.value("desktop.inspector") == created.id.uuidString
+        }
+        let afterPencil = try Data(contentsOf: configuration.dataURL)
+        try require(beforePencil == afterPencil, "empty-section editor entry changed saved event data")
+        try await requireSingleEditorEntry(eventID: created.id)
         passed.append("search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces")
+    }
+
+    private func requireSingleEditorEntry(eventID: UUID) async throws {
+        try await wait("saved details expose their header pencil") {
+            self.controls.value("desktop.inspector") == eventID.uuidString
+                && self.controls.entries["desktop.detail.edit"]?.isEnabled == true
+        }
+        try require(controls.entries["desktop.checklist.edit"] == nil
+                    && controls.entries["desktop.attachments.edit.\(eventID)"] == nil,
+                    "saved details retained a redundant checklist or attachment editor shortcut")
     }
 
     private func checkFavorite(_ expected: UUID?) async throws {
@@ -1304,8 +2233,20 @@ final class DesktopSmokeRuntime {
     }
 
     private func replaceFocusedText(control: String, text: String) async throws {
+        let editsDesktopSheet = (control.hasPrefix("editor.") && editorSession.desktopIsPresented)
+            || control.hasPrefix("desktop.attachments.list.search.")
+        if editsDesktopSheet {
+            try await wait("native input sheet becomes key before focusing \(control)") {
+                guard let sheet = self.desktopWindow()?.attachedSheet else { return false }
+                return sheet.isVisible && sheet.isKeyWindow && NSApp.keyWindow === sheet
+            }
+        }
         try await press(control)
-        try await wait("focused native text editor") { NSApp.keyWindow?.firstResponder is NSTextView }
+        await Task.yield()
+        try await wait("focused native text editor for \(control)") {
+            NSApp.keyWindow?.firstResponder is NSTextView
+                && (!control.hasPrefix("editor.") || self.controls.focusedID == control)
+        }
         let textView = try value(NSApp.keyWindow?.firstResponder as? NSTextView, "native field editor")
         textView.selectAll(nil)
         textView.insertText(text, replacementRange: textView.selectedRange())

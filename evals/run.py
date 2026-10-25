@@ -379,7 +379,8 @@ for (value, expected) in cases {
 }
 print("PASS: independent today and pluralization checks")
 ''')
-            result = execute(["swiftc", str(workspace / "Sources/CountdownCore/Countdown.swift"),
+            core_sources = sorted((workspace / "Sources/CountdownCore").glob("*.swift"))
+            result = execute(["swiftc", *(str(source) for source in core_sources),
                               str(probe / "main.swift"), "-module-cache-path", str(probe / "module-cache"),
                               "-o", str(probe / "check")], workspace,
                              120, output / "oracle-build.stdout", output / "oracle-build.stderr")

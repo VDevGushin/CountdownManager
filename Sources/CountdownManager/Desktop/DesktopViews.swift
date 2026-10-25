@@ -2,6 +2,12 @@ import CountdownCore
 import SwiftUI
 
 struct DesktopRootView: View {
+    private enum DesktopSheet: Equatable {
+        case editor
+        case settings
+        case attachments(UUID)
+    }
+
     private enum PendingAction {
         case toggleSubtask(eventID: UUID, subtaskID: UUID)
         case toggleFavorite(eventID: UUID)
@@ -20,11 +26,13 @@ struct DesktopRootView: View {
     let showPanel: () -> Void
     let switchToPanel: () -> Void
     let diagnosticsContext: () -> DiagnosticExportContext
+    var smokeControlScope = ""
     @State private var mode = DesktopEventViewMode.collection
     @State private var query = ""
     @State private var selectedID: UUID?
-    @State private var showingEditor = false
-    @State private var showingSettings = false
+    // Retain ownership through native dismissal so background actions cannot enter while the sheet is closing.
+    @State private var presentedSheet: DesktopSheet?
+    @State private var sheetIsClosing = false
     @State private var editing: Countdown?
     @State private var dayPreset: DayCreationPreset?
     @State private var selectDayDate = false
@@ -43,28 +51,43 @@ struct DesktopRootView: View {
     }
     private var canMutate: Bool {
         store.eventCreationIsAvailable && (!store.hasPendingPersistence || isProcessingActions)
-            && !editorSession.hasActiveEditor && !showingSettings && !showingEditor
+            && !editorSession.hasActiveEditor && !showingSettings && !showingEditor && attachmentsEventID == nil
             && !hasQueuedEditor
     }
     private var hasQueuedEditor: Bool {
         pendingActions.contains { if case .edit = $0 { return true }; return false }
     }
     private var canDrainActions: Bool {
-        !editorSession.hasActiveEditor || (editorSession.desktopIsPresented && hasQueuedEditor)
+        attachmentsEventID == nil
+            && (!editorSession.hasActiveEditor || (editorSession.desktopIsPresented && hasQueuedEditor))
     }
     private var canPresentSettings: Bool {
-        !showingEditor && !showingSettings && !editorSession.hasActiveEditor
+        !showingEditor && !showingSettings && !editorSession.hasActiveEditor && attachmentsEventID == nil
     }
     private var canSwitchToPanel: Bool {
-        !showingEditor && !showingSettings && !editorSession.desktopIsPresented
+        !showingEditor && !showingSettings && !editorSession.desktopIsPresented && attachmentsEventID == nil
     }
     private var selection: Countdown? { collection.events.first { $0.id == selectedID } }
+    private var attachmentLibraryItem: Countdown? {
+        store.active.first { $0.id == attachmentsEventID && !$0.attachments.isEmpty }
+    }
+    private var showingEditor: Bool { presentedSheet == .editor }
+    private var showingSettings: Bool { presentedSheet == .settings }
+    private var attachmentsEventID: UUID? {
+        if case let .attachments(eventID) = presentedSheet { return eventID }
+        return nil
+    }
+    private var sheetPresentation: Binding<Bool> {
+        Binding(get: { presentedSheet != nil && !sheetIsClosing }, set: { requested in
+            if !requested { dismissSheet() }
+        })
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             desktopCommandBar
             Divider()
-            if let error = store.error { errorBanner(error) }
+            if let error = store.error, !showingEditor, attachmentsEventID == nil { errorBanner(error) }
             if editorSession.isPresented { panelEditorBanner }
             splitContent
             Divider()
@@ -73,18 +96,19 @@ struct DesktopRootView: View {
         .background(AuroraInstrument.canvas(for: colorScheme))
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
-        .disabled(showingSettings)
-        .allowsHitTesting(!showingSettings)
-        .accessibilityHidden(showingSettings)
-        .overlay {
-            if showingSettings { settingsOverlay }
-        }
-        .sheet(isPresented: $showingEditor, onDismiss: editorSession.endDesktopEditor) {
-            EditorView(store: store, item: editing, dayPreset: dayPreset, selectDayDate: selectDayDate,
-                       didSave: eventSaved, done: { showingEditor = false })
-                .frame(width: 430, height: 600)
+        .disabled(presentedSheet != nil)
+        .allowsHitTesting(presentedSheet == nil)
+        .accessibilityHidden(presentedSheet != nil)
+        .sheet(isPresented: sheetPresentation, onDismiss: finishSheetDismissal) {
+            sheetContent
+                .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+                .tint(AuroraInstrument.accent(for: colorScheme,
+                                             highContrast: accessibilitySettings.prefersHighContrast))
                 .background(AuroraPanelCanvas())
                 .interactiveDismissDisabled()
+                .disabled(sheetIsClosing)
+                .allowsHitTesting(!sheetIsClosing)
+                .accessibilityHidden(sheetIsClosing)
         }
         .environmentObject(accessibilitySettings)
         .environmentObject(appearanceSettings)
@@ -95,52 +119,64 @@ struct DesktopRootView: View {
         .onChange(of: store.hasPendingPersistence) { _ in processPendingActions() }
         .onChange(of: store.eventCreationIsAvailable) { _ in processPendingActions() }
         .onChange(of: showingSettings) { _ in processPendingActions() }
+        .onChange(of: attachmentsEventID) { _ in processPendingActions() }
+        .onChange(of: attachmentLibraryItem?.id) { ownerID in
+            if ownerID == nil { dismissAttachments() }
+        }
+        .onChange(of: selectedID) { selectedID in
+            if selectedID != attachmentsEventID { dismissAttachments() }
+        }
         .onChange(of: isProcessingActions) { _ in processPendingActions() }
         .onReceive(store.$data) { _ in
             DispatchQueue.main.async { processPendingActions() }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("desktop.root")
         .uiSmokeControl(id: "desktop.root")
+        .uiSmokeControlScope(smokeControlScope)
     }
 
-    private var settingsOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.3)
-                .contentShape(Rectangle())
-                .onTapGesture(perform: dismissSettings)
-                .accessibilityLabel("Закрыть настройки")
-                .accessibilityAddTraits(.isButton)
-                .accessibilityIdentifier("desktop.settings.backdrop")
-                .uiSmokeControl(id: "desktop.settings.backdrop", action: dismissSettings)
+    @ViewBuilder private var sheetContent: some View {
+        switch presentedSheet {
+        case .editor:
+            VStack(spacing: 0) {
+                if let error = store.error { errorBanner(error) }
+                EditorView(store: store, item: editing, dayPreset: dayPreset, selectDayDate: selectDayDate,
+                           didSave: eventSaved, done: dismissSheet)
+            }
+            .frame(width: 430, height: 600)
+        case .settings:
             SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
                          diagnosticsContext: diagnosticsContext, back: dismissSettings,
                          backShortcut: .cancelAction, showsCloseButton: true)
                 .frame(width: 430, height: 560)
-                .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
-                .tint(AuroraInstrument.accent(for: colorScheme,
-                                             highContrast: accessibilitySettings.prefersHighContrast))
                 .background {
-                    Rectangle()
-                        .fill(AuroraInstrument.canvas(for: colorScheme))
-                        .contentShape(Rectangle())
-                        .onTapGesture { }
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityHidden(true)
+                    DesktopSheetBackdropDismissal(isEnabled: !sheetIsClosing && !store.isExportingDiagnostics,
+                                                  dismiss: dismissSettings)
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(AuroraInstrument.stroke(
-                            for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                        ), lineWidth: 1)
-                        .allowsHitTesting(false)
-                }
-                .shadow(color: .black.opacity(0.2), radius: 16, y: 8)
                 .accessibilityIdentifier("desktop.settings.pane")
                 .uiSmokeControl(id: "desktop.settings.pane")
+        case .attachments:
+            if let item = attachmentLibraryItem { attachmentsSheet(item: item) }
+        case nil:
+            EmptyView()
         }
-        .accessibilityIdentifier("desktop.settings.overlay")
-        .uiSmokeControl(id: "desktop.settings.overlay")
+    }
+
+    private func attachmentsSheet(item: Countdown) -> some View {
+        AttachmentListView(item: item, compact: false, back: dismissAttachments,
+                           open: { attachment in
+                               Task { await store.openAttachment(attachment, eventID: item.id) }
+                           }, thumbnailURL: { attachment in
+                               await store.attachmentThumbnailURL(attachment, eventID: item.id)
+                           }, error: store.error, dismissError: { store.error = nil })
+            .frame(width: 540, height: 540)
+            .id(item.id)
+            .background {
+                DesktopSheetBackdropDismissal(isEnabled: !sheetIsClosing, dismiss: dismissAttachments)
+            }
+            .accessibilityIdentifier("desktop.attachments.pane")
+            .uiSmokeControl(id: "desktop.attachments.pane")
     }
 
     private var splitContent: some View {
@@ -163,7 +199,13 @@ struct DesktopRootView: View {
                             weather: weather, canMutate: canMutate && !deletionIsPending(selection.id),
                             edit: { beginEditor(item: selection) }, toggleFavorite: { toggleFavorite(selection) },
                             delete: { deleteEvent(selection.id) },
-                            toggleSubtask: { toggleSubtask(selection, subtaskID: $0) }
+                            toggleSubtask: { toggleSubtask(selection, subtaskID: $0) },
+                            openAttachment: { attachment in
+                                Task { await store.openAttachment(attachment, eventID: selection.id) }
+                            },
+                            attachmentThumbnailURL: { attachment in
+                                await store.attachmentThumbnailURL(attachment, eventID: selection.id)
+                            }, showAttachments: { presentAttachments(eventID: selection.id) }
                         )
                         .id(selection.id)
                     } else {
@@ -225,6 +267,7 @@ struct DesktopRootView: View {
         }
         .padding(.horizontal, 20)
         .frame(height: 54)
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("desktop.command-bar")
     }
 
@@ -282,6 +325,7 @@ struct DesktopRootView: View {
             Text(error).font(.system(size: 12)).textSelection(.enabled)
             Spacer()
             Button("Понятно") { store.error = nil }
+                .uiSmokeControl(id: "desktop.error.dismiss", action: { store.error = nil })
         }
         .padding(12)
         .background(Color.red.opacity(0.1))
@@ -295,14 +339,37 @@ struct DesktopRootView: View {
 
     private func resetFilters() { query = "" }
 
+    private func presentAttachments(eventID: UUID) {
+        guard canMutate, !isProcessingActions, pendingActions.isEmpty,
+              selection?.id == eventID, selection?.attachments.isEmpty == false else { return }
+        presentedSheet = .attachments(eventID)
+    }
+
+    private func dismissAttachments() {
+        guard attachmentsEventID != nil else { return }
+        dismissSheet()
+    }
+
     private func presentSettings() {
         guard canPresentSettings else { return }
-        showingSettings = true
+        presentedSheet = .settings
     }
 
     private func dismissSettings() {
-        guard !store.isExportingDiagnostics else { return }
-        showingSettings = false
+        guard showingSettings, !store.isExportingDiagnostics else { return }
+        dismissSheet()
+    }
+
+    private func dismissSheet() {
+        guard presentedSheet != nil, !sheetIsClosing else { return }
+        sheetIsClosing = true
+    }
+
+    private func finishSheetDismissal() {
+        let wasEditor = showingEditor
+        presentedSheet = nil
+        sheetIsClosing = false
+        if wasEditor { editorSession.endDesktopEditor() }
     }
 
     private func switchSurfaceToPanel() {
@@ -329,7 +396,7 @@ struct DesktopRootView: View {
         editing = latestItem
         dayPreset = preset
         selectDayDate = selectDate
-        showingEditor = true
+        presentedSheet = .editor
         return true
     }
 

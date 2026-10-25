@@ -1,0 +1,28 @@
+{
+  "status": "FAIL",
+  "reason": "Expected exactly one fixture host process; duplicate host processes observed after install/relaunch.",
+  "recorded_at": "2026-10-24T23:56:38.837637+00:00",
+  "processes": [
+    {
+      "pid": 18925,
+      "command": "/private/tmp/countdown-final-genuine-update.31h04dj5/older/Countdown Manager.app/Contents/MacOS/CountdownManager"
+    },
+    {
+      "pid": 18926,
+      "command": "/private/tmp/countdown-final-genuine-update.31h04dj5/older/Countdown Manager.app/Contents/MacOS/CountdownManager"
+    }
+  ],
+  "parent_observed_pids": [
+    18925,
+    18926
+  ],
+  "before_pid": 18880,
+  "version": "1.16.0",
+  "build": "31",
+  "host_sha256": "1315eb670f9f5a8d24a4e94311014dc1a9b86782527776bf34f6a0b131fc1e5a",
+  "app": "/private/tmp/countdown-final-genuine-update.31h04dj5/older/Countdown Manager.app",
+  "embedded_marked_home_valid": true,
+  "automatic_relaunch_acceptance": false,
+  "cause": "Unresolved. Parent reports CUA state read immediately after install; R2 will omit all UI reads during relaunch gap.",
+  "production_app_or_data_modified": false
+}

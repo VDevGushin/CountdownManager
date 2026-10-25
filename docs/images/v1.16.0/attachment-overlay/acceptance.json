@@ -1,0 +1,746 @@
+{
+  "status": "PREPARED LOCALLY / NOT PUBLISHED",
+  "version": "1.16.0",
+  "build": "31",
+  "executable_sha256": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+  "automated": {
+    "swiftlint": "PASS: 0 violations in70files",
+    "fast": "PASS: CoreChecks+UIChecks",
+    "desktop": {
+      "mode": "desktop",
+      "app": "/private/tmp/countdown-attachment-overlay.YbsaYR/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+      "executable_after": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke-desktop",
+      "isolated_home": "/private/tmp/countdown-attachment-overlay.YbsaYR/native-desktop-previews-accepted-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 44.379,
+      "status": "PASS",
+      "result": "DesktopSmoke\n✓ collection/feed retain one explicit favorite and use the same shared events/weather\n✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order\n✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card\n✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes\n✓ divider grip covers a 12pt band at native divider positions and passes pane content through\n✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity\n✓ reverse panel-to-desktop editor exclusion keeps the original draft owner\n✓ centered settings pane has a close button; backdrop dismisses without activating background events or moving divider, and diagnostic Cancel releases its guard\n✓ desktop settings disable forecast supply through the shared weather owner\n✓ system, light and dark preferences propagate through both native windows and both settings hosts\n✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer\n✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles\n✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces\n✓ nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions\n✓ attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width\n✓ shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation\n✓ 0/3/4/15 attachments: hidden empty sections, desktop44/panel36 quick files and searchable desktop overlay with close/backdrop, mini Back and owner-removal cleanup\n✓ note/preparation/files order and matching headings; editor15/15 admission guard, fourteen-file retry eligibility and Cancel preserve durable fifteen files\n✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups\n✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state\n✓ mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents\n✓ ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month\n✓ rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider\n✓ search no-results removes empty month headings and restoration preserves events, favorite and split position\n✓ forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider\n✓ synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed\n✓ overview date and weather share one unclipped row with stable loaded/off geometry in narrow/wide collection and feed\nPASS: 27/27"
+    },
+    "mini": {
+      "mode": "mini",
+      "app": "/private/tmp/countdown-attachment-overlay.YbsaYR/candidate/Countdown Manager.app",
+      "version": "1.16.0",
+      "build": "31",
+      "executable_before": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+      "executable_after": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+      "unchanged": true,
+      "launch_argument": "--ui-smoke",
+      "isolated_home": "/private/tmp/countdown-attachment-overlay.YbsaYR/native-mini-previews-accepted-aqua",
+      "launch_exit": 0,
+      "launcher_timed_out": false,
+      "main_thread_stall": false,
+      "seconds": 28.023,
+      "status": "PASS",
+      "result": "UISmoke\n✓ real retained editor and running timer postpone update; explicit safe continuation resumes once\n✓ timer preset selection reaches both ends, is last-tap-wins and drives Play\n✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast\n✓ completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion\n✓ completion alert closes on its first click or after five seconds without changing timer state\n✓ native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events\n✓ isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout\n✓ emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show\n✓ five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly\n✓ note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable\n✓ editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout\n✓ single editor persists note, emoji and ten subtasks only on Save\n✓ completion can be toggled and reopened\n✓ failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it\n✓ removed event retains draft and disables Save without resurrection\n✓ inline deletion confirmation preserves cancellation and persists explicit deletion\n✓ diagnostics remain free of private editor input\n✓ tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show\n✓ choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged\n✓ ordinary and day creation allow no icon or favorite; every card is compact while Mars supplies the menu\n✓ choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon\n✓ list and editor can select or clear a favorite; no favorite remains durable after reopening\n✓ today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save\nPASS: 23/23"
+    }
+  },
+  "native_visual_qa": {
+    "version": "1.16.0",
+    "build": "31",
+    "executable_sha256": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+    "native_results": {
+      "desktop": {
+        "mode": "desktop",
+        "app": "/private/tmp/countdown-attachment-overlay.YbsaYR/candidate/Countdown Manager.app",
+        "version": "1.16.0",
+        "build": "31",
+        "executable_before": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+        "executable_after": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+        "unchanged": true,
+        "launch_argument": "--ui-smoke-desktop",
+        "isolated_home": "/private/tmp/countdown-attachment-overlay.YbsaYR/native-desktop-previews-accepted-aqua",
+        "launch_exit": 0,
+        "launcher_timed_out": false,
+        "main_thread_stall": false,
+        "seconds": 44.379,
+        "status": "PASS",
+        "result": "DesktopSmoke\n✓ collection/feed retain one explicit favorite and use the same shared events/weather\n✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order\n✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card\n✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes\n✓ divider grip covers a 12pt band at native divider positions and passes pane content through\n✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity\n✓ reverse panel-to-desktop editor exclusion keeps the original draft owner\n✓ centered settings pane has a close button; backdrop dismisses without activating background events or moving divider, and diagnostic Cancel releases its guard\n✓ desktop settings disable forecast supply through the shared weather owner\n✓ system, light and dark preferences propagate through both native windows and both settings hosts\n✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer\n✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles\n✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces\n✓ nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions\n✓ attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width\n✓ shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation\n✓ 0/3/4/15 attachments: hidden empty sections, desktop44/panel36 quick files and searchable desktop overlay with close/backdrop, mini Back and owner-removal cleanup\n✓ note/preparation/files order and matching headings; editor15/15 admission guard, fourteen-file retry eligibility and Cancel preserve durable fifteen files\n✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups\n✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state\n✓ mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents\n✓ ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month\n✓ rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider\n✓ search no-results removes empty month headings and restoration preserves events, favorite and split position\n✓ forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider\n✓ synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed\n✓ overview date and weather share one unclipped row with stable loaded/off geometry in narrow/wide collection and feed\nPASS: 27/27"
+      },
+      "mini": {
+        "mode": "mini",
+        "app": "/private/tmp/countdown-attachment-overlay.YbsaYR/candidate/Countdown Manager.app",
+        "version": "1.16.0",
+        "build": "31",
+        "executable_before": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+        "executable_after": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+        "unchanged": true,
+        "launch_argument": "--ui-smoke",
+        "isolated_home": "/private/tmp/countdown-attachment-overlay.YbsaYR/native-mini-previews-accepted-aqua",
+        "launch_exit": 0,
+        "launcher_timed_out": false,
+        "main_thread_stall": false,
+        "seconds": 28.023,
+        "status": "PASS",
+        "result": "UISmoke\n✓ real retained editor and running timer postpone update; explicit safe continuation resumes once\n✓ timer preset selection reaches both ends, is last-tap-wins and drives Play\n✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast\n✓ completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion\n✓ completion alert closes on its first click or after five seconds without changing timer state\n✓ native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events\n✓ isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout\n✓ emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show\n✓ five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly\n✓ note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable\n✓ editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout\n✓ single editor persists note, emoji and ten subtasks only on Save\n✓ completion can be toggled and reopened\n✓ failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it\n✓ removed event retains draft and disables Save without resurrection\n✓ inline deletion confirmation preserves cancellation and persists explicit deletion\n✓ diagnostics remain free of private editor input\n✓ tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show\n✓ choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged\n✓ ordinary and day creation allow no icon or favorite; every card is compact while Mars supplies the menu\n✓ choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon\n✓ list and editor can select or clear a favorite; no favorite remains durable after reopening\n✓ today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save\nPASS: 23/23"
+      }
+    },
+    "all_png_dimensions_verified": true,
+    "png_count": 100,
+    "manifest_sha256": "804b7f33370cac1daa07e20063b19c2d2fbf68798c87114de1d461ae061ec359",
+    "visual_reviewed": [
+      "desktop-attachment-library-all-light.png",
+      "desktop-attachment-library-all-dark.png",
+      "desktop-attachment-library-search-light.png",
+      "desktop-attachment-library-search-dark.png",
+      "desktop-attachment-library-empty-light.png",
+      "desktop-attachment-library-empty-dark.png",
+      "panel-attachment-library-all-light.png",
+      "panel-attachment-library-all-dark.png",
+      "panel-attachment-library-search-light.png",
+      "panel-attachment-library-search-dark.png",
+      "panel-attachment-library-empty-light.png",
+      "panel-attachment-library-empty-dark.png"
+    ],
+    "visual_result": "PASS: desktop centered overlay with Вложение and trailing x; mini arrow/Вложения; no duplicate header count; footer Файлов: 15 without query and Найдено: 1/0 из 15 during search; bounded scroll area and legible Light/Dark layout",
+    "observations": {
+      "desktop-library-owner-removal-observation.json": {
+        "deletedOwnerAbsent": true,
+        "overlayRemoved": true,
+        "retainedRegistryEntry": false,
+        "selectionReconciled": true,
+        "sheetAttached": false
+      },
+      "desktop-library-close-observation.json": {
+        "eventsUnchanged": true,
+        "hostVisible": true,
+        "overlayRemoved": true,
+        "ownerRestored": true,
+        "readerRemoved": true,
+        "sheetAttached": false
+      }
+    },
+    "limits": [
+      "Native in-process registered actions do not establish external pointer or Escape behavior; root CUA acceptance separate.",
+      "Static native cache renders do not prove frame-by-frame presentation transitions."
+    ],
+    "images": [
+      {
+        "file": "desktop-collection-dark.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "f0ede772a3989214d4e0830cffb9e13bc5e63a7e2294b2f27159da092cdbd640"
+      },
+      {
+        "file": "desktop-collection-light.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "95d92f7eee71c82467483a3a12db5703008c391f6b271207d5ca299f2e5adfcd"
+      },
+      {
+        "file": "desktop-feed-dark.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "b3e35ac57f928daad70fad6d43529a25015aa4a5f40f5875ea395e14995aad1d"
+      },
+      {
+        "file": "desktop-feed-light.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "81d6779200337fff31d43c2220323db0b72b8316ce933db7ebdabde793c40d32"
+      },
+      {
+        "file": "desktop-mixed-checklist-dark.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "a1f06ad64525ce45b88f28b18db4efe3ceeceaf763c3022d51b9ea6c32b63e6b"
+      },
+      {
+        "file": "desktop-mixed-checklist-light.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "ad18e0b9eb78a2e84509d5ff6967a87e56978dc21e8d3e91bceffc1af53f6f28"
+      },
+      {
+        "file": "desktop-checklist-complete-motion-0ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "467147e39224ddf2dc8e6bab27c14b0203bc94ddd15ab6a4a826fe3f26b379c4"
+      },
+      {
+        "file": "desktop-checklist-complete-motion-40ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "467147e39224ddf2dc8e6bab27c14b0203bc94ddd15ab6a4a826fe3f26b379c4"
+      },
+      {
+        "file": "desktop-checklist-complete-motion-90ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "cb1e81dd0fc394d9e212a1f95f67d809b8e5f3c4f6c46b63e036eb70091a7729"
+      },
+      {
+        "file": "desktop-checklist-complete-motion-180ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "0b1a64b73db948c5db1926d6b5b4bb0aaa1d5da0c4767905aa9aa6a5152c74ff"
+      },
+      {
+        "file": "desktop-checklist-reopen-motion-0ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "5a4ef816796c6040bce93738defb7d070329930e36a872fcc3c0bae9719b1cd5"
+      },
+      {
+        "file": "desktop-checklist-reopen-motion-40ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "6b5ba15de5e3e99d26e8eeee34a2a0a3b8817e9175ee4b1921d26078e635cd9a"
+      },
+      {
+        "file": "desktop-checklist-reopen-motion-90ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "a8ae79912fc8f4ada846243db4b05e8b89053de5722288a3faa326232ceded47"
+      },
+      {
+        "file": "desktop-checklist-reopen-motion-180ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "8bfc587aacb8c40715eb1a89aa73767fabe8a2b48e90e7018d30e6347260ccc1"
+      },
+      {
+        "file": "desktop-checklist-reopen-reduced-0ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "c44ad3ea9822fc8ab95f8fbe01b120da76c35f87e7a0c18f09150647311c89ee"
+      },
+      {
+        "file": "desktop-checklist-reopen-reduced-30ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "c02f409192c14066a1df61d0f70f1ba2fe3516e41da4084b5233b968495052c3"
+      },
+      {
+        "file": "desktop-checklist-complete-reduced-0ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "d0921b6c31ddb94b4a93f2268d3d9cade74bd15273cd46e6b2572e1bb48a4b45"
+      },
+      {
+        "file": "desktop-checklist-complete-reduced-30ms.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "d0921b6c31ddb94b4a93f2268d3d9cade74bd15273cd46e6b2572e1bb48a4b45"
+      },
+      {
+        "file": "desktop-linked-panel.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "1a5d0efb2181172364fe0fbcfd0b7bb5619aa433a65192b9d0c4580ae9e30c92"
+      },
+      {
+        "file": "desktop-unfavorited-dark.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "b6782be7b0cef1857218d0eeb7a47f0b337e577f1b0237d2c6ff5e1ef4dcc6b4"
+      },
+      {
+        "file": "desktop-unfavorited-light.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "e4bccc6b4ca00fe811b7ccc956f9712c980471f0c7997f22c0914f0b2510db77"
+      },
+      {
+        "file": "desktop-settings-dark.png",
+        "width": 2400,
+        "height": 1656,
+        "sha256": "f543aec80b05e80d7c6d75ea7189a17e3c03a012080aa6bb4a01a117556dc195"
+      },
+      {
+        "file": "desktop-settings-light.png",
+        "width": 2400,
+        "height": 1656,
+        "sha256": "c1ec247de98a82f56e021776f21600ff6ae8cb15acbe7692b6db5805a70fc0e9"
+      },
+      {
+        "file": "desktop-settings-system.png",
+        "width": 2400,
+        "height": 1656,
+        "sha256": "01b2851b5c6d15ee8929a3ac7cd6e77d48824d8a244ea305e12528489ed155eb"
+      },
+      {
+        "file": "desktop-editor-dark.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "66a9052e2f6bcc071bd62bb6722e7927f071ec9687231b538f848f4bcb07dcf1"
+      },
+      {
+        "file": "desktop-editor-light.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "bd86e90e404c94c500af1b0c2a19bf60ee4a95f322b642ae7f130fdbf3eb40bb"
+      },
+      {
+        "file": "desktop-weather-off.png",
+        "width": 2400,
+        "height": 1656,
+        "sha256": "68e19bcdc7a739fc67209be04a6059f20e7deaf8348cf53576a35577d73c600d"
+      },
+      {
+        "file": "desktop-no-timer-running.png",
+        "width": 2400,
+        "height": 1656,
+        "sha256": "68e19bcdc7a739fc67209be04a6059f20e7deaf8348cf53576a35577d73c600d"
+      },
+      {
+        "file": "desktop-attachment-indicators-collection-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "95c657ba756c470c8cbfd06981c50d4b7c09d50d43143b31ce78370703473e1d"
+      },
+      {
+        "file": "desktop-attachment-indicators-collection-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "3738ba9558525e7158e0413e7c7c80a69e6e4fabf9fc7bcfc84806e66c610505"
+      },
+      {
+        "file": "desktop-attachment-indicators-feed-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "0a577d67b8f47b6df3b563dda854eedbbb95e8d90e52826e837da95bdb448fa2"
+      },
+      {
+        "file": "desktop-attachment-indicators-feed-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "39dae2a78e99455b6cb9f592cbd6dec08a00dfc4ec690305617f7d5f87c967e4"
+      },
+      {
+        "file": "desktop-attachments-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "25f36adf4b428b34721aab8fd9219e851c0f38bff544aecdb9c15c4486b8b766"
+      },
+      {
+        "file": "desktop-attachments-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "d8c760bd7660d4a7a854de25901dde95df54b7b723aa4cf5414ec12b5081c2c7"
+      },
+      {
+        "file": "desktop-attachments-editor-dark.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "a9c3e145d369a3aaff2d0a81cd834be743df0971d648e6fcf116dbe25238557e"
+      },
+      {
+        "file": "desktop-attachments-editor-light.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "9d7aab524fb29bbc9275366e4eb420b760ab6f974932e787f1185a1d7ad20605"
+      },
+      {
+        "file": "mini-attachments-dark.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "8baf9961732530cbc14d190d6064beca48f219fd6b87393bbf4ebe824e8ca8e5"
+      },
+      {
+        "file": "mini-attachments-light.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "7c1886c75312f2e605a0f5060d3fa68b23712dcd4c83ff23167d99804165a0c3"
+      },
+      {
+        "file": "desktop-attachment-previews-four-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "a06b680325e4caf9045d13e12d0ce8709e2815694a5f2370f086b0938f37e342"
+      },
+      {
+        "file": "desktop-attachment-previews-four-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "bc4b264b944055b2b923e6fe9c9e3db0b21c15bcd8b2739c90067c2d48b4fb8f"
+      },
+      {
+        "file": "desktop-attachment-library-all-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "ffafcef9b20295b56c15e9f9f39d670cd26f2eb99f72848d29330d8947359cca"
+      },
+      {
+        "file": "desktop-attachment-library-all-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "e1ee36398d33a62c186f38d7fcec512b031acd7edcd094dd7117cd578b010402"
+      },
+      {
+        "file": "desktop-attachment-library-search-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "bbceb0a5094d4bff0ef059c68366b5c8266a12139606d3406b6af0e0fe8444bc"
+      },
+      {
+        "file": "desktop-attachment-library-search-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "56a65d7a66958e56df785ebab274ff2fb7510563363240582ae4f507ebc10201"
+      },
+      {
+        "file": "desktop-attachment-library-open-error-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "a513bf62a9cb3722f67030bf1aaaeb976a3791d8e1cb941bc0da784bc920300e"
+      },
+      {
+        "file": "desktop-attachment-library-open-error-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "a6334b76fe62eac5a80172736dcc154a1994a1958310c44baeb98624fbb841f2"
+      },
+      {
+        "file": "desktop-attachment-library-empty-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "7701a636fb70b4f467cf6ccd2223dc78df60217ee4f50b3d644cae6b24008fde"
+      },
+      {
+        "file": "desktop-attachment-library-empty-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "8404c4e195f862d422cacf620fb82799c4933c79e3807e6d6dfb5a51e60f7fc3"
+      },
+      {
+        "file": "editor-attachment-limit-and-order-dark.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "4696b49d3e600c6214390a75128bef8c5191e929f45d35b7b228ca50bd2b18c5"
+      },
+      {
+        "file": "editor-attachment-limit-and-order-light.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "0b133a7a71b6b95751b6f6222757f63099ffcef6731c71a382d11b486e00b42e"
+      },
+      {
+        "file": "editor-attachment-alignment-dark.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "bdc639e9a541fef31450b02705688c3c91a4ce65a467d758b48f4df78bff48a9"
+      },
+      {
+        "file": "editor-attachment-alignment-light.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "720b9b0494163a2d2f32d55ba281064ff37bd14a3f3d797401467eebc6c49d36"
+      },
+      {
+        "file": "editor-batch-overflow-dark.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "d78f1f886e82c2e79ae12e1145aefeb186ebb483131cd6f73239bd1c358106db"
+      },
+      {
+        "file": "editor-batch-overflow-light.png",
+        "width": 860,
+        "height": 1200,
+        "sha256": "e70aa5ecea5114bf0c4d080e8bd5e975ea154d91071ec71b42238b9c828cc434"
+      },
+      {
+        "file": "desktop-saved-no-expiry-dark.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "2479fc4df382dc8d996f01383c73d50cb77c6760c48cf11fc50419fb7d7b149a"
+      },
+      {
+        "file": "desktop-saved-no-expiry-light.png",
+        "width": 1920,
+        "height": 1576,
+        "sha256": "10fe12d51d07563c0eac61cc5c853873a2fa6011d9e73332d839ce15c0cf1ca5"
+      },
+      {
+        "file": "mini-attachment-previews-four-dark.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "7de6e21fae5c914e37da9da568244b17fe265f4ebae168f375d0ddedd1ab81f7"
+      },
+      {
+        "file": "mini-attachment-previews-four-light.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "78560337f6b3c4adde599110930ace27cc8c9a8b54b51d5ba01f3016c7e6902c"
+      },
+      {
+        "file": "panel-attachment-library-all-dark.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "a503a2e50f7676764581da431d98a18d1de11cfe0d38516917182506c94fb268"
+      },
+      {
+        "file": "panel-attachment-library-all-light.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "88dd6961273b78c27d9fd0edce326e3384a46c9dc33ebcd3b799deaa8a597c3a"
+      },
+      {
+        "file": "panel-attachment-library-search-dark.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "078e28834f1208cd0bf0c7d555192d8836303a8ddb94f8dbed6acafdbac9eef0"
+      },
+      {
+        "file": "panel-attachment-library-search-light.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "d99d97690807970a532731fc52a2e15608a18a396b63246f22df0a73c173fcd8"
+      },
+      {
+        "file": "panel-attachment-library-empty-dark.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "4d6fe2ef6e15269eb3a3abeadc1e4622f95f87f1c637927f78e28c18164a7081"
+      },
+      {
+        "file": "panel-attachment-library-empty-light.png",
+        "width": 780,
+        "height": 1200,
+        "sha256": "f186d5ff2cbf3dc92a0bc042a851681356e0666bb9959a6c7a0bb77ce66d277b"
+      },
+      {
+        "file": "desktop-no-timer-finished.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "9f056f9983b00277e0f2782ab47ea4001bbe74a2067fbc59c677932ae44e29af"
+      },
+      {
+        "file": "desktop-checklist-before-write.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "9f056f9983b00277e0f2782ab47ea4001bbe74a2067fbc59c677932ae44e29af"
+      },
+      {
+        "file": "desktop-checklist-write-held.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "f18b09f06f5ecc0950a76a3c240bc45c2dd2610525a93f11af0f053a16dc5d51"
+      },
+      {
+        "file": "desktop-delete-header.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "f8747b2b096b5542d74921b696ce8a88b69e4be316c4ff1ae4340d9c3e186eb0"
+      },
+      {
+        "file": "desktop-delete-confirmation-dark.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "9c0cc4a9d5e0f861888c327fc14ffae8660641a2870cf758e29ece2fc133da3f"
+      },
+      {
+        "file": "desktop-delete-confirmation-light.png",
+        "width": 1920,
+        "height": 1336,
+        "sha256": "c004bba29d93abc6025b93ff9911e5badeb86e221ba0425158ddaf7f35e6384d"
+      },
+      {
+        "file": "desktop-monthly-collection-dark.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "087d247e11e8de8689d801d08a5e6a41c1517f96cc575c5c8d95e934fde9f1eb"
+      },
+      {
+        "file": "desktop-monthly-collection-light.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "e25995f0ed8188770506e30cc275d412bb133956d39a56039489f8701441b993"
+      },
+      {
+        "file": "desktop-mode-to-feed-0ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "39d8e4e6f78331cdd986d42b571bca4b8b4f32d133863d2f28f4ea73cc6730d1"
+      },
+      {
+        "file": "desktop-mode-to-feed-100ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "39d8e4e6f78331cdd986d42b571bca4b8b4f32d133863d2f28f4ea73cc6730d1"
+      },
+      {
+        "file": "desktop-mode-to-feed-240ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "99ce62ad7e78a5892d58f7bb589129137fef98851a8cf7654eb08157a8034e23"
+      },
+      {
+        "file": "desktop-monthly-feed-dark.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "d0e057a2e53b6cba02020080528c67883295f95a13328c0819306b99d40ea7bd"
+      },
+      {
+        "file": "desktop-monthly-feed-light.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "293b246e4da538f4dfb15c4f119252e1dd0499b9d69567877a34831892997647"
+      },
+      {
+        "file": "desktop-mode-to-collection-0ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "8f785369fac6a869f9dae080d2c74b288fcbc4c7d3a7f8aabba5c9d9249c3d7d"
+      },
+      {
+        "file": "desktop-mode-to-collection-100ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "9e25db6a874372b2f0d5c0a4aad9a0be1d91e7dd78382c1000befe569956a83d"
+      },
+      {
+        "file": "desktop-mode-to-collection-240ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "ba20e83426bf8e3ab9c568b4edc3c8d301de932a899b6790a7398abd069dfca2"
+      },
+      {
+        "file": "desktop-mode-rapid-last-feed.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "ccd96e0c7616895e34163f27906eb064b2bd2185c3c4fcd9b7b7e54779423b13"
+      },
+      {
+        "file": "desktop-mode-reduced-0ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "e25995f0ed8188770506e30cc275d412bb133956d39a56039489f8701441b993"
+      },
+      {
+        "file": "desktop-mode-reduced-100ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "e25995f0ed8188770506e30cc275d412bb133956d39a56039489f8701441b993"
+      },
+      {
+        "file": "desktop-mode-reduced-240ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "e25995f0ed8188770506e30cc275d412bb133956d39a56039489f8701441b993"
+      },
+      {
+        "file": "desktop-mode-live-before-reduced.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "39d8e4e6f78331cdd986d42b571bca4b8b4f32d133863d2f28f4ea73cc6730d1"
+      },
+      {
+        "file": "desktop-mode-live-after-reduced.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "39d8e4e6f78331cdd986d42b571bca4b8b4f32d133863d2f28f4ea73cc6730d1"
+      },
+      {
+        "file": "desktop-mode-live-reduced-35ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "a1dbd23405fc750e135c7106d4ec93847b8f8d29f421c42fca65ae7b7c679264"
+      },
+      {
+        "file": "desktop-mode-live-reduced.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "e25995f0ed8188770506e30cc275d412bb133956d39a56039489f8701441b993"
+      },
+      {
+        "file": "desktop-monthly-search-empty.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "9b41fa0c4137ec141814b0c3f482a738db3ef00da7c565389fd56f9003f40f62"
+      },
+      {
+        "file": "desktop-monthly-long-end-collection.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "5978f12b8b3b3c691c592e13fc32f8a909afd80aa84078b2b33bfa13bc71ad71"
+      },
+      {
+        "file": "desktop-mode-long-to-feed-0ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "93dd215d7512543908e9580ee1d3dc2368209dd1d690696293bfdbe1f04d999a"
+      },
+      {
+        "file": "desktop-mode-long-to-feed-100ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "93dd215d7512543908e9580ee1d3dc2368209dd1d690696293bfdbe1f04d999a"
+      },
+      {
+        "file": "desktop-mode-long-to-feed-240ms.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "433976fed3ecd0058bc9032b49ef0a93c04708532129589c4d77c04babe6bb10"
+      },
+      {
+        "file": "desktop-monthly-long-end-feed.png",
+        "width": 2400,
+        "height": 1856,
+        "sha256": "65a816c66abcd71c906b93f05598ce1617dd685ebc411fa649925bb1046b398b"
+      },
+      {
+        "file": "desktop-weather-pending.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "58d52d7122c24e1e4fd53bf496e0220af6de8009a273756bf312932fdc0b44a7"
+      },
+      {
+        "file": "desktop-weather-loaded.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "65b6e86d68a37d990c18760fe75d0601b6b7ffba00e908ad539b9ae2722999ee"
+      },
+      {
+        "file": "desktop-weather-stable-collection-34.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "2f32c03018ac0086bff126a16e79798b4a1966b725896822f223c9d65c87b6bc"
+      },
+      {
+        "file": "desktop-weather-stable-feed-34.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "749948b914e3e13ee91d62325ef0ae718be7179f00bc9c4e575663581adb44b7"
+      },
+      {
+        "file": "desktop-weather-stable-collection-66.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "6ef172e143fcfa332581cd24d3e5586c9056a69a8dd25287590541733eef6401"
+      },
+      {
+        "file": "desktop-weather-stable-feed-66.png",
+        "width": 1920,
+        "height": 1656,
+        "sha256": "c0044962571bf685f5eb8a52409fa4272fe3fb22a877a4461a12ccca20c55072"
+      }
+    ]
+  },
+  "external_acceptance": "external-acceptance.json",
+  "artifact_audit": "artifact-audit.json",
+  "source_inputs": "/private/tmp/countdown-attachment-overlay.YbsaYR/source-inputs.json",
+  "retained_attempts": [
+    {
+      "file": "fast-network-failed.log",
+      "result": "FAIL: network unavailable before compilation; final cached invocation passed"
+    },
+    {
+      "file": "build-restricted-failed.log",
+      "result": "FAIL: restricted dSYM operation; normal tool access retry passed"
+    }
+  ],
+  "reused_evidence": {
+    "editor": "Previous exact6cd3… editor5/5; editor implementation unchanged",
+    "updater_and_default_app_open": "Explicitly identified earlierRC1 receipts linked in prior provenance; not repeated on this build"
+  },
+  "limitations": [
+    "Intel, older macOS, first-install Gatekeeper and full VoiceOver remain unverified."
+  ]
+}

@@ -1,0 +1,68 @@
+{
+  "after" : {
+    "clipBounds" : [
+      0,
+      589,
+      390,
+      431
+    ],
+    "documentBounds" : [
+      0,
+      0,
+      390,
+      1444
+    ],
+    "firstThumbnail" : [
+      16,
+      140,
+      36,
+      36
+    ],
+    "scrollFrame" : [
+      0,
+      110,
+      390,
+      431
+    ],
+    "scrollWindowMatchesCapture" : true,
+    "viewport" : [
+      0,
+      110,
+      390,
+      431
+    ]
+  },
+  "before" : {
+    "clipBounds" : [
+      0,
+      0,
+      390,
+      431
+    ],
+    "documentBounds" : [
+      0,
+      0,
+      390,
+      1444
+    ],
+    "firstThumbnail" : [
+      16,
+      729,
+      36,
+      36
+    ],
+    "scrollFrame" : [
+      0,
+      110,
+      390,
+      431
+    ],
+    "scrollWindowMatchesCapture" : true,
+    "viewport" : [
+      0,
+      110,
+      390,
+      431
+    ]
+  }
+}

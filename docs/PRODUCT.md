@@ -128,6 +128,8 @@ the calendar, title and metadata retain their visual identities instead of insta
 one card composition with another. Month headings and cards move in the same layout transaction.
 Text is not scaled and the whole list is not faded out. Reduce Motion changes layouts immediately.
 Rapid switching follows the latest selection without changing saved data or the divider.
+The featured favorite places its date and eligible forecast together on a full-width metadata
+row below the title/calendar identity, so the narrow browser pane retains room for both.
 Empty search/filter results offer a return to
 all events, rather than implying that saved events were deleted. Selection follows a surviving
 visible identity; if it disappears through filtering, deletion or expiry, the next visible event
@@ -136,6 +138,10 @@ remain distinct from a genuinely empty saved collection; a read failure must not
 events exist.
 
 The left side selects events and summarizes their date, remaining time and preparation progress.
+Desktop collection cards, feed rows and the featured favorite show a separate paperclip with the
+number of saved attachments when that number is positive. It is independent of the optional
+event emoji and checklist progress. With no attachments, no paperclip, zero count or placeholder
+is shown. The indicator is a summary, not another file-editing action.
 In the collection grid, relative labels (`Сегодня`, `Завтра`, `Через N дней`) sit at the bottom
 of ordinary cards with a consistent inset and align across each row, regardless of title wrapping
 or forecast presence. Exact dates and forecasts remain above them.
@@ -151,9 +157,17 @@ to its calendar leaf. Without an emoji, this line has no reserved icon space. Th
 existing emoji placement is unchanged. Notes and preparation remain readable in independently scrolling
 details. Weather appears only when the shared setting and applicable per-event choice allow a
 real eligible forecast; missing data does not produce invented temperatures or placeholders.
-The desktop overview, cards and details reserve a weather row even when no forecast is available
-or weather is disabled. Date and weather use separate rows; arriving, disappearing or disabled
-forecasts must not shift surrounding content for otherwise unchanged events and window geometry.
+Under `Впереди`, the desktop overview shows the current date and an eligible forecast for today
+on one line. An absent or disabled forecast adds no visible or accessible placeholder; the date
+position, metadata-line height and content below remain stable as the forecast appears or disappears.
+Ordinary desktop feed rows align the calendar at the top with the event title and place
+the relative remaining-time label at the upper right. The exact date and eligible weather
+share one line, with temperature after the date; checklist progress and attachment count
+share a separate horizontal summary line. Their compact height does not reserve a separate
+weather row or stack the two counts. The collection grid, featured favorite and details keep
+their existing layouts and separate reserved date/weather rows. Arriving, disappearing or
+disabled forecasts must not shift surrounding content for otherwise unchanged events and
+window geometry.
 This layout rule and checklist animation apply only to the desktop, not the mini-panel.
 
 The desktop details header has three equal icon-only controls: favorite, a simple pencil for
@@ -194,15 +208,20 @@ active does not dismiss that draft; finish with Save or Cancel first. The panel 
 open editors simultaneously, and event mutations on the other surface are unavailable until the
 editor finishes. The other interface can still show current data and return to the active editor.
 Both editor owners block update installation/restart. Desktop settings reuse the existing settings
-form in a centered 430 × 560-point pane inside the desktop window, bound to the same preferences.
+form in a native 430 × 560-point sheet attached to the desktop window, bound to the same preferences.
 Its header shows `Настройки` on the left and a close button on the right, and it dims the event interface.
 The close button, Escape or clicking the dimmed area
 closes settings; the outside click is consumed rather than selecting or activating an event behind
 the pane. Clicking inside settings does not close it. The event interface stays mounted but is
 disabled, excluded from hit testing and hidden from accessibility while settings is open. Dismissal
-preserves the selected event, view, search and divider position. There is no separate settings window
-or native settings sheet. The diagnostic Save dialog retains its settings host until it finishes.
+preserves the selected event, view, search and divider position. Settings has no independent window.
+The diagnostic Save dialog attaches to the settings sheet, which remains open until export finishes.
 Settings entry does not replace an active editor. The editor's outside-click protection is unchanged.
+Desktop Settings, file libraries and create/edit use the same native sheet presentation and
+system opening/closing animation. macOS owns timing and Reduce Motion behavior. The background
+remains inactive until native dismissal completes. Settings and file-library close buttons,
+Escape and clicks on the parent content outside the sheet share their dismissal path; the
+editor requires Save or Cancel. Losing a file library's owning event requests native dismissal.
 
 Command-N creates an event in the desktop window. The footer Settings button and Command-comma
 open the centered settings pane when no editor is active. Ordinary
@@ -325,6 +344,7 @@ An event contains:
 - a calendar date;
 - an optional additional emoji;
 - zero to ten subtasks;
+- optional local file attachments;
 - an optional weather-display choice.
 
 Multiple events may use the same date.
@@ -408,7 +428,7 @@ On that date, its countdown is represented as `Сегодня`.
 
 The event remains editable and removable during that day.
 
-When an editor's selected date is today, it shows `После окончания дня событие будет удалено, включая незавершённые подзадачи.` This applies to ordinary event creation, day creation and editing an existing event.
+When an editor's selected date is today, it shows `После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся.` This applies to ordinary event creation, day creation and editing an existing event.
 
 ### Expiry
 
@@ -419,6 +439,87 @@ Expired events are removed rather than moved into an archive.
 There is no overdue state and no automatic rollover.
 
 Incomplete subtasks do not prevent event expiry.
+
+### Attachments
+
+An event may contain local file attachments: photos, videos, documents and exported correspondence
+are ordinary files. Adding an attachment imports an independent local copy; it does not link to
+or modify the original. Copies survive application restarts and are shared by the desktop and
+mini-panel as part of the same event. There is no upload, cloud storage or messenger integration.
+Folders, application packages and symbolic links are not file attachments.
+
+The relative content order in desktop details, mini-panel cards and the shared editor is note,
+`Подзадачи`, then `Вложения`. Subtask and attachment section headings use the same readable
+semibold weight and primary ink; desktop no longer calls its checklist `Подготовиться`.
+Empty saved attachment sections are absent. The editor retains its attachment controls at zero
+so files can still be added.
+
+The shared event editor adds and removes attachments in its draft. New attachment collections
+have a maximum of 15 files per event. The editor shows `N/15`, disables Add when its current
+draft contains 15 or more files, and explains the limit visibly. Removing a draft entry from
+15 to 14 immediately permits one new file before Save. If a native picker selection exceeds
+the remaining capacity, reject the entire selected batch before copying any of it; explain
+how many slots remain and preserve the prior draft. This count rejection is distinct from an
+I/O failure during an otherwise admissible import, which preserves already completed copies.
+Legacy events with more than 15 stored files remain readable without truncation or a load error.
+They can keep their existing files, save unrelated fields and remove files. New files are
+unavailable until the current draft is below 15; no automatic pruning or migration applies.
+Save commits the draft; Cancel preserves previously saved attachments and discards newly imported copies. Hiding the
+mini-panel retains the draft. Import or Save failure reports the problem and preserves completed
+imports for retry or explicit cancellation. While file selection or copying is active, duplicate
+requests and Save cannot race with that work. Cancel closes the editor without waiting for an
+in-progress file copy; cancellation/token checks reject its late result and asynchronous cleanup
+removes the abandoned copy after the filesystem operation settles.
+
+Desktop details show saved files with their names and import-time sizes after subtasks.
+Each desktop file row reserves a fixed 44 × 44-point preview area: a photo
+thumbnail, the first page of a PDF, a static movie frame, or another preview supplied by macOS.
+Every file format is offered for best-effort preview; an unavailable or failed preview uses a file-type fallback. Loading or failing a preview does not change that area or remove the file.
+The row remains one explicit open action, not a separate gallery or player. With more than four
+attachments, both desktop and mini-panel summaries show the first four in saved order and a
+`Показать все N` action. Up to four saved files need no All action. The mini-panel uses the same
+static preview/fallback rules in fixed 36 × 36-point areas. Its optional section disclosure
+does not replace the four-file summary limit. Expanding or collapsing the compact attachment
+section keeps its heading and count at the same horizontal positions, as the subtask disclosure does.
+All opens a separate bounded, read-only searchable list. Desktop uses the shared native
+sheet with the title `Вложение` on the left and a close button on the right, without a Back
+button or count in that header. The cross, `Escape`, or a click on the surrounding dimmed
+background closes it, as in desktop Settings. The dismissing click cannot activate an event
+or another control underneath; clicks inside the list do not dismiss it. The mini-panel keeps
+its internal screen with `Вложения` and the same plain left-chevron `Назад` control as
+mini-panel Settings, without a duplicate count in the header,
+preserving the retained panel rather than adding a popover. Both surfaces show `Файлов: N` in
+the footer while the trimmed search is empty and `Найдено: X из N` for a nonempty search.
+Search filters by filename only, with a clear action and a useful no-results state; it does
+not change saved order, counts, tasks or data. The complete list scrolls inside that surface,
+using 44-point desktop and 36-point mini previews. Closing/Back restores the same event and
+browsing context. Search state belongs to that presentation and resets for a different event.
+If the owning event is deleted or expires, its file library closes and normal visible-selection
+rules apply. Inactive parent content cannot receive input or remain interactive in accessibility.
+The shared editor uses the same static preview/fallback presentation in fixed 36 × 36-point
+areas, both for imported files before Save and for saved files after reopening. It retains the
+full editable attachment list; preview availability does not affect Save, Cancel or file removal.
+The event pencil is the sole entry to the shared editor on both surfaces. Saved desktop
+note, subtask and attachment sections have no secondary editor-entry buttons, including
+empty-note and empty-subtask states. Direct subtask checkboxes, file opening and
+`Показать все N` remain available without entering the editor. The compact attachment section
+also exposes no duplicate add/change button.
+Opening a saved attachment explicitly launches its local copy in the default application;
+videos never autoplay. Missing copies remain identifiable and removable rather than disappearing
+silently or blocking unrelated event edits.
+
+Attachments follow the existing event lifetime. Deleting an event, removing an attachment with
+Save, or automatic event expiry removes the corresponding application-owned copies after the
+event change reaches disk. The original files remain untouched. There is no attachment archive
+and no automatic extension of an event's date. Only the editor and event-deletion confirmation
+explain expiry/removal of copies; ordinary saved summaries and All-files lists do not repeat
+that explanation. Cleanup failure is reported separately from successful event
+saving and can be retried without rolling back an already committed event change.
+
+Legacy JSON without attachments can be read by the new version; this does not establish safe
+downgrading. Version 1.15.0 ignores the unknown attachment metadata and drops it when it writes
+events. Restoring attachment associations requires a matched backup of the JSON and `Attachments/`
+directory. Merely retaining the files or reinstalling the new version is not a restoration guarantee.
 
 ## Weather in days
 
@@ -695,6 +796,12 @@ The production event data location is:
 
 `~/Library/Application Support/CountdownManager/countdowns.json`
 
+Attachment metadata is stored with its event; file bytes are stored separately under the sibling
+`Attachments` directory. Legacy JSON without `attachments` decodes as an empty collection, and
+empty collections are omitted when saving. Attachment JSON contains no source paths or file bytes.
+Abandoned imported copies are collected only after successfully reading the event data; a corrupt
+event file must never authorize attachment cleanup.
+
 The single timer deadline is stored separately from event data in local application preferences. Timer ticking does not rewrite `countdowns.json` or perform per-second persistence writes.
 
 Stored data must preserve existing supported event content across normal application restarts and compatible application updates.
@@ -756,7 +863,8 @@ Apple notarization or change macOS first-install Gatekeeper trust.
 
 Countdown Manager does not require cloud storage or an online account for normal product behaviour.
 
-User event content and timer state remain local to the Mac.
+User event content, attached file copies and timer state remain local to the Mac. Opening an
+attachment in another application gives that application access to the selected copy.
 
 Optional weather requests disclose the selected forecast coordinates to the forecast service,
 not event titles, notes, emoji, subtasks, identities or timer state. Automatic device coordinates
@@ -773,7 +881,8 @@ Diagnostics must not contain private event content such as:
 - event titles;
 - notes;
 - user-selected emoji;
-- subtask text.
+- subtask text;
+- attachment names, source paths or file contents.
 
 Technical operational information may be recorded when needed for diagnostics.
 

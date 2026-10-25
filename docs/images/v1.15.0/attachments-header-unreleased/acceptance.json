@@ -1,0 +1,32 @@
+{
+  "baseRevision": "39b4734576e028ac3692f8c5a2959326550430be",
+  "status": "unreleased working source",
+  "version": "1.15.0",
+  "build": "30",
+  "releaseExecutableSHA256": "e5a6e47d558c5fc1f59dba1ab57741eaf33968faee371dd002bb92a4bd4a5d1b",
+  "sourceInputsSHA256": "7da3997f92ba66320e64ab34d7b8d1b5bc41c22ede0a3095688fe7c51d34b61a",
+  "nativeDesktop": "PASS 24/24",
+  "externalTest": "testAttachmentsNativePickerSaveCancelAndSharedSurfaces",
+  "externalResult": "PASS 1/1",
+  "externalInput": "English layout selected by the user; exact input-source ID not logged",
+  "clipboardFallback": false,
+  "productionDataUsed": false,
+  "externalResultBundle": "/private/tmp/countdown-header-weather.4egrXD/attachments-external-final.xcresult",
+  "remainingLimits": [
+    "Default-application opening and playback are not exercised by this external test",
+    "Large media copy performance and every interruption are not benchmarked",
+    "Physical status-item/Spaces and full VoiceOver acceptance are not established"
+  ],
+  "nativeMini": "PASS 23/23",
+  "nativeCollapse": "PASS 2/2",
+  "nativeEditor": "PASS 5/5",
+  "nativeContinuity": [
+    "PASS 8/8",
+    "PASS 8/8",
+    "PASS 8/8"
+  ],
+  "coreChecks": "PASS",
+  "uiChecks": "PASS",
+  "swiftLint": "PASS 0 violations",
+  "evalRunnerChecks": "PASS 33/33; unchanged Core/oracle inputs reused"
+}

@@ -1,0 +1,45 @@
+{
+  "version": "1.16.0",
+  "build": "31",
+  "executable_sha256": "5b808ef91c3bbd912a56ccbefbf4c69f84f59220e37271bfa987ff05cc817a19",
+  "candidate": "RC1",
+  "synthetic_only": true,
+  "native_multi_file_picker_import_and_save": true,
+  "files": [
+    {
+      "name": "Памятка_проверка.pdf",
+      "bytes": 660,
+      "source_and_copy_sha256": "ec8b4ef199b6a1ffcb556e9ddc53384a5016658d2e28cbfd6901eaeb367b9efe",
+      "source_unchanged": true,
+      "copy_distinct_from_source": true
+    },
+    {
+      "name": "Видео_проверка_40МБ.mp4",
+      "bytes": 41999406,
+      "source_and_copy_sha256": "5d6be1f4e1ff663ec37d6efdb6eafbea22b6b7e7114b91b9357d747b09ef8ced",
+      "source_unchanged": true,
+      "copy_distinct_from_source": true
+    },
+    {
+      "name": "Фото_к_встрече_с_длинным_названием_для_проверки_узкой_панели.png",
+      "bytes": 264650,
+      "source_and_copy_sha256": "632904366c6e2616c2bf6a1a301456f69271ff6a144f5a1175f2ae8c51b26ebd",
+      "source_unchanged": true,
+      "copy_distinct_from_source": true
+    }
+  ],
+  "pdf_opened_from_countdown_in_preview_with_owned_copy_url": true,
+  "image_opened_from_countdown_in_preview_with_owned_copy_url": true,
+  "video_copy_opened_in_quicktime_and_played_to_15_958_seconds": true,
+  "initial_video_countdown_action_not_conclusive_before_manual_quicktime_retry": true,
+  "narrow_detail_long_name_and_three_previews_visually_reviewed": true,
+  "restart_verified": true,
+  "data_sha256_after_import": "3070c1956b69cba38c66571243994e6f163958bc272af2676565ff9f13061a93",
+  "status": "PASS",
+  "mini_panel_three_saved_files_observed_after_restart": true,
+  "video_opened_from_countdown_in_quicktime_with_owned_copy_url_on_warm_retry": true,
+  "no_video_autoplay_observed": true,
+  "after_rc1_only_compact_label_geometry_and_measurement_hooks_changed": true,
+  "cold_first_launch_of_default_apps_not_certified": true,
+  "mid_copy_cancel_not_forced_on_fast_filesystem": true
+}

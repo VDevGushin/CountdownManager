@@ -44,6 +44,8 @@ enum UIChecks {
         testApplicationUpdateSafety()
         try testDesktopPresentation()
         testDesktopEditorOwnership()
+        try await testAttachmentStoreLifecycle(in: directory.appendingPathComponent("attachments"))
+        try await testAttachmentThumbnailMedia(in: directory.appendingPathComponent("attachment-thumbnails"))
         try testWeatherEditorDraftBoundaries()
         try await testWeatherLifecycle()
         try testWeatherNormalization()

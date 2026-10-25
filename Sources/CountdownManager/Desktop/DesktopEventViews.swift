@@ -65,9 +65,12 @@ struct DesktopEventBrowser: View {
                     .font(.system(size: 12))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
-            VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 10) {
                 Text(currentDayHeaderLabel(store.today))
                     .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                    .fixedSize()
+                    .uiSmokeControl(id: "desktop.overview.date", value: { currentDayHeaderLabel(store.today) })
                 DesktopForecastSlot(forecast: weather.forecast(for: store.today), role: "overview")
             }
             .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -113,7 +116,9 @@ struct DesktopEventBrowser: View {
                              selected: item.id == selectedID)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Открыть событие: \(item.title)")
+        .accessibilityLabel(item.attachments.isEmpty
+            ? "Открыть событие: \(item.title)"
+            : "Открыть событие: \(item.title). Вложения: \(item.attachments.count)")
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
@@ -220,21 +225,20 @@ private struct DesktopOrdinaryCardLayout: Layout {
         if feed {
             let remainingWidth = min(width * 0.3, subviews[4].sizeThatFits(.unspecified).width)
             let textX = leaf.width + 16
-            let textWidth = max(0, width - textX - 16 - remainingWidth)
-            let title = subviews[1].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
+            let textWidth = max(0, width - textX)
+            let titleWidth = max(0, textWidth - 12 - remainingWidth)
+            let title = subviews[1].sizeThatFits(ProposedViewSize(width: titleWidth, height: nil))
             let metadata = subviews[2].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
             let completion = subviews[3].sizeThatFits(ProposedViewSize(width: textWidth, height: nil))
             let remaining = subviews[4].sizeThatFits(ProposedViewSize(width: remainingWidth, height: nil))
-            let textHeight = title.height + 7 + metadata.height + (completion.height > 0 ? 7 + completion.height : 0)
-            let cardHeight = max(height, max(leaf.height, max(textHeight, remaining.height)))
-            let textTop = (cardHeight - textHeight) / 2
+            let headerHeight = max(title.height, remaining.height)
             return [
-                CGRect(origin: CGPoint(x: 0, y: (cardHeight - leaf.height) / 2), size: leaf),
-                CGRect(x: textX, y: textTop, width: textWidth, height: title.height),
-                CGRect(x: textX, y: textTop + title.height + 7, width: textWidth, height: metadata.height),
-                CGRect(x: textX, y: textTop + title.height + 7 + metadata.height + (completion.height > 0 ? 7 : 0),
+                CGRect(origin: .zero, size: leaf),
+                CGRect(x: textX, y: 0, width: titleWidth, height: title.height),
+                CGRect(x: textX, y: headerHeight + 7, width: textWidth, height: metadata.height),
+                CGRect(x: textX, y: headerHeight + 7 + metadata.height + (completion.height > 0 ? 7 : 0),
                        width: textWidth, height: completion.height),
-                CGRect(x: width - remainingWidth, y: (cardHeight - remaining.height) / 2,
+                CGRect(x: width - remainingWidth, y: 0,
                        width: remainingWidth, height: remaining.height)
             ]
         }
@@ -308,19 +312,28 @@ private struct DesktopEventCard: View {
     }
 
     private var featuredContent: some View {
-        HStack(alignment: .top, spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                Label("Избранное", systemImage: "star.fill")
-                    .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
-                Text(item.title).font(.custom("Georgia", size: 27)).tracking(-0.5)
-                    .fixedSize(horizontal: false, vertical: true)
-                dateAndWeather
-                Text(presentation.remainingLabel).font(.custom("Georgia", size: 25))
-                    .foregroundStyle(timeColor)
-                DesktopCompletionLabel(presentation: presentation)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 20) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Избранное", systemImage: "star.fill")
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
+                    Text(item.title).font(.custom("Georgia", size: 27)).tracking(-0.5)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 0)
+                DesktopCalendarLeaf(item: item, featured: true, role: "browser").padding(.top, 9)
             }
-            Spacer(minLength: 0)
-            DesktopCalendarLeaf(item: item, featured: true, role: "browser").padding(.top, 9)
+            .uiSmokeControl(id: "desktop.favorite.identity.\(item.id)")
+            dateAndWeather
+                .uiSmokeControl(id: "desktop.favorite.metadata.\(item.id)")
+            Text(presentation.remainingLabel).font(.custom("Georgia", size: 25))
+                .foregroundStyle(timeColor)
+            if presentation.completionLabel != nil || !item.attachments.isEmpty {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    DesktopCompletionLabel(presentation: presentation)
+                    attachmentIndicator
+                }
+            }
         }
     }
 
@@ -341,8 +354,9 @@ private struct DesktopEventCard: View {
             }
                 .clipped()
                 .uiSmokeControl(id: "desktop.card.metadata.\(item.id)")
-            VStack(alignment: .leading, spacing: 0) {
+            completionLayout {
                 DesktopCompletionLabel(presentation: presentation).transaction { $0.animation = nil }
+                attachmentIndicator.transaction { $0.animation = nil }
             }
                 .clipped()
                 .uiSmokeControl(id: "desktop.card.completion.\(item.id)")
@@ -359,17 +373,45 @@ private struct DesktopEventCard: View {
     }
 
     private var dateAndWeather: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        metadataLayout {
             eventDate
+                .fixedSize(horizontal: feed || featured, vertical: false)
             DesktopForecastSlot(forecast: item.showsWeather ? weather.forecast(for: item.date) : nil,
                                 role: "browser.\(item.id)")
+                .frame(width: feed || featured ? 52 : nil, alignment: .leading)
         }
         .font(.system(size: 11))
         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
     }
 
+    private var metadataLayout: AnyLayout {
+        feed || featured ? AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 6))
+    }
+
+    private var completionLayout: AnyLayout {
+        feed ? AnyLayout(HStackLayout(alignment: .center, spacing: 12))
+            : AnyLayout(VStackLayout(alignment: .trailing, spacing: 6))
+    }
+
     private var eventDate: some View {
         DesktopEventDateLabel(item: item, dateLabel: presentation.dateLabel, role: "browser")
+    }
+
+    @ViewBuilder
+    private var attachmentIndicator: some View {
+        if !item.attachments.isEmpty {
+            Label(String(item.attachments.count), systemImage: "paperclip")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .lineLimit(1)
+                .fixedSize()
+                .accessibilityLabel("Вложения: \(item.attachments.count)")
+                .help("Вложения: \(item.attachments.count)")
+                .accessibilityIdentifier("desktop.attachments.indicator.\(item.id.uuidString)")
+                .uiSmokeControl(id: "desktop.attachments.indicator.\(item.id.uuidString)",
+                                value: { String(item.attachments.count) })
+        }
     }
 
     private var timeColor: Color {

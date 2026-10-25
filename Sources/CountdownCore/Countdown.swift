@@ -126,6 +126,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var subtasks: [Subtask]
     public var showsWeather: Bool
     public var usesAutomaticTitle: Bool
+    public var attachments: [EventAttachment]
 
     public init(
         id: UUID = UUID(),
@@ -135,7 +136,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         emoji: String,
         subtasks: [Subtask] = [],
         showsWeather: Bool = false,
-        usesAutomaticTitle: Bool = false
+        usesAutomaticTitle: Bool = false,
+        attachments: [EventAttachment] = []
     ) {
         self.id = id
         self.title = title
@@ -145,10 +147,11 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.subtasks = subtasks
         self.showsWeather = showsWeather
         self.usesAutomaticTitle = usesAutomaticTitle
+        self.attachments = attachments
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, note, date, emoji, subtasks, showsWeather, usesAutomaticTitle
+        case id, title, note, date, emoji, subtasks, showsWeather, usesAutomaticTitle, attachments
     }
 
     public init(from decoder: Decoder) throws {
@@ -162,6 +165,11 @@ public struct Countdown: Identifiable, Codable, Equatable {
         showsWeather = values.contains(.showsWeather) ? try values.decode(Bool.self, forKey: .showsWeather) : false
         usesAutomaticTitle = values.contains(.usesAutomaticTitle)
             ? try values.decode(Bool.self, forKey: .usesAutomaticTitle) : false
+        attachments = values.contains(.attachments)
+            ? try values.decode([EventAttachment].self, forKey: .attachments) : []
+        guard Set(attachments.map(\.id)).count == attachments.count else {
+            throw EventAttachmentError.invalidMetadata
+        }
         guard subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
     }
 
@@ -175,6 +183,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         try values.encode(subtasks, forKey: .subtasks)
         if showsWeather { try values.encode(true, forKey: .showsWeather) }
         if usesAutomaticTitle { try values.encode(true, forKey: .usesAutomaticTitle) }
+        if !attachments.isEmpty { try values.encode(attachments, forKey: .attachments) }
     }
 }
 
@@ -245,6 +254,17 @@ public struct CountdownData: Codable, Equatable {
         guard cleaned.date >= today else { throw CountdownError.date }
         guard cleaned.emoji.isEmpty || Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         guard cleaned.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
+        guard Set(cleaned.attachments.map(\.id)).count == cleaned.attachments.count else {
+            throw EventAttachmentError.invalidMetadata
+        }
+        if cleaned.attachments.count > EventAttachment.maximumCount {
+            let savedIDs = Set(items.first(where: { $0.id == item.id && $0.date >= today })?
+                .attachments.map(\.id) ?? [])
+            // Historical over-limit events stay editable, but may not gain new references.
+            guard cleaned.attachments.allSatisfy({ savedIDs.contains($0.id) }) else {
+                throw EventAttachmentError.limitExceeded
+            }
+        }
         normalize(today: today)
         if let index = items.firstIndex(where: { $0.id == item.id }) { items[index] = cleaned }
         else { items.append(cleaned) }

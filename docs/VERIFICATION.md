@@ -287,6 +287,184 @@ no new input route or accessibility control is introduced by the decorative symb
 
 ## Desktop window
 
+### Attachment evidence
+
+CoreChecks exercises isolated file-copy ownership, backward-compatible metadata, Save/Cancel,
+failed/superseded writes, active import pins, restart cleanup, expiry/deletion and symlink/path
+boundaries. UIChecks adds Store draft lifetimes, partial import failures, failed Save retry,
+durable expiry cleanup and refusal to bypass attachment persistence with a fake writer.
+All source files, copies and preferences in these checks are temporary fixtures.
+
+#### Native sheets, shared editor previews and favorite metadata — current follow-up
+
+Desktop Settings, file libraries and create/edit must all attach through the same native SwiftUI
+sheet mechanism. Verify native attachment, usable settings/files/editor bounds, close/reopen and
+native dismissal completion. Settings/files keep their cross and Escape paths; a physical click
+on the parent content outside the sheet must dismiss once without activating the background,
+while interior clicks keep it open. Editor outside clicks, Escape and parent close must preserve
+its draft until Save/Cancel. Keep route/editor guards until native `onDismiss`, rather than using
+a fixed delay or treating a retained hidden native window as an active sheet. Verify owner
+removal/expiry, repeated dismissal, shared palette and native Reduce Motion behavior.
+
+Diagnostic Save must be a nested native panel under Settings. During export, cross, Escape and
+parent clicks must leave both Settings and its nested Save panel intact. Cancel/reopen must
+release the export guard without changing event JSON or saved files. Native lifecycle checks
+and settled screenshots do not establish physical parent clicks or compositor animation quality;
+record those using an external or human interaction with its exact origin and executable.
+
+The shared editor must show fixed 36-point preview areas after import before Save and after
+reopening saved files on both surfaces. Cover photos, first-page PDF, static movie frames and at
+least one provider-supported nonmedia format; a provider failure or missing preview must keep the
+type fallback and usable edit actions. Every format must reach the best-effort native request,
+without an image/movie whitelist. Focused Core/Store checks must protect exact draft identity,
+metadata and lifetime, rejecting cancelled drafts, foreign draft files and forged metadata.
+Cancel must preserve event bytes and release imported files through existing cleanup ownership.
+
+The featured favorite's date and eligible forecast share a full-width row below title/calendar
+identity. Check narrow/wide panes with pending/loaded/missing/off forecasts and unchanged selection,
+divider and data. Ordinary collection-grid metadata and details retain their existing composition.
+The exact `5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254` candidate passed
+native desktop **27/27** in **52.034 seconds**, exit 0, unchanged executable and no main-thread
+stall or launcher timeout. Final strict lint is **0/71**; final CoreChecks/UIChecks passed exit 0.
+[Current provenance](images/v1.16.0/native-sheets/PROVENANCE.md) records 42 selected images from
+110 native PNGs, exact source-manifest hash, retained failed attempts and evidence limits.
+PNG/PDF/movie/TXT previews reached ready and corrupt input retained fallback in 36-point editor
+areas; both mini editor themes show the files in their actual viewport. This desktop route
+includes focused shared mini/editor scenarios, not a separate full mini/editor suite.
+[Physical platform-probe evidence](images/v1.16.0/native-sheets/platform-probe.json) records
+three consumed parent clicks and two protected-editor clicks on its separately identified
+probe executable. It establishes routing on the observed runtime, not full external production
+acceptance or perceived compositor fluency.
+
+#### Desktop polish and mini disclosure — historical acceptance
+
+The exact `69c29794d6607bc6b2a6dcae316fadfe49ceca34192061b2ce91c62e09493d2a` candidate
+passed native desktop **27/27** in **55.659 seconds**, exit 0, unchanged executable hashes,
+without main-thread stall or launcher timeout. Strict SwiftLint reports **0/70** and final
+CoreChecks/UIChecks passed with exit 0. [Combined acceptance](images/v1.16.0/desktop-polish/acceptance.json)
+keeps exact-bundle checks and reused evidence separate. [Historical provenance](images/v1.16.0/desktop-polish/PROVENANCE.md)
+records 54 selected/124 full native PNGs, actual observation times, retained failed attempts
+and corrected live-frame/settled-scroll driver criteria. This desktop route includes changed
+shared mini attachment scenarios, not a new full mini/editor suite.
+
+The accepted change removes saved-section editor links from populated and empty desktop
+details: `Изменить список…`, `Добавить подзадачи…`, `Добавить заметку` and attachment
+add/change. The header pencil must still open the shared editor with the full current event.
+Focused native checks must cover populated and empty note/subtask states, no secondary entry
+buttons, retained direct checkbox/file/All actions and unchanged saved event/file bytes after
+Cancel. Capture populated/empty details in Light/Dark with isolated data. The shared compact
+attachment component must remain free of add/change controls. Prior exact-bundle evidence below
+remains explicitly historical rather than a result for the current executable.
+
+For the historical custom Settings/files motion, the former acceptance covered opening and closing, repeated dismissal,
+background input protection during closing, owner removal and Reduce Motion. That custom
+overlay has been replaced by the shared native sheet. Its 200 ms timing was never evidence of
+the system sheet's exact timing; settled captures alone do not prove compositor motion.
+In the accepted run, requested opening offsets 0/70/260 ms were observed around 263/500/891 ms
+for Settings and 331/625/1028 ms for files because cache rendering is synchronous. These samples
+prove modal guards/endpoints/partial renders, not compositor fluency during the first 200 ms.
+The strict long-feed viewport check waits for its final 683-point row width and three stable
+document-extent observations before scrolling; it does not change application auto-scroll.
+
+For ordinary feed layout, verify top-aligned calendar/title, upper-right remaining-time, exact
+date plus forecast on the same line, and horizontal checklist/attachment summaries. Exercise
+short/long titles, no/one/both summaries, narrow/wide panes and pending/loaded/missing/off
+forecasts, with unchanged event ordering, selection, divider and data. Grid/favorite/detail
+geometry was outside that historical redesign. The current favorite metadata follow-up is covered above.
+
+#### Attachment overlay and mini navigation — historical acceptance
+
+The exact `5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001`
+candidate passed strict SwiftLint (0 violations in 70 files), CoreChecks/UIChecks,
+native desktop 27/27 and mini 23/23 on 2026-10-25. The desktop route includes both library
+surfaces, header/footer semantics, close/reopen, backdrop/pane input boundaries, retained
+selection/divider, owner-removal cleanup and search states. Both native routes exited 0
+with unchanged executable hashes and no main-thread stall. The
+[overlay capture provenance](images/v1.16.0/attachment-overlay/PROVENANCE.md) identifies 17 new
+isolated native PNGs and the exact signed-artifact audit. The separate
+[external CUA receipt](images/v1.16.0/attachment-overlay/external-acceptance.json) establishes
+inside-click retention, outside pointer dismissal over a different card without changing selection,
+Escape from focused search, cross dismissal and mini Back/search/clear on an isolated probe
+with byte-identical unsigned executable. Numeric search was entered under the English layout;
+Russian filename matching is native-regression evidence. This is not full VoiceOver, first-install
+or default-app-opening acceptance. The [combined receipt](images/v1.16.0/attachment-overlay/acceptance.json)
+keeps these scopes separate.
+
+#### Priority, 15-file limit and searchable libraries — follow-up acceptance
+
+The accepted follow-up passed fresh exact-bundle checks on 2026-10-24/25: strict SwiftLint
+(0 violations in 70 files), CoreChecks/UIChecks, native desktop 27/27, mini 23/23 and editor 5/5.
+[Priority/limit capture provenance](images/v1.16.0/priority-limit/PROVENANCE.md) identifies that
+executable, 39 selected native PNGs and retained earlier failures. These results predate the
+subsequent desktop attachment overlay change; they do not certify its dismissal behavior.
+Previous RC2 results below and under `images/v1.16.0/` also remain historical evidence.
+
+Core/Store checks must cover the 15-file limit at Save and native-picker admission: Add at
+15 is unavailable, draft removal to 14 admits one new identity before Save, and a selected
+batch larger than remaining capacity is rejected before any copy. Assert unchanged prior
+draft/metadata/file tree for that count rejection. Keep separate I/O-failure checks that
+retain earlier successful imports. Legacy collections above 15 must load without truncation
+or a read error, preserve existing identities on unrelated edits and Cancel, allow removal,
+and block new identities until the current draft is below 15.
+
+Use the focused native `verifyAttachmentThumbnails`, `verifyAttachmentLibrary` and
+`verifyRemovedDesktopLibraryOwner` scenarios for:
+
+- relative note → `Подзадачи` → `Вложения` placement in desktop details, mini cards and editor;
+  consistent heading height/primary appearance and absence of the old desktop checklist label;
+- stable horizontal mini attachment heading/count geometry across expanded and collapsed states,
+  including a rotating disclosure chevron without a symbol-width jump;
+- no saved attachment block at zero, with editor Add still available; 0/3/4/15-file cases,
+  first-four summaries, 44-point desktop and 36-point mini static previews/fallbacks;
+- a separate bounded read-only desktop native sheet and internal mini screen with Back, filename
+  search with one match/no results/clear, and returning to the same event without changing tasks
+  or event bytes; deletion/expiry of the owner closes its library on both surfaces, while hidden
+  parent content cannot receive input or remain exposed to accessibility;
+- desktop header `Вложение` at left and a cross at right, without Back/count; close/reopen by
+  cross, Escape and backdrop, with unchanged selected event/divider and no underlying activation;
+  clicks on the pane's empty interior leave it open; the native sheet is attached to the retained desktop window;
+- no duplicate header count in either surface; `Файлов: N` for an empty or whitespace-only query,
+  `Найдено: X из N` for a nonempty query, including zero matches; mini keeps `Вложения` and a
+  plain left-chevron `Назад` control matching Settings, with its accessible Back label;
+- 36-point shared editor previews before Save and after reopening, including native-preview
+  success and fallback without changing import/edit/Cancel behavior;
+- the editor's `N/15` counter, visible reason for disabled Add, removal/re-enable at 14, and
+  Cancel preserving the saved collection; expiry explanations only in editor/delete confirmation.
+
+Inspect Light/Dark library/all/search/empty, editor limit/order and mixed-type alignment renders.
+Native dimensions and actions do not certify physical file selection, external default-app
+opening or large-copy cancellation. Reuse earlier evidence only for unchanged routes, with its
+source hash and remaining limitations explicitly distinguished from fresh follow-up acceptance.
+
+The desktop runtime imports synthetic files through the real Store/repository boundary, then
+checks shared desktop/mini-panel rows, editor removal with Cancel and Save, deletion of the
+correct owned copies and preservation of originals. It captures both surfaces in Light/Dark.
+These in-process actions do not certify physical file selection or another application's file
+opening. `testAttachmentsNativePickerSaveCancelAndSharedSurfaces` separately targets the real
+native open sheet, Cancel/reopen, ordinary typed file selection and shared saved-file UI; record
+its actual result and input-source limits before claiming external acceptance. The external
+opener, large-video performance and interruptions during filesystem copying need their own
+relevant evidence; generic byte-copy checks do not prove playback or every document editor.
+
+On 2026-10-24 the focused external scenario passed **1/1** on the user's English input source:
+native picker Cancel/reopen, exact typed file path, imported copy plus editor Cancel, repeat
+import plus Save, shared desktop/mini-panel file rows, removal Cancel then Save, and unchanged
+original bytes. The [working-source evidence](images/v1.15.0/attachments-header-unreleased/PROVENANCE.md)
+also records native desktop **24/24**, mini-panel **23/23**, editor **5/5**, collapse **2/2** and
+three continuity runs **8/8** each. Earlier Russian-layout and driver/identifier failures remain
+recorded as failed runs; the successful route is not certification of every input layout.
+
+The subsequent [attachment-indicator follow-up](images/v1.15.0/attachment-indicators-unreleased/PROVENANCE.md)
+passed focused native desktop **25/25**, strict lint and CoreChecks/UIChecks. Its minimum-pane
+fixtures cover ordinary and favorite cards with/without files in collection/feed, attachment-only
+cards, coexistence with ten subtasks, the rendered count changing 2 → 1 after Save, no compact
+edit-action and the retained desktop action. Counts use native smoke registration; favorite
+fixtures are set through Store and their actual card compositions are inspected in Light/Dark
+renders. The previous external picker and broad mini/editor evidence is reused for unchanged
+file/editor paths, not represented as a new external run for this visual-only refinement.
+
+### Existing desktop checks
+
 Run full SwiftLint and `./verify.sh fast` before the focused `./verify.sh desktop` runtime.
 UIChecks adds deterministic desktop collection/feed presentation coverage: active-day filtering,
 stable equal-date ordering, trimmed case-insensitive title/note search, favorite pinning without a favorite-only filter,
@@ -340,7 +518,12 @@ identities. Inspect its retained actual screen recording before accepting percei
 A separate gated-provider desktop fixture compares overview, ordinary/favorite card, identity,
 note and checklist geometry before/after pending-to-loaded forecasts, global weather OFF/ON and
 per-event weather OFF/ON. It includes an event without a forecast and both collection/feed layouts
-at narrow/wide split positions. It makes no public HTTP or location request; only explicit
+at narrow/wide split positions. Header checks require the full current date and forecast slot
+to share one row, with stable date/slot frames through pending, loaded and OFF states. Ordinary
+feed rows also place date and forecast on one line; grid/favorite cards and details retain their
+separate weather rows. Fixture controls use a distinct measurement namespace;
+the overview header, date and weather are measured live through native view coordinates, avoiding
+stale cached SwiftUI frames after divider resizing. It makes no public HTTP or location request; only explicit
 per-event fixture writes change isolated JSON. This is a desktop layout check, not a change to or
 re-acceptance of mini-panel weather composition.
 
@@ -372,14 +555,16 @@ roles, not exact cross-display screenshot color equivalence.
 Appearance preference checks cover default/fallback values, persistence and isolated capture
 override priority. Native desktop smoke switches the shared owner through Dark/Light/System,
 observes the desktop, mini-panel and centered settings pane appearances and both settings hosts.
-It checks usable 430 × 560 settings content, the desktop close button, backdrop dismissal, unchanged selection/divider
-and a mounted but disabled background. It also checks that diagnostic Save/Cancel retains its
-settings host while the native dialog is attached. Current settings/editor Light/Dark captures
+It checks usable 430 × 560 settings content, native attachment and close/reopen, unchanged
+selection/divider and a mounted but disabled background. It also checks that diagnostic Save/Cancel
+retains its settings host while the native Save panel is nested under that sheet. Current settings/editor Light/Dark captures
 must show the consistent desktop palette; the mini-panel retains its original styling.
 `testDesktopSettingsBackdropCloseAndEscapePreserveEventsAndEditor`
 separately exercises actual backdrop clicks, empty-area clicks inside the pane, the close button, Escape,
-unchanged event data and the editor's retained outside-click protection. These
-checks must establish that settings uses neither a separate window nor a native settings sheet.
+unchanged event data and the editor's retained outside-click protection. Current acceptance
+must establish the shared attached native Settings sheet, with no independent settings window.
+Use native close-button actions for in-process lifecycle checks; physical outside clicks and
+Escape require the external/human interaction result rather than synthetic backdrop controls.
 This is owner-to-rendered-UI evidence, not external popup-menu selection. Ordinary full panel
 smoke remains the side-effect check for the shared settings change.
 
@@ -392,7 +577,7 @@ width limits, then confirm ordinary content clicks and retained position.
 The desktop route also exercises the explicit compact-mode footer and the real status-button
 action: only the footer hides the desktop; toggling the status button leaves it visible.
 Return through the panel footer preserves the hosting hierarchy, selected event, view and timer.
-The compact-mode control is rejected while an editor owns the desktop or the settings overlay is open.
+The compact-mode control is rejected while an editor owns the desktop or any desktop sheet is open or closing.
 Status-button `performClick` is an in-process action, not proof of physical menu-bar input.
 It additionally asserts unfinished-before-completed row geometry in both modes and after reopening
 a task, without changing stored UUID order. Search-filtered creation checks Cancel,

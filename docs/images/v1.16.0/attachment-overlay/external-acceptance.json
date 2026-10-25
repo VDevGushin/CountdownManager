@@ -1,0 +1,33 @@
+{
+  "recorded_at_utc": "2026-10-24T21:48:35.074220+00:00",
+  "source_executable_sha256": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+  "probe_provenance": {
+    "production_executable_sha256": "5836d97009081e079e3414f66359d602d4bad58624fd76413d7496e4448ed001",
+    "unsigned_executables_match": true,
+    "unsigned_sha256": "1bf75cdb20914b49026bc745493df59157223d2c43fa5b36775e29b745b0acd8",
+    "identifier": "local.countdownmanager.overlay-probe",
+    "synthetic_home": "/private/tmp/countdown-attachment-overlay.YbsaYR/pointer-probe/home"
+  },
+  "driver": "Codex CUA native app interaction, isolated synthetic home",
+  "desktop": {
+    "empty_inside_click_retains_library": true,
+    "outside_pointer_click_dismisses": true,
+    "outside_click_over_other_card_preserves_selection": true,
+    "escape_from_nonempty_focused_search_dismisses": true,
+    "close_button_dismisses": true,
+    "background_controls_absent_from_accessibility_while_presented": true
+  },
+  "mini": {
+    "chevron_back_visually_matches_settings": true,
+    "no_header_count": true,
+    "unfiltered_footer": "Файлов: 15",
+    "filtered_footer": "Найдено: 1 из 15",
+    "clear_restores_total": true,
+    "back_returns_to_events": true
+  },
+  "fixture_note": "First preview used a historical event dated October24, expired normally on October25; stopped preview and reseeded only synthetic dates to October27 before acceptance. A diff-only AX response was initially interpreted as empty; full tree confirmed inside-click retention.",
+  "limitations": [
+    "English-layout typeText delivered numeric search15; exact Russian filename queries covered by native regression.",
+    "Not full VoiceOver or first-install acceptance."
+  ]
+}

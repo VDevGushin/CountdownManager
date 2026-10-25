@@ -1,0 +1,4 @@
+UISmoke
+✓ interrupted checklist transitions honor the last request, reject hidden controls and preserve independent preferences/data
+✓ completed tasks survive disclosure and reopen in stable active/completed order
+PASS: 2/2

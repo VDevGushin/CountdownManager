@@ -213,10 +213,16 @@ contains navigation and settings, not timer controls; the compact panel's timer 
 
 Desktop checklist completion/reopening animates only the persistent task rows with a 150 ms
 ease-in-out; Reduce Motion disables this movement. It does not animate the entire inspector or
-disable sibling controls. Desktop overview, cards and detail metadata use separate date/weather
-rows with a reserved 16-point weather slot, including when the forecast is absent. This prevents
-weather availability from shifting the calendar, countdown, notes, checklist or neighboring cards.
-The empty slot contains no visible or accessible placeholder. Mini-panel layouts are unchanged.
+disable sibling controls. Under `Впереди`, the desktop overview places the current date and eligible
+forecast for today on the same metadata line. The date position, line height and content below
+remain stable when weather is absent, disabled or loaded; absent weather exposes no placeholder.
+Ordinary feed rows align the calendar with the top of the title; their remaining-day label
+sits at the upper right. Date and eligible weather share one line, with temperature after
+the date, and checklist progress/paperclip count share one horizontal summary. Rows use a
+compact height without a separate weather slot or vertically stacked counts. Grid cards,
+the featured favorite and detail metadata retain separate date/weather rows with a reserved
+16-point weather slot, including when the forecast is absent. The empty slot contains no
+visible or accessible placeholder. Mini-panel layouts are unchanged.
 
 The desktop detail action group uses neutral primary ink for the outline star, pencil and trash.
 Only a selected, filled favorite star uses the accent color. Color communicates favorite state,
@@ -244,7 +250,7 @@ Seven fixed durations share a 32-point high row with 2-point gaps. The selected 
 
 ### Cards / Containers
 
-In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. The desktop's separate date and reserved weather rows follow the layout described above.
+In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. Desktop event cards and details retain the separate date and reserved weather rows described above.
 
 ### Inputs / Fields
 
@@ -254,9 +260,70 @@ The optional note field is always visible, including when empty. Its label is `�
 
 The `Значок` field is an outlined selection control with label, selected emoji or `Без значка`, disclosure chevron, and a separate clear target when selected. Clearing does not disclose the picker. Its inline picker uses eight compact presets followed by the larger catalog. Disclosure uses height and opacity over 200 ms; selected-value opacity takes 120 ms. Reduce Motion makes both immediate. The inline catalog uses the same paper surface and border language rather than a separate window.
 
+### Attachments
+
+Desktop details, mini-panel cards and the shared editor order their note, `Подзадачи` and
+`Вложения` content in that sequence. Subtask and attachment headings share readable semibold
+weight and primary ink; the desktop checklist label is `Подзадачи`, not `Подготовиться`.
+Saved attachment sections disappear when empty; the editor still offers Add at zero.
+Desktop file rows reserve a 44 × 44-point preview area beside filename and import-time size;
+mini-panel summary, All-files and shared editor rows use 36 × 36 points. Photos use a thumbnail,
+PDFs show the whole first page within that area, and movies show one static frame with a small
+video indication. Other formats also request a best-effort native preview; unavailable or failed
+previews use a file-type fallback. The reserved
+area stays fixed during loading and failure. The whole row remains one explicit open action;
+the decorative preview adds no separate keyboard focus or playback control.
+With more than four attachments, desktop and mini summaries show the first four in saved order
+and `Показать все N`. That action opens a bounded searchable library. Desktop uses the shared
+native sheet with the simple header `Вложение` at left and a cross at right, with no
+header count or Back button. It shares the desktop Settings dismissal pattern: the cross,
+`Escape`, or the surrounding dimmed backdrop closes it. The backdrop consumes the click
+without selecting a background event, while the pane's empty interior does not dismiss it.
+The mini-panel keeps its internal screen with `Вложения` and the same plain left-chevron Back
+control as its Settings screen, also without a header count. Both footers show `Файлов: N` for an empty trimmed query and `Найдено: X из N` while
+searching. Search, clear and a no-results message stay within that surface. It has its own scrolling, and closing/Back returns to the same event/context.
+The library is read-only apart from explicit file opening; editing stays in the shared editor.
+Its filename search does not change file order or event data, and resets for a different event.
+The shared editor keeps its full editable list and 36-point previews before Save and after
+reopening. Preview loading/failure does not change the row area or disable editing.
+Editor symbols occupy a fixed 18-point-wide column; filenames and size labels align across
+PDF, image, movie and other file types instead of following each SF Symbol's intrinsic width.
+The mini-panel uses a collapsible attachments section inside the same event card. Its disclosure
+rotates one fixed chevron, as subtasks do; expanding or collapsing must not move the heading
+or count horizontally. Both surfaces
+use the event's pencil as their sole editor entry. Saved desktop sections contain no
+`Изменить список…`, `Добавить подзадачи…`, `Добавить заметку` or attachment add/change button,
+including empty sections. Direct subtask checkboxes, file opening and `Показать все N` remain.
+Attachment rows can be added or removed in the shared editor before Save, with
+Cancel preserving saved files. Long names truncate with their full name available as help.
+Files open only by explicit action in their default application; videos do not autoplay.
+Only the editor and deletion confirmation explain that copied attachments are deleted with
+the event after its date while originals remain untouched. Saved summaries and file libraries
+do not include that warning. Import progress and errors use native, readable controls.
+The editor counter is `N/15`: Add is disabled at 15 or above with a visible explanation,
+and removing to 14 enables one new file immediately. Oversized picker batches report remaining
+capacity and add nothing. Legacy collections above 15 are displayed in full, preserve their
+files and allow removal/unrelated edits; their counter must not imply corruption or force truncation.
+
+Desktop browser cards also show a neutral 11-point paperclip/count summary only when attachments
+exist, separately from the user's emoji. Ordinary grid/feed cards stack it below checklist progress
+inside the existing status host, so narrow cards can fit both; the featured favorite uses one
+compact status row. Zero attachments add neither a visible symbol nor an accessible zero state.
+
+The featured desktop favorite places date and forecast inline on their own full-width row
+below title/calendar identity. This preserves room for both in a narrow browser pane; ordinary
+collection-grid metadata keeps its existing layout.
+
 ### Navigation
 
 The mini-panel's fixed list footer carries local-storage reassurance, an `Открыть основное окно` button, a small settings gear, and Quit. The window button opens or brings forward the retained desktop window. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
+
+Desktop Settings, file libraries and create/edit share one native SwiftUI sheet mechanism,
+including system appearance and opening/closing animation. macOS owns timing and Reduce Motion.
+The underlying event interface remains inactive until native dismissal finishes. Settings/files
+close through their cross, Escape or an outside click on parent content; editor dismissal
+retains its explicit Save/Cancel policy. Diagnostic Save is nested under Settings and blocks
+Settings dismissal while export is active.
 
 ### Calendar Leaves
 

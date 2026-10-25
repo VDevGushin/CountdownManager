@@ -1,0 +1,22 @@
+{
+  "older": {
+    "file_count": 104,
+    "all_other_bytes_modes_symlinks_preserved": true,
+    "changed_paths": [
+      "Contents/Info.plist",
+      "Contents/MacOS/CountdownManager"
+    ],
+    "host_unsigned_code_equal": true,
+    "embedded_home_valid": true
+  },
+  "newer": {
+    "file_count": 104,
+    "all_other_bytes_modes_symlinks_preserved": true,
+    "changed_paths": [
+      "Contents/Info.plist",
+      "Contents/MacOS/CountdownManager"
+    ],
+    "host_unsigned_code_equal": true,
+    "embedded_home_valid": true
+  }
+}

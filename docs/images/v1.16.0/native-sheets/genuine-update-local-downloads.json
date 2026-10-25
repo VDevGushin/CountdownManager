@@ -1,0 +1,14 @@
+{
+  "appcast.xml": {
+    "http": 200,
+    "length": 1249,
+    "sha256": "4a104152e65aac06d31989c49373baeee684e7ebff292e72d5b19435f4e208e7",
+    "matches_local_artifact": true
+  },
+  "CountdownManager-1.16.0-31.zip": {
+    "http": 200,
+    "length": 5830668,
+    "sha256": "f353c0af3536f0b13a3dd51d85e9eeb4b743d14aceadfc24b71e35e58f33466b",
+    "matches_local_artifact": true
+  }
+}

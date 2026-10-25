@@ -1128,6 +1128,130 @@ final class CountdownManagerXCUITests: XCTestCase {
         return identifiers
     }
 
+    func testAttachmentsNativePickerSaveCancelAndSharedSurfaces() throws {
+        let source = testHome.appendingPathComponent("Attachment-fixture.txt")
+        let bytes = Data("Isolated attachment contents\n".utf8)
+        try bytes.write(to: source)
+        let originalEvents = try Data(contentsOf: dataURL)
+        app.launch()
+        openEditor()
+        let add = app.buttons["editor.attachments.add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 3), "The editor must expose its attachment Add action separately from the section")
+        revealInEditor(add, fullyInViewport: true)
+        add.click()
+        let picker = app.sheets["open-panel"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "A real native open sheet must appear")
+        picker.buttons["CancelButton"].click()
+        XCTAssertTrue(waitForAbsence(picker))
+        XCTAssertTrue(app.textFields["editor.title"].exists, "Picker Cancel must retain the editor")
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+
+        try selectNativeAttachment(source)
+        let pendingRemove = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "editor.attachments.remove.")).firstMatch
+        XCTAssertTrue(pendingRemove.waitForExistence(timeout: 3))
+        let pendingID = String(pendingRemove.identifier.dropFirst("editor.attachments.remove.".count))
+        let pendingCopy = attachmentCopyURL(id: pendingID, name: source.lastPathComponent)
+        XCTAssertNotEqual(pendingCopy.standardizedFileURL, source.standardizedFileURL)
+        XCTAssertEqual(try Data(contentsOf: pendingCopy), bytes)
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents, "Import must remain draft-only")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAttachmentFile(pendingCopy, exists: false), "Cancelled imported copy must be cleaned up")
+        XCTAssertEqual(try Data(contentsOf: source), bytes)
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalEvents)
+
+        openEditor()
+        try selectNativeAttachment(source)
+        XCTAssertTrue(pendingRemove.waitForExistence(timeout: 3))
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        let metadata = try XCTUnwrap(try persistedItems().first?["attachments"] as? [[String: Any]])
+        XCTAssertEqual(metadata.count, 1)
+        let saved = try XCTUnwrap(metadata.first)
+        let savedID = try XCTUnwrap(saved["id"] as? String)
+        XCTAssertEqual(saved["name"] as? String, source.lastPathComponent)
+        XCTAssertEqual((saved["byteCount"] as? NSNumber)?.int64Value, Int64(bytes.count))
+        let savedCopy = attachmentCopyURL(id: savedID, name: source.lastPathComponent)
+        XCTAssertEqual(try Data(contentsOf: savedCopy), bytes)
+        XCTAssertEqual(try Data(contentsOf: source), bytes)
+
+        app.buttons["desktop.open"].click()
+        let desktopSection = app.descendants(matching: .any).matching(identifier: "desktop.attachments.\(eventID)").firstMatch
+        XCTAssertTrue(desktopSection.waitForExistence(timeout: 3))
+        XCTAssertTrue(desktopSection.staticTexts["Вложения"].exists)
+        XCTAssertTrue(desktopSection.staticTexts["1"].exists)
+        let openID = "attachments.open.\(eventID).\(savedID)"
+        XCTAssertTrue(app.buttons[openID].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons[openID].label.contains(source.lastPathComponent))
+        app.buttons["desktop.panel"].click()
+        let disclosure = app.buttons["panel.attachments.toggle.\(eventID)"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        XCTAssertTrue(disclosure.label.contains("1"))
+        for _ in 0..<4 where !disclosure.isHittable { app.scrollViews["event.list"].swipeUp() }
+        XCTAssertTrue(disclosure.isHittable)
+        disclosure.click()
+        XCTAssertTrue(app.buttons[openID].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons[openID].label.contains(source.lastPathComponent))
+
+        openEditor()
+        let remove = app.buttons["editor.attachments.remove.\(savedID)"]
+        revealInEditor(remove, fullyInViewport: true)
+        remove.click()
+        XCTAssertTrue(waitForAbsence(remove))
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try persistedItems().first?["attachments"] as? NSArray, metadata as NSArray)
+        XCTAssertEqual(try Data(contentsOf: savedCopy), bytes, "Cancelled removal must retain the saved copy")
+
+        openEditor()
+        revealInEditor(remove, fullyInViewport: true)
+        remove.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertTrue((try persistedItems().first?["attachments"] as? [[String: Any]] ?? []).isEmpty)
+        XCTAssertTrue(waitForAttachmentFile(savedCopy, exists: false), "Saved removal must delete the owned copy")
+        XCTAssertEqual(try Data(contentsOf: source), bytes, "Every operation must preserve the original")
+    }
+
+    private func selectNativeAttachment(_ source: URL) throws {
+        let add = app.buttons["editor.attachments.add"]
+        XCTAssertTrue(add.waitForExistence(timeout: 3))
+        revealInEditor(add, fullyInViewport: true)
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in add.isEnabled }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 3), .completed)
+        add.click()
+        let picker = app.sheets["open-panel"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3), "The native picker must reopen after Cancel")
+        activateForKeyboardInput()
+        app.typeKey(try currentLayoutShortcutKey("g"), modifierFlags: [.command, .shift])
+        let goToFolder = app.sheets["GoToWindow"]
+        XCTAssertTrue(goToFolder.waitForExistence(timeout: 3))
+        let path = goToFolder.textFields["PathTextField"]
+        XCTAssertTrue(path.waitForExistence(timeout: 3))
+        path.click()
+        path.typeKey(try currentLayoutShortcutKey("a"), modifierFlags: .command)
+        path.typeKey(.delete, modifierFlags: [])
+        path.typeText(source.path)
+        XCTAssertEqual(path.value as? String, source.path)
+        path.typeKey(.return, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(goToFolder))
+        let choose = picker.buttons["OKButton"]
+        let chooseEnabled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in choose.isEnabled }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [chooseEnabled], timeout: 3), .completed)
+        choose.click()
+        XCTAssertTrue(waitForAbsence(picker))
+    }
+
+    private func attachmentCopyURL(id: String, name: String) -> URL {
+        dataURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+            .appendingPathComponent(id, isDirectory: true).appendingPathComponent(name)
+    }
+
+    private func waitForAttachmentFile(_ url: URL, exists: Bool) -> Bool {
+        let predicate = NSPredicate { _, _ in FileManager.default.fileExists(atPath: url.path) == exists }
+        return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: 5) == .completed
+    }
+
     func testSettingsDiagnosticArchiveCancelAndSave() throws {
         let originalEvents = try Data(contentsOf: dataURL)
         let destination = testHome.appendingPathComponent("Countdown-Diagnostics.zip")

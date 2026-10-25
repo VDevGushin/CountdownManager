@@ -45,6 +45,8 @@ Key files:
 
 - `Countdown.swift`
 - `CountdownRepository.swift`
+- `EventAttachment.swift`
+- `AttachmentFiles.swift`
 
 ### `CountdownManagerUI`
 
@@ -84,6 +86,7 @@ Key files:
 - `Presentation.swift`
 - `StatusBarImages.swift`
 - `Views.swift`
+- `AttachmentViews.swift`
 - `Diagnostics.swift`
 - `DiagnosticPrivacy.swift`
 - `DiagnosticArchive.swift`
@@ -129,8 +132,7 @@ NSApplication / AppDelegate
 │   └── NSWindow / NSHostingController<DesktopRootView>
 │       ├── window-local mode/search/filter/selection
 │       ├── native split browser + event details
-│       ├── reused EditorView sheet
-│       └── centered SettingsView overlay with close button and dimmed backdrop
+│       └── one native sheet: EditorView / SettingsView / AttachmentListView
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -175,7 +177,7 @@ handoff and panel dismissal. There is no pending downgrade flag or policy-changi
 Desktop collection behavior remains the default, unlike the explicitly current-Space mini-panel;
 no Mission Control preferences are changed. See [the activation and Spaces decision](decisions/desktop-activation-and-spaces.md).
 
-`DesktopRootView` owns only transient window browsing, editor-sheet and settings-overlay state. Its in-window command bar
+`DesktopRootView` owns only transient window browsing and one optional native-sheet route. Its in-window command bar
 uses native SwiftUI controls directly, without an independent toolbar owner or copied state.
 `DesktopEventCollection`
 derives the active filtered stable-date ordering, favorite/ordinary partition and month/year sections
@@ -217,11 +219,69 @@ timer owner. The mini-panel timer strip, menu-bar countdown, completion alert an
 are unchanged. There is no second timer or forecast scheduler.
 `DesktopEventDateLabel` owns the shared desktop emoji/date composition
 for collection, feed, favorite and details; the common calendar leaf has no desktop emoji overlay.
+Featured favorites place date and weather inline on a full-width row below the title/calendar
+identity, retaining room in narrow panes. Ordinary grid metadata keeps its existing composition.
 
-`DesktopForecastSlot` owns a permanent 16-point weather row in desktop overview, card metadata and
-details. Only the optional forecast label changes inside it; missing/off forecasts expose no
-placeholder or accessibility content. Date metadata no longer conditionally switches between
-horizontal and vertical arrangements according to forecast availability.
+`DesktopEventCard` derives its optional paperclip/count indicator from `item.attachments`.
+The existing fourth ordinary-card layout child holds checklist and attachment summaries; no
+extra custom-layout child or stored count is introduced. The ordinary feed composes checklist
+and attachment summaries horizontally; grid summaries retain their stacked presentation.
+Featured cards use the same indicator in their status row. The accepted priority/limit follow-up places note, `Подзадачи` and attachments
+in that order in desktop details, panel cards and the shared editor, with consistent readable
+primary-ink section headings. Empty saved attachment sections are omitted; editor controls remain.
+`SavedAttachmentSection` exposes saved-file presentation, optional compact disclosure, file opening
+and the full-library action. It receives no editor callback or editing-availability state.
+`DesktopEventDetail` keeps editor entry only in its header pencil; saved note and checklist
+sections contain no duplicate editor actions, including empty states. Expiry explanations belong
+only to the editor and deletion confirmation, not ordinary saved sections or file libraries.
+
+Attachment previews derive from repository-owned copies, without persisted preview metadata or
+another file owner. Desktop saved rows reserve a 44-point square; mini summary/library and shared
+editor rows reserve a 36-point square. Editor preview resolution accepts either the exact active
+saved attachment or the exact metadata registered to its live draft. Repository draft resolution
+requires that draft identity, and Store checks draft lifetime before and after awaiting resolution.
+The cancellable loader requests Quick Look thumbnails for every non-PDF format, without an
+image/movie whitelist. PDFs use a serial actor to render the first page into a bounded bitmap.
+Unavailable or failed native previews retain the type fallback. Imported editor files can preview
+before Save; reopening resolves their saved copies. Preview preparation remains responsive and
+rejects cancelled or stale results.
+Preview failure leaves the filename and explicit default-application opening available.
+Saved summaries present the first four identities and `Показать все N` only above four.
+The complete list belongs to a separate bounded presentation: the desktop native
+sheet or an internal panel screen whose plain left-chevron Back control matches mini-panel
+Settings. `DesktopRootView` owns the desktop library's
+event identity and presents the shared `AttachmentListView`; its title is `Вложение` with a
+right-side close button. Cross, Escape and backdrop dismissal share the same state boundary.
+The dimmed backdrop consumes dismissal input while the pane consumes its empty interior,
+following the desktop Settings pattern. Its filename query and scrolling are transient
+presentation state, never another saved file collection; event selection resets that state.
+Closing returns to the same event/browser context. Header counts are omitted on both surfaces;
+the derived footer uses `Файлов: N` for an empty trimmed query and `Найдено: X из N` otherwise.
+Search filters only displayed identities and cannot mutate attachments
+or checklist completion. The editor keeps the full editable collection.
+Removing/expiring the library's owning event dismisses that presentation rather than retaining
+a stale owner. The ordinary underlying interface remains mounted but inactive for input and accessibility.
+`DesktopRootView` uses one SwiftUI `.sheet` for its optional `DesktopSheet` route: editor,
+Settings or an attachment-owning event ID. A closing request makes the presentation binding
+false while retaining the route until native `onDismiss`; background guards and editor-session
+ownership therefore survive the system closing animation. There is no custom animation or
+guessed dismissal timer; macOS owns presentation timing and Reduce Motion.
+`DesktopSheetBackdropDismissal` is a noninteractive AppKit background view inside Settings/files.
+Its scoped local left-mouse-down monitor consumes only clicks in the direct parent content while
+that native sheet is attached. It ignores clicks inside the sheet, other windows and nested-sheet
+activity. Diagnostics also disables Settings dismissal. Monitor lifetime ends on view detachment,
+representable dismantling or deallocation. Editor content has no outside-click bridge and retains
+its protected Save/Cancel policy. Removing or expiring a file owner requests native dismissal.
+
+The desktop overview beneath `Впереди` composes the current date and optional forecast for today
+in one metadata line, retaining its date position, height and following content geometry for
+missing, disabled and loaded weather. Missing/off forecasts expose no placeholder or accessibility content.
+`DesktopForecastSlot` keeps the reserved 16-point forecast area in collection grid cards,
+featured favorites and details. Ordinary feed date/forecast metadata uses one horizontal line,
+with weather after the exact date, while its calendar/title align at the top and remaining-time
+label sits at the upper right. Missing/off forecasts expose no placeholder or accessibility
+content; forecast availability does not select a different card layout. These feed positions
+are presentation changes, without another event owner or persisted card state.
 The details checklist retains one UUID-keyed `ForEach`; a local animation on committed completion
 values moves rows between active/completed ordering over 150 ms. Reduce Motion removes the
 animation transaction. Neither mechanism changes shared mini-panel views, Store ownership or FIFO.
@@ -243,15 +303,13 @@ draft in its hosting surface. Desktop Save/Cancel dismiss the sheet and release 
 interactive dismissal and parent-window close are prevented while that draft is active.
 Panel hide/show retains the existing draft semantics. Both surfaces guard mutations while
 the other editor owns the session, preventing a stale form from overwriting concurrent changes.
-`DesktopRootView` owns `showingSettings` and presents the existing SettingsView in a centered
-430 × 560-point overlay above the retained event hierarchy. The base hierarchy is disabled,
-excluded from hit testing and hidden from accessibility before the overlay is added, so the
-settings controls remain usable. A full-window dimmed backdrop consumes an outside click and
-dismisses settings without activating an event underneath. The pane's opaque background consumes
-empty-area clicks inside its bounds. The close button and Escape use the same dismissal path; settings entry
-and event mutations retain the existing editor guards. No second NSWindow, settings controller,
-global settings-menu command or native settings sheet is introduced. Diagnostic export still uses
-the existing native Save sheet attached to the desktop window and retains the settings host.
+`DesktopRootView` presents the existing 430 × 560-point SettingsView through its shared native
+sheet route. The base hierarchy remains mounted but disabled, excluded from hit testing and
+hidden from accessibility through dismissal. The close button, Escape and parent-content outside
+click use the same guarded dismissal request; interior clicks do not dismiss it. Selection,
+search and divider remain window-local. There is no independent settings window/controller or
+new settings store. `Store.saveDiagnostics` attaches its native Save panel to the key Settings
+sheet, retaining that host and refusing Settings dismissal until export finishes.
 `SettingsView` reuses one navigation button: the mini-panel keeps Back on the left, while the
 desktop supplies `showsCloseButton` and places an accessible `xmark` close button to the right of
 the heading. Only the desktop supplies the cancel-action keyboard shortcut. DesktopRootView applies
@@ -273,9 +331,19 @@ Represents a civil Gregorian date as year, month, and day rather than an absolut
 
 ### `Countdown`
 
-Persisted event model containing stable identity, title, optional note, date, emoji, subtasks and
+Persisted event model containing stable identity, title, optional note, date, emoji, subtasks, file-attachment metadata and
 the optional `showsWeather` choice. Absent JSON defaults to false; true is encoded, false is omitted.
 The flag is an event option, not a separate persisted day type.
+
+`Countdown.attachments` defaults to an empty collection for legacy JSON. The metadata carries no
+source path or file bytes; copying and cleanup belong to the repository boundary below.
+New additions must respect the 15-file event cap. Legacy collections above 15 remain decodable
+and saveable when preserving/removing existing identities; load/normalization does not truncate
+them or turn them into a read failure. Add admission uses current draft count, allowing a new
+identity only below 15, including after draft removal before Save.
+Backward reading of JSON without this field does not imply downgrade safety: 1.15.0 drops unknown
+attachment metadata on writes. Attachment associations can only be restored from a matched JSON
+and `Attachments/` backup; the presence of copied bytes alone does not recover their event ownership.
 
 ### `Subtask`
 
@@ -316,6 +384,21 @@ File: `Sources/CountdownCore/CountdownRepository.swift`
 
 It decodes and atomically writes `CountdownData` and rejects an older revision when a newer revision has already been accepted by the repository.
 
+`EventAttachment` contains only an identity, original filename and import-time byte count.
+`AttachmentFiles`, used exclusively by the same repository actor, stores separate regular-file
+copies in `Attachments/<attachment UUID>/<original filename>` beside the event JSON. Validated
+filenames and per-folder ownership metadata constrain cleanup to application-owned copies;
+original source URLs are never persisted or removed.
+
+Editor-generated draft UUIDs pin imported copies until successful Save or Cancel releases them.
+Repository cleanup protects both the last durable attachment references and all active draft
+pins. New references must resolve before atomic JSON replacement; cleanup runs only after that
+commit, or after a successful load/discard. Failed and superseded writes cannot authorize deletion
+of durable copies. Cleanup errors are reported independently through `attachmentCleanupFailed`
+and the explicit retry operation; they never turn a committed JSON write into a failed Save.
+This is ordered file/metadata persistence, not a claim that the file tree and JSON form one
+atomic filesystem transaction. A later successful load collects abandoned imports after a crash.
+
 Persistence rationale and revision guarantees are documented in:
 
 `docs/decisions/persistence-and-user-data.md`
@@ -340,6 +423,16 @@ It owns or exposes:
 - subtask disclosure state.
 
 `Store` also coordinates application-state revisions and durable snapshots around asynchronous repository writes.
+
+Its attachment operations coordinate the native multi-file picker, draft tokens, imports and
+explicit default-application opening. Attachment work participates in the existing pending-work
+guard. Saved-file opening rechecks active event membership after resolving the repository URL;
+views do not copy or delete files. The shared editor owns the metadata draft, while the repository
+owns imported bytes and cleanup. File names, paths and contents are excluded from diagnostics.
+The native picker validates the entire selected batch against remaining draft capacity before
+requesting any copy. Oversized count selections are rejected without partial import; this does
+not replace the existing behavior for later I/O failures, which retains successfully imported
+files for retry/Cancel. UI disabled state alone is not the persistence/count-validation boundary.
 
 Date-sensitive event state is refreshed from timers and relevant macOS lifecycle, clock, time-zone, calendar-day, and wake notifications.
 

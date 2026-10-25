@@ -23,6 +23,17 @@ Application state coordination and filesystem serialization remain separate resp
 
 Countdown persistence uses atomic file replacement.
 
+Attachment bytes are separate local copies owned by the same repository actor; their metadata
+is stored in the event JSON. An active editor draft pins newly imported copies. Successful JSON
+replacement establishes the durable references before unreferenced copies are collected; active
+draft pins also prevent collection. Failed or superseded writes do not discard durable files.
+File cleanup failure is reported separately from the outcome of an already committed event write.
+After a successful load, abandoned imports can be collected; invalid JSON never authorizes cleanup.
+The multi-file operation is not advertised as an atomic transaction with the JSON replacement.
+
+Copies follow the event's accepted deletion and expiry rules; original files are never removed.
+Attachments are not an archive and do not change the lifetime of the owning event.
+
 Existing compatible stored data remains readable unless an explicit product migration changes that contract.
 
 A load failure caused by invalid or corrupted production data must not silently overwrite the original file as part of recovery.

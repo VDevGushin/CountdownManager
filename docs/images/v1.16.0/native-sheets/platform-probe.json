@@ -1,0 +1,363 @@
+{
+  "question": "Does a local NSEvent mouse-down monitor receive a real parent-content click while a SwiftUI sheet is active, and can it consume the click and dismiss the sheet without a parent action?",
+  "status": "supported_on_observed_runtime",
+  "created_at_utc": "2026-10-24T23:01:00.288199+00:00",
+  "bundle_id": "local.countdownmanager.native-sheet-probe",
+  "runtime": "Version 26.6.2 (Build 25G83)",
+  "synthetic_data_only": true,
+  "repository_edited_by_probe_agent": false,
+  "hashes": {
+    "/private/tmp/countdown-native-sheet-probe/Probe.swift": "89858bd73a4e4fb22fdac28ec242f07501905c19abb4ebfecce74a21ee0a0281",
+    "/private/tmp/countdown-native-sheet-probe/NativeSheetProbe.app/Contents/MacOS/NativeSheetProbe": "69710de137ef24754e5ceb73298bc8b9d426896a749a876222ebc5c1eeb91276",
+    "/private/tmp/countdown-native-sheet-probe/NativeSheetProbe.app/Contents/Info.plist": "7d9eb038488d1880cbfc49f93f5ad49870b9010dbdaaf5eb07f564d90837b582",
+    "/private/tmp/countdown-native-sheet-probe/accepted-evidence.jsonl": "06e95e7a37aa650bfcbf5265a91e2eafabff9368be75be2ab2e3e18daff65c85"
+  },
+  "build_evidence": {
+    "compiler": "Apple Swift 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+    "architecture": "arm64",
+    "swiftc_exit": 0,
+    "codesign_verify_strict_exit": 0
+  },
+  "runtime_evidence": {
+    "outside_click_dismissed_three_times": [
+      {
+        "attachedSheet": 56772,
+        "event": "mouseDown",
+        "eventWindow": 56699,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 740.8828125,
+        "locationY": 534.53515625,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": false,
+        "sameParentWindow": true,
+        "sequence": 4,
+        "sheetParent": 56699,
+        "sheetWindow": 56772,
+        "showingSheet": true,
+        "time": 1792882782.121608,
+        "willConsumeAndDismiss": true
+      },
+      {
+        "event": "outsideConsumedAndDismissRequested",
+        "parentActions": 0,
+        "sequence": 5,
+        "time": 1792882782.1222491
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 6,
+        "time": 1792882782.125771
+      },
+      {
+        "attachedSheet": 56861,
+        "event": "mouseDown",
+        "eventWindow": 56699,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 727.203125,
+        "locationY": 452.64453125,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": false,
+        "sameParentWindow": true,
+        "sequence": 10,
+        "sheetParent": 56699,
+        "sheetWindow": 56861,
+        "showingSheet": true,
+        "time": 1792882793.3461618,
+        "willConsumeAndDismiss": true
+      },
+      {
+        "event": "outsideConsumedAndDismissRequested",
+        "parentActions": 0,
+        "sequence": 11,
+        "time": 1792882793.346767
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 12,
+        "time": 1792882793.350323
+      },
+      {
+        "attachedSheet": 56922,
+        "event": "mouseDown",
+        "eventWindow": 56699,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 128.109375,
+        "locationY": 475.74609375,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": false,
+        "sameParentWindow": true,
+        "sequence": 30,
+        "sheetParent": 56699,
+        "sheetWindow": 56922,
+        "showingSheet": true,
+        "time": 1792882831.5298,
+        "willConsumeAndDismiss": true
+      },
+      {
+        "event": "outsideConsumedAndDismissRequested",
+        "parentActions": 0,
+        "sequence": 31,
+        "time": 1792882831.530869
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 32,
+        "time": 1792882831.535706
+      }
+    ],
+    "protected_editor_outside_click_ignored_twice": [
+      {
+        "event": "presentRequested",
+        "protectedEditor": true,
+        "sequence": 14,
+        "time": 1792882794.64764
+      },
+      {
+        "event": "sheetWindowCaptured",
+        "parentAttachedSheet": 56862,
+        "sequence": 15,
+        "sheetParent": 56699,
+        "sheetWindow": 56862,
+        "time": 1792882794.953895
+      },
+      {
+        "attachedSheet": 56862,
+        "event": "mouseDown",
+        "eventWindow": 56699,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 183.00390625,
+        "locationY": 521.62109375,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": true,
+        "sameParentWindow": true,
+        "sequence": 16,
+        "sheetParent": 56699,
+        "sheetWindow": 56862,
+        "showingSheet": true,
+        "time": 1792882795.370987,
+        "willConsumeAndDismiss": false
+      },
+      {
+        "event": "presentRequested",
+        "protectedEditor": true,
+        "sequence": 21,
+        "time": 1792882826.619629
+      },
+      {
+        "event": "sheetWindowCaptured",
+        "parentAttachedSheet": 56921,
+        "sequence": 22,
+        "sheetParent": 56699,
+        "sheetWindow": 56921,
+        "time": 1792882826.914963
+      },
+      {
+        "attachedSheet": 56921,
+        "event": "mouseDown",
+        "eventWindow": 56699,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 121.18359375,
+        "locationY": 352.59765625,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": true,
+        "sameParentWindow": true,
+        "sequence": 23,
+        "sheetParent": 56699,
+        "sheetWindow": 56921,
+        "showingSheet": true,
+        "time": 1792882827.334002,
+        "willConsumeAndDismiss": false
+      }
+    ],
+    "inside_sheet_close_button_passed_and_worked": [
+      {
+        "attachedSheet": 56862,
+        "event": "mouseDown",
+        "eventWindow": 56862,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 391.8125,
+        "locationY": 359.66015625,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": true,
+        "sameParentWindow": false,
+        "sequence": 17,
+        "sheetParent": 56699,
+        "sheetWindow": 56862,
+        "showingSheet": true,
+        "time": 1792882797.204308,
+        "willConsumeAndDismiss": false
+      },
+      {
+        "event": "closeRequested",
+        "route": "closeButton",
+        "sequence": 18,
+        "time": 1792882797.304831
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 19,
+        "time": 1792882797.3108768
+      },
+      {
+        "attachedSheet": 56923,
+        "event": "mouseDown",
+        "eventWindow": 56923,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 390.8046875,
+        "locationY": 352.97265625,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": false,
+        "sameParentWindow": false,
+        "sequence": 36,
+        "sheetParent": 56699,
+        "sheetWindow": 56923,
+        "showingSheet": true,
+        "time": 1792882834.262716,
+        "willConsumeAndDismiss": false
+      },
+      {
+        "event": "closeRequested",
+        "route": "closeButton",
+        "sequence": 37,
+        "time": 1792882834.355085
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 38,
+        "time": 1792882834.3616462
+      }
+    ],
+    "cancel_route_and_on_dismiss_observed": [
+      {
+        "attachedSheet": 56921,
+        "event": "mouseDown",
+        "eventWindow": 56921,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 67.8828125,
+        "locationY": 30.3125,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": true,
+        "sameParentWindow": false,
+        "sequence": 24,
+        "sheetParent": 56699,
+        "sheetWindow": 56921,
+        "showingSheet": true,
+        "time": 1792882829.5552301,
+        "willConsumeAndDismiss": false
+      },
+      {
+        "event": "closeRequested",
+        "route": "escapeOrCancel",
+        "sequence": 25,
+        "time": 1792882829.671948
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 26,
+        "time": 1792882829.6778321
+      },
+      {
+        "attachedSheet": 56924,
+        "event": "mouseDown",
+        "eventWindow": 56924,
+        "exactAttachedSheet": true,
+        "inParentContent": true,
+        "locationX": 53.83203125,
+        "locationY": 27.7734375,
+        "nestedSheet": -1,
+        "parentWindow": 56699,
+        "protectedEditor": false,
+        "sameParentWindow": false,
+        "sequence": 42,
+        "sheetParent": 56699,
+        "sheetWindow": 56924,
+        "showingSheet": true,
+        "time": 1792882837.079221,
+        "willConsumeAndDismiss": false
+      },
+      {
+        "event": "closeRequested",
+        "route": "escapeOrCancel",
+        "sequence": 43,
+        "time": 1792882837.1802912
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 44,
+        "time": 1792882837.187539
+      },
+      {
+        "event": "closeRequested",
+        "route": "escapeOrCancel",
+        "sequence": 48,
+        "time": 1792882839.565292
+      },
+      {
+        "event": "onDismiss",
+        "insideActions": 0,
+        "parentActions": 0,
+        "sequence": 49,
+        "time": 1792882839.569963
+      }
+    ]
+  },
+  "human_confirmation": {
+    "provenance": "Root agent reported direct user confirmation and its own evidence verification in a collaboration message.",
+    "outside_click": "User confirmed clicking outside closed the sheet.",
+    "protected_editor": "Root reported the user also opened Protected editor and clicked parent content; it remained open."
+  },
+  "conclusion": "On macOS 26.6.2, real parent-content mouseDown events reach the local monitor while the exact native SwiftUI sheet is attached. Returning nil and setting sheet presentation false dismissed the settings sheet, with parentActions remaining zero. The protected-editor policy passed the outside event through and did not request dismissal. An event in the sheet was passed through and the close button completed normally.",
+  "engineering_consequence": "Keep native SwiftUI sheet presentation. Scope the local monitor to settings/files only, with exact parent window, exact attached sheet, parent content bounds and no nested sheet. Consume eligible parent clicks; remove the monitor promptly when presentation ends. Do not apply it to the event editor.",
+  "official_sources": [
+    {
+      "url": "https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html",
+      "access": "Read authoritative Apple archive directly; local monitor can return nil to stop event dispatch, runs on main thread, and must be removed when finished. Archive last updated 2016-09-13."
+    },
+    {
+      "url": "https://developer.apple.com/documentation/appkit/nsevent/addlocalmonitorforevents(matching:handler:)",
+      "access": "Opened current API page; documentation body requires JavaScript in web reader."
+    },
+    {
+      "url": "https://developer.apple.com/documentation/appkit/nswindow/beginsheet(_:completionhandler:)",
+      "access": "Opened current API page; JavaScript required, linked Markdown fetch returned unsupported content type. No unsupported API-body claim derived from this page."
+    }
+  ],
+  "remaining_verification": [
+    "Parent action button itself was not proven to be the physical click target, though parentActions remained zero after all three outside dismissals.",
+    "Nested Save panel guard, resized windows, other macOS versions and production integration were not exercised by this probe.",
+    "Escape/Cancel route was observed, including a route without preceding mouseDown at sequence48; the log does not distinguish actual Escape from accessibility activation.",
+    "The probe establishes event routing and native sheet dismissal; production animation equivalence still needs visual review."
+  ],
+  "readme_review": "README.md read; no repository change was made for this isolated probe, so no README change needed.",
+  "snapshot_record_count": 49
+}

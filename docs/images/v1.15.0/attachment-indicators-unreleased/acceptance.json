@@ -1,0 +1,28 @@
+{
+  "baseRevision": "39b4734576e028ac3692f8c5a2959326550430be",
+  "status": "unreleased working source",
+  "applicationVersion": "1.15.0",
+  "applicationBuild": "30",
+  "executableSHA256": "2d3b46dff6fbc22a56eef38e0a5eceaf7c72edbd166c4cc85cf743dc3cefa67c",
+  "sourceInputsSHA256": "e2b1b11c16f8eebc24ba7723a6cb8b5642038a63c8a013ac87fc303e69fceef1",
+  "swiftLint": "PASS 0 violations",
+  "coreChecks": "PASS",
+  "uiChecks": "PASS",
+  "nativeDesktop": "PASS 25/25",
+  "screenshots": 11,
+  "scope": [
+    "positive/zero attachment indicators in collection, feed and favorite",
+    "attachment-only and ten-subtask coexistence at minimum pane width",
+    "count 2 to 1 after Save",
+    "compact edit entry absent and desktop edit entry retained"
+  ],
+  "reusedEvidence": "../attachments-header-unreleased/PROVENANCE.md",
+  "notRerun": [
+    "external picker workflow",
+    "full general mini-panel/editor/continuity suites"
+  ],
+  "remainingLimits": [
+    "still images do not establish animation smoothness or VoiceOver speech",
+    "extreme filename/count limits and large-media performance are not newly exercised"
+  ]
+}
