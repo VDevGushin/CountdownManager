@@ -39,5 +39,5 @@ were stopped afterward. [Settings after the update](genuine-update-after.png) sh
 
 Still images and numerical layer samples do not establish perceived compositor smoothness,
 physical status-item clicks, real wallpaper contrast, older macOS, Intel, Gatekeeper first
-installation, Spaces or full VoiceOver. Publication and anonymous-download evidence are recorded
-separately once completed.
+installation, Spaces or full VoiceOver. [Publication and anonymous-download evidence](publication.json) separately confirm Latest and
+exact public ZIP/feed hashes.

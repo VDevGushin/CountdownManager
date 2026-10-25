@@ -26,9 +26,10 @@
     "Tests/CountdownManagerUITests/MarsIconChecks.swift"
   ],
   "application_build_inputs_unchanged": true,
-  "published": false,
+  "published": true,
   "limitations": [
     "Static captures do not establish perceived animation smoothness or real wallpaper contrast.",
     "Older macOS, Intel, Gatekeeper first installation, Spaces and full VoiceOver are not newly validated."
-  ]
+  ],
+  "publication": "publication.json"
 }

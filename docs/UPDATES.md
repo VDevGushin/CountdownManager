@@ -1,8 +1,8 @@
 # Preparing signed updates
 
-## Release 1.17.0 / build 32 — locally verified, not published
+## Release 1.17.0 / build 32 — published as Latest
 
-The next release is **1.17.0 / build 32; locally verified and signed, not published**. It unifies the static Dock
+Release **1.17.0 / build 32 is published as Latest; anonymous downloads are verified**. It unifies the static Dock
 icon with the menu Mars palette and adds one linear 12-second turn **only to idle Mars in the
 status bar** when the panel or desktop opens. Dock artwork stays static. Timer/favorite priority,
 Reduce Motion, event data and the existing signed-update protocol remain unchanged.
@@ -23,11 +23,12 @@ key and loopback HTTP, with unchanged unsigned candidate code; it does not estab
 The signed ZIP is **5,659,203 bytes**, SHA-256
 `1902eff2cb8c4c93cd1974e2357989f864a95d537c8d82f4d192948fe9885986`;
 the 1,299-byte feed is `e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c820bd9707`.
-[Current release status](releases/v1.17.0.md) records local readiness; publication and anonymous
-download verification remain outstanding.
+[Current release status](releases/v1.17.0.md) and the [publication receipt](images/v1.17.0/publication.json)
+confirm anonymous ZIP, version feed and stable feed HTTP 200 with exact signed SHA-256 values.
+Source commit `f35a4a8a25b85c1548488064e8852fa18b963ebc` and annotated tag `v1.17.0` are pushed.
 
-The confirmed published channel remains **1.16.0 / build 31** until the new release is published
-and its anonymous downloads are checked. The production bundle ID, signing key and stable feed
+The confirmed published channel is **1.17.0 / build 32**; Latest is verified by the browser badge
+and an anonymous HTTPS redirect. The production bundle ID, signing key and stable feed
 must remain unchanged.
 
 ## Published 1.16.0 / build 31 — retained release evidence

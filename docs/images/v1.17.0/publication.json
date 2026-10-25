@@ -1,0 +1,44 @@
+{
+  "published": true,
+  "verified_at": "2026-10-25T10:14:53.115529+00:00",
+  "release_url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.17.0",
+  "source_commit": "f35a4a8a25b85c1548488064e8852fa18b963ebc",
+  "annotated_tag": "v1.17.0",
+  "latest_confirmed_by": "browser Latest badge and anonymous HTTPS redirect",
+  "latest_redirect": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.17.0",
+  "authenticated": false,
+  "cookies_used": false,
+  "downloads": [
+    {
+      "name": "archive",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/CountdownManager-1.17.0-32.zip",
+      "effective_url": "https://release-assets.githubusercontent.com/github-production-release-asset/1358346685/2d8704b8-3d8b-467e-9b47-ea8e489fa874",
+      "http_status": 200,
+      "bytes": 5659203,
+      "sha256": "1902eff2cb8c4c93cd1974e2357989f864a95d537c8d82f4d192948fe9885986",
+      "matches_signed_local_artifact": true,
+      "ephemeral_redirect_query_omitted": true
+    },
+    {
+      "name": "version_feed",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/appcast.xml",
+      "effective_url": "https://release-assets.githubusercontent.com/github-production-release-asset/1358346685/94fc54af-6db7-44c7-bfd2-822f7b82bdb3",
+      "http_status": 200,
+      "bytes": 1299,
+      "sha256": "e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c820bd9707",
+      "matches_signed_local_artifact": true,
+      "ephemeral_redirect_query_omitted": true
+    },
+    {
+      "name": "stable_feed",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "effective_url": "https://release-assets.githubusercontent.com/github-production-release-asset/1358346685/94fc54af-6db7-44c7-bfd2-822f7b82bdb3",
+      "http_status": 200,
+      "bytes": 1299,
+      "sha256": "e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c820bd9707",
+      "matches_signed_local_artifact": true,
+      "ephemeral_redirect_query_omitted": true
+    }
+  ],
+  "tag_object": "83bc811af655b432c994693cc085b13883400e25"
+}
