@@ -326,6 +326,23 @@ close through their cross, Escape or an outside click on parent content; editor 
 retains its explicit Save/Cancel policy. Diagnostic Save is nested under Settings and blocks
 Settings dismissal while export is active.
 
+### Mars identity and opening motion
+
+The Dock icon uses the status-bar Mars geometry and body/stripe colors. Light has tile
+`#f5f1e8`, planet `#303038` and stripe `#b44e38`; Dark has tile `#211c19`, planet `#f0eee9`
+and stripe `#ef9b81`. The stripe is colored and the three craters reveal the tile. Status-bar
+Mars has no tile and retains transparent craters; its colors follow its effective appearance.
+System icon styling remains separate from the application's window theme.
+
+Opening the mini-panel or desktop starts one full, linear revolution of the status-bar Mars
+symbol over 12 seconds, then stops at the original orientation. The Dock icon always stays static
+in its new palette; the opening gesture does not replace or animate its artwork. The status symbol
+rotates only while it displays idle Mars; favorite and timer presentations interrupt it without
+resuming that turn. Each later opening can start a fresh turn, with no loop or restart from ordinary
+updates. Reduce Motion keeps Mars static and stops an active turn; disabling it does not start motion.
+Completion and cancellation restore ordinary status presentation; no new setting or saved event state
+belongs to this effect.
+
 ### Calendar Leaves
 
 A real month label sits in a terracotta strip above the Georgia day numeral, without a leading zero. The strip fills the top edge and rounded upper corners without an uncolored inset. Featured leaves measure 54 × 65 points; secondary leaves measure 42 × 51. The slight rotation and clean outline make this the signature material gesture, without a shadow. In the mini-panel, optional event emoji belongs immediately before the event title. In the desktop collection, feed, favorite cards and details, it belongs in the secondary date line, with no reserved icon space when absent. Empty and legacy calendar emoji are omitted from these event presentations because the leaf already carries the date; stored values remain available in the editor.

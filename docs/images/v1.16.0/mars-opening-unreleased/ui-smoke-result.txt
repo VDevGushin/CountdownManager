@@ -1,0 +1,5 @@
+UISmoke
+✓ same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation
+✓ actual panel/desktop openings start a finite12s turn; clock advances, timer interrupts without resume, Dock frames advance, completion restores prior content, repeat restarts without event mutation
+✓ actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload; opening turn and Dock frames
+PASS: 3/3

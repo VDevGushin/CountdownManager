@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-25",
+  "status": "unreleased",
+  "applicationVersion": "1.16.0",
+  "applicationBuild": "31",
+  "executableSHA256": "1dceba06ea0d31ffefe9e8be3b170bfd424d3db8534ca8b689ec8991d06174ea",
+  "baseCommit": "ec95e65154317637159aa045348ec07af00969a2",
+  "checks": {
+    "swiftlint": {
+      "files": 73,
+      "violations": 0
+    },
+    "fast": "PASS CoreChecks and UIChecks",
+    "menuIdentityNative": "PASS 3/3",
+    "capturedImages": 30,
+    "updatePackagingPythonTests": 12
+  },
+  "selectedCaptures": [
+    {
+      "file": "mars-opening-half-dark.png",
+      "sha256": "d85613b428ac27ef16826833bfcbb6b372cdf2264ace2ffaa5175faed181c18e"
+    },
+    {
+      "file": "mars-opening-half-light.png",
+      "sha256": "c61f43bf210bfe77a355561757cc502f14db59ef8ad84b72000032e0b89eb816"
+    },
+    {
+      "file": "mars-opening-quarter-dark.png",
+      "sha256": "38d244c5c3846ae6173cee1bf603925f1769b7563932f951b3dd8c739a03de11"
+    },
+    {
+      "file": "mars-opening-quarter-light.png",
+      "sha256": "a25971e8a9aea1281e1ab51d54f346b8ed1511a203de2ab5a335251c3c7ddda4"
+    },
+    {
+      "file": "mars-opening-start-dark.png",
+      "sha256": "72f37432f3ca63baaef75e7b464eb450f0013a49ad6a3d511b117328db1f5401"
+    },
+    {
+      "file": "mars-opening-start-light.png",
+      "sha256": "67b2b29327f8062c551eec00c882e62e07f46fff9bc44e70333be57828d0726d"
+    }
+  ],
+  "limitations": [
+    "View captures are native content renders, not live Dock compositor recordings.",
+    "External physical status-item clicks and live Dock transition smoothness not newly verified.",
+    "macOS 13-25 runtime and alternate system icon styles not exercised."
+  ]
+}

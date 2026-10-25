@@ -710,14 +710,14 @@ Expanding and collapsing a checklist uses a short, non-spring transition of heig
 
 ## Menu bar
 
-When the timer is idle, only an active explicitly selected favorite supplies the event representation. With no valid favorite, the menu bar displays the static Mars application symbol alone, whether the list has events or is empty. It never automatically displays the nearest event.
+When the timer is idle, only an active explicitly selected favorite supplies the event representation. With no valid favorite, the menu bar displays the Mars application symbol alone, whether the list has events or is empty. It never automatically displays the nearest event.
 
 Its normal event representation contains:
 
 - the event emoji, or the monochrome K1 outline calendar when no additional emoji is stored or the legacy `📅` is stored;
 - `Сегодня` for today, `Завтра` for tomorrow, otherwise remaining calendar days with Russian day forms.
 
-The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon preserves the approved Mars geometry. Its Default appearance uses terracotta `#b7472c` with warm light `#fffaf2`; Dark uses warm dark `#211c19` with cream `#f2e6d4`. In both appearances the band and three craters reveal the background. A system icon catalog provides Default/Dark on macOS 26, alongside compatible legacy renditions and an ICNS fallback. The system icon style may differ from the appearance of application windows.
+The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon preserves the same Mars geometry and colored stripe. Its Default appearance uses a warm light tile `#f5f1e8`, planet `#303038` and stripe `#b44e38`; Dark uses tile `#211c19`, planet `#f0eee9` and stripe `#ef9b81`. The three craters reveal the tile beneath the planet. A system icon catalog provides Default/Dark on macOS 26, alongside compatible legacy renditions and an ICNS fallback. The system icon style may differ from the appearance of application windows.
 
 It does not display:
 
@@ -731,6 +731,17 @@ It does not display:
 While the timer is running, its representation temporarily takes precedence and the menu bar displays the system alarm-clock symbol plus the remaining timer value. When the timer is finished but not yet deleted, the menu bar displays the alarm-clock symbol alone. Deleting the timer restores the explicit favorite representation, or Mars alone if there is no active favorite.
 
 When no events exist and the timer is idle, the same Mars symbol remains the entry point. There is no `Countdown` label or zero count. Its tooltip distinguishes an empty list from a nonempty list without a favorite; the status control remains accessible as Countdown Manager.
+
+Opening the mini-panel or desktop window starts one slow, linear, full revolution of the Mars
+symbol in the status bar over 12 seconds, then leaves it at its original orientation. Opening again
+starts a fresh single turn; ordinary ticks and data refreshes do not. The Dock application icon
+always remains static in its new Light/Dark palette, including while the status symbol turns.
+The status-bar animation is visible only while the idle status representation is Mars. Selecting
+a favorite or starting a timer immediately restores that representation and ends the turn;
+clearing it does not resume the interrupted turn. With Reduce Motion enabled, Mars stays static;
+enabling it during a turn stops that turn, and turning it off does not start a new cycle.
+Completion, Reduce Motion and termination remove the transient status animation. This effect adds
+no preference or persisted event state and does not change application activation or Dock presence.
 
 ## Empty state
 

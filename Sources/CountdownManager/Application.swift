@@ -108,6 +108,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var keepAwake: KeepAwakeController!
     private let accessibilitySettings = AuroraAccessibilitySettings()
     private let visualEnvironment = UISmokeVisualEnvironment()
+    private let marsOpeningAnimation = MarsOpeningAnimation()
     private var appearanceSettings: ApplicationAppearance!
     private var appearanceSubscription: AnyCancellable?
     private var subscription: AnyCancellable?
@@ -253,6 +254,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
+                if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion { self?.marsOpeningAnimation.stop() }
                 self?.restartTimerAttentionAnimation()
             }
         }
@@ -311,6 +313,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 store: store,
                 window: { [weak self] in self?.panel },
                 statusButton: { [weak self] in self?.statusItem.button },
+                showDesktop: { [weak self] in self?.showDesktopWindow() },
+                marsOpeningAnimation: { [weak self] in self?.marsOpeningAnimation },
                 hideSurface: { [weak self] in self?.hidePanel(source: "ui-smoke") },
                 showSurface: { [weak self] in self?.showPanel() },
                 isSurfaceShown: { [weak self] in self?.panel.isVisible == true },
@@ -360,6 +364,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         button.toolTip = statusDescription
         button.setAccessibilityLabel("Countdown Manager")
         button.setAccessibilityValue(statusDescription)
+        marsOpeningAnimation.updateEligibility(showsMars: timer.statusTitle == nil && store.statusPresentation.icon == .mars)
         updateTimerAttentionAnimation()
         if case .idle = timer.phase {
             timerCompletionAlert.dismiss()
@@ -441,6 +446,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         recordShellLifecycle("show-after-activate")
         panel.makeKeyAndOrderFront(nil)
         recordShellLifecycle("show-after-panel")
+        startMarsOpeningAnimation()
     }
 
     private func positionPanel(relativeTo button: NSStatusBarButton) -> Bool {
@@ -513,6 +519,17 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             )
         }
         desktopController?.show()
+        if desktopController?.window?.isVisible == true { startMarsOpeningAnimation() }
+    }
+
+    private func startMarsOpeningAnimation() {
+        updateTitle()
+        statusItem.button?.wantsLayer = true
+        marsOpeningAnimation.start(
+            layer: statusItem.button?.layer,
+            statusShowsMars: timer.statusTitle == nil && store.statusPresentation.icon == .mars,
+            reduceMotion: NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        )
     }
 
     private func switchToPanel() {
@@ -655,6 +672,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        marsOpeningAnimation.stop()
         weather.shutdown()
         keepAwake?.releaseForTermination()
         statusItem.button?.layer?.removeAnimation(forKey: timerAttentionAnimationKey)

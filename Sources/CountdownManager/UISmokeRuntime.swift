@@ -295,6 +295,8 @@ final class UISmokeRuntime {
     private let store: Store
     private let window: () -> NSWindow?
     private let statusButton: () -> NSStatusBarButton?
+    private let showDesktop: () -> Void
+    private let marsOpeningAnimation: () -> MarsOpeningAnimation?
     private let hideSurface: () -> Void
     private let showSurface: () -> Void
     private let isSurfaceShown: () -> Bool
@@ -311,6 +313,8 @@ final class UISmokeRuntime {
 
     init(configuration: UISmokeConfiguration, store: Store, window: @escaping () -> NSWindow?,
          statusButton: @escaping () -> NSStatusBarButton?,
+         showDesktop: @escaping () -> Void,
+         marsOpeningAnimation: @escaping () -> MarsOpeningAnimation?,
          hideSurface: @escaping () -> Void,
          showSurface: @escaping () -> Void,
          isSurfaceShown: @escaping () -> Bool,
@@ -324,6 +328,8 @@ final class UISmokeRuntime {
         self.store = store
         self.window = window
         self.statusButton = statusButton
+        self.showDesktop = showDesktop
+        self.marsOpeningAnimation = marsOpeningAnimation
         self.hideSurface = hideSurface
         self.showSurface = showSurface
         self.isSurfaceShown = isSurfaceShown
@@ -388,8 +394,9 @@ final class UISmokeRuntime {
     // progress before a scenario timeout can run.
     private func scheduleHardTimeout() {
         let resultURL = configuration.resultURL
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 43) {
-            let output = "UISmoke\nFAIL after hard timeout: 43s"
+        let timeout: TimeInterval = UISmokeConfiguration.menuIdentityCaptureWasRequested ? 68 : 43
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout) {
+            let output = "UISmoke\nFAIL after hard timeout: \(timeout)s"
             try? output.write(to: resultURL, atomically: true, encoding: .utf8)
             fputs(output + "\n", stderr)
             Darwin._exit(124)
@@ -4124,7 +4131,64 @@ extension UISmokeRuntime {
         try require(restored.data.primaryID == nil && restored.primary?.id == nearest.id
                     && restored.statusPresentation.icon == .mars, "durable reload selected an automatic menu favorite")
         try captureApplicationIdentity()
-        pass("actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload;24captures")
+        try await runMarsOpeningAnimationChecks()
+        pass("actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload; status-only opening turn and24captures")
+    }
+
+    private func runMarsOpeningAnimationChecks() async throws {
+        let animator = try requireValue(marsOpeningAnimation(), "opening animation owner")
+        let button = try requireValue(statusButton(), "opening animation button")
+        let originalData = store.data
+        let previousDockContent = NSApp.dockTile.contentView
+        hideSurface()
+        showSurface()
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            try require(!animator.isRunning && button.layer?.animation(forKey: marsOpeningRotationKey) == nil,
+                        "Reduce Motion started a planet turn")
+            try require(NSApp.dockTile.contentView === previousDockContent, "opening modified the static Dock")
+            pass("opening turn stays static under the host Reduce Motion setting; Dock is unchanged")
+            return
+        }
+        try require(animator.isRunning && button.layer?.animation(forKey: marsOpeningRotationKey) != nil,
+                    "actual panel opening did not start the Mars turn")
+        try await waitFor("actual status presentation layer moving") {
+            guard let pose = button.layer?.presentation()?.transform else { return false }
+            return abs(pose.m12) > 0.02
+        }
+        try require(NSApp.dockTile.contentView === previousDockContent, "panel opening modified the static Dock")
+        timer.start(minutes: 5)
+        try await waitFor("timer interrupts Mars only") {
+            button.layer?.animation(forKey: marsOpeningRotationKey) == nil
+                && button.layer?.animation(forKey: timerRunningPulseKey) != nil
+        }
+        timer.delete()
+        try await requireMenuButton(title: "", icon: .mars)
+        try require(!animator.isRunning, "timer deletion restarted an interrupted Mars turn")
+        hideSurface()
+        showDesktop()
+        let started = CACurrentMediaTime()
+        try require(animator.isRunning, "desktop opening did not start the status turn")
+        try await waitFor("status quarter-turn presentation", timeout: 5) { CACurrentMediaTime() - started >= 3 }
+        let quarter = try requireValue(button.layer?.presentation()?.transform, "quarter-turn presentation")
+        try require(abs(quarter.m11) < 0.3 && abs(quarter.m12) > 0.8,
+                    "status presentation did not reach its quarter turn")
+        try require(NSApp.dockTile.contentView === previousDockContent, "quarter turn modified the static Dock")
+        try await waitFor("status half-turn presentation", timeout: 5) { CACurrentMediaTime() - started >= 6 }
+        let half = try requireValue(button.layer?.presentation()?.transform, "half-turn presentation")
+        try require(half.m11 < -0.8 && abs(half.m12) < 0.3, "status presentation did not reach its half turn")
+        try await waitFor("one real 12-second status turn finishing", timeout: 8) { !animator.isRunning }
+        try require(CACurrentMediaTime() - started >= 11.8, "an older completion stopped the replacement turn early")
+        try require(NSApp.dockTile.contentView === previousDockContent
+                    && button.layer?.animation(forKey: marsOpeningRotationKey) == nil,
+                    "finished status turn changed Dock content or retained animation")
+        showSurface()
+        try require(animator.isRunning, "next actual opening did not start a fresh status turn")
+        hideSurface()
+        showSurface()
+        try require(animator.isRunning, "repeated opening lost the status turn")
+        animator.stop()
+        try require(store.data == originalData && timer.phase == .idle, "opening turn mutated events or timer")
+        pass("actual panel/desktop openings start one12s status-only turn; presentation advances through quarter/half, timer interrupts without resume, completion removes animation, repeats restart; Dock content and events stay unchanged")
     }
 
     private func requireMarsAppearanceTransitions() async throws {

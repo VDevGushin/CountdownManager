@@ -1,0 +1,17 @@
+{
+  "mode": "menu",
+  "app": "/private/tmp/countdown-release-1.17.0.jtqjbbnb/candidate/Countdown Manager.app",
+  "version": "1.17.0",
+  "build": "32",
+  "executable_before": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "executable_after": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "unchanged": true,
+  "launch_argument": "--ui-smoke-menu-identity-captures",
+  "isolated_home": "/private/tmp/countdown-release-1.17.0.jtqjbbnb/native-menu-previews-status-only-final",
+  "launch_exit": 0,
+  "launcher_timed_out": false,
+  "main_thread_stall": false,
+  "seconds": 22.221,
+  "status": "PASS",
+  "result": "UISmoke\n✓ same native button changes colored Mars Light/Dark/Light directly and through window inheritance; application appearance follows actual button; no event/timer mutation\n✓ actual panel/desktop openings start one12s status-only turn; presentation advances through quarter/half, timer interrupts without resume, completion removes animation, repeats restart; Dock content and events stay unchanged\n✓ actual native status button: colored vector Mars/template K1, Tomorrow/Today, emoji, timer precedence/restoration, clear/delete/durable reload; status-only opening turn and24captures\nPASS: 3/3"
+}

@@ -1,5 +1,37 @@
 # Preparing signed updates
 
+## Release 1.17.0 / build 32 — locally verified, not published
+
+The next release is **1.17.0 / build 32; locally verified and signed, not published**. It unifies the static Dock
+icon with the menu Mars palette and adds one linear 12-second turn **only to idle Mars in the
+status bar** when the panel or desktop opens. Dock artwork stays static. Timer/favorite priority,
+Reduce Motion, event data and the existing signed-update protocol remain unchanged.
+
+The final production candidate executable is
+`7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d`.
+Strict lint passed **0/73** and final CoreChecks/UIChecks passed exit 0. Fresh native menu checks
+passed **3/3** in **22.221 seconds** with 24 PNGs; desktop passed **27/27** in **50.843 seconds**
+with 110 PNGs. The early status-only completion attempt remains a failure; the accepted repeat
+exercises explicit end-of-cycle removal. The former animated-Dock prototype remains superseded.
+
+A fresh genuine isolated **1.16.0/31 → 1.17.0/32** Sparkle update passed: PID **32729** became
+one automatically relaunched PID **32940** before any UI re-query or manual reopening. Synthetic
+JSON bytes, checklist, favorite and Dark preference were preserved. The fixture used a disposable
+key and loopback HTTP, with unchanged unsigned candidate code; it does not establish public HTTPS.
+[Update receipt](images/v1.17.0/genuine-update-final.json) and
+[public-key-only artifact audit](images/v1.17.0/artifact-audit.json) record the separate boundaries.
+The signed ZIP is **5,659,203 bytes**, SHA-256
+`1902eff2cb8c4c93cd1974e2357989f864a95d537c8d82f4d192948fe9885986`;
+the 1,299-byte feed is `e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c820bd9707`.
+[Current release status](releases/v1.17.0.md) records local readiness; publication and anonymous
+download verification remain outstanding.
+
+The confirmed published channel remains **1.16.0 / build 31** until the new release is published
+and its anonymous downloads are checked. The production bundle ID, signing key and stable feed
+must remain unchanged.
+
+## Published 1.16.0 / build 31 — retained release evidence
+
 Release **1.16.0 / build 31 is published as Latest; anonymous ZIP and appcasts are verified**. It includes task-first
 ordering, a 15-file cap, 36-point mini previews and separate searchable file libraries.
 The current desktop library uses the same native SwiftUI sheet as Settings and the editor,
@@ -97,8 +129,10 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The current published version-specific archive URL is
+The confirmed published version-specific archive URL remains
 `https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip`.
+The next release preparation uses tag `v1.17.0` and archive `CountdownManager-1.17.0-32.zip`;
+that candidate URL is not yet a verified public download.
 The signed `appcast.xml` and ZIP are published together as Latest; anonymous downloads match
 the locally signed SHA-256 values. Keep the canonical stable feed above unchanged for future releases.
 Keep archive URLs tied to their version tags; keep the
@@ -159,7 +193,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.16.0 COUNTDOWN_BUILD_NUMBER=31 \
+  COUNTDOWN_VERSION=1.17.0 COUNTDOWN_BUILD_NUMBER=32 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -169,17 +203,16 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above configure the local 1.16.0 / build 31 preparation procedure; its evidence
-is tracked in [releases/v1.16.0.md](releases/v1.16.0.md). They do not establish publication.
-For subsequent releases, change the version,
-build number and archive tag together, using a `CFBundleVersion` greater than the latest distributed
-build. Distributed 1.16.0 uses build 31; previous 1.15.0 uses build 30. Keep `local.countdownmanager.app`
-and existing data locations unchanged.
+The numbers above configure preparation of 1.17.0 / build 32; local acceptance and signed-artifact
+status are tracked in [releases/v1.17.0.md](releases/v1.17.0.md). Commands alone do not establish
+acceptance or publication. The last confirmed distributed version is 1.16.0 / build 31. For subsequent releases,
+change the version, build number and archive tag together, using a `CFBundleVersion` greater than
+the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
 they do not install in `/Applications`, commit, upload, publish or modify production event data.
 

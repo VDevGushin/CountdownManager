@@ -8,6 +8,7 @@ No installed application or user data is read or changed.
 
 from pathlib import Path
 import argparse
+import json
 import math
 import os
 import subprocess
@@ -18,8 +19,8 @@ ROOT = Path(__file__).resolve().parent.parent
 RESOURCES = ROOT / "Resources"
 KAPPA = 4 * (math.sqrt(2) - 1) / 3
 APP_COLORS = {
-    "Light": ("#b7472c", "#fffaf2", None),
-    "Dark": ("#211c19", "#f2e6d4", None),
+    "Light": ("#f5f1e8", "#303038", "#b44e38"),
+    "Dark": ("#211c19", "#f0eee9", "#ef9b81"),
 }
 
 
@@ -64,6 +65,17 @@ def rounded_rect(x, y, width, height, radius):
 MARS_SVG = '''<clipPath id="mars-circle"><circle cx="50" cy="50" r="47"/></clipPath><path clip-path="url(#mars-circle)" fill="currentColor" fill-rule="evenodd" d="M50 3a47 47 0 1 1 0 94 47 47 0 1 1 0-94ZM-8 35C12 25 25 32 43 43S77 47 108 59V68C77 56 59 63 39 51S12 36-8 45ZM68 23a7.5 7.5 0 1 1 15 0 7.5 7.5 0 1 1-15 0ZM18 64a5.5 5.5 0 1 1 11 0 5.5 5.5 0 1 1-11 0ZM54 76a4 4 0 1 1 8 0 4 4 0 1 1-8 0Z"/>'''
 CALENDAR_SVG = '''<g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M7 3v4M17 3v4"/></g>'''
 MARS_BAND_SVG = "M-8 35C12 25 25 32 43 43S77 47 108 59V68C77 56 59 63 39 51S12 36-8 45Z"
+# The same band, trimmed at its four intersections with the radius-47 circle.
+# A bounded path preserves the silhouette in Icon Composer without SVG clipPath
+# import differences or painting outside the planet in the stripe's new color.
+MARS_APP_BAND_SVG = (
+    "M7.31776783 30.3219143C19.61606013 29.20206059 30.00502578 35.05862687 43 43"
+    "C58.67657851 52.58013131 72.83615014 48.50720075 96.708857 55.22328228"
+    "A47 47 0 0 1 94.93756269 63.77009292"
+    "C71.58197572 57.66637199 56.01474142 61.20884485 39 51"
+    "C23.54754763 41.72852858 15.85538949 37.82956855 3.93196788 40.6867612"
+    "A47 47 0 0 1 7.31776783 30.3219143Z"
+)
 MARS_BODY_SVG = "M50 3a47 47 0 1 1 0 94 47 47 0 1 1 0-94ZM68 23a7.5 7.5 0 1 1 15 0 7.5 7.5 0 1 1-15 0ZM18 64a5.5 5.5 0 1 1 11 0 5.5 5.5 0 1 1-11 0ZM54 76a4 4 0 1 1 8 0 4 4 0 1 1-8 0Z"
 MENU_COLORS = {
     "Light": ("#303038", "#b44e38"),
@@ -174,6 +186,16 @@ def generate_menu_colors():
 
 
 def generate_app_icons():
+    composer_path = RESOURCES / "AppIcon.icon/icon.json"
+    composer = json.loads(composer_path.read_text())
+    composer["fill-specializations"] = [
+        {
+            **({"appearance": "dark"} if appearance == "Dark" else {}),
+            "value": {"solid": "extended-srgb:" + ",".join(number(c) for c in rgb(colors[0])) + ",1"},
+        }
+        for appearance, colors in APP_COLORS.items()
+    ]
+    composer_path.write_text(json.dumps(composer, indent=2) + "\n")
     with tempfile.TemporaryDirectory(prefix="countdown-icons-") as temporary:
         stage = Path(temporary)
         renderer = stage / "render.swift"
@@ -187,10 +209,7 @@ def generate_app_icons():
         composer_assets.mkdir(parents=True, exist_ok=True)
         for appearance, (background, foreground, stripe) in APP_COLORS.items():
             name = f"AppIcon{appearance}"
-            # FINAL Lavish geometry: draw the planet minus its crater holes
-            # directly, then paint the band in the tile background. Clipping an
-            # already filled circular edge caused the rejected thin rim.
-            mark_svg = '<path fill="' + foreground + '" fill-rule="evenodd" d="' + MARS_BODY_SVG + '"/><path fill="' + background + '" d="' + MARS_BAND_SVG + '"/>'
+            mark_svg = '<path fill="' + foreground + '" fill-rule="evenodd" d="' + MARS_BODY_SVG + '"/><path fill="' + stripe + '" d="' + MARS_APP_BAND_SVG + '"/>'
             glyph_svg = svg("0 0 100 100", '<g transform="translate(15 15) scale(.7)">' + mark_svg + "</g>")
             preview.joinpath(f"Mars{appearance}.svg").write_text(glyph_svg)
             # Explicit compound-path holes survive Apple's SVG importer; no
@@ -204,11 +223,7 @@ def generate_app_icons():
             iconset = stage / f"{name}.iconset"
             iconset.mkdir()
             icon_pdf = stage / f"{name}.pdf"
-            mark_path = "\n".join([
-                command(*rgb(foreground), "rg"), circle(50, 50, 47),
-                circle(75.5, 23, 7.5), circle(23.5, 64, 5.5), circle(58, 76, 4), "f*",
-                command(*rgb(background), "rg"), mars_band_path(), "f",
-            ])
+            mark_path = colored_mars_path(foreground, stripe)
             drawing = "\n".join([
                 command(*rgb(background), "rg"), rounded_rect(0, 0, 100, 100, 22.5), "f",
                 "q", ".7 0 0 .7 15 15 cm", mark_path, "Q",

@@ -82,7 +82,7 @@ run_smoke() {
     local stdout_path="$test_home/ui-smoke.stdout"
     local stderr_path="$test_home/ui-smoke.stderr"
     local timeout_seconds=45
-    if [[ "$launch_argument" == "--ui-smoke-desktop" ]]; then timeout_seconds=70; fi
+    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" ]]; then timeout_seconds=70; fi
     mkdir -p "$test_home"
     touch "$test_home/.countdown-ui-smoke-environment"
 
@@ -304,7 +304,7 @@ case "$mode" in
         build_ui_app
         run_smoke visual-captures --ui-smoke-menu-identity-captures
         copy_capture_evidence
-        echo "PASS: focused native menu identity, transitions and24captures"
+        echo "PASS: focused native menu identity, transitions, status-only opening turn and24captures"
         ;;
     completed-subtasks-capture)
         build_ui_app

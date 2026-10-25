@@ -1,0 +1,80 @@
+{
+  "stage": "after",
+  "recorded_at": "2026-10-25T09:33:05.973245+00:00",
+  "app": "/private/tmp/countdown-1.17.0-update.8hq_hqq2/older/Countdown Manager.app",
+  "version": "1.17.0",
+  "build": "32",
+  "pid": 32940,
+  "process": "32940 /private/tmp/countdown-1.17.0-update.8hq_hqq2/older/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "host_sha256": "57a27845320b8ecb9b4eb549bb60008e0838feccf814cd6b8ec9cf0b5ae11bae",
+  "data_sha256": "2a9b65bf7102d2bbc838181f35b203d9a9e77a5f894bf342dfd118ff4562dbdd",
+  "data": {
+    "primaryID": "11500000-0000-4000-8000-000000000001",
+    "items": [
+      {
+        "id": "11500000-0000-4000-8000-000000000001",
+        "title": "Проверка обновления 1.16",
+        "note": "Только вымышленные данные для проверки Sparkle.",
+        "date": {
+          "year": 2026,
+          "month": 11,
+          "day": 24
+        },
+        "emoji": "📦",
+        "showsWeather": false,
+        "usesAutomaticTitle": false,
+        "subtasks": [
+          {
+            "id": "11500000-0000-4000-8000-000000000011",
+            "text": "Сохранить контрольные данные",
+            "isCompleted": true
+          },
+          {
+            "id": "11500000-0000-4000-8000-000000000012",
+            "text": "Проверить перезапуск",
+            "isCompleted": false
+          }
+        ]
+      },
+      {
+        "id": "11500000-0000-4000-8000-000000000002",
+        "title": "Следующее событие",
+        "date": {
+          "year": 2026,
+          "month": 12,
+          "day": 24
+        },
+        "emoji": "",
+        "showsWeather": false,
+        "usesAutomaticTitle": false,
+        "subtasks": []
+      }
+    ]
+  },
+  "preferences_suite": "local.countdownmanager.ui-smoke.countdown-1.17.0-update.8hq_hqq2.test-home",
+  "preferences": {
+    "appearance.selection": "dark"
+  },
+  "embedded_isolated_home": "/private/tmp/countdown-1.17.0-update.8hq_hqq2/test-home",
+  "codesign_deep_strict": true,
+  "same_application_path": true,
+  "production_private_key_accessed": false,
+  "production_app_or_data_modified": false,
+  "old_pid": 32729,
+  "automatic_relaunch_pid": 32940,
+  "unsigned_candidate_code_unchanged_in_test_fixture": true,
+  "synthetic_events_and_checklist_preserved": true,
+  "synthetic_json_bytes_unchanged": true,
+  "dark_preference_preserved": true,
+  "disposable_test_key_only": true,
+  "operator_saw_automatic_relaunch": false,
+  "actual_update_verified": true,
+  "technical_status": "PASS",
+  "public_https_or_first_install_acceptance": false,
+  "genuine_published_baseline_host_sha256": "5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254",
+  "production_candidate_host_sha256": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "acceptance_basis": "Independent observer detected one automatically relaunched new host before any CUA state query or manual reopening.",
+  "no_manual_open_or_ui_query_between_install_and_new_process": true,
+  "settings_after_update_version": "1.17.0",
+  "screenshot": "genuine-update-after.png"
+}

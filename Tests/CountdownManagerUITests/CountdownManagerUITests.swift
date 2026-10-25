@@ -79,6 +79,8 @@ enum UIChecks {
         precondition(countdownTimerMaximumMinutes == 120)
         precondition(timerCompletionAlertDisplayDuration == 5)
         testCompletionIconMotion()
+        testMarsOpeningTurn()
+        testMarsOpeningLifecycle()
         let presetMotion = timerPresetSelectionMotion(reduceMotion: false)
         guard case let .slide(duration) = presetMotion else {
             preconditionFailure("timer preset selection must slide when motion is allowed")

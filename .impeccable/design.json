@@ -597,6 +597,11 @@
         "name": "reduced-motion",
         "value": "immediate",
         "purpose": "System Reduce Motion bypasses those transitions."
+      },
+      {
+        "name": "mars-opening",
+        "value": "linear 12s; one 360-degree turn",
+        "purpose": "On panel/desktop opening, rotate only the idle Mars status symbol once. The Dock icon always stays static; Reduce Motion suppresses the turn."
       }
     ],
     "breakpoints": [],
@@ -711,6 +716,11 @@
         "name": "The Paper Depth Rule",
         "body": "Use tonal surfaces for event grouping and reserve the slight rotation for calendar leaves; use an inset outline without blurred edge shadows.",
         "section": "elevation"
+      },
+      {
+        "name": "The Mars Opening Rule",
+        "body": "Share status Mars body/stripe colors with the static Dock icon: Light tile #f5f1e8, planet #303038, stripe #b44e38; Dark tile #211c19, planet #f0eee9, stripe #ef9b81. Only the status symbol makes one linear 12-second turn on opening, with no loop and no motion under Reduce Motion. Favorite and timer presentations retain priority.",
+        "section": "colors"
       }
     ],
     "dos": [

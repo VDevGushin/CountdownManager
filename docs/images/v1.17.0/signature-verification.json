@@ -1,0 +1,20 @@
+{
+  "artifacts" : [
+    {
+      "name" : "archive",
+      "rejectsDamagedMessage" : true,
+      "rejectsDamagedSignature" : true,
+      "signedBytes" : 5659203,
+      "valid" : true
+    },
+    {
+      "name" : "feed",
+      "rejectsDamagedMessage" : true,
+      "rejectsDamagedSignature" : true,
+      "signedBytes" : 1155,
+      "valid" : true
+    }
+  ],
+  "privateKeyAccessed" : false,
+  "verifier" : "Apple CryptoKit Curve25519.Signing.PublicKey.isValidSignature"
+}

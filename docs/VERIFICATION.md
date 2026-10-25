@@ -207,10 +207,19 @@ Core/UI checks cover invalid/expired favorites, civil boundaries, Russian labels
 persistence invariants.
 
 The 24 PNGs comprise 16 actual native status-button cache renders, six panel captures and two
-AppKit renders of the bundled AppIcon. Light/Dark is explicitly overridden only in the isolated
-application; user/global appearance settings and production data are not changed. Status PNGs
-render a control's model state, not a screen recording of wallpaper compositing or live timer
-animation. The unchanged timer animation has its existing regression checks. The copied manifest
+AppKit renders of the bundled Light ICNS fallback. The real opening scenario checks the status
+layer's quarter/half-turn presentation transforms over one 12-second cycle, panel/desktop
+triggers, timer interruption without resume, automatic completion and another opening.
+It asserts that the app's Dock content view stays unchanged throughout; production code no
+longer installs or redraws any custom Dock content. If the host has Reduce Motion enabled,
+the scenario instead verifies suppression without changing that global preference.
+Deterministic UIChecks separately cover Reduce Motion, restart/stop, unrelated animation
+preservation, full-circle matrices, linear phases and center stability across layer anchors.
+Light/Dark is explicitly overridden only in the isolated application; user/global appearance
+settings and production data are not changed. Static PNGs render a control's model state,
+not a screen recording of wallpaper compositing or live animation. Numerical presentation-layer
+samples establish movement but do not prove perceived smoothness or external physical clicks.
+The unchanged timer animation has its existing regression checks. The copied manifest
 records version/build and executable SHA-256; the successful result and tested `.app` are retained
 with the images. External status clicks, Spaces and real menu wallpaper contrast retain the manual
 shell boundary below; these captures do not claim to re-prove it.
@@ -228,8 +237,10 @@ in the shipped menu images.
 Light ICNS fallback and Icon Composer glyph layers without changing any menu resources.
 `python3 scripts/compile_app_icon.py --preview` requires full Xcode 26 or newer; it compiles
 `Resources/AppIcon.icon` into committed `Resources/Assets.car`, checks Aqua/Dark icon stacks
-and legacy MultiSized renditions, and exports Default/Dark source previews. Normal builds only
-copy that catalog. Verify the metadata and resource hashes in the exact production bundle.
+and legacy MultiSized renditions, and exports Default/Dark source previews. Normal builds
+copy the catalog and ICNS fallback. The Dock icon is always static and its system presentation
+is never replaced by the opening effect. Verify metadata and resource hashes in the exact
+tested bundle.
 
 Keep source previews distinct from system resolution. Icon Composer PNGs render the source
 document, not the compiled CAR. A standalone AppKit probe may load the actual app through

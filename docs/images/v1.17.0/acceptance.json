@@ -1,0 +1,34 @@
+{
+  "version": "1.17.0",
+  "build": "32",
+  "executable_sha256": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "strict_lint": {
+    "files": 73,
+    "violations": 0
+  },
+  "fast": "PASS CoreChecks and UIChecks, final exit 0",
+  "native_menu": {
+    "status": "PASS",
+    "groups": "3/3",
+    "images": 24,
+    "seconds": 22.221
+  },
+  "native_desktop": {
+    "status": "PASS",
+    "groups": "27/27",
+    "images": 110,
+    "seconds": 50.843
+  },
+  "artifact_public_key_audit": "PASS",
+  "genuine_update": "PASS 1.16.0/31 to 1.17.0/32, one automatically relaunched process, data and Dark preserved",
+  "test_fixture_changes_after_candidate_build": [
+    "Tests/CountdownManagerUITests/CountdownManagerUITests.swift",
+    "Tests/CountdownManagerUITests/MarsIconChecks.swift"
+  ],
+  "application_build_inputs_unchanged": true,
+  "published": false,
+  "limitations": [
+    "Static captures do not establish perceived animation smoothness or real wallpaper contrast.",
+    "Older macOS, Intel, Gatekeeper first installation, Spaces and full VoiceOver are not newly validated."
+  ]
+}
