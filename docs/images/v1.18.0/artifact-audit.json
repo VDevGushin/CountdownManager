@@ -1,0 +1,56 @@
+{
+  "audited_at": "2026-10-25T23:08:21.833774+00:00",
+  "version": "1.18.0",
+  "build": "33",
+  "identifier": "local.countdownmanager.app",
+  "archive": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/release/CountdownManager-1.18.0-33.zip",
+  "archive_sha256": "2e27b1cc53d531153f8576bc97d46957b4efa8b0f99a10da0d47c1117c93eb91",
+  "archive_bytes": 5887335,
+  "feed": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/release/appcast.xml",
+  "feed_sha256": "7f713dd1f1e0979952845bb0c2e31e3e0dc0a81e0831c21bf57d09c26c70c7b9",
+  "feed_bytes": 1299,
+  "host_sha256": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "public_key_sha256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "cryptographic_verification": {
+    "artifacts": [
+      {
+        "name": "archive",
+        "rejectsDamagedMessage": true,
+        "rejectsDamagedSignature": true,
+        "signedBytes": 5887335,
+        "valid": true
+      },
+      {
+        "name": "feed",
+        "rejectsDamagedMessage": true,
+        "rejectsDamagedSignature": true,
+        "signedBytes": 1155,
+        "valid": true
+      }
+    ],
+    "privateKeyAccessed": false,
+    "verifier": "Apple CryptoKit Curve25519.Signing.PublicKey.isValidSignature"
+  },
+  "feed_signed_prefix_length": 1155,
+  "feed_signature_trailer_exactly_bounded": true,
+  "archive_member_paths_safe": true,
+  "archive_contains_only_app_and_resource_fork_metadata": true,
+  "production_channel_matches_published_baseline_public_key": true,
+  "baseline_version": "1.17.0",
+  "baseline_build": "32",
+  "baseline_executable_sha256": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "arm64_only_verified": true,
+  "macho_minimum_macos": "13.0",
+  "macho_build_load_command": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/candidate/Countdown Manager.app/Contents/MacOS/CountdownManager:\nLoad command 11\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 13.0\n      sdk 13.0\n   ntools 1\n     tool LD\n  version 27037.1",
+  "static_resources_match_baseline": true,
+  "sparkle_version": "2.10.0",
+  "no_test_flags_or_loopback_exemptions": true,
+  "no_extra_resources_or_private_key_files": true,
+  "extracted_codesign_deep_strict_verified": true,
+  "extracted_tree_matches_candidate": true,
+  "tree_entries": 166,
+  "archive_members": 397,
+  "published_by_auditor": false,
+  "private_key_accessed_by_auditor": false,
+  "note": "Independent public-key-only local artifact audit; not GUI installation, notarization or public-download acceptance."
+}

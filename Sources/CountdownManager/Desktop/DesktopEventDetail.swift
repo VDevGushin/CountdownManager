@@ -31,7 +31,7 @@ struct DesktopEventDetail: View {
                 Divider()
             }
             ScrollView {
-                VStack(alignment: .leading, spacing: 26) {
+                VStack(alignment: .leading, spacing: 20) {
                     eventIdentity
                     note
                     checklist
@@ -40,7 +40,7 @@ struct DesktopEventDetail: View {
                                            showAll: showAttachments)
                         .id(item.id)
                 }
-                .padding(26)
+                .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -145,45 +145,54 @@ struct DesktopEventDetail: View {
     }
 
     private var eventIdentity: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Text(item.title)
-                .font(.custom("Georgia", size: 29)).tracking(-0.5)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-            HStack(alignment: .center, spacing: 20) {
-                DesktopCalendarLeaf(item: item, featured: true, role: "detail")
-                VStack(alignment: .leading, spacing: 8) {
-                    DesktopEventDateLabel(item: item, dateLabel: presentation.dateLabel, role: "detail")
-                        .font(.system(size: 13))
-                    Text(presentation.remainingLabel)
-                        .font(.custom("Georgia", size: 23))
-                        .foregroundStyle(presentation.isToday
-                            ? AuroraInstrument.todayColor(for: colorScheme,
-                                                          highContrast: accessibilitySettings.prefersHighContrast)
-                            : AuroraInstrument.accent(for: colorScheme,
-                                                      highContrast: accessibilitySettings.prefersHighContrast))
-                    DesktopForecastSlot(forecast: item.showsWeather ? weather.forecast(for: item.date) : nil,
-                                        role: "detail.\(item.id)")
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 12) {
+                Text(item.title)
+                    .font(.custom("Georgia", size: 27)).tracking(-0.5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                DesktopCalendarLeaf(item: item, featured: false, role: "detail")
+                    .fixedSize()
+            }
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                DesktopEventDateLabel(item: item, dateLabel: presentation.dateLabel, role: "detail")
+                    .font(.system(size: 12))
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                if item.showsWeather, let forecast = weather.forecast(for: item.date) {
+                    Text("·")
+                        .accessibilityHidden(true)
+                        .uiSmokeControl(id: "desktop.detail.weather.separator.\(item.id)")
+                    DesktopForecastLabel(forecast: forecast)
+                        .fixedSize()
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                        .uiSmokeControl(id: "desktop.weather.detail.\(item.id)", value: { "available" })
                 }
             }
+            .frame(height: 18, alignment: .leading)
+            .uiSmokeControl(id: "desktop.detail.metadata.\(item.id)")
+            Text(presentation.remainingLabel)
+                .font(.custom("Georgia", size: 23))
+                .foregroundStyle(presentation.isToday
+                    ? AuroraInstrument.todayColor(for: colorScheme,
+                                                  highContrast: accessibilitySettings.prefersHighContrast)
+                    : AuroraInstrument.accent(for: colorScheme,
+                                              highContrast: accessibilitySettings.prefersHighContrast))
         }
         .uiSmokeControl(id: "desktop.detail.identity")
     }
 
+    @ViewBuilder
     private var note: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionLabel("Заметка")
-            if let note = presentation.note, !note.isEmpty {
+        if let note = presentation.note, !note.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                sectionLabel("Заметка")
                 Text(note).font(.system(size: 13)).lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-            } else {
-                Text("Можно добавить пару слов о событии.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
+            .uiSmokeControl(id: "desktop.detail.note")
         }
-        .uiSmokeControl(id: "desktop.detail.note")
     }
 
     private var checklist: some View {

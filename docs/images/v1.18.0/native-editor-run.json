@@ -1,0 +1,17 @@
+{
+  "mode": "editor",
+  "app": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/candidate/Countdown Manager.app",
+  "version": "1.18.0",
+  "build": "33",
+  "executable_before": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "executable_after": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "unchanged": true,
+  "launch_argument": "--ui-smoke-editor-workflows",
+  "isolated_home": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/native-editor-previews",
+  "launch_exit": 0,
+  "launcher_timed_out": false,
+  "main_thread_stall": false,
+  "seconds": 9.246,
+  "status": "PASS",
+  "result": "UISmoke\n✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input\n✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry\nPASS: 5/5"
+}

@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state|editor|desktop) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture)
+    fast|ui|full|weather|empty-state|editor|desktop|attachments) ;;
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -82,7 +82,11 @@ run_smoke() {
     local stdout_path="$test_home/ui-smoke.stdout"
     local stderr_path="$test_home/ui-smoke.stderr"
     local timeout_seconds=45
-    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" ]]; then timeout_seconds=70; fi
+    local launch_arguments=("$launch_argument")
+    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then timeout_seconds=70; fi
+    if [[ "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then
+        launch_arguments=(--ui-smoke-desktop --ui-smoke-attachment-preview)
+    fi
     mkdir -p "$test_home"
     touch "$test_home/.countdown-ui-smoke-environment"
 
@@ -97,7 +101,7 @@ run_smoke() {
         --env "COUNTDOWN_MANAGER_TEST_HOME=$test_home" \
         --stdout "$stdout_path" \
         --stderr "$stderr_path" \
-        "$app_path" --args "$launch_argument"; then
+        "$app_path" --args "${launch_arguments[@]}"; then
         echo "UISmoke could not launch through LaunchServices. Run it from a normal logged-in Aqua session, not a restricted shell." >&2
         [[ -f "$stderr_path" ]] && /bin/cat "$stderr_path" >&2
         return 69
@@ -259,6 +263,21 @@ run_capture_checks() {
 }
 
 case "$mode" in
+    attachments|attachments-capture)
+        build_ui_app
+        run_smoke attachments-smoke --ui-smoke-attachment-preview
+        if [[ "$mode" == "attachments-capture" ]]; then
+            destination_dir="$capture_output_dir/countdown-attachments-captures-$(/bin/date +%Y%m%d-%H%M%S)-$$"
+            test -s "$verify_root/attachments-smoke/Captures/manifest.json"
+            mkdir "$destination_dir"
+            cp "$verify_root/attachments-smoke/Captures/"*.png "$destination_dir/"
+            cp "$verify_root/attachments-smoke/Captures/manifest.json" "$destination_dir/"
+            cp "$verify_root/attachments-smoke/ui-smoke-result.txt" "$destination_dir/"
+            ditto "$app_path" "$destination_dir/Countdown Manager.app"
+            echo "Attachment evidence: $destination_dir"
+        fi
+        echo "PASS: native attachment shelves, libraries and quick preview workflows"
+        ;;
     desktop|desktop-capture)
         build_ui_app
         run_smoke desktop-smoke --ui-smoke-desktop

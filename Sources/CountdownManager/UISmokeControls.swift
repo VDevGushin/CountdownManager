@@ -215,7 +215,8 @@ private struct UISmokeControlModifier: ViewModifier {
 
     private var measuresNativeFrame: Bool {
         switch id {
-        case "desktop.overview.header", "desktop.overview.date", "desktop.weather.overview", "desktop.browser", "editor.scroll": return true
+        case "desktop.overview.header", "desktop.overview.date", "desktop.weather.overview", "desktop.browser", "editor.scroll",
+             "desktop.detail.identity", "desktop.detail.note", "desktop.detail.checklist": return true
         default:
             // Custom Layout placement can leave geometry preferences stale after a retained card resizes.
             return ["desktop.card.", "desktop.favorite.identity.", "desktop.favorite.metadata.",
@@ -223,6 +224,10 @@ private struct UISmokeControlModifier: ViewModifier {
                     "desktop.date.browser.", "desktop.weather.browser.", "desktop.attachments.indicator.",
                     "editor.attachment.thumbnail.", "editor.attachment.label.",
                     "desktop.attachment.thumbnail.", "panel.attachment.thumbnail.",
+                    "desktop.attachment.preview-area.", "panel.attachment.preview-area.",
+                    "desktop.attachment.tile.", "panel.attachment.tile.",
+                    "desktop.attachments.shelf.", "panel.attachments.shelf.",
+                    "desktop.attachments.list.open.", "panel.attachments.list.open.",
                     "desktop.attachments.open.", "panel.attachments.open."]
                 .contains { id.hasPrefix($0) }
         }

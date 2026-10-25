@@ -1,0 +1,38 @@
+[
+  {
+    "appActive" : true,
+    "key" : true,
+    "keyWindowIsMini" : true,
+    "nativeRendererCount" : 1,
+    "occlusion" : 8194,
+    "oldRendererItemCleared" : false,
+    "onActiveSpace" : true,
+    "phase" : "before-status-hide",
+    "previewIdentity" : "0E69BE40-6BD1-44E2-AB53-D60DC389BCAC",
+    "visible" : true
+  },
+  {
+    "appActive" : true,
+    "key" : false,
+    "keyWindowIsMini" : false,
+    "nativeRendererCount" : 0,
+    "occlusion" : 8192,
+    "oldRendererItemCleared" : true,
+    "onActiveSpace" : true,
+    "phase" : "hidden-occlusion-settled",
+    "previewIdentity" : "0E69BE40-6BD1-44E2-AB53-D60DC389BCAC",
+    "visible" : false
+  },
+  {
+    "appActive" : true,
+    "key" : true,
+    "keyWindowIsMini" : true,
+    "nativeRendererCount" : 1,
+    "occlusion" : 8194,
+    "oldRendererItemCleared" : true,
+    "onActiveSpace" : true,
+    "phase" : "reopened-occlusion-settled",
+    "previewIdentity" : "0E69BE40-6BD1-44E2-AB53-D60DC389BCAC",
+    "visible" : true
+  }
+]

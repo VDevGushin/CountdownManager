@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "actualUpdateVerified": true,
+  "fromVersion": "1.17.0",
+  "fromBuild": "32",
+  "toVersion": "1.18.0",
+  "toBuild": "33",
+  "oldPID": 60174,
+  "automaticNewPID": 60377,
+  "singleNewProcessObservedBeforeAnyUIReadOrManualOpen": true,
+  "independentWatcher": {
+    "status": "PASS",
+    "observations": [
+      {
+        "pids": [
+          60174
+        ],
+        "version": "1.17.0",
+        "build": "32",
+        "recorded_at": "2026-10-25T23:36:20.369767+00:00"
+      },
+      {
+        "pids": [
+          60377
+        ],
+        "version": "1.18.0",
+        "build": "33",
+        "recorded_at": "2026-10-25T23:36:32.401845+00:00"
+      }
+    ],
+    "ui_access_performed": false,
+    "new_pid_observed_without_manual_open_or_ui_read": 60377,
+    "requires_root_confirmation_no_external_reopen": true
+  },
+  "sameInstallPath": true,
+  "syntheticEvents": 2,
+  "legacyAttachmentsPreserved": 17,
+  "jsonOwnedBytesMarkersInventoryFilesUnchanged": 35,
+  "darkPreferencePreserved": true,
+  "legacyLastFileVisibleAfterUpdate": "17/17, Next disabled",
+  "productionBaselineHostSHA256": "7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d",
+  "productionCandidateHostSHA256": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "signatureStrippedCandidateCodeUnchanged": true,
+  "productionAppAndDataUsedAsFixture": false,
+  "disposableSigningKeyOnly": true,
+  "disposablePrivateKeyDeleted": true,
+  "loopbackServerStopped": true,
+  "publicHTTPSOrFirstInstallAcceptance": false,
+  "screenshot": "genuine-update-after.jpg",
+  "rawBeforeAfterReceiptsLocalRoot": "/private/tmp/countdown-1.18.0-update.oEC9HxT6",
+  "note": "The raw after-receipt technicalPASS was written by a read-only watcher without operator UI flag; this consolidated receipt records the complete externally driven update and no manual reopen before independent new PID."
+}

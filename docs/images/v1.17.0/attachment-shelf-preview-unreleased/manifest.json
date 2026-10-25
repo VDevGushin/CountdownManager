@@ -1,0 +1,118 @@
+{
+  "applicationVersion": "1.17.0",
+  "applicationBuild": "32",
+  "releaseStatus": "unreleased working branch; metadata retained from 1.17.0/32",
+  "executableSHA256": "0316e4fbd00ab8bada98924201af32f6bb2d116820f74f919c2da26bbde6f8ce",
+  "sourceCaptureCounts": {
+    "desktop": 110,
+    "attachments": 42
+  },
+  "images": [
+    {
+      "file": "desktop-attachment-previews-four-dark.png",
+      "sha256": "f5536410b7f83b362bf102d492ca9ec5e25faadd5fbdfe3ffafcea528656fa40",
+      "width": 1920,
+      "height": 1576,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-attachment-previews-four-light.png",
+      "sha256": "2e3bd71803969b46a2457c49f81f45a869c1d5b49c898264a0974de151f33091",
+      "width": 1920,
+      "height": 1576,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-feed-inline-wide-dark.png",
+      "sha256": "cef5bf944916cbbada553135c071b373c665a62d0996f910ea7872af2ea343b9",
+      "width": 2400,
+      "height": 1656,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-quick-preview-pdf-dark.jpg",
+      "sha256": "211e08f706f3c29b6d61d788b4c9c1252736106df4aa160e844fa53c15a64a86",
+      "width": 1280,
+      "height": 1120,
+      "method": "computer-use compositor screenshot (original JPEG bytes)",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-quick-preview-photo-dark.jpg",
+      "sha256": "80d34110e40b431c7b52d62898ef03e74c0af7309b11b25759604e5b4bb7aaf5",
+      "width": 1280,
+      "height": 1120,
+      "method": "computer-use compositor screenshot (original JPEG bytes)",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-quick-preview-video-dark.jpg",
+      "sha256": "acafd533a5a413cffece3e2dd9661d968935d4bc9585e8be489650153f591aa1",
+      "width": 1280,
+      "height": 1120,
+      "method": "computer-use compositor screenshot (original JPEG bytes)",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-settings-dark.png",
+      "sha256": "f12970c1b2985303931480eb549cbe07220aad0cd44cb25bbdbf5c2cdf6b9d58",
+      "width": 860,
+      "height": 1120,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-single-edit-empty-dark.png",
+      "sha256": "0aa31661ab412a790b2436364bcdbeddcfd0fdba59b05d95b06be92205cfeae0",
+      "width": 2400,
+      "height": 1656,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-single-edit-filled-light.png",
+      "sha256": "8a2db54f6423378fd402cf8881643e9c2b6c0471cdb2587bdd0b81e78b521c2a",
+      "width": 1920,
+      "height": 1576,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "desktop-weather-stable-collection-66.png",
+      "sha256": "bc1a93f3dbed3db229cdce640be9427e868028de3ba3685d647b9e5ff465cc01",
+      "width": 1920,
+      "height": 1656,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "mini-attachment-previews-three-dark.png",
+      "sha256": "8b592156dde6918c481e0cacfcdb831ea9177369265d5fce5f7e41e40fee21dc",
+      "width": 780,
+      "height": 1200,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "mini-attachment-previews-three-light.png",
+      "sha256": "48f195aa382d35f0711a91a5e8115bf3fb31e22d8cededcf06a8379afdc683c3",
+      "width": 780,
+      "height": 1200,
+      "method": "native isolated window cacheDisplay",
+      "syntheticData": true
+    },
+    {
+      "file": "mini-quick-preview-photo-dark.jpg",
+      "sha256": "a022f3b1d0dcc6bcd61d439d08b9a4e3060c34373c420e1f12db7d9ff5fdfbc5",
+      "width": 780,
+      "height": 1200,
+      "method": "computer-use compositor screenshot (original JPEG bytes)",
+      "syntheticData": true
+    }
+  ],
+  "fullCaptureSetsLocalRoot": "/private/tmp/countdown-shelf-preview-qa.1iakbI",
+  "scope": "Selected current images only. Native cacheDisplay omits Quick Look service pixels; the four Quick Look images are real compositor screenshots."
+}

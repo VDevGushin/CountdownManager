@@ -1,0 +1,212 @@
+{
+  "status": "PASS_COMBINED",
+  "uniqueCasesCovered": 28,
+  "singleFullRunAllPassed": false,
+  "fullABCRun": {
+    "passed": 27,
+    "total": 28,
+    "status": "FAILED_ONE_DRIVER_CASE",
+    "seconds": 1045.179,
+    "resultBundleLocalPath": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/xcui-full-abc.xcresult",
+    "cases": [
+      {
+        "name": "testAccessibilityDescribesPrimaryAndCurrentEmoji",
+        "status": "PASSED",
+        "seconds": 33.272
+      },
+      {
+        "name": "testAddedSubtaskDeletePreservesNeighborTextOnSave",
+        "status": "PASSED",
+        "seconds": 38.371
+      },
+      {
+        "name": "testAttachmentsNativePickerSaveCancelAndSharedSurfaces",
+        "status": "PASSED",
+        "seconds": 104.699
+      },
+      {
+        "name": "testAutomaticTitleResetCancelSaveAndNativeUndo",
+        "status": "PASSED",
+        "seconds": 45.704
+      },
+      {
+        "name": "testCustomTitleDigitEditAndNativeUndo",
+        "status": "PASSED",
+        "seconds": 11.395
+      },
+      {
+        "name": "testCyrillicNewNoteHardLimitAndNativeFocus",
+        "status": "PASSED",
+        "seconds": 26.405
+      },
+      {
+        "name": "testDeleteConfirmationCancelAndConfirm",
+        "status": "PASSED",
+        "seconds": 12.551
+      },
+      {
+        "name": "testDesktopAttachmentPreviewClicksEscapeAndFilteredReturn",
+        "status": "PASSED",
+        "seconds": 63.727
+      },
+      {
+        "name": "testDesktopChecklistGroupsIncompleteBeforeCompleted",
+        "status": "PASSED",
+        "seconds": 10.618
+      },
+      {
+        "name": "testDesktopChecklistMiddleRowReordersAndReturnsWithoutChangingIdentities",
+        "status": "PASSED",
+        "seconds": 12.093
+      },
+      {
+        "name": "testDesktopGridListTransitionRetainsSelectionAndSplit",
+        "status": "PASSED",
+        "seconds": 24.131
+      },
+      {
+        "name": "testDesktopSettingsBackdropCloseAndEscapePreserveEventsAndEditor",
+        "status": "PASSED",
+        "seconds": 59.977
+      },
+      {
+        "name": "testEmojiDisclosurePreservesDraftAndHidesInactiveControls",
+        "status": "PASSED",
+        "seconds": 133.782
+      },
+      {
+        "name": "testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen",
+        "status": "PASSED",
+        "seconds": 44.782
+      },
+      {
+        "name": "testFavoriteCanBeClearedFromListAndEditor",
+        "status": "PASSED",
+        "seconds": 33.387
+      },
+      {
+        "name": "testFirstEventWithoutIconOrFavoriteRemainsNearestAfterRelaunch",
+        "status": "PASSED",
+        "seconds": 19.768
+      },
+      {
+        "name": "testLongListPositionSurvivesEditorCancel",
+        "status": "PASSED",
+        "seconds": 13.133
+      },
+      {
+        "name": "testMiniAttachmentPreviewBackAndMissingCopyRecovery",
+        "status": "PASSED",
+        "seconds": 21.764
+      },
+      {
+        "name": "testNewEventCancelDoesNotLeakDraft",
+        "status": "PASSED",
+        "seconds": 9.612
+      },
+      {
+        "name": "testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave",
+        "status": "PASSED",
+        "seconds": 92.022
+      },
+      {
+        "name": "testNewNoteHardLimitAndNativeFocus",
+        "status": "PASSED",
+        "seconds": 15.536
+      },
+      {
+        "name": "testOptionalIconClearCancelAndSavePreserveStoredChoice",
+        "status": "PASSED",
+        "seconds": 39.178
+      },
+      {
+        "name": "testRepeatedAutomaticTitleCyclesPreserveNewDraftFields",
+        "status": "PASSED",
+        "seconds": 73.376
+      },
+      {
+        "name": "testSettingsDiagnosticArchiveCancelAndSave",
+        "status": "FAILED",
+        "seconds": 22.375
+      },
+      {
+        "name": "testSubtaskEditCancelSaveAndCompletion",
+        "status": "PASSED",
+        "seconds": 27.996
+      },
+      {
+        "name": "testUtilityChromeAndKeyboardClose",
+        "status": "PASSED",
+        "seconds": 12.313
+      },
+      {
+        "name": "testWeatherCityMenuSupportsNativeSelection",
+        "status": "PASSED",
+        "seconds": 24.388
+      },
+      {
+        "name": "testWholeSubtaskRowHitAreasAndDisclosureIsolation",
+        "status": "PASSED",
+        "seconds": 18.824
+      }
+    ]
+  },
+  "affectedCaseRerun": {
+    "status": "PASS",
+    "driverCorrection": "Clear and verify the native Go to Folder path before navigation; production application code unchanged",
+    "cases": [
+      {
+        "name": "testSettingsDiagnosticArchiveCancelAndSave",
+        "status": "PASSED",
+        "seconds": 28.198
+      }
+    ],
+    "resultBundleLocalPath": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/xcui-diagnostics-recheck.xcresult"
+  },
+  "combinedPassedCaseNames": [
+    "testAccessibilityDescribesPrimaryAndCurrentEmoji",
+    "testAddedSubtaskDeletePreservesNeighborTextOnSave",
+    "testAttachmentsNativePickerSaveCancelAndSharedSurfaces",
+    "testAutomaticTitleResetCancelSaveAndNativeUndo",
+    "testCustomTitleDigitEditAndNativeUndo",
+    "testCyrillicNewNoteHardLimitAndNativeFocus",
+    "testDeleteConfirmationCancelAndConfirm",
+    "testDesktopAttachmentPreviewClicksEscapeAndFilteredReturn",
+    "testDesktopChecklistGroupsIncompleteBeforeCompleted",
+    "testDesktopChecklistMiddleRowReordersAndReturnsWithoutChangingIdentities",
+    "testDesktopGridListTransitionRetainsSelectionAndSplit",
+    "testDesktopSettingsBackdropCloseAndEscapePreserveEventsAndEditor",
+    "testEmojiDisclosurePreservesDraftAndHidesInactiveControls",
+    "testExistingEventTypingAfterFocusedRowDeletionSurvivesSaveAndReopen",
+    "testFavoriteCanBeClearedFromListAndEditor",
+    "testFirstEventWithoutIconOrFavoriteRemainsNearestAfterRelaunch",
+    "testLongListPositionSurvivesEditorCancel",
+    "testMiniAttachmentPreviewBackAndMissingCopyRecovery",
+    "testNewEventCancelDoesNotLeakDraft",
+    "testNewEventTypingAfterFocusedSubtaskDeletionCancelAndSave",
+    "testNewNoteHardLimitAndNativeFocus",
+    "testOptionalIconClearCancelAndSavePreserveStoredChoice",
+    "testRepeatedAutomaticTitleCyclesPreserveNewDraftFields",
+    "testSettingsDiagnosticArchiveCancelAndSave",
+    "testSubtaskEditCancelSaveAndCompletion",
+    "testUtilityChromeAndKeyboardClose",
+    "testWeatherCityMenuSupportsNativeSelection",
+    "testWholeSubtaskRowHitAreasAndDisclosureIsolation"
+  ],
+  "inputSourceForSuccessfulRuns": "ABC",
+  "testIsolation": {
+    "identifier": "local.countdownmanager.release-qa",
+    "app": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/xcui-shadow-diagnostics/Countdown Manager.app",
+    "signatureStrippedCodeUnchanged": true,
+    "signatureStrippedSHA256": "50f3c7233a7aec8c6c37a9de59cc033a6670772f7ff1f60625f6dae0c9bfc63c",
+    "testProfileMarkerEnforced": true,
+    "productionAppReplaced": false,
+    "testRun": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/release-qa-diagnostics.xctestrun"
+  },
+  "historicalInitialRun": {
+    "passed": 24,
+    "total": 28,
+    "resultBundleLocalPath": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/xcui-full.xcresult"
+  },
+  "scope": "27 unchanged full-run successes plus one corrected-driver targeted success; not a claim of a single clean 28/28 run. Raw recordings are not copied to repository."
+}

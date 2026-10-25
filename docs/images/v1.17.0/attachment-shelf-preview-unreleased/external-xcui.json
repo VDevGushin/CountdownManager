@@ -1,0 +1,18 @@
+{
+  "pass": true,
+  "configuration": "Xcode Debug; macOS 26.6.2 / 25G83; arm64 execution",
+  "cases": [
+    {
+      "name": "testDesktopAttachmentPreviewClicksEscapeAndFilteredReturn",
+      "seconds": 46.371,
+      "pass": true
+    },
+    {
+      "name": "testMiniAttachmentPreviewBackAndMissingCopyRecovery",
+      "seconds": 20.817,
+      "pass": true
+    }
+  ],
+  "resultBundleLocalPath": "/private/tmp/countdown-shelf-preview-qa.1iakbI/xcui-focused-r3.xcresult",
+  "scope": "Actual pointer/keyboard and AX. Subsequent source change affected only three in-process smoke frame measurement IDs."
+}

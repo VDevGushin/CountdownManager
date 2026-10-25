@@ -13,6 +13,8 @@ Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that c
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Desktop window Real UI Smoke | `./verify.sh desktop` | Focused isolated native desktop/panel shared-state, editor ownership, window retention and split-layout scenarios |
 | Desktop window captures | `./verify.sh desktop-capture <marked-output-directory>` | The same focused desktop scenarios, retained tested app, native PNGs and executable provenance manifest |
+| Attachment shelf and quick preview | `./verify.sh attachments` | Isolated native desktop/mini shelf boundaries, searchable-library return and embedded Quick Look workflows |
+| Attachment captures | `./verify.sh attachments-capture <marked-output-directory>` | The same focused attachment workflows with retained tested app, native PNGs and provenance manifest |
 | Editor workflows | `./verify.sh editor` | Focused native row deletion/subsequent input, field focus, Save/Cancel/reopen and weekday date changes; also included in `ui`/`full` |
 | Automatic-title captures | `./verify.sh automatic-title-capture <marked-output-directory>` | Editor workflows plus six native automatic/custom title screenshots in Light/Dark/Increase Contrast, manifest and retained tested app |
 | Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
@@ -299,6 +301,44 @@ no new input route or accessibility control is introduced by the decorative symb
 ## Desktop window
 
 ### Attachment evidence
+
+#### Attachment shelf and embedded quick preview
+
+After strict SwiftLint and `fast`, run `./verify.sh attachments` or
+`./verify.sh attachments-capture <marked-output-directory>`. This uses the existing isolated
+desktop runtime with an additional attachment selector, not another application-state owner.
+The desktop regression route remains required for the compact detail composition and shared
+window/editor behavior. When reusing an already built test bundle, preserve its executable hash,
+separate marked test homes, full launch arguments, result files and stall diagnostics.
+
+`AttachmentPreviewChecks.swift` exercises the actual transient session through controlled URL
+continuations, same-ID close/reopen, stale completion, missing/non-file URL, external-action
+deduplication/cancellation, independent surfaces and four reproducible seeds of 180 commands.
+It checks identity/origin against an independent expected-ID oracle after each command and
+compares file bytes plus canonical file inventory. `AttachmentThumbnailChecks.swift` also
+requires a genuinely larger shelf raster and enforces the bounded pixel budget.
+
+The focused native route covers saved shelves at 0/1/3/4/6/15, two/three columns, fixed canvas
+and caption geometry, the mini threshold above three, saved order and existing editor/library
+sizes. It scrolls the real viewport before asserting lazy cells, and uses one window coordinate
+system for containment. Preview checks cover native Quick Look binding, explicit unavailable
+state, navigation boundaries, retained filtered query and nonzero library scroll, source return,
+current-file removal, owning-event deletion, hidden renderer release/recreation, file-tree bytes
+and original preservation. A separate hosted desktop root with an injected clock exercises
+expiry while its preview is open and durable cleanup with a surviving event. This is not a
+test that changes the system clock or waits for a real midnight.
+
+Focused external XCUITest cases are `testDesktopAttachmentPreviewClicksEscapeAndFilteredReturn`
+and `testMiniAttachmentPreviewBackAndMissingCopyRecovery`. They perform actual file/arrow/Back
+clicks, Escape, direct and library-origin backdrop clicks, search after returning, unavailable
+copy recovery and byte comparisons. Internal smoke actions do not substitute for those inputs.
+
+Quick Look's public host API has no content-ready/error callback: `native-preview-requested`
+means a validated local URL is bound to a live renderer, not that every provider has rendered
+its content. Inspect real screen captures of photo/PDF/movie content if cacheDisplay omits
+service-backed pixels. `autostarts == false` and release of the old renderer's preview item
+prove the resource/configuration boundary; actual manually started playback, third-party preview
+extensions, VoiceOver and real app/Space switching need separately identified evidence.
 
 CoreChecks exercises isolated file-copy ownership, backward-compatible metadata, Save/Cancel,
 failed/superseded writes, active import pins, restart cleanup, expiry/deletion and symlink/path
@@ -1007,6 +1047,26 @@ supports endpoint/schema compatibility only; it does not prove native permission
 integration or all city/date coverage.
 
 ## XCUITest
+
+### Input-source ownership during external checks
+
+When system file-picker path entry or Cyrillic/Latin typing needs a particular enabled input
+source, the agent selects it through normal macOS input-source controls rather than asking the
+user to switch it. Record the original active source, verify the selected source with a read-only
+TIS query, run the ordinary keyboard interaction, and restore/verify the original source when
+finished (also after a failed check). Do not add/remove configured input sources or change their
+preferences. If the required source is unavailable, report that concrete limitation.
+
+The 1.18.0 preflight selected existing ABC through system keyboard shortcuts and restored Russian.
+System Go to Folder uses actual current-layout Command-A, Delete, an empty-field assertion,
+ordinary typed input and exact path equality before Return. Unicode text entry retains its
+separate exact-value assertions. A transient system InputSource HUD is observed with a bounded
+read-only wait; no blind Escape, clipboard substitution, repeated typing or skipped validation
+can turn an input failure into a pass. Successful ABC delivery does not certify every IME/layout.
+[Release evidence](images/v1.18.0/PROVENANCE.md) separates the initial failures, full 27/28 repeat
+and affected-only 1/1 diagnostic repeat.
+
+### Historical external evidence
 
 The 2026-10-23 [regression campaign](qa/desktop-regression-2026-10-23.md) records 20 successful
 unique external scenarios out of 22 across separately identified runs, not one all-green suite.

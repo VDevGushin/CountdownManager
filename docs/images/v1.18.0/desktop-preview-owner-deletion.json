@@ -1,0 +1,84 @@
+{
+  "activeIDs" : [
+    "38393D9B-396A-42B2-9A58-C4CEA76BA42A",
+    "7050D8D7-DEEE-4683-A1EA-E325DCF69225"
+  ],
+  "cachedLibraryRegistryRecord" : true,
+  "cachedPreviewRegistryRecord" : true,
+  "hasPendingPersistence" : false,
+  "hostHasAttachedSheet" : false,
+  "hostNativeRendererCount" : 0,
+  "hostVisible" : true,
+  "ownedFolders" : [
+    {
+      "exists" : false,
+      "id" : "0E69BE40-6BD1-44E2-AB53-D60DC389BCAC"
+    },
+    {
+      "exists" : false,
+      "id" : "AB58840E-E8FB-4224-B018-A40548B1A569"
+    },
+    {
+      "exists" : false,
+      "id" : "D4873B56-98E6-418B-9ACA-6D87CF6898FB"
+    },
+    {
+      "exists" : false,
+      "id" : "270473C1-16CF-4F05-96CF-792B609608DC"
+    },
+    {
+      "exists" : false,
+      "id" : "3D7ECBE9-92EE-473C-AC17-6DB9AEB2D467"
+    },
+    {
+      "exists" : false,
+      "id" : "133BA9E7-8B9F-478D-A885-1B0E80523DEF"
+    },
+    {
+      "exists" : false,
+      "id" : "DF418865-F69E-4C4B-9C72-4819FC7C87D0"
+    },
+    {
+      "exists" : false,
+      "id" : "50A9DD63-3416-4D85-ACB4-E3D6CCD1773E"
+    },
+    {
+      "exists" : false,
+      "id" : "C9401803-E143-40A3-BCDE-64A9D18C8506"
+    },
+    {
+      "exists" : false,
+      "id" : "F8E2D6D2-4E05-42C3-B348-F5B2AE30B6F7"
+    },
+    {
+      "exists" : false,
+      "id" : "DDBBAAF0-EC88-41BB-B3F4-CC723C1EE61B"
+    },
+    {
+      "exists" : false,
+      "id" : "2057B832-1AF3-4006-BF6D-D0B0BA2F9545"
+    },
+    {
+      "exists" : false,
+      "id" : "E8062154-6159-4E02-A87A-9511A5807C80"
+    },
+    {
+      "exists" : false,
+      "id" : "8A8B4FDF-5CF1-4D1D-A7D3-A7E5F9748F5F"
+    },
+    {
+      "exists" : false,
+      "id" : "E1527F23-366B-4299-9DFA-664C6A1F8B55"
+    }
+  ],
+  "ownerActive" : false,
+  "ownerID" : "B9DE348B-76A3-484C-AB89-6C1563A071A0",
+  "ownerInData" : false,
+  "presentationAbsent" : true,
+  "previewIdentity" : "nil",
+  "retainedSheetHasParent" : false,
+  "retainedSheetNativeRendererCount" : 0,
+  "retainedSheetVisible" : false,
+  "selectedID" : "38393D9B-396A-42B2-9A58-C4CEA76BA42A",
+  "sourceBytesUnchanged" : true
+}

@@ -19,7 +19,7 @@ package final class AttachmentThumbnailLoader: ObservableObject {
         guard !Task.isCancelled, url.isFileURL else { return nil }
         let type = UTType(filenameExtension: url.pathExtension)
         let scale = scale.isFinite ? min(3, max(1, scale)) : 1
-        let size = pointSize.isFinite ? min(44, max(1, pointSize)) : 44
+        let size = pointSize.isFinite ? min(256, max(1, pointSize)) : 44
         let current = UUID()
         token = current
         if type?.conforms(to: .pdf) == true {
@@ -98,18 +98,32 @@ private actor AttachmentPDFThumbnailRenderer {
 }
 
 struct AttachmentThumbnail: View {
+    private struct RequestIdentity: Hashable {
+        let attachmentID: UUID
+        let pixels: Int
+    }
+
     let attachment: EventAttachment
     let fallbackSymbol: String
     let controlID: String
     let resolveURL: @MainActor () async -> URL?
     var pointSize: CGFloat = 44
+    var canvasSize: CGSize?
+    var showsUnavailableLabel = false
     @StateObject private var loader = AttachmentThumbnailLoader()
     @State private var image: CGImage?
     @State private var isLoading = false
+    @State private var isUnavailable = false
     @Environment(\.displayScale) private var displayScale
 
     private var isMovie: Bool {
         UTType(filenameExtension: (attachment.name as NSString).pathExtension)?.conforms(to: .movie) == true
+    }
+
+    private var requestIdentity: RequestIdentity {
+        let size = pointSize.isFinite ? min(256, max(1, pointSize)) : 44
+        let scale = displayScale.isFinite ? min(3, max(1, displayScale)) : 1
+        return RequestIdentity(attachmentID: attachment.id, pixels: Int(ceil(size * scale)))
     }
 
     var body: some View {
@@ -118,12 +132,20 @@ struct AttachmentThumbnail: View {
                 Image(decorative: image, scale: displayScale)
                     .resizable().scaledToFit()
             } else {
-                Image(systemName: fallbackSymbol)
-                    .font(.system(size: 20))
-                    .foregroundStyle(.secondary)
+                VStack(spacing: 4) {
+                    Image(systemName: fallbackSymbol)
+                        .font(.system(size: 20))
+                    if showsUnavailableLabel, isUnavailable {
+                        Text("Копия недоступна")
+                            .font(.system(size: 10))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                    }
+                }
+                .foregroundStyle(.secondary)
             }
         }
-        .frame(width: pointSize, height: pointSize)
+        .frame(width: canvasSize?.width ?? pointSize, height: canvasSize?.height ?? pointSize)
         .background(.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 6))
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .overlay(alignment: .bottomTrailing) {
@@ -139,10 +161,13 @@ struct AttachmentThumbnail: View {
         }
         .accessibilityHidden(true)
         .uiSmokeControl(id: controlID, value: { image != nil ? "ready" : (isLoading ? "loading" : "fallback") })
-        .task(id: attachment.id) {
+        .task(id: requestIdentity) {
             image = nil
             isLoading = true
+            isUnavailable = false
             guard let url = await resolveURL(), !Task.isCancelled else {
+                guard !Task.isCancelled else { return }
+                isUnavailable = true
                 isLoading = false
                 return
             }

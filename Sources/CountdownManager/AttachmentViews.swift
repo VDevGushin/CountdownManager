@@ -2,6 +2,15 @@ import CountdownCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+private func attachmentFileSymbol(_ attachment: EventAttachment) -> String {
+    guard let type = UTType(filenameExtension: (attachment.name as NSString).pathExtension) else { return "doc" }
+    if type.conforms(to: .image) { return "photo" }
+    if type.conforms(to: .movie) { return "film" }
+    if type.conforms(to: .audio) { return "waveform" }
+    if type.conforms(to: .pdf) { return "doc.richtext" }
+    return "doc"
+}
+
 /// Releases draft-only copies when the editor hierarchy is actually destroyed, not when its window hides.
 final class EditorAttachmentSession: ObservableObject {
     let id = UUID()
@@ -57,12 +66,7 @@ struct AttachmentFileLabel: View {
     var thumbnailSize: CGFloat = 44
 
     private var symbol: String {
-        guard let type = UTType(filenameExtension: (attachment.name as NSString).pathExtension) else { return "doc" }
-        if type.conforms(to: .image) { return "photo" }
-        if type.conforms(to: .movie) { return "film" }
-        if type.conforms(to: .audio) { return "waveform" }
-        if type.conforms(to: .pdf) { return "doc.richtext" }
-        return "doc"
+        attachmentFileSymbol(attachment)
     }
 
     var body: some View {
@@ -114,6 +118,11 @@ struct SavedAttachmentSection: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private var surface: String { compact ? "panel" : "desktop" }
+    private var summaryCount: Int { compact ? 3 : 4 }
+    private var shelfColumns: [GridItem] {
+        Array(repeating: GridItem(.flexible(minimum: 0), spacing: compact ? 8 : 10,
+                                  alignment: .leading), count: compact ? 3 : 2)
+    }
 
     var body: some View {
         if !item.attachments.isEmpty {
@@ -150,22 +159,24 @@ struct SavedAttachmentSection: View {
                     }
                 }
                 if !compact || expanded {
-                    ForEach(Array(item.attachments.prefix(4))) { attachment in
-                        Button { open(attachment) } label: {
-                            AttachmentFileLabel(
-                                attachment: attachment,
-                                thumbnailURL: thumbnailURL.map { resolve in { await resolve(attachment) } },
-                                thumbnailControlID: "\(surface).attachment.thumbnail.\(item.id.uuidString).\(attachment.id.uuidString)",
-                                thumbnailSize: compact ? 36 : 44
-                            )
+                    LazyVGrid(columns: shelfColumns, alignment: .leading, spacing: compact ? 8 : 10) {
+                        ForEach(Array(item.attachments.prefix(summaryCount))) { attachment in
+                            Button { open(attachment) } label: {
+                                AttachmentShelfTile(attachment: attachment, compact: compact,
+                                                    controlPrefix: "\(surface).attachment",
+                                                    eventID: item.id,
+                                                    thumbnailURL: thumbnailURL.map { resolve in { await resolve(attachment) } })
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityLabel("Просмотреть вложение: \(attachment.name)")
+                            .accessibilityIdentifier("attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)")
+                            .uiSmokeControl(id: "\(surface).attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)",
+                                            action: { open(attachment) })
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Открыть вложение: \(attachment.name)")
-                        .accessibilityIdentifier("attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)")
-                        .uiSmokeControl(id: "\(surface).attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)",
-                                        action: { open(attachment) })
                     }
-                    if item.attachments.count > 4 {
+                    .frame(maxWidth: compact ? .infinity : 490, alignment: .leading)
+                    .uiSmokeControl(id: "\(surface).attachments.shelf.\(item.id.uuidString)")
+                    if item.attachments.count > summaryCount {
                         Button("Показать все \(item.attachments.count)", action: showAll)
                             .buttonStyle(.plain)
                             .foregroundStyle(AuroraInstrument.accent(
@@ -187,6 +198,69 @@ struct SavedAttachmentSection: View {
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
             .uiSmokeControl(id: "\(surface).attachments.heading.\(item.id.uuidString)")
+    }
+}
+
+private struct AttachmentShelfTile: View {
+    let attachment: EventAttachment
+    let compact: Bool
+    let controlPrefix: String
+    let eventID: UUID
+    let thumbnailURL: (@MainActor () async -> URL?)?
+    @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+
+    private var identity: String { "\(eventID.uuidString).\(attachment.id.uuidString)" }
+    private var previewHeight: CGFloat { compact ? 68 : 88 }
+    private var metadata: String {
+        let size = ByteCountFormatter.string(fromByteCount: attachment.byteCount, countStyle: .file)
+        let fileExtension = (attachment.name as NSString).pathExtension.uppercased()
+        return fileExtension.isEmpty ? size : "\(fileExtension) · \(size)"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeometryReader { geometry in
+                AttachmentThumbnail(attachment: attachment, fallbackSymbol: attachmentFileSymbol(attachment),
+                                    controlID: "\(controlPrefix).thumbnail.\(identity)",
+                                    resolveURL: { await thumbnailURL?() },
+                                    pointSize: max(geometry.size.width, previewHeight),
+                                    canvasSize: CGSize(width: geometry.size.width, height: previewHeight),
+                                    showsUnavailableLabel: true)
+            }
+            .frame(height: previewHeight)
+            .uiSmokeControl(id: "\(controlPrefix).preview-area.\(identity)")
+            VStack(alignment: .leading, spacing: 3) {
+                Text(attachment.name)
+                    .font(.system(size: compact ? 11 : 12, weight: compact ? .regular : .medium))
+                    .lineLimit(2).truncationMode(.middle)
+                    .frame(height: compact ? 28 : 30, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if !compact {
+                    Text(metadata)
+                        .font(.system(size: 10))
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                        .lineLimit(1).truncationMode(.middle)
+                }
+            }
+            .padding(compact ? 0 : 8)
+            .padding(.top, compact ? 6 : 0)
+        }
+        .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+        .background(AuroraInstrument.surface(for: colorScheme, elevated: false,
+                                             highContrast: accessibilitySettings.prefersHighContrast))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay {
+            if !compact || accessibilitySettings.prefersHighContrast {
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(AuroraInstrument.stroke(for: colorScheme,
+                                                     highContrast: accessibilitySettings.prefersHighContrast), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+        }
+        .contentShape(Rectangle())
+        .help(attachment.name)
+        .uiSmokeControl(id: "\(controlPrefix).tile.\(identity)")
     }
 }
 
@@ -279,6 +353,8 @@ struct AttachmentListView: View {
                                     thumbnailControlID: "\(compact ? "panel" : "desktop").attachment.list.thumbnail.\(item.id).\(attachment.id)",
                                     thumbnailSize: compact ? 36 : 44
                                 )
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("Открыть вложение: \(attachment.name)")

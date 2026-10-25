@@ -1,0 +1,222 @@
+{
+  "hostHasAttachedSheet" : false,
+  "hostIsKey" : true,
+  "hostNativeRendererCount" : 0,
+  "hostVisible" : true,
+  "parentControls" : [
+    {
+      "exists" : true,
+      "frame" : [
+        872,
+        96,
+        28,
+        28
+      ],
+      "hasAction" : true,
+      "id" : "desktop.detail.edit",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        833,
+        636,
+        109,
+        20
+      ],
+      "hasAction" : true,
+      "id" : "desktop.settings",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        679.5,
+        636,
+        137.5,
+        20
+      ],
+      "hasAction" : true,
+      "id" : "desktop.panel",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        640,
+        83,
+        320,
+        540
+      ],
+      "hasAction" : false,
+      "id" : "desktop.inspector",
+      "isEnabled" : true,
+      "value" : "B9DE348B-76A3-484C-AB89-6C1563A071A0"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        0,
+        0,
+        640,
+        560
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachments.pane",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        664,
+        887,
+        101.5,
+        16
+      ],
+      "hasAction" : true,
+      "id" : "desktop.attachments.all.B9DE348B-76A3-484C-AB89-6C1563A071A0",
+      "isEnabled" : true,
+      "value" : "nil"
+    }
+  ],
+  "previewControls" : [
+    {
+      "exists" : true,
+      "frame" : [
+        0,
+        0,
+        640,
+        560
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        664,
+        539,
+        131,
+        88
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview-area.B9DE348B-76A3-484C-AB89-6C1563A071A0.0E69BE40-6BD1-44E2-AB53-D60DC389BCAC",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        805,
+        539,
+        131,
+        88
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview-area.B9DE348B-76A3-484C-AB89-6C1563A071A0.AB58840E-E8FB-4224-B018-A40548B1A569",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        602,
+        11.5,
+        22,
+        26
+      ],
+      "hasAction" : true,
+      "id" : "desktop.attachment.preview.back",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        16,
+        106,
+        608,
+        389
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview.canvas",
+      "isEnabled" : true,
+      "value" : "unavailable"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        470.5,
+        524,
+        153.5,
+        20
+      ],
+      "hasAction" : true,
+      "id" : "desktop.attachment.preview.external",
+      "isEnabled" : false,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        16,
+        62,
+        596,
+        15
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview.name",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        56,
+        524,
+        32,
+        20
+      ],
+      "hasAction" : true,
+      "id" : "desktop.attachment.preview.next",
+      "isEnabled" : false,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        624,
+        62,
+        0,
+        14
+      ],
+      "hasAction" : false,
+      "id" : "desktop.attachment.preview.position",
+      "isEnabled" : true,
+      "value" : "nil"
+    },
+    {
+      "exists" : true,
+      "frame" : [
+        16,
+        524,
+        32,
+        20
+      ],
+      "hasAction" : true,
+      "id" : "desktop.attachment.preview.previous",
+      "isEnabled" : false,
+      "value" : "nil"
+    }
+  ],
+  "retainedSheetHasParent" : false,
+  "retainedSheetNativeRendererCount" : 0,
+  "retainedSheetVisible" : false,
+  "selectedEvent" : "B9DE348B-76A3-484C-AB89-6C1563A071A0"
+}

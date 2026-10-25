@@ -1,0 +1,27 @@
+{
+  "activeIDs" : [
+    "FB854FA8-4746-4FEE-AFBB-CCD5ADC4B22E"
+  ],
+  "cachedLibraryRegistryRecord" : false,
+  "cachedPreviewRegistryRecord" : true,
+  "hasPendingPersistence" : false,
+  "hostHasAttachedSheet" : false,
+  "hostNativeRendererCount" : 0,
+  "hostVisible" : true,
+  "ownedFolders" : [
+    {
+      "exists" : false,
+      "id" : "1AE96AF9-BEB5-4878-8661-67F84C6A8BEC"
+    }
+  ],
+  "ownerActive" : false,
+  "ownerID" : "AC7A9D2D-6D7F-48A2-9FAF-43873127486E",
+  "ownerInData" : false,
+  "presentationAbsent" : true,
+  "previewIdentity" : "nil",
+  "retainedSheetHasParent" : false,
+  "retainedSheetNativeRendererCount" : 0,
+  "retainedSheetVisible" : false,
+  "selectedID" : "FB854FA8-4746-4FEE-AFBB-CCD5ADC4B22E",
+  "sourceBytesUnchanged" : true
+}

@@ -1,0 +1,19 @@
+{
+  "pass": true,
+  "syntheticDataOnly": true,
+  "executableSHA256": "0316e4fbd00ab8bada98924201af32f6bb2d116820f74f919c2da26bbde6f8ce",
+  "rendered": [
+    "PNG image",
+    "two-page PDF",
+    "20-second synthetic MP4 poster",
+    "mini PNG image"
+  ],
+  "externalApplication": "com.apple.Preview",
+  "externalOwnedURL": "file:///private/tmp/countdown-shelf-preview-qa.1iakbI/manual-home/Application%20Support/CountdownManager/Attachments/5FC21B7A-CB2E-443A-B9FF-BF4C4564827F/%D0%A4%D0%BE%D1%82%D0%BE%20%D0%BA%20%D0%B2%D1%81%D1%82%D1%80%D0%B5%D1%87%D0%B5.png",
+  "expectedOwnedURLObserved": true,
+  "returnedToSameMiniFileAndPosition": true,
+  "readOnlyFileCount": 31,
+  "jsonOwnedBytesAndInventoryUnchanged": true,
+  "manualPlaybackStarted": false,
+  "notes": "Native movie poster and resource lifecycle verified; an explicit native movie playback session was not confirmed."
+}

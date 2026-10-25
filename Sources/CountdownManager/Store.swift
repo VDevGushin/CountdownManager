@@ -138,13 +138,15 @@ extension Store {
     }
 
     package func openAttachment(_ attachment: EventAttachment, eventID: UUID) async {
+        guard !Task.isCancelled else { return }
         guard attachmentIsActive(attachment, eventID: eventID) else {
             error = "Вложение больше недоступно для этого события."
             return
         }
         do {
             let url = try await repository.attachmentURL(for: attachment)
-            guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else {
+            guard !Task.isCancelled else { return }
+            guard attachmentIsActive(attachment, eventID: eventID) else {
                 error = "Вложение больше недоступно для этого события."
                 return
             }
@@ -152,6 +154,7 @@ extension Store {
                 error = "Не удалось открыть вложение. Проверьте, что на Mac есть приложение для этого файла."
             }
         } catch {
+            guard !Task.isCancelled else { return }
             recordDiagnostic("attachments.open failure category=storage")
             self.error = "Копия вложения недоступна. Исходный файл не изменён."
         }

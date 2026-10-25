@@ -68,11 +68,11 @@ final class CountdownManagerXCUITests: XCTestCase {
 
     func testCyrillicNewNoteHardLimitAndNativeFocus() throws {
         try checkNewNoteLimit(titleText: "Проверка лимита", noteTokens: ["а", "б", "в"],
-                              titleSuffix: " заголовок", undoKey: "я")
+                              titleSuffix: " заголовок")
     }
 
     private func checkNewNoteLimit(titleText: String, noteTokens: [String] = ["a", "b", "c"],
-                                   titleSuffix: String = " title", undoKey: String = "z") throws {
+                                   titleSuffix: String = " title") throws {
         app.launch()
         let add = app.buttons["event.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 3))
@@ -80,10 +80,13 @@ final class CountdownManagerXCUITests: XCTestCase {
         let title = app.textFields["editor.title"]
         XCTAssertTrue(title.waitForExistence(timeout: 3))
         XCTAssertEqual(title.value as? String, "")
+        recordKeyboardInputSources(phase: "new-note before title typing")
         title.typeText(titleText)
         XCTAssertEqual(title.value as? String, titleText)
+        recordKeyboardInputSources(phase: "new-note after title typing")
         let note = app.textViews["editor.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 3))
+        waitForInputSourceHUDToDisappear()
         note.click()
         let initialNote = String(repeating: noteTokens[0], count: 149)
         note.typeText(initialNote)
@@ -95,10 +98,11 @@ final class CountdownManagerXCUITests: XCTestCase {
         title.click()
         title.typeText(titleSuffix)
         XCTAssertEqual(title.value as? String, titleText + titleSuffix)
+        waitForInputSourceHUDToDisappear()
         note.click()
         note.typeKey(.delete, modifierFlags: [])
         XCTAssertEqual((note.value as? String)?.count, 149)
-        note.typeKey(undoKey, modifierFlags: .command)
+        note.typeKey(try currentLayoutUndoKey(), modifierFlags: .command)
         XCTAssertEqual((note.value as? String)?.count, 150)
         app.buttons["editor.cancel"].click()
         XCTAssertEqual(try persistedItems().count, 1)
@@ -187,16 +191,17 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(waitForAbsence(app.buttons["editor.emoji.more"]))
     }
 
-    func testUtilityChromeAndKeyboardClose() {
+    func testUtilityChromeAndKeyboardClose() throws {
         app.launch()
         openEditor()
         let title = app.textFields["editor.title"]
         replace(title, with: "Сохранённый черновик")
         XCTAssertTrue(root.waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons[XCUIIdentifierCloseWindow].exists)
-        // XCUITest resolves character keys through the selected input source.
-        // The Russian fixture uses the physical W key's character in that layout.
-        app.typeKey("ц", modifierFlags: .command)
+        activateForKeyboardInput()
+        waitForInputSourceHUDToDisappear()
+        recordKeyboardInputSources(phase: "utility before native Command-W")
+        app.typeKey(try currentLayoutShortcutKey("w"), modifierFlags: .command)
         XCTAssertTrue(waitForAbsence(root))
     }
 
@@ -744,6 +749,40 @@ final class CountdownManagerXCUITests: XCTestCase {
         try currentLayoutShortcutKey("z")
     }
 
+    private func recordKeyboardInputSources(phase: String) {
+        func identifier(_ source: TISInputSource?) -> String {
+            guard let source, let value = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else {
+                return "unavailable"
+            }
+            return Unmanaged<CFString>.fromOpaque(value).takeUnretainedValue() as String
+        }
+        let current = identifier(TISCopyCurrentKeyboardInputSource()?.takeRetainedValue())
+        let layout = identifier(TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue())
+        let ascii = identifier(TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue())
+        let observation = "phase=\(phase) active=\(current) layout=\(layout) ascii=\(ascii)"
+        print("Native keyboard source: \(observation)")
+        let attachment = XCTAttachment(string: observation)
+        attachment.name = "Native keyboard source — \(phase)"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    private func waitForInputSourceHUDToDisappear() {
+        // A normal active editor has no dialogs. Observe the transient system InputSource HUD
+        // without clicking it or sending Escape, which could instead cancel the editor.
+        let dialog = app.dialogs.firstMatch
+        if dialog.exists {
+            let window = app.windows.firstMatch
+            let details = window.exists ? window.debugDescription : "An input dialog is present without an AX editor window."
+            let observation = XCTAttachment(string: details)
+            observation.name = "Native editor before input-source HUD settles"
+            observation.lifetime = .keepAlways
+            add(observation)
+        }
+        XCTAssertTrue(waitForAbsence(dialog),
+                      "The transient system InputSource dialog must disappear before editor interaction")
+    }
+
     private func currentLayoutShortcutKey(_ asciiKey: String) throws -> String {
         func data(for source: TISInputSource) throws -> CFData {
             let pointer = try XCTUnwrap(TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData),
@@ -1008,39 +1047,49 @@ final class CountdownManagerXCUITests: XCTestCase {
         let selected = main.descendants(matching: .any).matching(identifier: "desktop.detail.\(identifiers[0])").firstMatch
         XCTAssertTrue(selected.exists)
         let inspectorX = selected.frame.minX
-        let coveredPane = CGRect(x: main.frame.midX - 215, y: main.frame.midY - 280, width: 430, height: 560)
-        let alternative = try XCTUnwrap(identifiers.dropFirst().compactMap { identifier -> (String, CGPoint)? in
+        let candidateOffsets = identifiers.dropFirst().compactMap { identifier -> (String, CGVector)? in
             let event = main.buttons["desktop.event.\(identifier)"]
             guard event.exists && event.isHittable else { return nil }
-            let center = CGPoint(x: event.frame.midX, y: event.frame.midY)
-            return coveredPane.insetBy(dx: -12, dy: -12).contains(center) ? nil : (identifier, center)
-        }.first, "A visible ordinary event outside the centered settings pane is required")
-        let backgroundEvent = main.coordinate(withNormalizedOffset: .zero)
-            .withOffset(CGVector(dx: alternative.1.x - main.frame.minX, dy: alternative.1.y - main.frame.minY))
+            return (identifier, CGVector(dx: event.frame.midX - main.frame.minX,
+                                         dy: event.frame.midY - main.frame.minY))
+        }
         open.click()
-        let closeCandidates = main.buttons.matching(NSPredicate(format: "label == %@", "Закрыть настройки"))
-        XCTAssertTrue(closeCandidates.firstMatch.waitForExistence(timeout: 3))
-        let close = try XCTUnwrap(closeCandidates.allElementsBoundByIndex.first {
-            $0.frame.width <= 44 && $0.frame.height <= 44
-        }, "A compact close button must be present separately from the full-window backdrop")
+        let sheet = main.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 3), "Settings must attach as a native sheet to the main window")
+        XCTAssertEqual(main.sheets.count, 1)
+        let pane = sheet
+        XCTAssertEqual(pane.frame.width, 430, accuracy: 2)
+        XCTAssertEqual(pane.frame.height, 560, accuracy: 2)
+        let alternative = try XCTUnwrap(candidateOffsets.first { candidate in
+            let point = CGPoint(x: main.frame.minX + candidate.1.dx, y: main.frame.minY + candidate.1.dy)
+            return main.frame.insetBy(dx: 4, dy: 40).contains(point)
+                && !pane.frame.insetBy(dx: -12, dy: -12).contains(point)
+        }, "A visible ordinary event outside the actual native settings pane is required")
+        let backgroundEvent = main.coordinate(withNormalizedOffset: .zero).withOffset(alternative.1)
+        let close = sheet.buttons.matching(NSPredicate(format: "label == %@", "Закрыть настройки")).firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 3))
+        XCTAssertLessThanOrEqual(close.frame.width, 44)
+        XCTAssertLessThanOrEqual(close.frame.height, 44)
         XCTAssertFalse(main.buttons.matching(NSPredicate(format: "label == %@", "Назад")).firstMatch.exists)
         XCTAssertFalse(app.windows["settings.window"].exists)
-        XCTAssertEqual(main.sheets.count, 0)
         XCTAssertFalse(selected.exists, "Settings must hide underlying event controls from accessibility")
-        let weather = main.checkBoxes.matching(NSPredicate(format: "label == %@", "Показывать погоду в днях")).firstMatch
+        let weather = sheet.checkBoxes.matching(NSPredicate(format: "label == %@", "Показывать погоду в днях")).firstMatch
         let initialWeather = try XCTUnwrap(checkboxValue(weather))
         XCTAssertTrue(["0", "1"].contains(initialWeather))
-        close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            .withOffset(CGVector(dx: -200, dy: 0)).click()
+        pane.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: pane.frame.width * 0.5, dy: 24)).click()
         XCTAssertTrue(close.exists, "Clicking blank settings header space must not dismiss the pane")
-        close.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            .withOffset(CGVector(dx: -5, dy: 150)).click()
+        pane.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: pane.frame.width - 3, dy: 180)).click()
         XCTAssertTrue(close.exists, "Clicking blank settings body space must not dismiss the pane")
+        XCTAssertTrue(waitForCheckboxValue(weather, equals: initialWeather),
+                      "Blank interior clicks must not activate a settings control")
         weather.click()
         XCTAssertTrue(waitForCheckboxValue(weather, equals: initialWeather == "1" ? "0" : "1"))
-        attachDesktopMotionSnapshot("Centered desktop settings overlay")
+        attachDesktopMotionSnapshot("Native desktop settings sheet")
         backgroundEvent.click()
         XCTAssertTrue(waitForAbsence(close))
+        XCTAssertTrue(waitForAbsence(sheet), "Backdrop dismissal must detach the native sheet")
         XCTAssertTrue(selected.waitForExistence(timeout: 3))
         XCTAssertFalse(main.descendants(matching: .any).matching(identifier: "desktop.detail.\(alternative.0)").firstMatch.exists,
                        "The dismissal click must not select the event under the backdrop")
@@ -1051,11 +1100,13 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(waitForCheckboxValue(weather, equals: initialWeather == "1" ? "0" : "1"))
         close.click()
         XCTAssertTrue(waitForAbsence(close))
+        XCTAssertTrue(waitForAbsence(sheet))
         open.click()
         XCTAssertTrue(close.waitForExistence(timeout: 3))
         activateForKeyboardInput()
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(close))
+        XCTAssertTrue(waitForAbsence(sheet))
         XCTAssertTrue(selected.waitForExistence(timeout: 3))
         XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2)
         let edit = main.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
@@ -1213,6 +1264,208 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: source), bytes, "Every operation must preserve the original")
     }
 
+    func testDesktopAttachmentPreviewClicksEscapeAndFilteredReturn() throws {
+        let files = try writeQuickPreviewFixture()
+        let before = try Data(contentsOf: dataURL)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let main = app.windows["desktop.window"]
+        XCTAssertTrue(main.waitForExistence(timeout: 3))
+        let selected = main.descendants(matching: .any).matching(identifier: "desktop.detail.\(eventID)").firstMatch
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        let inspectorX = selected.frame.minX
+        let tile = app.buttons["attachments.open.\(eventID).\(files[0].id)"]
+        XCTAssertTrue(tile.waitForExistence(timeout: 3))
+        let detailScroll = app.scrollViews.containing(.button, identifier: tile.identifier).firstMatch
+        for _ in 0..<4 where !tile.isHittable { detailScroll.swipeUp() }
+        XCTAssertTrue(tile.isHittable)
+        tile.click()
+        let prefix = "desktop.attachment.preview"
+        let preview = app.descendants(matching: .any).matching(identifier: "desktop.attachments.pane").firstMatch
+        let previewBack = app.buttons[prefix + ".back"]
+        XCTAssertTrue(previewBack.waitForExistence(timeout: 3))
+        XCTAssertTrue(preview.exists, "The actual native attachment pane must be accessible")
+        XCTAssertEqual(preview.frame.width, 640, accuracy: 2)
+        XCTAssertEqual(preview.frame.height, 560, accuracy: 2)
+        XCTAssertTrue(preview.staticTexts[files[0].name].exists)
+        XCTAssertTrue(preview.staticTexts["1 из 6"].exists)
+        XCTAssertFalse(app.buttons[prefix + ".previous"].isEnabled)
+        XCTAssertFalse(selected.exists, "A preview must hide the inactive detail from accessibility")
+        app.buttons[prefix + ".next"].click()
+        XCTAssertTrue(preview.staticTexts[files[1].name].waitForExistence(timeout: 3))
+        app.buttons[prefix + ".previous"].click()
+        XCTAssertTrue(preview.staticTexts[files[0].name].waitForExistence(timeout: 3))
+        activateForKeyboardInput()
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(previewBack))
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2)
+        tile.click()
+        XCTAssertTrue(previewBack.waitForExistence(timeout: 3))
+        try clickQuickPreviewBackdrop(main: main, preview: preview)
+        XCTAssertTrue(waitForAbsence(previewBack), "A direct preview must close on a physical click outside its sheet")
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2,
+                       "The backdrop click must preserve the selected event and divider")
+        XCTAssertEqual(try Data(contentsOf: dataURL), before)
+
+        let all = app.buttons["desktop.attachments.all.\(eventID)"]
+        XCTAssertTrue(all.waitForExistence(timeout: 3))
+        for _ in 0..<4 where !all.isHittable { detailScroll.swipeUp() }
+        all.click()
+        let search = app.textFields["desktop.attachments.list.search.\(eventID)"]
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        replace(search, with: "06")
+        let filteredFile = app.buttons["desktop.attachments.list.open.\(eventID).\(files[5].id)"]
+        XCTAssertTrue(filteredFile.waitForExistence(timeout: 3))
+        filteredFile.click()
+        XCTAssertTrue(previewBack.waitForExistence(timeout: 3))
+        XCTAssertTrue(preview.staticTexts["6 из 6"].exists)
+        attachQuickPreviewAXSnapshot("Desktop preview with retained filtered library", element: preview)
+        XCTAssertFalse(search.exists, "The retained library search must leave accessibility while hidden")
+        XCTAssertFalse(app.buttons[prefix + ".next"].isEnabled)
+        app.buttons[prefix + ".previous"].click()
+        XCTAssertTrue(preview.staticTexts[files[4].name].waitForExistence(timeout: 3),
+                      "Preview arrows must traverse the full saved array, not just one search result")
+        activateForKeyboardInput()
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(previewBack))
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        XCTAssertEqual(search.value as? String, "06")
+        XCTAssertTrue(filteredFile.exists)
+        XCTAssertFalse(app.buttons["desktop.attachments.list.open.\(eventID).\(files[4].id)"].exists)
+        filteredFile.click()
+        XCTAssertTrue(previewBack.waitForExistence(timeout: 3))
+        try clickQuickPreviewBackdrop(main: main, preview: preview)
+        XCTAssertTrue(waitForAbsence(previewBack), "Library-origin preview must return on a physical backdrop click")
+        XCTAssertTrue(search.waitForExistence(timeout: 3), "Backdrop must return to the library instead of dismissing every layer")
+        XCTAssertEqual(search.value as? String, "06")
+        XCTAssertTrue(filteredFile.exists)
+        XCTAssertFalse(selected.exists, "Returning to the library must keep the underlying event inactive")
+        XCTAssertEqual(try Data(contentsOf: dataURL), before)
+        search.click()
+        search.typeText("7")
+        XCTAssertEqual(search.value as? String, "067", "Search must become usable again after closing preview")
+        activateForKeyboardInput()
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(search))
+        XCTAssertTrue(selected.waitForExistence(timeout: 3))
+        XCTAssertEqual(selected.frame.minX, inspectorX, accuracy: 2)
+        XCTAssertEqual(try Data(contentsOf: dataURL), before)
+        try requireQuickPreviewFilesUnchanged(files)
+    }
+
+    private func clickQuickPreviewBackdrop(main: XCUIElement, preview: XCUIElement) throws {
+        let offset = CGVector(dx: 20, dy: main.frame.height * 0.55)
+        let point = CGPoint(x: main.frame.minX + offset.dx, y: main.frame.minY + offset.dy)
+        XCTAssertTrue(main.frame.insetBy(dx: 4, dy: 40).contains(point),
+                      "The physical backdrop target must be inside parent content rather than window chrome")
+        XCTAssertFalse(preview.frame.insetBy(dx: -8, dy: -8).contains(point),
+                       "The physical backdrop target must lie outside the actual observed preview frame")
+        main.coordinate(withNormalizedOffset: .zero).withOffset(offset).click()
+    }
+
+    func testMiniAttachmentPreviewBackAndMissingCopyRecovery() throws {
+        let files = try writeQuickPreviewFixture()
+        let before = try Data(contentsOf: dataURL)
+        try FileManager.default.removeItem(at: files[0].copy)
+        app.launch()
+        let disclosure = app.buttons["panel.attachments.toggle.\(eventID)"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        for _ in 0..<4 where !disclosure.isHittable { app.scrollViews["event.list"].swipeUp() }
+        disclosure.click()
+        let first = app.buttons["attachments.open.\(eventID).\(files[0].id)"]
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        for _ in 0..<4 where !first.isHittable { app.scrollViews["event.list"].swipeUp() }
+        first.click()
+        let prefix = "panel.attachment.preview"
+        let preview = app.descendants(matching: .any).matching(identifier: prefix).firstMatch
+        XCTAssertTrue(preview.waitForExistence(timeout: 3))
+        XCTAssertTrue(preview.staticTexts[files[0].name].exists)
+        XCTAssertTrue(preview.staticTexts["Копия недоступна"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons[prefix + ".external"].isEnabled)
+        app.buttons[prefix + ".next"].click()
+        XCTAssertTrue(preview.staticTexts[files[1].name].waitForExistence(timeout: 3))
+        app.buttons[prefix + ".back"].click()
+        XCTAssertTrue(waitForAbsence(preview))
+        XCTAssertTrue(first.waitForExistence(timeout: 3))
+        let all = app.buttons["panel.attachments.all.\(eventID)"]
+        for _ in 0..<4 where !all.isHittable { app.scrollViews["event.list"].swipeUp() }
+        all.click()
+        let search = app.textFields["panel.attachments.list.search.\(eventID)"]
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        replace(search, with: "06")
+        attachQuickPreviewAXSnapshot("Mini library before filtered-file click", element: app.windows["main.panel"])
+        app.buttons["panel.attachments.list.open.\(eventID).\(files[5].id)"].click()
+        let openedFromLibrary = app.buttons[prefix + ".back"].waitForExistence(timeout: 3)
+        if !openedFromLibrary {
+            attachQuickPreviewAXSnapshot("Mini library after failed preview activation", element: app.windows["main.panel"])
+        }
+        XCTAssertTrue(openedFromLibrary, "Clicking the filtered saved file must expose preview navigation")
+        attachQuickPreviewAXSnapshot("Mini preview with retained filtered library", element: app.windows["main.panel"])
+        XCTAssertFalse(search.exists, "The retained mini library search must leave accessibility while hidden")
+        XCTAssertTrue(preview.staticTexts["6 из 6"].exists)
+        app.buttons[prefix + ".back"].click()
+        XCTAssertTrue(search.waitForExistence(timeout: 3))
+        XCTAssertEqual(search.value as? String, "06")
+        app.buttons["panel.attachments.list.back.\(eventID)"].click()
+        XCTAssertTrue(waitForAbsence(search))
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), before)
+        try requireQuickPreviewFilesUnchanged(files, missingIndex: 0)
+    }
+
+    private func attachQuickPreviewAXSnapshot(_ name: String, element: XCUIElement) {
+        let snapshot = XCTAttachment(string: element.debugDescription)
+        snapshot.name = name
+        snapshot.lifetime = .keepAlways
+        add(snapshot)
+    }
+
+    private struct QuickPreviewFile {
+        let id: String
+        let name: String
+        let source: URL
+        let copy: URL
+        let bytes: Data
+    }
+
+    private func writeQuickPreviewFixture() throws -> [QuickPreviewFile] {
+        var items = try persistedItems()
+        var metadata: [[String: Any]] = []
+        let sourceFolder = testHome.appendingPathComponent("QuickPreviewOriginals")
+        try FileManager.default.createDirectory(at: sourceFolder, withIntermediateDirectories: true)
+        let files = try (1...6).map { number in
+            let identifier = "88888888-8888-8888-8888-" + String(format: "%012d", number)
+            let name = String(format: "%02d", number) + "-preview.txt"
+            let bytes = Data("Synthetic preview file \(number). Original contents stay intact.\n".utf8)
+            let source = sourceFolder.appendingPathComponent(name)
+            let copy = attachmentCopyURL(id: identifier, name: name)
+            try bytes.write(to: source)
+            try FileManager.default.createDirectory(at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: source, to: copy)
+            let record: [String: Any] = ["id": identifier, "name": name, "byteCount": bytes.count]
+            try JSONSerialization.data(withJSONObject: record)
+                .write(to: copy.deletingLastPathComponent().appendingPathComponent(".countdown-attachment-" + identifier))
+            metadata.append(record)
+            return QuickPreviewFile(id: identifier, name: name, source: source, copy: copy, bytes: bytes)
+        }
+        items[0]["attachments"] = metadata
+        try writeItems(items, primaryID: eventID)
+        return files
+    }
+
+    private func requireQuickPreviewFilesUnchanged(_ files: [QuickPreviewFile], missingIndex: Int? = nil) throws {
+        for (index, file) in files.enumerated() {
+            XCTAssertEqual(try Data(contentsOf: file.source), file.bytes, "Preview must preserve source originals")
+            if index == missingIndex {
+                XCTAssertFalse(FileManager.default.fileExists(atPath: file.copy.path))
+            } else {
+                XCTAssertEqual(try Data(contentsOf: file.copy), file.bytes, "Read-only preview must preserve owned copies")
+            }
+        }
+    }
+
     private func selectNativeAttachment(_ source: URL) throws {
         let add = app.buttons["editor.attachments.add"]
         XCTAssertTrue(add.waitForExistence(timeout: 3))
@@ -1231,6 +1484,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         path.click()
         path.typeKey(try currentLayoutShortcutKey("a"), modifierFlags: .command)
         path.typeKey(.delete, modifierFlags: [])
+        recordKeyboardInputSources(phase: "native attachment path before ordinary typing")
         path.typeText(source.path)
         XCTAssertEqual(path.value as? String, source.path)
         path.typeKey(.return, modifierFlags: [])
@@ -1283,7 +1537,14 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(goToFolder.waitForExistence(timeout: 3))
         let folder = goToFolder.textFields["PathTextField"]
         XCTAssertTrue(folder.waitForExistence(timeout: 3), "The native Go to Folder field must be accessible")
-        replace(folder, with: testHome.path)
+        folder.click()
+        folder.typeKey(try currentLayoutShortcutKey("a"), modifierFlags: .command)
+        folder.typeKey(.delete, modifierFlags: [])
+        XCTAssertEqual(folder.value as? String, "",
+                       "Native Select All and Delete must clear the entire prior path, including autocomplete text")
+        recordKeyboardInputSources(phase: "native diagnostic destination before ordinary typing")
+        folder.typeText(testHome.path)
+        XCTAssertEqual(folder.value as? String, testHome.path)
         folder.typeKey(.return, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(goToFolder))
         let save = panel.buttons["OKButton"]
@@ -1351,24 +1612,34 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     private func revealInEditor(_ element: XCUIElement, fullyInViewport: Bool = false) {
+        waitForInputSourceHUDToDisappear()
         let scroll = app.scrollViews["editor.scroll"]
         if fullyInViewport {
             for _ in 0..<4 {
                 let viewport = scroll.frame
                 let target = element.frame
                 if viewport.contains(target) && element.isHittable { break }
+                waitForInputSourceHUDToDisappear()
                 if target.minY < viewport.minY {
                     scroll.swipeDown()
                 } else {
                     scroll.swipeUp()
                 }
             }
+            waitForInputSourceHUDToDisappear()
             XCTAssertTrue(scroll.frame.contains(element.frame), "Editor target must be fully inside the scroll viewport before interaction")
             XCTAssertTrue(element.isHittable)
             return
         }
-        for _ in 0..<3 where !element.isHittable { scroll.swipeDown() }
-        for _ in 0..<4 where !element.isHittable { scroll.swipeUp() }
+        for _ in 0..<3 where !element.isHittable {
+            waitForInputSourceHUDToDisappear()
+            scroll.swipeDown()
+        }
+        for _ in 0..<4 where !element.isHittable {
+            waitForInputSourceHUDToDisappear()
+            scroll.swipeUp()
+        }
+        waitForInputSourceHUDToDisappear()
         XCTAssertTrue(element.isHittable)
     }
 

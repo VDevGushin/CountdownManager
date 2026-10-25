@@ -16,6 +16,8 @@ struct ManagerView: View {
     @State private var showingDayChoices = false
     @State private var showingSettings = false
     @State private var attachmentListEventID: UUID?
+    @State private var attachmentLibraryIsSource = false
+    @StateObject private var attachmentPreview = AttachmentPreviewSession()
     @State private var dayPreset: DayCreationPreset?
     @State private var selectDayDate = false
     @State private var rootIdentity = UUID()
@@ -50,12 +52,7 @@ struct ManagerView: View {
                     .allowsHitTesting(!showingEditor && !showingSettings && attachmentListEvent == nil)
                     .accessibilityHidden(showingEditor || showingSettings || attachmentListEvent != nil)
                 if let item = attachmentListEvent, !showingEditor, !showingSettings {
-                    AttachmentListView(item: item, compact: true, back: { attachmentListEventID = nil },
-                                       open: { attachment in
-                        Task { await store.openAttachment(attachment, eventID: item.id) }
-                    }, thumbnailURL: { attachment in
-                        await store.attachmentThumbnailURL(attachment, eventID: item.id)
-                    })
+                    attachmentScreen(item: item)
                     .id(item.id)
                 }
                 if showingSettings {
@@ -91,6 +88,9 @@ struct ManagerView: View {
         .uiSmokeControl(id: "root.window", value: { rootIdentity.uuidString })
         .onChange(of: store.data) { _ in closeUnavailableAttachmentList() }
         .onChange(of: store.today) { _ in closeUnavailableAttachmentList() }
+        .onChange(of: attachmentPreview.selection) { selection in
+            if selection == nil, !attachmentLibraryIsSource { attachmentListEventID = nil }
+        }
     }
 
     private var listScreen: some View {
@@ -282,7 +282,7 @@ struct ManagerView: View {
             }
             if !item.attachments.isEmpty {
                 SavedAttachmentSection(item: item, compact: true, open: { attachment in
-                    Task { await store.openAttachment(attachment, eventID: item.id) }
+                    showAttachmentPreview(attachment, item: item, origin: .summary)
                 }, thumbnailURL: { attachment in
                     await store.attachmentThumbnailURL(attachment, eventID: item.id)
                 }, showAll: { showAttachmentList(item.id) })
@@ -549,19 +549,74 @@ struct ManagerView: View {
     }
 
     private func openSettings() {
-        guard !showingEditor else { return }
+        guard !showingEditor, attachmentListEventID == nil else { return }
+        attachmentPreview.close()
         attachmentListEventID = nil
         showingSettings = true
     }
 
     private func showAttachmentList(_ id: UUID) {
         guard !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
+              attachmentListEventID == nil,
               store.active.contains(where: { $0.id == id && !$0.attachments.isEmpty }) else { return }
+        attachmentPreview.close()
+        attachmentLibraryIsSource = true
         attachmentListEventID = id
     }
 
     private func closeUnavailableAttachmentList() {
-        if attachmentListEventID != nil, attachmentListEvent == nil { attachmentListEventID = nil }
+        attachmentPreview.reconcile(event: attachmentListEvent)
+        if attachmentListEventID != nil, attachmentListEvent == nil {
+            attachmentPreview.close()
+            attachmentListEventID = nil
+            attachmentLibraryIsSource = false
+        }
+    }
+
+    private func attachmentScreen(item: Countdown) -> some View {
+        ZStack {
+            if attachmentLibraryIsSource {
+                AttachmentListView(item: item, compact: true, back: closeAttachments,
+                                   open: { showAttachmentPreview($0, item: item, origin: .library) },
+                                   thumbnailURL: { await store.attachmentThumbnailURL($0, eventID: item.id) })
+                    .opacity(attachmentPreview.selection == nil ? 1 : 0)
+                    .disabled(attachmentPreview.selection != nil)
+                    .allowsHitTesting(attachmentPreview.selection == nil)
+                    .accessibilityHidden(attachmentPreview.selection != nil)
+            }
+            if attachmentPreview.selection != nil {
+                AttachmentPreviewView(item: item, compact: true, session: attachmentPreview,
+                                      back: closeAttachmentPreview,
+                                      resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) },
+                                      openExternally: { [store] in await store.openAttachment($0, eventID: $1) })
+            }
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private func showAttachmentPreview(_ attachment: EventAttachment, item: Countdown,
+                                       origin: AttachmentPreviewOrigin) {
+        guard !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
+              let current = store.active.first(where: { $0.id == item.id }),
+              current.attachments.contains(where: { $0.id == attachment.id }),
+              attachmentPreview.selection == nil,
+              origin == .library ? attachmentListEventID == item.id : attachmentListEventID == nil else { return }
+        attachmentLibraryIsSource = origin == .library
+        attachmentListEventID = item.id
+        attachmentPreview.open(event: current, attachmentID: attachment.id, origin: origin,
+                               resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) })
+    }
+
+    private func closeAttachmentPreview() {
+        guard attachmentPreview.selection != nil else { return }
+        attachmentPreview.close()
+        if !attachmentLibraryIsSource { attachmentListEventID = nil }
+    }
+
+    private func closeAttachments() {
+        attachmentPreview.close()
+        attachmentListEventID = nil
+        attachmentLibraryIsSource = false
     }
 
     private func finishEditor() {
@@ -576,7 +631,8 @@ struct ManagerView: View {
     }
 
     private func createEvent() {
-        guard !showingSettings, !store.hasPendingPersistence, store.eventCreationIsAvailable,
+        guard !showingSettings, attachmentListEventID == nil,
+              !store.hasPendingPersistence, store.eventCreationIsAvailable,
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
         editing = nil
@@ -586,12 +642,14 @@ struct ManagerView: View {
     }
 
     private func toggleDayChoices() {
-        guard !editorSession.hasActiveEditor, !showingSettings, store.eventCreationIsAvailable else { return }
+        guard !editorSession.hasActiveEditor, !showingSettings, attachmentListEventID == nil,
+              store.eventCreationIsAvailable else { return }
         showingDayChoices.toggle()
     }
 
     private func createDay(preset: DayCreationPreset?, selectDate: Bool = false) {
-        guard !showingSettings, !store.hasPendingPersistence, store.eventCreationIsAvailable, let preset,
+        guard !showingSettings, attachmentListEventID == nil,
+              !store.hasPendingPersistence, store.eventCreationIsAvailable, let preset,
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
         editing = nil
@@ -601,7 +659,7 @@ struct ManagerView: View {
     }
 
     private func edit(_ id: UUID) {
-        guard !showingSettings, !store.hasPendingPersistence,
+        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
               let item = store.active.first(where: { $0.id == id }),
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=edit id=\(item.id.uuidString)")

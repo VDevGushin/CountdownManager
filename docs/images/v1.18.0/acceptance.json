@@ -1,0 +1,108 @@
+{
+  "status": "READY_TO_PUBLISH",
+  "version": "1.18.0",
+  "build": "33",
+  "executableSHA256": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "published": false,
+  "lastConfirmedPublicRelease": {
+    "version": "1.17.0",
+    "build": "32"
+  },
+  "freshNative": {
+    "desktop": {
+      "status": "PASS",
+      "scenariosPassed": 27,
+      "scenariosTotal": 27,
+      "seconds": 53.08,
+      "captureCount": 110,
+      "receipt": "native-desktop-run.json"
+    },
+    "attachments": {
+      "status": "PASS",
+      "scenariosPassed": 7,
+      "scenariosTotal": 7,
+      "seconds": 21.023,
+      "captureCount": 42,
+      "receipt": "native-attachments-run.json"
+    },
+    "mini": {
+      "status": "PASS",
+      "scenariosPassed": 23,
+      "scenariosTotal": 23,
+      "seconds": 28.234,
+      "receipt": "native-mini-run.json"
+    },
+    "editor": {
+      "status": "PASS",
+      "scenariosPassed": 5,
+      "scenariosTotal": 5,
+      "seconds": 9.246,
+      "receipt": "native-editor-run.json"
+    },
+    "menu": {
+      "status": "PASS",
+      "scenariosPassed": 3,
+      "scenariosTotal": 3,
+      "seconds": 21.372,
+      "receipt": "native-menu-run.json"
+    },
+    "collapse": {
+      "status": "PASS",
+      "scenariosPassed": 2,
+      "scenariosTotal": 2,
+      "seconds": 2.566,
+      "receipt": "native-collapse-run.json"
+    }
+  },
+  "artifactAudit": {
+    "status": "PASS",
+    "publicKeyOnly": true,
+    "receipt": "artifact-audit.json"
+  },
+  "pending": [
+    "anonymous public HTTPS ZIP/version-feed/stable-feed verification and Latest confirmation after publication"
+  ],
+  "evidenceScope": "All listed local gates, six native routes, combined28 unique external cases, genuine isolated upgrade and artifact audit accepted. Public delivery awaits actual publication.",
+  "externalXCUITest": {
+    "status": "PASS_COMBINED",
+    "uniqueCasesCovered": 28,
+    "singleFullRunAllPassed": false,
+    "fullRunPassed": 27,
+    "fullRunTotal": 28,
+    "affectedTargetedPassed": 1,
+    "affectedTargetedTotal": 1,
+    "receipt": "external-xcui.json"
+  },
+  "automatedGates": {
+    "fast": {
+      "status": "PASS",
+      "exitCode": 0,
+      "coreChecks": true,
+      "uiChecks": true,
+      "log": "fast-final.log"
+    },
+    "swiftlint": {
+      "status": "PASS",
+      "violations": 0,
+      "serious": 0,
+      "files": 75,
+      "log": "lint-final.log"
+    }
+  },
+  "genuineUpdate": {
+    "status": "PASS",
+    "from": "1.17.0/32",
+    "to": "1.18.0/33",
+    "oldPID": 60174,
+    "automaticNewPID": 60377,
+    "legacyAttachments": 17,
+    "unchangedDataFiles": 35,
+    "receipt": "genuine-update.json"
+  },
+  "serviceBackedCaptures": {
+    "status": "CAPTURED_INSPECTED",
+    "count": 4,
+    "manifest": "desktop/manifest.json",
+    "scope": "Actual photo/PDF/movie-poster/mini-photo compositor pixels; no universal inline-playback claim"
+  }
+}

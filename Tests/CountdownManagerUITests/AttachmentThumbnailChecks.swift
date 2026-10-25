@@ -23,6 +23,17 @@ func testAttachmentThumbnailMedia(in directory: URL) async throws {
     }
     requireBoundedAttachmentThumbnail(firstPage, maximum: 132)
     try requireRedPDFPage(firstPage)
+    guard let shelfPage = await loader.thumbnail(for: files[1], scale: 2, pointSize: 240) else {
+        preconditionFailure("A wide shelf must request a fresh bounded document raster")
+    }
+    requireBoundedAttachmentThumbnail(shelfPage, maximum: 480)
+    precondition(max(shelfPage.width, shelfPage.height) == 480,
+                 "A shelf must not upscale the old 44pt list thumbnail")
+    try requireRedPDFPage(shelfPage)
+    guard let boundedShelf = await loader.thumbnail(for: files[1], scale: 100, pointSize: 10_000) else {
+        preconditionFailure("Oversized thumbnail input must still render within the shelf budget")
+    }
+    requireBoundedAttachmentThumbnail(boundedShelf, maximum: 768)
 
     let corruptPDF = directory.appendingPathComponent("Invalid.pdf")
     try Data("Not a PDF".utf8).write(to: corruptPDF)

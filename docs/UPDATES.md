@@ -1,8 +1,37 @@
 # Preparing signed updates
 
-## Release 1.17.0 / build 32 — published as Latest
+## Preparing 1.18.0 / build 33
 
-Release **1.17.0 / build 32 is published as Latest; anonymous downloads are verified**. It unifies the static Dock
+The next minor release adds the attachment shelf, compact desktop details and embedded native
+quick preview. The production candidate uses the existing bundle ID, stable feed and signing key.
+Its exact executable is `e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5`.
+Release validation and publication are in progress; the currently public Latest remains 1.17.0/32.
+[Release preparation](releases/v1.18.0.md).
+
+Fresh exact-candidate native desktop passed **27/27 in 53.080 seconds** (110 PNGs), and focused
+attachments passed **7/7 in 21.023 seconds** (42 PNGs), with unchanged executable hashes and no
+recorded stall/timeout. [Current receipts and images](images/v1.18.0/PROVENANCE.md) distinguish
+the exact-package checks from historical evidence.
+
+The signed local ZIP is **5,887,335 bytes**, SHA-256
+`2e27b1cc53d531153f8576bc97d46957b4efa8b0f99a10da0d47c1117c93eb91`;
+the 1,299-byte feed is `7f713dd1f1e0979952845bb0c2e31e3e0dc0a81e0831c21bf57d09c26c70c7b9`.
+An [independent public-key-only artifact audit](images/v1.18.0/artifact-audit.json) validated
+archive/feed signatures and rejection of altered messages/signatures, exactly bounded feed
+trailer, version/URL/length/hardware/minOS, strict/deep extracted codesign and the complete
+166-entry candidate/extracted bytes/modes/symlink tree. The production key matches the genuine
+1.17.0/32 baseline; no private key or Keychain was accessed by the auditor.
+
+All 67 exact-candidate native scenarios passed. External XCUITest passed 27/28 in the full
+ABC run; the only failed Diagnostic Save case passed a focused 1/1 repeat after fixing the test's
+GoToFolder text clearing. These are 28 unique successful scenarios, not one clean 28-case run.
+Final strict lint is 0/75 and CoreChecks/UIChecks exit 0. Genuine isolated 1.17.0/32 → 1.18.0/33
+Sparkle install and automatic relaunch preserved synthetic events/preferences and all 35 files.
+[Update receipt](images/v1.18.0/genuine-update.json). Anonymous public delivery remains pending publication.
+
+## Previous 1.17.0 / build 32 — retained publication evidence
+
+Release **1.17.0 / build 32 was published as Latest; anonymous downloads were verified**. It unifies the static Dock
 icon with the menu Mars palette and adds one linear 12-second turn **only to idle Mars in the
 status bar** when the panel or desktop opens. Dock artwork stays static. Timer/favorite priority,
 Reduce Motion, event data and the existing signed-update protocol remain unchanged.
@@ -27,13 +56,13 @@ the 1,299-byte feed is `e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c8
 confirm anonymous ZIP, version feed and stable feed HTTP 200 with exact signed SHA-256 values.
 Source commit `f35a4a8a25b85c1548488064e8852fa18b963ebc` and annotated tag `v1.17.0` are pushed.
 
-The confirmed published channel is **1.17.0 / build 32**; Latest is verified by the browser badge
+At its publication, the confirmed channel was **1.17.0 / build 32**, verified by the browser badge
 and an anonymous HTTPS redirect. The production bundle ID, signing key and stable feed
 must remain unchanged.
 
 ## Published 1.16.0 / build 31 — retained release evidence
 
-Release **1.16.0 / build 31 is published as Latest; anonymous ZIP and appcasts are verified**. It includes task-first
+Release **1.16.0 / build 31 was published as Latest; anonymous ZIP and appcasts were verified**. It includes task-first
 ordering, a 15-file cap, 36-point mini previews and separate searchable file libraries.
 The current desktop library uses the same native SwiftUI sheet as Settings and the editor,
 with a right-side close button and parent-content outside-click dismissal. Mini Back matches Settings; both surfaces keep counts only in the footer.
@@ -131,11 +160,12 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The confirmed published version-specific archive URL remains
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.16.0/CountdownManager-1.16.0-31.zip`.
-The next release preparation uses tag `v1.17.0` and archive `CountdownManager-1.17.0-32.zip`;
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/CountdownManager-1.17.0-32.zip`.
+The next release preparation uses tag `v1.18.0` and archive `CountdownManager-1.18.0-33.zip`;
 that candidate URL is not yet a verified public download.
-The signed `appcast.xml` and ZIP are published together as Latest; anonymous downloads match
-the locally signed SHA-256 values. Keep the canonical stable feed above unchanged for future releases.
+Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
+with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
+Keep the canonical stable feed above unchanged for future releases.
 Keep archive URLs tied to their version tags; keep the
 bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
 A private repository does not automatically provide anonymous downloads. Never embed access
@@ -194,7 +224,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.17.0 COUNTDOWN_BUILD_NUMBER=32 \
+  COUNTDOWN_VERSION=1.18.0 COUNTDOWN_BUILD_NUMBER=33 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -204,14 +234,14 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.0/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above configure preparation of 1.17.0 / build 32; local acceptance and signed-artifact
-status are tracked in [releases/v1.17.0.md](releases/v1.17.0.md). Commands alone do not establish
-acceptance or publication. The last confirmed distributed version is 1.16.0 / build 31. For subsequent releases,
+The numbers above configure preparation of 1.18.0 / build 33; local acceptance and signed-artifact
+status are tracked in [releases/v1.18.0.md](releases/v1.18.0.md). Commands alone do not establish
+acceptance or publication. The last confirmed distributed version is 1.17.0 / build 32. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
@@ -221,8 +251,8 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.16.0.md](releases/v1.16.0.md);
-previous release evidence is retained in [releases/v1.15.0.md](releases/v1.15.0.md).
+Current published release status is recorded in [releases/v1.17.0.md](releases/v1.17.0.md);
+previous release evidence is retained in [releases/v1.16.0.md](releases/v1.16.0.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus

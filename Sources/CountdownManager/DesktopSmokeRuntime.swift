@@ -1,6 +1,7 @@
 import AppKit
 import CountdownCore
 import CryptoKit
+import QuickLookUI
 import SwiftUI
 
 private actor DesktopSmokeWriteGate {
@@ -112,7 +113,11 @@ final class DesktopSmokeRuntime {
         }
         Task { @MainActor in
             do {
-                try await run()
+                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
+                    try await runAttachmentFocusedChecks()
+                } else {
+                    try await run()
+                }
                 try writeManifest()
                 finish("DesktopSmoke\n" + passed.map { "✓ " + $0 }.joined(separator: "\n")
                        + "\nPASS: \(passed.count)/\(passed.count)", status: 0)
@@ -121,6 +126,441 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func runAttachmentFocusedChecks() async throws {
+        try await wait("loaded isolated attachment store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "focused attachment fixture must start empty")
+        for title in ["Соседнее событие", "Встреча после проверки файлов"] {
+            let event = Countdown(title: title, date: Day(store.tomorrow), emoji: "")
+            let saved = await store.save(event, primary: false)
+            try require(saved, "cannot seed focused attachment survivor")
+        }
+        showDesktop()
+        try await wait("focused attachment desktop appears") {
+            self.desktopWindow()?.isVisible == true && self.controls.entries["desktop.root"] != nil
+        }
+        try await verifyAttachmentThumbnails()
+        try await verifyQuickPreviewWorkflow()
+    }
+
+    private func verifyQuickPreviewWorkflow() async throws {
+        let sources = try UISmokeAttachmentMedia.make(in: configuration.homeURL.appendingPathComponent("QuickPreviewMedia"))
+        let originals = try sources.map { try Data(contentsOf: $0) }
+        let token = UUID()
+        let began = await store.beginAttachmentDraft(token)
+        try require(began, "cannot prepare quick preview media")
+        var files: [EventAttachment] = []
+        for source in sources {
+            files.append(try value(await store.importAttachment(from: source, draftID: token), "quick preview copied file"))
+        }
+        var event = Countdown(title: "Фото, документы и видео для поездки с длинным названием", note: "Проверка просмотра без изменения файлов.",
+                              date: store.today, emoji: "", attachments: files)
+        let saved = await store.save(event, primary: true)
+        try require(saved, "cannot save quick preview event")
+        await store.discardAttachmentDraft(token)
+        try await press("desktop.event.\(event.id)")
+        let host = try value(desktopWindow(), "quick preview desktop host")
+        let dataURL = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+        let before = try Data(contentsOf: dataURL)
+        let ownedTreeBefore = try attachmentTreeSnapshot()
+
+        try await press("desktop.attachments.open.\(event.id).\(files[0].id)")
+        let firstSheet = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane", size: NSSize(width: 640, height: 560))
+        for index in 0..<3 {
+            if index > 0 { try await press("desktop.attachment.preview.next") }
+            try await requireNativePreview(event: event, attachment: files[index], index: index, surface: "desktop", window: firstSheet)
+            try await captureWindowThemes("desktop-quick-preview-\(index)", window: firstSheet)
+        }
+        for _ in 0..<(files.count + 3) { _ = controls.press("desktop.attachment.preview.next") }
+        try await requireNativePreview(event: event, attachment: files[14], index: 14, surface: "desktop", window: firstSheet)
+        try await wait("last quick-preview file disables Next") {
+            self.controls.entries["desktop.attachment.preview.next"]?.isEnabled == false
+        }
+        try require(!controls.press("desktop.attachment.preview.next"), "Next escaped the saved attachment array")
+        try await press("desktop.attachment.preview.back")
+        try await requireNativeSheetDismissal(firstSheet, host: host, description: "direct quick preview close")
+        do {
+            try await wait("direct preview restores saved detail controls") {
+                self.controls.entries["desktop.detail.edit"]?.isEnabled == true
+                    && self.controls.entries["desktop.settings"]?.isEnabled == true
+                    && self.controls.entries["desktop.panel"]?.isEnabled == true
+                    && self.controls.value("desktop.attachment.preview") == nil
+                    && self.controls.value("desktop.inspector") == event.id.uuidString
+                    && host.attachedSheet == nil && !firstSheet.isVisible && firstSheet.sheetParent == nil
+                    && host.contentView.map { self.nativeQuickLookViews(in: $0).isEmpty } == true
+                    && firstSheet.contentView.map { self.nativeQuickLookViews(in: $0).isEmpty } != false
+            }
+        } catch {
+            try? writePreviewDismissalDiagnostic(eventID: event.id, host: host, sheet: firstSheet)
+            throw error
+        }
+        try writePreviewDismissalDiagnostic(eventID: event.id, host: host, sheet: firstSheet)
+
+        try await press("desktop.attachments.all.\(event.id)")
+        try await expect("desktop.attachments.list.\(event.id)", "15/15")
+        try await verifyPreviewLibraryScrollRetention(event: event, host: host)
+        try await replaceFocusedText(control: "desktop.attachments.list.search.\(event.id)", text: "материал 15")
+        try await expect("desktop.attachments.list.\(event.id)", "1/15")
+        let searchResponder = NSApp.keyWindow?.firstResponder
+        try await press("desktop.attachments.list.open.\(event.id).\(files[14].id)")
+        let librarySheet = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane", size: NSSize(width: 640, height: 560))
+        try await requireNativePreview(event: event, attachment: files[14], index: 14, surface: "desktop", window: librarySheet)
+        try require(controls.entries["desktop.attachments.list.search.\(event.id)"]?.isEnabled == false,
+                    "hidden library search remains interactive behind quick preview")
+        try require(NSApp.keyWindow?.firstResponder !== searchResponder,
+                    "quick preview left keyboard focus inside its hidden library search")
+        try await press("desktop.attachment.preview.previous")
+        try await requireNativePreview(event: event, attachment: files[13], index: 13, surface: "desktop", window: librarySheet)
+        try await press("desktop.attachment.preview.back")
+        _ = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane", size: NSSize(width: 540, height: 540))
+        try await expect("desktop.attachments.list.search.\(event.id)", "материал 15")
+        try await expect("desktop.attachments.list.\(event.id)", "1/15")
+        try await press("desktop.attachments.list.close.\(event.id)")
+        try await requireNativeSheetDismissal(librarySheet, host: host, description: "library after quick preview close")
+        let afterDesktop = try Data(contentsOf: dataURL)
+        try require(afterDesktop == before, "desktop quick preview changed event JSON")
+
+        try await press("desktop.panel")
+        if controls.value("panel.attachments.toggle.\(event.id)") != "expanded" {
+            try await press("panel.attachments.toggle.\(event.id)")
+        }
+        try await requireAttachmentShelf(eventID: event.id, attachments: Array(files.prefix(3)), surface: "panel")
+        let mini = try value(panelWindow(), "quick preview mini host")
+        try await press("panel.attachments.open.\(event.id).\(files[0].id)")
+        try await requireNativePreview(event: event, attachment: files[0], index: 0, surface: "panel", window: mini)
+        try require(mini.attachedSheet == nil, "mini quick preview acquired another native sheet")
+        try await captureWindowThemes("mini-quick-preview-photo", window: mini)
+        let miniContent = try value(mini.contentView, "mini preview renderer content")
+        let oldRenderer = try value(nativeQuickLookViews(in: miniContent).first, "renderer before panel hide")
+        var visibilityObservations: [[String: Any]] = []
+        func visibilityObservation(_ phase: String) -> [String: Any] {
+            ["phase": phase, "visible": mini.isVisible, "key": mini.isKeyWindow,
+             "keyWindowIsMini": NSApp.keyWindow === mini, "appActive": NSApp.isActive,
+             "onActiveSpace": mini.isOnActiveSpace, "occlusion": mini.occlusionState.rawValue,
+             "nativeRendererCount": self.nativeQuickLookViews(in: miniContent).count,
+             "oldRendererItemCleared": oldRenderer.previewItem == nil,
+             "previewIdentity": self.controls.value("panel.attachment.preview") ?? "nil"]
+        }
+        visibilityObservations.append(visibilityObservation("before-status-hide"))
+        do {
+            pressStatusItem()
+            try await wait("status-routed mini hide settles before reopening and releases its renderer") {
+                !mini.isVisible && !mini.isKeyWindow && !mini.occlusionState.contains(.visible)
+                    && self.nativeQuickLookViews(in: miniContent).isEmpty && oldRenderer.previewItem == nil
+            }
+            visibilityObservations.append(visibilityObservation("hidden-occlusion-settled"))
+            pressStatusItem()
+            try await wait("status-routed mini reopen is active, key and visible to WindowServer") {
+                mini.isVisible && mini.isKeyWindow && NSApp.keyWindow === mini && NSApp.isActive
+                    && mini.occlusionState.contains(.visible)
+            }
+            try await requireNativePreview(event: event, attachment: files[0], index: 0, surface: "panel", window: mini)
+            let replacement = try value(nativeQuickLookViews(in: miniContent).first, "renderer after panel reopen")
+            try require(replacement !== oldRenderer && !replacement.autostarts,
+                        "mini reopen reused a closed renderer or enabled media autoplay")
+            visibilityObservations.append(visibilityObservation("reopened-occlusion-settled"))
+        } catch {
+            visibilityObservations.append(visibilityObservation("failure"))
+            try? JSONSerialization.data(withJSONObject: visibilityObservations, options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent("mini-quick-preview-hide-reopen.json"))
+            throw error
+        }
+        try JSONSerialization.data(withJSONObject: visibilityObservations, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("mini-quick-preview-hide-reopen.json"))
+        try await press("panel.attachment.preview.back")
+        try await expect("panel.attachments.toggle.\(event.id)", "expanded")
+        try await press("panel.attachments.all.\(event.id)")
+        try await replaceFocusedText(control: "panel.attachments.list.search.\(event.id)", text: "материал 15")
+        try await press("panel.attachments.list.open.\(event.id).\(files[14].id)")
+        try await requireNativePreview(event: event, attachment: files[14], index: 14, surface: "panel", window: mini)
+        try await press("panel.attachment.preview.previous")
+        try await requireNativePreview(event: event, attachment: files[13], index: 13, surface: "panel", window: mini)
+        try await press("panel.attachment.preview.back")
+        try await expect("panel.attachments.list.search.\(event.id)", "материал 15")
+        try await expect("panel.attachments.list.\(event.id)", "1/15")
+        try await press("panel.attachments.list.back.\(event.id)")
+        let afterMini = try Data(contentsOf: dataURL)
+        try require(afterMini == before, "mini quick preview changed event JSON")
+        let ownedTreeAfter = try attachmentTreeSnapshot()
+        try require(ownedTreeAfter == ownedTreeBefore,
+                    "read-only native preview changed owned attachment bytes, markers or file inventory")
+        passed.append("quick preview photo/PDF/video requests, bounded saved-order navigation, independent mini return and retained filtered library query preserve event JSON")
+        passed.append("hidden mini releases its native renderer/item; reopening creates a new non-autostart renderer for the same identity; owned file bytes and inventory remain unchanged")
+
+        try await press("desktop.open")
+        try await press("desktop.attachments.all.\(event.id)")
+        try await press("desktop.attachments.list.open.\(event.id).\(files[0].id)")
+        let removalSheet = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane", size: NSSize(width: 640, height: 560))
+        try await requireNativePreview(event: event, attachment: files[0], index: 0, surface: "desktop", window: removalSheet)
+        event.attachments.removeFirst()
+        let removed = await store.save(event, primary: true, requireExisting: true)
+        try require(removed, "cannot remove previewed owned copy through the shared Store")
+        try await wait("current-file removal closes preview back to its mounted library") {
+            self.controls.entries["desktop.attachment.preview"] == nil
+                && self.controls.value("desktop.attachments.list.\(event.id)") == "14/14"
+        }
+        try await press("desktop.attachments.list.open.\(event.id).\(files[1].id)")
+        try await requireNativePreview(event: event, attachment: files[1], index: 0, surface: "desktop", window: removalSheet)
+        let deleted = await store.delete(event.id)
+        try require(deleted, "cannot delete preview owner")
+        try await requireNativeSheetDismissal(removalSheet, host: host, description: "removed quick preview owner")
+        let attachmentRoot = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/Attachments")
+        let ownedFolders = files.map { attachmentRoot.appendingPathComponent($0.id.uuidString) }
+        do {
+            try await wait("owner deletion releases presentation, identity and all owned copies") {
+                let selected = self.controls.value("desktop.inspector").flatMap(UUID.init(uuidString:))
+                let active = self.store.active
+                let selectionIsValid = active.isEmpty ? selected == nil : active.contains { $0.id == selected }
+                return self.nativePreviewPresentationIsAbsent(host: host, sheet: removalSheet)
+                    && !self.store.data.items.contains(where: { $0.id == event.id })
+                    && !active.contains(where: { $0.id == event.id }) && selectionIsValid
+                    && ownedFolders.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) }
+            }
+        } catch {
+            try? writePreviewOwnerCleanupReceipt(name: "desktop-preview-owner-deletion", eventID: event.id,
+                                                  ownerStore: store, host: host, sheet: removalSheet,
+                                                  ownedFolders: ownedFolders)
+            throw error
+        }
+        let afterSources = try sources.map { try Data(contentsOf: $0) }
+        try require(afterSources == originals, "quick preview workflow modified original media")
+        try writePreviewOwnerCleanupReceipt(name: "desktop-preview-owner-deletion", eventID: event.id,
+                                              ownerStore: store, host: host, sheet: removalSheet,
+                                              ownedFolders: ownedFolders, sourceBytesUnchanged: afterSources == originals)
+        passed.append("current-file removal returns to origin; owner deletion releases preview identity, native presentation/renderers and all owned copies while preserving originals")
+        try await verifyPreviewExpiryFixture(source: sources[0])
+    }
+
+    private func verifyPreviewLibraryScrollRetention(event: Countdown, host: NSWindow) async throws {
+        let sheet = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane",
+                                                 size: NSSize(width: 540, height: 540))
+        let content = try value(sheet.contentView, "unfiltered attachment library content")
+        let scroll = try value(nativeScroll(in: content), "unfiltered attachment library native scroll")
+        let document = try value(scroll.documentView, "unfiltered attachment library document")
+        let last = try value(event.attachments.last, "last saved attachment for library scroll")
+        let openID = "desktop.attachments.list.open.\(event.id).\(last.id)"
+        try await expect("desktop.attachments.list.search.\(event.id)", "")
+        try scrollBrowser(scroll, toEnd: true)
+        try await wait("the last saved file is visible at a nonzero library offset") {
+            guard let row = self.controls.frame(openID) else { return false }
+            let viewport = scroll.contentView.convert(scroll.contentView.bounds, to: content)
+            return scroll.contentView.bounds.minY > 1 && viewport.insetBy(dx: -1, dy: -1).contains(row)
+        }
+        let before = scroll.contentView.bounds
+        let documentWidth = document.bounds.width
+        try await press(openID)
+        try await requireNativePreview(event: event, attachment: last, index: event.attachments.count - 1,
+                                       surface: "desktop", window: sheet)
+        try await press("desktop.attachment.preview.back")
+        _ = try await requireNativeSheet(host: host, paneID: "desktop.attachments.pane",
+                                         size: NSSize(width: 540, height: 540))
+        try await expect("desktop.attachments.list.search.\(event.id)", "")
+        try await expect("desktop.attachments.list.\(event.id)", "15/15")
+        var restoredScroll: NSScrollView?
+        try await wait("preview Back retains the actual nonzero library offset and document width") {
+            guard let currentContent = sheet.contentView,
+                  let currentScroll = self.nativeScroll(in: currentContent),
+                  let currentDocument = currentScroll.documentView else { return false }
+            restoredScroll = currentScroll
+            let after = currentScroll.contentView.bounds
+            return after.minY > 1 && abs(after.minX - before.minX) < 0.75 && abs(after.minY - before.minY) < 0.75
+                && abs(after.width - before.width) < 0.75 && abs(after.height - before.height) < 0.75
+                && abs(currentDocument.bounds.width - documentWidth) < 0.75
+        }
+        let currentScroll = try value(restoredScroll, "current library scroll after preview Back")
+        let currentDocument = try value(currentScroll.documentView, "current library document after preview Back")
+        let observation: [String: Any] = [
+            "beforeClip": [before.minX, before.minY, before.width, before.height],
+            "afterClip": [currentScroll.contentView.bounds.minX, currentScroll.contentView.bounds.minY,
+                          currentScroll.contentView.bounds.width, currentScroll.contentView.bounds.height],
+            "beforeDocumentWidth": documentWidth, "afterDocumentWidth": currentDocument.bounds.width,
+            "query": controls.value("desktop.attachments.list.search.\(event.id)") ?? "missing"
+        ]
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("desktop-preview-library-scroll-return.json"))
+        passed.append("preview Back preserves an unfiltered fifteen-file library's nonzero native scroll offset and document width")
+    }
+
+    private func verifyPreviewExpiryFixture(source: URL) async throws {
+        let retainedWindow = try value(desktopWindow(), "retained expiry-preview window")
+        let fixtureURL = configuration.homeURL.appendingPathComponent("PreviewExpiry/events.json")
+        let suite = configuration.defaultsSuiteName + ".preview-expiry"
+        let defaults = try value(UserDefaults(suiteName: suite), "preview expiry defaults")
+        var now = store.today.date()
+        let fixture = Store(fileURL: fixtureURL, disclosureDefaults: defaults, now: { now },
+                            loginItemManagementIsAvailable: false)
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let prefix = "expiry-fixture."
+        try await wait("controlled-clock preview store loads") { !fixture.isLoading }
+        let token = UUID()
+        let began = await fixture.beginAttachmentDraft(token)
+        try require(began, "cannot prepare controlled-clock attachment")
+        let attachment = try value(await fixture.importAttachment(from: source, draftID: token), "expiring copied photo")
+        let expiring = Countdown(title: "Просмотр перед полуночью", date: fixture.today, emoji: "", attachments: [attachment])
+        let futureDate = Day(try value(Day.calendar.date(byAdding: .day, value: 2, to: now), "expiry survivor date"))
+        let survivor = Countdown(title: "Событие после полуночи", date: futureDate, emoji: "")
+        for event in [expiring, survivor] {
+            let saved = await fixture.save(event, primary: event.id == expiring.id)
+            try require(saved, "cannot seed controlled-clock preview event")
+        }
+        await fixture.discardAttachmentDraft(token)
+        let copy = try value(await fixture.attachmentThumbnailURL(attachment, eventID: expiring.id), "expiring owned copy URL")
+        let sourceBytes = try Data(contentsOf: source)
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: prefix
+        ), editorSession: session)
+        let window = try value(controller.window, "controlled-clock preview host")
+        retainedWindow.orderOut(nil)
+        controller.show()
+        defer {
+            window.close()
+            retainedWindow.makeKeyAndOrderFront(nil)
+            defaults.removePersistentDomain(forName: suite)
+        }
+        try await wait("controlled-clock expiring event renders") {
+            self.controls.entries[prefix + "desktop.detail.\(expiring.id)"] != nil
+        }
+        try await press(prefix + "desktop.attachments.open.\(expiring.id).\(attachment.id)")
+        let sheet = try await requireNativeSheet(host: window, paneID: prefix + "desktop.attachments.pane",
+                                                 size: NSSize(width: 640, height: 560))
+        try await expect(prefix + "desktop.attachment.preview", attachment.id.uuidString)
+        try await expect(prefix + "desktop.attachment.preview.canvas", "native-preview-requested")
+        try await wait("controlled-clock preview owns its native renderer") {
+            guard let content = sheet.contentView else { return false }
+            let previews = self.nativeQuickLookViews(in: content)
+            guard previews.count == 1, let file = previews.first?.previewItem as? NSURL else { return false }
+            return (file as URL).standardizedFileURL == copy.standardizedFileURL
+        }
+        try await captureWindowThemes("desktop-quick-preview-before-controlled-expiry", window: sheet)
+        now = try value(Day.calendar.date(byAdding: .day, value: 1, to: now), "advanced civil-day clock")
+        fixture.refresh()
+        let ownedFolders = [copy.deletingLastPathComponent()]
+        do {
+            try await wait("clock expiry removes the owner, renderer and attached preview") {
+                !fixture.hasPendingPersistence && !fixture.active.contains(where: { $0.id == expiring.id })
+                    && !fixture.data.items.contains(where: { $0.id == expiring.id })
+                    && self.nativePreviewPresentationIsAbsent(host: window, sheet: sheet, scope: prefix)
+                    && self.controls.value(prefix + "desktop.inspector") == survivor.id.uuidString
+                    && ownedFolders.allSatisfy { !FileManager.default.fileExists(atPath: $0.path) }
+            }
+        } catch {
+            try? writePreviewOwnerCleanupReceipt(name: "desktop-preview-controlled-expiry", eventID: expiring.id,
+                                                  ownerStore: fixture, host: window, sheet: sheet, scope: prefix,
+                                                  ownedFolders: ownedFolders)
+            throw error
+        }
+        let durable = try await CountdownRepository(fileURL: fixtureURL).load()
+        let afterSource = try Data(contentsOf: source)
+        try require(durable.items == [survivor] && afterSource == sourceBytes,
+                    "controlled-clock expiry changed survivor metadata or the original photo")
+        try writePreviewOwnerCleanupReceipt(name: "desktop-preview-controlled-expiry", eventID: expiring.id,
+                                              ownerStore: fixture, host: window, sheet: sheet, scope: prefix,
+                                              ownedFolders: ownedFolders, sourceBytesUnchanged: afterSource == sourceBytes)
+        try await captureWindowThemes("desktop-quick-preview-after-controlled-expiry", window: window)
+        passed.append("hosted native injected-clock expiry closes the real preview and cleans only expired owned copies; system-midnight/Spaces remain separate manual acceptance")
+    }
+
+    private func requireNativePreview(event: Countdown, attachment: EventAttachment, index: Int,
+                                      surface: String, window: NSWindow) async throws {
+        let prefix = surface + ".attachment.preview"
+        try await expect(prefix, attachment.id.uuidString)
+        try await expect(prefix + ".name", attachment.name)
+        try await expect(prefix + ".position", "\(index + 1)/\(event.attachments.count)")
+        try await expect(prefix + ".canvas", "native-preview-requested")
+        let expectedURL = await store.attachmentThumbnailURL(attachment, eventID: event.id)
+        try await wait("one native Quick Look view is bound to the current local copy") {
+            guard let content = window.contentView else { return false }
+            let previews = self.nativeQuickLookViews(in: content)
+            guard previews.count == 1, let preview = previews.first,
+                  let url = preview.previewItem as? NSURL else { return false }
+            return (url as URL).standardizedFileURL == expectedURL?.standardizedFileURL
+                && !preview.autostarts && preview.bounds.width > 0 && preview.bounds.height > 0
+        }
+        try require(controls.entries[prefix + ".external"]?.isEnabled == true,
+                    "valid resolved file does not expose explicit external opening")
+    }
+
+    private func nativeQuickLookViews(in view: NSView) -> [QLPreviewView] {
+        let own = (view as? QLPreviewView).map { [$0] } ?? []
+        return own + view.subviews.flatMap { nativeQuickLookViews(in: $0) }
+    }
+
+    private func nativePreviewPresentationIsAbsent(host: NSWindow, sheet: NSWindow, scope: String = "") -> Bool {
+        host.isVisible && host.attachedSheet == nil && !sheet.isVisible && sheet.sheetParent == nil
+            && controls.value(scope + "desktop.attachment.preview") == nil
+            && host.contentView.map { nativeQuickLookViews(in: $0).isEmpty } == true
+            && sheet.contentView.map { nativeQuickLookViews(in: $0).isEmpty } != false
+    }
+
+    private func writePreviewOwnerCleanupReceipt(
+        name: String, eventID: UUID, ownerStore: Store,
+        host: NSWindow, sheet: NSWindow, scope: String = "",
+        ownedFolders: [URL], sourceBytesUnchanged: Bool? = nil
+    ) throws {
+        var observation: [String: Any] = [
+            "ownerID": eventID.uuidString, "ownerInData": ownerStore.data.items.contains { $0.id == eventID },
+            "ownerActive": ownerStore.active.contains { $0.id == eventID },
+            "activeIDs": ownerStore.active.map { $0.id.uuidString },
+            "selectedID": controls.value(scope + "desktop.inspector") ?? "nil",
+            "hasPendingPersistence": ownerStore.hasPendingPersistence,
+            "presentationAbsent": nativePreviewPresentationIsAbsent(host: host, sheet: sheet, scope: scope),
+            "hostVisible": host.isVisible, "hostHasAttachedSheet": host.attachedSheet != nil,
+            "retainedSheetVisible": sheet.isVisible, "retainedSheetHasParent": sheet.sheetParent != nil,
+            "hostNativeRendererCount": host.contentView.map { nativeQuickLookViews(in: $0).count } ?? 0,
+            "retainedSheetNativeRendererCount": sheet.contentView.map { nativeQuickLookViews(in: $0).count } ?? 0,
+            "previewIdentity": controls.value(scope + "desktop.attachment.preview") ?? "nil",
+            "cachedPreviewRegistryRecord": controls.entries[scope + "desktop.attachment.preview"] != nil,
+            "cachedLibraryRegistryRecord": controls.entries[scope + "desktop.attachments.list.\(eventID)"] != nil,
+            "ownedFolders": ownedFolders.map { ["id": $0.lastPathComponent,
+                                                   "exists": FileManager.default.fileExists(atPath: $0.path)] }
+        ]
+        if let sourceBytesUnchanged { observation["sourceBytesUnchanged"] = sourceBytesUnchanged }
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent(name + ".json"))
+    }
+
+    private func writePreviewDismissalDiagnostic(eventID: UUID, host: NSWindow, sheet: NSWindow) throws {
+        let describe = { (id: String) -> [String: Any] in
+            let entry = self.controls.entries[id]
+            let frame = self.controls.frame(id)
+            return ["id": id, "exists": entry != nil, "isEnabled": entry?.isEnabled ?? false,
+                    "hasAction": entry?.action != nil, "value": self.controls.value(id) ?? "nil",
+                    "frame": frame.map { [$0.minX, $0.minY, $0.width, $0.height] } ?? []]
+        }
+        let previewIDs = controls.ids(withPrefix: "desktop.attachment.preview")
+        let parentIDs = ["desktop.detail.edit", "desktop.settings", "desktop.panel", "desktop.inspector",
+                         "desktop.attachments.pane", "desktop.attachments.all.\(eventID)"]
+        let observation: [String: Any] = [
+            "hostVisible": host.isVisible, "hostIsKey": host.isKeyWindow,
+            "hostHasAttachedSheet": host.attachedSheet != nil,
+            "retainedSheetVisible": sheet.isVisible, "retainedSheetHasParent": sheet.sheetParent != nil,
+            "parentControls": parentIDs.map(describe), "previewControls": previewIDs.map(describe),
+            "hostNativeRendererCount": host.contentView.map { nativeQuickLookViews(in: $0).count } ?? -1,
+            "retainedSheetNativeRendererCount": sheet.contentView.map { nativeQuickLookViews(in: $0).count } ?? -1,
+            "selectedEvent": controls.value("desktop.inspector") ?? "nil"
+        ]
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent("desktop-preview-dismissal-diagnostic.json"))
+    }
+
+    private func attachmentTreeSnapshot() throws -> [String: Data] {
+        let root = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/Attachments")
+        let enumerator = try value(FileManager.default.enumerator(at: root,
+                                                                  includingPropertiesForKeys: [.isRegularFileKey]),
+                                   "owned attachment file inventory")
+        var snapshot: [String: Data] = [:]
+        for case let file as URL in enumerator {
+            if try file.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile == true {
+                snapshot[file.resolvingSymlinksInPath().standardizedFileURL.path] = try Data(contentsOf: file)
+            }
+        }
+        return snapshot
     }
 
     private func run() async throws {
@@ -602,20 +1042,20 @@ final class DesktopSmokeRuntime {
         try await wait("empty desktop attachment section hidden") {
             self.controls.entries["desktop.attachments.\(event.id)"] == nil
         }
-        try await requireThumbnailRows(eventID: event.id, attachments: [])
+        try await requireAttachmentShelf(eventID: event.id, attachments: [])
         try await press("desktop.panel")
         try await wait("empty panel attachment section hidden") {
             self.controls.entries["panel.attachments.\(event.id)"] == nil
         }
         try await press("desktop.open")
 
-        for count in [3, 4, 15] {
+        for count in [1, 3, 4, 6, 15] {
             event.attachments = Array(attachments.prefix(count))
             let saved = await store.save(event, primary: true, requireExisting: true)
             try require(saved, "cannot save thumbnail count boundary")
             try await expect("desktop.attachments.\(event.id)", String(count))
-            try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(min(4, count))))
-            for attachment in attachments.prefix(3) {
+            try await requireAttachmentShelf(eventID: event.id, attachments: Array(attachments.prefix(min(4, count))))
+            for attachment in attachments.prefix(min(3, count)) {
                 try await expect("desktop.attachment.thumbnail.\(event.id).\(attachment.id)", "ready")
             }
             if count >= 4 {
@@ -624,10 +1064,19 @@ final class DesktopSmokeRuntime {
             try await requireAttachmentSectionOrder(eventID: event.id, surface: "desktop")
             try await requireSingleEditorEntry(eventID: event.id)
             if count == 3 { try await captureThemes("desktop-single-edit-filled") }
-            if count <= 4 {
-                try require(controls.entries["desktop.attachments.all.\(event.id)"] == nil,
-                            "three/four files expose an unnecessary full-list action")
+            try require((controls.entries["desktop.attachments.all.\(event.id)"] != nil) == (count > 4),
+                        "desktop All must appear exactly beyond the first four saved files")
+            try await press("desktop.panel")
+            try await expect("panel.attachments.\(event.id)", String(count))
+            if controls.value("panel.attachments.toggle.\(event.id)") != "expanded" {
+                try await press("panel.attachments.toggle.\(event.id)")
             }
+            try await expect("panel.attachments.toggle.\(event.id)", "expanded")
+            try await requireAttachmentShelf(eventID: event.id,
+                                             attachments: Array(attachments.prefix(min(3, count))), surface: "panel")
+            try require((controls.entries["panel.attachments.all.\(event.id)"] != nil) == (count > 3),
+                        "mini All must appear exactly beyond the first three saved files")
+            try await press("desktop.open")
         }
         await store.discardAttachmentDraft(token)
         let dataURL = configuration.homeURL.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
@@ -638,7 +1087,7 @@ final class DesktopSmokeRuntime {
         try scrollBrowser(try value(nativeScroll(in: inspector), "attachment summary scroll"), toEnd: true)
         try await captureThemes("desktop-attachment-previews-four")
         try await verifyAttachmentLibrary(event: event, surface: "desktop", host: window)
-        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)))
+        try await requireAttachmentShelf(eventID: event.id, attachments: Array(attachments.prefix(4)))
         let afterDesktopSearch = try Data(contentsOf: dataURL)
         try require(afterDesktopSearch == durableBytes && store.active.first(where: { $0.id == event.id }) == event,
                     "read-only desktop attachment search changed the event or preparation")
@@ -716,12 +1165,14 @@ final class DesktopSmokeRuntime {
 
         try await press("desktop.panel")
         try await expect("panel.attachments.\(event.id)", "15")
-        try await press("panel.attachments.toggle.\(event.id)")
+        if controls.value("panel.attachments.toggle.\(event.id)") != "expanded" {
+            try await press("panel.attachments.toggle.\(event.id)")
+        }
         try await expect("panel.attachments.toggle.\(event.id)", "expanded")
-        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)), surface: "panel", pointSize: 36)
+        try await requireAttachmentShelf(eventID: event.id, attachments: Array(attachments.prefix(3)), surface: "panel")
         try await requireAttachmentSectionOrder(eventID: event.id, surface: "panel")
         let mini = try value(panelWindow(), "attachment mini-panel")
-        try await captureWindowThemes("mini-attachment-previews-four", window: mini)
+        try await captureWindowThemes("mini-attachment-previews-three", window: mini)
         try await press("event.edit.\(event.id)")
         try await expect("editor.attachments", "15")
         try await requireEditorThumbnails(attachments: Array(attachments.prefix(6)), surface: "mini")
@@ -739,7 +1190,7 @@ final class DesktopSmokeRuntime {
                     "mini thumbnail editor Cancel changed durable attachment data")
         try await verifyAttachmentLibrary(event: event, surface: "panel", host: mini)
         try await expect("panel.attachments.toggle.\(event.id)", "expanded")
-        try await requireThumbnailRows(eventID: event.id, attachments: Array(attachments.prefix(4)), surface: "panel", pointSize: 36)
+        try await requireAttachmentShelf(eventID: event.id, attachments: Array(attachments.prefix(3)), surface: "panel")
         let afterMiniSearch = try Data(contentsOf: dataURL)
         try require(afterMiniSearch == durableBytes && store.active.first(where: { $0.id == event.id })?.subtasks == [task],
                     "Back from the mini file library lost the event or its preparation")
@@ -755,7 +1206,7 @@ final class DesktopSmokeRuntime {
         try await verifyRemovedDesktopLibraryOwner(sources: Array(sources.prefix(5)))
         let unchanged = try sources.map { try Data(contentsOf: $0) }
         try require(originalBytes == unchanged, "thumbnail/list workflow modified source media")
-        passed.append("0/3/4/15 attachments: hidden empty sections, desktop44/panel36 quick files and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup")
+        passed.append("0/1/3/4/6/15 attachments: hidden empty sections, desktop two-column/mini three-column shelves and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup")
         passed.append("note/preparation/files order and matching headings; both editors show 36pt previews and aligned names, while editor15/15 admission guard, fourteen-file retry and Cancel preserve durable fifteen files")
     }
 
@@ -880,18 +1331,21 @@ final class DesktopSmokeRuntime {
         do {
             try require(!manager.fileExists(atPath: ownedCopy.path), "missing-copy fixture still exists before open")
             try await press("desktop.attachments.list.open.\(eventID).\(attachment.id)")
-            try await expect("desktop.attachments.list.error.\(eventID)",
-                             "Копия вложения недоступна. Исходный файл не изменён.")
-            try await wait("reader foreground error is laid out") {
-                (self.controls.frame("desktop.attachments.list.error.\(eventID)")?.width ?? 0) > 0
+            try await expect("desktop.attachment.preview", attachment.id.uuidString)
+            try await expect("desktop.attachment.preview.name", attachment.name)
+            try await expect("desktop.attachment.preview.canvas", "unavailable")
+            try await wait("missing copy keeps its preview identity but disables external opening") {
+                self.controls.entries["desktop.attachment.preview.external"]?.isEnabled == false
+                    && (self.controls.frame("desktop.attachment.preview.canvas")?.width ?? 0) > 0
             }
-            let errorFrame = try value(controls.frame("desktop.attachments.list.error.\(eventID)"), "reader open error")
-            try require(errorFrame.width <= 540, "file-open error is hidden in the background desktop")
-            try await captureWindowThemes("desktop-attachment-library-open-error", window: window)
-            try await press("desktop.attachments.list.error.dismiss.\(eventID)")
-            try await wait("reader error dismissed without closing the library") {
-                self.controls.entries["desktop.attachments.list.error.\(eventID)"] == nil
+            let errorFrame = try value(controls.frame("desktop.attachment.preview.canvas"), "unavailable preview canvas")
+            try require(errorFrame.width <= 640, "missing-copy state is hidden behind its attachment sheet")
+            try await captureWindowThemes("desktop-attachment-preview-missing", window: window)
+            try await press("desktop.attachment.preview.back")
+            try await wait("missing-copy Back restores the same filtered library") {
+                self.controls.entries["desktop.attachment.preview"] == nil
                     && self.controls.value("desktop.attachments.list.\(eventID)") == "1/15"
+                    && self.controls.value("desktop.attachments.list.search.\(eventID)") == "материал 15"
             }
         } catch {
             let verificationError = error
@@ -1079,40 +1533,117 @@ final class DesktopSmokeRuntime {
         return own + view.subviews.flatMap { nativeScrolls(in: $0) }
     }
 
-    private func requireThumbnailRows(
-        eventID: UUID, attachments: [EventAttachment], surface: String = "desktop", pointSize: CGFloat = 44
+    private func requireAttachmentShelf(
+        eventID: UUID, attachments: [EventAttachment], surface: String = "desktop"
     ) async throws {
         let prefix = "\(surface).attachment.thumbnail.\(eventID)."
         let expected = Set(attachments.map { prefix + $0.id.uuidString })
+        guard !attachments.isEmpty else {
+            try await wait("empty saved event has no shelf or thumbnail controls") {
+                self.controls.ids(withPrefix: prefix).isEmpty
+                    && self.controls.entries["\(surface).attachments.shelf.\(eventID)"] == nil
+            }
+            return
+        }
+        let columns = surface == "panel" ? 3 : 2
+        let gap: CGFloat = surface == "panel" ? 8 : 10
+        let height: CGFloat = surface == "panel" ? 68 : 88
+        let shelfID = "\(surface).attachments.shelf.\(eventID)"
+        var observedViewport: CGRect?
         func observation() -> [[String: Any]] {
-            attachments.map { attachment in
-                let rect = { (value: CGRect?) in value.map { [$0.minX, $0.minY, $0.width, $0.height] } ?? [] }
+            let rect = { (value: CGRect?) in value.map { [$0.minX, $0.minY, $0.width, $0.height] } ?? [] }
+            return attachments.map { attachment in
+                let identity = "\(eventID).\(attachment.id)"
                 return ["surface": surface, "attachmentID": attachment.id.uuidString,
+                        "expectedThumbnailIDs": expected.sorted(),
+                        "actualThumbnailIDs": self.controls.ids(withPrefix: prefix),
                         "thumbnail": rect(self.controls.frame(prefix + attachment.id.uuidString)),
-                        "row": rect(self.controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)"))]
+                        "openButton": rect(self.controls.frame("\(surface).attachments.open.\(identity)")),
+                        "scrollViewport": rect(observedViewport),
+                        "shelf": rect(self.controls.frame(shelfID)),
+                        "preview": rect(self.controls.frame("\(surface).attachment.preview-area.\(identity)")),
+                        "tile": rect(self.controls.frame("\(surface).attachment.tile.\(identity)"))]
             }
         }
         do {
-            try await wait("thumbnail rows settle with their exact preview size and containment") {
-                Set(self.controls.ids(withPrefix: prefix)) == expected && attachments.allSatisfy { attachment in
-                    guard let thumbnail = self.controls.frame(prefix + attachment.id.uuidString),
-                          let row = self.controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)") else { return false }
-                    return abs(thumbnail.width - pointSize) < 1 && abs(thumbnail.height - pointSize) < 1
-                        && row.insetBy(dx: -1, dy: -1).contains(thumbnail)
+            observedViewport = try await revealAttachmentShelf(shelfID: shelfID, surface: surface)
+            try await wait("saved shelf settles with exact saved identities and contained preview areas") {
+                guard Set(self.controls.ids(withPrefix: prefix)) == expected,
+                      let shelf = self.controls.frame(shelfID), shelf.width > 0 else { return false }
+                let width = (shelf.width - CGFloat(columns - 1) * gap) / CGFloat(columns)
+                return attachments.allSatisfy { attachment in
+                    let identity = "\(eventID).\(attachment.id)"
+                    guard let preview = self.controls.frame("\(surface).attachment.preview-area.\(identity)"),
+                          let tile = self.controls.frame("\(surface).attachment.tile.\(identity)"),
+                          let thumbnail = self.controls.frame(prefix + attachment.id.uuidString) else { return false }
+                    return abs(preview.width - width) < 1 && abs(preview.height - height) < 1
+                        && tile.insetBy(dx: -1, dy: -1).contains(preview)
+                        && preview.insetBy(dx: -1, dy: -1).contains(thumbnail)
+                        && shelf.insetBy(dx: -1, dy: -1).contains(tile)
                 }
             }
         } catch {
             try? JSONSerialization.data(withJSONObject: observation(), options: [.prettyPrinted, .sortedKeys])
-                .write(to: configuration.homeURL.appendingPathComponent(surface + "-thumbnail-row-failure.json"))
+                .write(to: configuration.homeURL.appendingPathComponent(surface + "-attachment-shelf-failure.json"))
             throw error
         }
+        let shelf = try value(controls.frame(shelfID), "saved attachment shelf")
+        try require(surface == "panel" || shelf.width <= 491, "desktop shelf exceeds its bounded 490pt reading width")
+        var frames: [CGRect] = []
         for attachment in attachments {
-            let thumbnail = try value(controls.frame(prefix + attachment.id.uuidString), "thumbnail frame")
-            let row = try value(controls.frame("\(surface).attachments.open.\(eventID).\(attachment.id)"), "thumbnail row frame")
-            try require(abs(thumbnail.width - pointSize) < 1 && abs(thumbnail.height - pointSize) < 1
-                        && row.insetBy(dx: -1, dy: -1).contains(thumbnail),
-                        "\(surface) thumbnail \(attachment.id) is not a contained \(pointSize)pt preview: thumbnail=\(thumbnail), row=\(row)")
+            let identity = "\(eventID).\(attachment.id)"
+            frames.append(try value(controls.frame("\(surface).attachment.tile.\(identity)"), "saved attachment tile"))
         }
+        let first = try value(frames.first, "first saved file tile")
+        try require(abs(first.minX - shelf.minX) < 1,
+                    "a single attachment must use the first column without centering or stretching")
+        for (index, frame) in frames.enumerated() {
+            try require(abs(frame.width - first.width) < 1 && abs(frame.height - first.height) < 1,
+                        "mixed filename lengths changed shelf column width or reserved caption height")
+            let column = index % columns
+            let expectedX = first.minX + CGFloat(column) * (first.width + gap)
+            try require(abs(frame.minX - expectedX) < 1, "saved attachment order does not follow shelf columns")
+            if index < columns {
+                try require(abs(frame.minY - first.minY) < 1, "first shelf row is not top-aligned")
+            } else {
+                try require(frame.minY > first.maxY, "second desktop shelf row overlaps the first")
+            }
+        }
+    }
+
+    private func revealAttachmentShelf(shelfID: String, surface: String) async throws -> CGRect {
+        let window = try value(surface == "panel" ? panelWindow() : desktopWindow(), "shelf scroll host")
+        let root = try value(window.contentView, "shelf scroll root")
+        let scroll: NSScrollView
+        if surface == "desktop" {
+            let split = try value(nativeSplit(in: root), "shelf inspector split")
+            let inspector = try value(split.arrangedSubviews.last, "shelf inspector")
+            scroll = try value(nativeScroll(in: inspector), "shelf inspector native scroll")
+        } else {
+            scroll = try value(nativeScroll(in: root), "mini event list native scroll")
+        }
+        let document = try value(scroll.documentView, "shelf scroll document")
+        try await wait("saved shelf has a scroll target before checking lazy cells") {
+            guard let shelf = self.controls.frame(shelfID) else { return false }
+            return shelf.width > 0 && shelf.height > 0
+        }
+        document.layoutSubtreeIfNeeded()
+        let shelf = try value(controls.frame(shelfID), "saved shelf scroll target")
+        let target = document.convert(shelf, from: root)
+        let clip = scroll.contentView
+        let visible = clip.bounds
+        var targetY = visible.minY
+        if target.minY < visible.minY + 8 { targetY = target.minY - 8 }
+        if target.maxY > visible.maxY - 8 { targetY = target.maxY - visible.height + 8 }
+        let maximum = max(0, document.bounds.height - visible.height)
+        clip.scroll(to: CGPoint(x: visible.minX, y: min(maximum, max(0, targetY))))
+        scroll.reflectScrolledClipView(clip)
+        try await wait("user-scrolled saved shelf is fully within its actual native viewport") {
+            guard let current = self.controls.frame(shelfID) else { return false }
+            let viewport = clip.convert(clip.bounds, to: root)
+            return viewport.insetBy(dx: -1, dy: -1).contains(current)
+        }
+        return clip.convert(clip.bounds, to: root)
     }
 
     private func verifyAttachmentIndicators(event: Countdown, window: NSWindow) async throws {
@@ -1239,12 +1770,12 @@ final class DesktopSmokeRuntime {
             try require(ProcessInfo.processInfo.systemUptime < requestDeadline, "synthetic weather request did not start")
             try await Task.sleep(nanoseconds: 10_000_000)
         }
-        try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+        try await requireDetailWeather(eventID: favorite.id, available: false)
         try await requireWeatherGeometry(baseline, favoriteID: favorite.id, after: "pending forecast")
         try capture("desktop-weather-pending", window: window)
         let forecast = try value(DailyWeatherForecast(weatherCode: 1, maximumTemperature: 14), "synthetic daily forecast")
         await gate.release([weatherDayKey(favorite.date): forecast, weatherDayKey(ordinary.date): forecast])
-        try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+        try await requireDetailWeather(eventID: favorite.id, available: true)
         try await expect(weatherControlID("desktop.weather.browser.\(missing.id)"), "absent")
         try await requireWeatherGeometry(baseline, favoriteID: favorite.id, after: "pending to available forecast")
         try capture("desktop-weather-loaded", window: window)
@@ -1263,10 +1794,10 @@ final class DesktopSmokeRuntime {
                 if mode == "feed" { try requireFeedCardGeometry(eventID: ordinary.id, scope: "weather-fixture.") }
                 fixtureWeather.setEnabled(false)
                 try await expect(weatherControlID("desktop.weather.overview"), "absent")
-                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+                try await requireDetailWeather(eventID: favorite.id, available: false)
                 try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "global weather OFF in \(mode) at \(fraction)")
                 fixtureWeather.setEnabled(true)
-                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+                try await requireDetailWeather(eventID: favorite.id, available: true)
                 try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "global weather ON in \(mode) at \(fraction)")
                 if mode == "feed" { try requireFeedCardGeometry(eventID: ordinary.id, scope: "weather-fixture.") }
                 var hiddenWeather = favorite
@@ -1274,13 +1805,13 @@ final class DesktopSmokeRuntime {
                 let hiddenSaved = await fixture.save(hiddenWeather, primary: true)
                 try require(hiddenSaved, "cannot disable isolated per-event weather")
                 fixtureWeather.updateEvents(fixture.active)
-                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "absent")
+                try await requireDetailWeather(eventID: favorite.id, available: false)
                 try await expect(weatherControlID("desktop.weather.browser.\(favorite.id)"), "absent")
                 try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "per-event weather OFF in \(mode) at \(fraction)")
                 let restored = await fixture.save(favorite, primary: true)
                 try require(restored, "cannot restore isolated per-event weather")
                 fixtureWeather.updateEvents(fixture.active)
-                try await expect(weatherControlID("desktop.weather.detail.\(favorite.id)"), "available")
+                try await requireDetailWeather(eventID: favorite.id, available: true)
                 try await requireWeatherGeometry(stable, favoriteID: favorite.id, after: "per-event weather ON in \(mode) at \(fraction)")
                 try await requireDivider(divider, in: window, after: "weather visibility changes", controlScope: "weather-fixture.")
                 try capture("desktop-weather-stable-\(mode)-\(Int(fraction * 100))", window: window)
@@ -1347,6 +1878,25 @@ final class DesktopSmokeRuntime {
     }
 
     private func weatherControlID(_ identifier: String) -> String { "weather-fixture." + identifier }
+
+    private func requireDetailWeather(eventID: UUID, available: Bool) async throws {
+        let weatherID = weatherControlID("desktop.weather.detail.\(eventID)")
+        let separatorID = weatherControlID("desktop.detail.weather.separator.\(eventID)")
+        let metadataID = weatherControlID("desktop.detail.metadata.\(eventID)")
+        let dateID = weatherControlID("desktop.date.detail.\(eventID)")
+        try await wait("compact detail has inline forecast only when it is available") {
+            guard let metadata = self.controls.frame(metadataID), let date = self.controls.frame(dateID),
+                  metadata.insetBy(dx: -1, dy: -1).contains(date), abs(metadata.height - 18) < 1 else { return false }
+            if !available {
+                return self.controls.entries[weatherID] == nil && self.controls.entries[separatorID] == nil
+            }
+            guard self.controls.value(weatherID) == "available",
+                  let forecast = self.controls.frame(weatherID), let separator = self.controls.frame(separatorID) else { return false }
+            return metadata.insetBy(dx: -1, dy: -1).contains(forecast)
+                && abs(date.midY - forecast.midY) < 4 && separator.minX >= date.maxX + 4
+                && forecast.minX >= separator.maxX + 4 && date.height <= 18
+        }
+    }
 
     private func requireWeatherGeometry(_ expected: [String: CGRect], favoriteID: UUID, after action: String) async throws {
         for _ in 0..<3 {

@@ -30,6 +30,9 @@ struct DesktopRootView: View {
     @State private var mode = DesktopEventViewMode.collection
     @State private var query = ""
     @State private var selectedID: UUID?
+    @StateObject private var attachmentPreview = AttachmentPreviewSession()
+    @State private var attachmentLibraryIsSource = false
+    @State private var attachmentPreviewWasPresented = false
     // Retain ownership through native dismissal so background actions cannot enter while the sheet is closing.
     @State private var presentedSheet: DesktopSheet?
     @State private var sheetIsClosing = false
@@ -123,6 +126,16 @@ struct DesktopRootView: View {
         .onChange(of: attachmentLibraryItem?.id) { ownerID in
             if ownerID == nil { dismissAttachments() }
         }
+        .onChange(of: attachmentLibraryItem) { item in attachmentPreview.reconcile(event: item) }
+        .onChange(of: attachmentPreview.selection) { preview in
+            if preview == nil {
+                if !attachmentLibraryIsSource {
+                    dismissAttachments()
+                } else if attachmentLibraryItem != nil {
+                    attachmentPreviewWasPresented = false
+                }
+            }
+        }
         .onChange(of: selectedID) { selectedID in
             if selectedID != attachmentsEventID { dismissAttachments() }
         }
@@ -157,26 +170,63 @@ struct DesktopRootView: View {
                 .accessibilityIdentifier("desktop.settings.pane")
                 .uiSmokeControl(id: "desktop.settings.pane")
         case .attachments:
-            if let item = attachmentLibraryItem { attachmentsSheet(item: item) }
+            if let item = attachmentLibraryItem {
+                attachmentsSheet(item: item)
+            } else {
+                unavailableAttachmentScreen
+                    .frame(width: attachmentPreviewWasPresented ? 640 : 540,
+                           height: attachmentPreviewWasPresented ? 560 : 540)
+            }
         case nil:
             EmptyView()
         }
     }
 
     private func attachmentsSheet(item: Countdown) -> some View {
-        AttachmentListView(item: item, compact: false, back: dismissAttachments,
-                           open: { attachment in
-                               Task { await store.openAttachment(attachment, eventID: item.id) }
-                           }, thumbnailURL: { attachment in
-                               await store.attachmentThumbnailURL(attachment, eventID: item.id)
-                           }, error: store.error, dismissError: { store.error = nil })
-            .frame(width: 540, height: 540)
+        ZStack {
+            if attachmentLibraryIsSource {
+                AttachmentListView(item: item, compact: false, back: dismissAttachments,
+                                   open: { showAttachmentPreview($0, item: item, origin: .library) },
+                                   thumbnailURL: { await store.attachmentThumbnailURL($0, eventID: item.id) },
+                                   error: store.error, dismissError: { store.error = nil })
+                    .frame(width: 540, height: 540)
+                    .opacity(attachmentPreview.selection == nil ? 1 : 0)
+                    .disabled(attachmentPreview.selection != nil)
+                    .allowsHitTesting(attachmentPreview.selection == nil)
+                    .accessibilityHidden(attachmentPreview.selection != nil)
+            }
+            if attachmentPreview.selection != nil {
+                AttachmentPreviewView(item: item, compact: false, session: attachmentPreview,
+                                      back: closeAttachmentPreview,
+                                      resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) },
+                                      openExternally: { [store] in await store.openAttachment($0, eventID: $1) },
+                                      error: store.error, dismissError: { store.error = nil })
+            } else if !attachmentLibraryIsSource {
+                unavailableAttachmentScreen
+            }
+        }
+            .frame(width: usesPreviewGeometry ? 640 : 540, height: usesPreviewGeometry ? 560 : 540)
             .id(item.id)
             .background {
-                DesktopSheetBackdropDismissal(isEnabled: !sheetIsClosing, dismiss: dismissAttachments)
+                DesktopSheetBackdropDismissal(isEnabled: !sheetIsClosing, dismiss: closeTopAttachmentScreen)
             }
+            .accessibilityElement(children: .contain)
             .accessibilityIdentifier("desktop.attachments.pane")
             .uiSmokeControl(id: "desktop.attachments.pane")
+    }
+
+    private var usesPreviewGeometry: Bool {
+        attachmentPreview.selection != nil || (!attachmentLibraryIsSource && attachmentPreviewWasPresented)
+    }
+
+    private var unavailableAttachmentScreen: some View {
+        VStack(spacing: 12) {
+            Text("Вложение").font(.custom("Georgia", size: 21))
+            Text("Вложение больше недоступно").font(.system(size: 13))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AuroraPanelCanvas())
     }
 
     private var splitContent: some View {
@@ -201,7 +251,7 @@ struct DesktopRootView: View {
                             delete: { deleteEvent(selection.id) },
                             toggleSubtask: { toggleSubtask(selection, subtaskID: $0) },
                             openAttachment: { attachment in
-                                Task { await store.openAttachment(attachment, eventID: selection.id) }
+                                showAttachmentPreview(attachment, item: selection, origin: .summary)
                             },
                             attachmentThumbnailURL: { attachment in
                                 await store.attachmentThumbnailURL(attachment, eventID: selection.id)
@@ -342,7 +392,43 @@ struct DesktopRootView: View {
     private func presentAttachments(eventID: UUID) {
         guard canMutate, !isProcessingActions, pendingActions.isEmpty,
               selection?.id == eventID, selection?.attachments.isEmpty == false else { return }
+        attachmentPreview.close()
+        attachmentLibraryIsSource = true
+        attachmentPreviewWasPresented = false
         presentedSheet = .attachments(eventID)
+    }
+
+    private func showAttachmentPreview(_ attachment: EventAttachment, item: Countdown,
+                                       origin: AttachmentPreviewOrigin) {
+        guard !sheetIsClosing, !isProcessingActions, pendingActions.isEmpty,
+              !editorSession.hasActiveEditor,
+              let current = store.active.first(where: { $0.id == item.id }),
+              current.attachments.contains(where: { $0.id == attachment.id }) else { return }
+        if origin == .summary {
+            guard presentedSheet == nil, canMutate, selection?.id == item.id else { return }
+            attachmentLibraryIsSource = false
+            presentedSheet = .attachments(item.id)
+        } else {
+            guard attachmentsEventID == item.id, attachmentLibraryIsSource,
+                  attachmentPreview.selection == nil else { return }
+        }
+        attachmentPreviewWasPresented = true
+        attachmentPreview.open(event: current, attachmentID: attachment.id, origin: origin,
+                               resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) })
+    }
+
+    private func closeAttachmentPreview() {
+        guard !sheetIsClosing, attachmentPreview.selection != nil else { return }
+        if attachmentLibraryIsSource {
+            attachmentPreview.close()
+            attachmentPreviewWasPresented = false
+        } else {
+            dismissAttachments()
+        }
+    }
+
+    private func closeTopAttachmentScreen() {
+        if attachmentPreview.selection != nil { closeAttachmentPreview() } else { dismissAttachments() }
     }
 
     private func dismissAttachments() {
@@ -362,12 +448,16 @@ struct DesktopRootView: View {
 
     private func dismissSheet() {
         guard presentedSheet != nil, !sheetIsClosing else { return }
+        attachmentPreview.cancelPendingEffects()
         sheetIsClosing = true
     }
 
     private func finishSheetDismissal() {
         let wasEditor = showingEditor
         presentedSheet = nil
+        attachmentPreview.close()
+        attachmentLibraryIsSource = false
+        attachmentPreviewWasPresented = false
         sheetIsClosing = false
         if wasEditor { editorSession.endDesktopEditor() }
     }

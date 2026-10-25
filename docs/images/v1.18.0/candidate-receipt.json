@@ -1,0 +1,9 @@
+{
+  "app": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/candidate/Countdown Manager.app",
+  "version": "1.18.0",
+  "build": "33",
+  "executable_sha256": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "productionChannelPreserved": true,
+  "productionPublicKeyPreserved": true,
+  "noTestFlagsOrLoopbackExceptions": true
+}

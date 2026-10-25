@@ -1,0 +1,17 @@
+{
+  "mode": "attachments",
+  "app": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/candidate/Countdown Manager.app",
+  "version": "1.18.0",
+  "build": "33",
+  "executable_before": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "executable_after": "e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5",
+  "unchanged": true,
+  "launch_argument": "--ui-smoke-attachment-preview",
+  "isolated_home": "/private/tmp/countdown-release-1.18.0.Ft9IdJfb/native-attachments-previews",
+  "launch_exit": 0,
+  "launcher_timed_out": false,
+  "main_thread_stall": false,
+  "seconds": 21.023,
+  "status": "PASS",
+  "result": "DesktopSmoke\n✓ 0/1/3/4/6/15 attachments: hidden empty sections, desktop two-column/mini three-column shelves and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup\n✓ note/preparation/files order and matching headings; both editors show 36pt previews and aligned names, while editor15/15 admission guard, fourteen-file retry and Cancel preserve durable fifteen files\n✓ preview Back preserves an unfiltered fifteen-file library's nonzero native scroll offset and document width\n✓ quick preview photo/PDF/video requests, bounded saved-order navigation, independent mini return and retained filtered library query preserve event JSON\n✓ hidden mini releases its native renderer/item; reopening creates a new non-autostart renderer for the same identity; owned file bytes and inventory remain unchanged\n✓ current-file removal returns to origin; owner deletion releases preview identity, native presentation/renderers and all owned copies while preserving originals\n✓ hosted native injected-clock expiry closes the real preview and cleans only expired owned copies; system-midnight/Spaces remain separate manual acceptance\nPASS: 7/7"
+}

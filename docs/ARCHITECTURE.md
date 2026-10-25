@@ -87,6 +87,7 @@ Key files:
 - `StatusBarImages.swift`
 - `Views.swift`
 - `AttachmentViews.swift`
+- `AttachmentPreview.swift`
 - `Diagnostics.swift`
 - `DiagnosticPrivacy.swift`
 - `DiagnosticArchive.swift`
@@ -132,7 +133,7 @@ NSApplication / AppDelegate
 │   └── NSWindow / NSHostingController<DesktopRootView>
 │       ├── window-local mode/search/filter/selection
 │       ├── native split browser + event details
-│       └── one native sheet: EditorView / SettingsView / AttachmentListView
+│       └── one native sheet: EditorView / SettingsView / attachment library + quick preview
 └── NSPanel (one strong reference, session lifetime, transient visibility)
     └── NSHostingController (one instance, stable root)
         └── CountdownManagerRootView
@@ -236,8 +237,9 @@ sections contain no duplicate editor actions, including empty states. Expiry exp
 only to the editor and deletion confirmation, not ordinary saved sections or file libraries.
 
 Attachment previews derive from repository-owned copies, without persisted preview metadata or
-another file owner. Desktop saved rows reserve a 44-point square; mini summary/library and shared
-editor rows reserve a 36-point square. Editor preview resolution accepts either the exact active
+another file owner. Saved summaries use bounded shelves: first four in two desktop columns and
+first three in three mini columns, with fixed 88/68-point canvas heights. Library rows retain
+44/36-point squares and editor rows retain 36 points. Editor preview resolution accepts either the exact active
 saved attachment or the exact metadata registered to its live draft. Repository draft resolution
 requires that draft identity, and Store checks draft lifetime before and after awaiting resolution.
 The cancellable loader requests Quick Look thumbnails for every non-PDF format, without an
@@ -245,8 +247,8 @@ image/movie whitelist. PDFs use a serial actor to render the first page into a b
 Unavailable or failed native previews retain the type fallback. Imported editor files can preview
 before Save; reopening resolves their saved copies. Preview preparation remains responsive and
 rejects cancelled or stale results.
-Preview failure leaves the filename and explicit default-application opening available.
-Saved summaries present the first four identities and `Показать все N` only above four.
+Preview failure leaves the filename and explicit viewing action available.
+Saved summaries derive `Показать все N` from the corresponding four/three-file threshold.
 The complete list belongs to a separate bounded presentation: the desktop native
 sheet or an internal panel screen whose plain left-chevron Back control matches mini-panel
 Settings. `DesktopRootView` owns the desktop library's
@@ -261,6 +263,21 @@ Search filters only displayed identities and cannot mutate attachments
 or checklist completion. The editor keeps the full editable collection.
 Removing/expiring the library's owning event dismisses that presentation rather than retaining
 a stale owner. The ordinary underlying interface remains mounted but inactive for input and accessibility.
+`AttachmentPreviewSession` owns only transient event/attachment selection, origin and cancellable
+URL/external-open work. Selection uses stable IDs; adjacent files derive from the current saved
+event rather than a second attachment collection. A generation token rejects late results after
+navigation, close or reopen. Each surface owns its session; Store/repository retain data ownership.
+The shared quick-preview view embeds `QLPreviewView` for the selected repository-owned URL.
+It disables autoplay, creates a renderer per selected identity and explicitly closes it on
+dismantling; a closed Quick Look renderer is never reused. URL resolution is distinguished from
+native content rendering, because Quick Look has no public ready/error callback for this host.
+Missing URL has an application-owned unavailable state; existing unsupported content retains the
+native fallback. Explicit external opening uses Store validation again. There is no persisted
+preview cache or extra imported copy. Library state stays mounted but inactive behind its preview;
+closing returns to that same query/context. Owner removal/expiry closes both; removal of the
+selected attachment closes its preview to the surviving source.
+The renderer/window lifecycle rationale and observed platform limits are recorded in
+[the embedded quick-preview decision](decisions/attachment-quick-preview.md).
 `DesktopRootView` uses one SwiftUI `.sheet` for its optional `DesktopSheet` route: editor,
 Settings or an attachment-owning event ID. A closing request makes the presentation binding
 false while retaining the route until native `onDismiss`; background guards and editor-session
@@ -276,8 +293,10 @@ its protected Save/Cancel policy. Removing or expiring a file owner requests nat
 The desktop overview beneath `Впереди` composes the current date and optional forecast for today
 in one metadata line, retaining its date position, height and following content geometry for
 missing, disabled and loaded weather. Missing/off forecasts expose no placeholder or accessibility content.
-`DesktopForecastSlot` keeps the reserved 16-point forecast area in collection grid cards,
-featured favorites and details. Ordinary feed date/forecast metadata uses one horizontal line,
+`DesktopForecastSlot` keeps the reserved 16-point forecast area in collection grid cards.
+Favorites and compact desktop details use a full-width date/forecast line below title/calendar;
+details omit an empty saved note and keep the same metadata height while weather changes.
+Ordinary feed date/forecast metadata uses one horizontal line,
 with weather after the exact date, while its calendar/title align at the top and remaining-time
 label sits at the upper right. Missing/off forecasts expose no placeholder or accessibility
 content; forecast availability does not select a different card layout. These feed positions

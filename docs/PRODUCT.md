@@ -164,8 +164,11 @@ Ordinary desktop feed rows align the calendar at the top with the event title an
 the relative remaining-time label at the upper right. The exact date and eligible weather
 share one line, with temperature after the date; checklist progress and attachment count
 share a separate horizontal summary line. Their compact height does not reserve a separate
-weather row or stack the two counts. The collection grid, featured favorite and details keep
-their existing layouts and separate reserved date/weather rows. Arriving, disappearing or
+weather row or stack the two counts. Collection grid cards retain their reserved weather row.
+The desktop details use a compact title/calendar identity followed by one full-width date and
+eligible-temperature line, then the remaining-time label. A saved empty note adds no section;
+the note field remains available in the editor. Nonempty notes and long titles remain fully
+readable in the scrolling details. Arriving, disappearing or
 disabled forecasts must not shift surrounding content for otherwise unchanged events and
 window geometry.
 This layout rule and checklist animation apply only to the desktop, not the mini-panel.
@@ -471,15 +474,15 @@ requests and Save cannot race with that work. Cancel closes the editor without w
 in-progress file copy; cancellation/token checks reject its late result and asynchronous cleanup
 removes the abandoned copy after the filesystem operation settles.
 
-Desktop details show saved files with their names and import-time sizes after subtasks.
-Each desktop file row reserves a fixed 44 × 44-point preview area: a photo
-thumbnail, the first page of a PDF, a static movie frame, or another preview supplied by macOS.
-Every file format is offered for best-effort preview; an unavailable or failed preview uses a file-type fallback. Loading or failing a preview does not change that area or remove the file.
-The row remains one explicit open action, not a separate gallery or player. With more than four
-attachments, both desktop and mini-panel summaries show the first four in saved order and a
-`Показать все N` action. Up to four saved files need no All action. The mini-panel uses the same
-static preview/fallback rules in fixed 36 × 36-point areas. Its optional section disclosure
-does not replace the four-file summary limit. Expanding or collapsing the compact attachment
+Desktop details show a two-column shelf of the first four saved files after subtasks, with
+their names and import-time sizes. The expanded mini-panel section shows the first three files
+in one row of three columns. A single file occupies the first column without stretching.
+Desktop preview canvases have a fixed 88-point height; mini canvases have a fixed 68-point height.
+Every file format is offered for best-effort native preview: photo thumbnails, the complete
+first PDF page, a static movie frame or another macOS preview. Loading or failing a preview
+retains its area, filename and file-type fallback. Each whole tile is one explicit preview action.
+`Показать все N` appears above four desktop files or above three mini files and opens the complete
+saved collection. Expanding or collapsing the compact attachment
 section keeps its heading and count at the same horizontal positions, as the subtask disclosure does.
 All opens a separate bounded, read-only searchable list. Desktop uses the shared native
 sheet with the title `Вложение` on the left and a close button on the right, without a Back
@@ -504,9 +507,25 @@ note, subtask and attachment sections have no secondary editor-entry buttons, in
 empty-note and empty-subtask states. Direct subtask checkboxes, file opening and
 `Показать все N` remain available without entering the editor. The compact attachment section
 also exposes no duplicate add/change button.
-Opening a saved attachment explicitly launches its local copy in the default application;
-videos never autoplay. Missing copies remain identifiable and removable rather than disappearing
-silently or blocking unrelated event edits.
+Opening a saved attachment first shows a large, read-only native quick preview in the originating
+surface. Desktop reuses the single native sheet; the mini-panel uses an internal screen with
+its usual plain Back chevron. The preview shows the filename and one derived `i из N` position.
+Previous/next traverse the entire event's saved order, including when opened from filtered search;
+they stop at the ends without wrapping. Legacy collections above 15 remain fully navigable.
+An explicit `Открыть в приложении` action launches the active local copy in its default application;
+previewing never autoplays video. macOS provides best-effort content or its native fallback for
+existing unsupported/corrupt files. A missing copy shows a readable unavailable state, retains its
+name and navigation, and disables external opening.
+Closing the top preview through Back/cross/Escape or the desktop backdrop returns to its source:
+the same event or the same mounted library with its query and scrolling context. The dismissal
+click cannot activate the background. The underlying source is inactive for input/accessibility
+while the preview is visible. Removing the selected attachment closes its preview to the valid
+source; removing the last file also closes the library. Deleting or expiring the owning event
+closes all its file presentations. Late asynchronous work cannot revive a closed preview or show
+an earlier file under a new filename. Preview browsing never changes JSON, saved order, task state
+or attachment copies, and creates no application-owned preview archive.
+Missing copies remain identifiable and removable in the editor rather than disappearing silently
+or blocking unrelated event edits.
 
 Attachments follow the existing event lifetime. Deleting an event, removing an attachment with
 Save, or automatic event expiry removes the corresponding application-owned copies after the

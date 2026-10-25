@@ -221,7 +221,7 @@ sits at the upper right. Date and eligible weather share one line, with temperat
 the date, and checklist progress/paperclip count share one horizontal summary. Rows use a
 compact height without a separate weather slot or vertically stacked counts. The featured
 favorite places date and weather inline on a full-width row below its title/calendar identity.
-Ordinary grid cards and detail metadata retain separate date/weather rows with a reserved
+Ordinary grid cards retain separate date/weather rows with a reserved
 16-point weather slot, including when the forecast is absent. That empty slot contains no
 visible or accessible placeholder. Mini-panel layouts are unchanged.
 
@@ -251,7 +251,7 @@ Seven fixed durations share a 32-point high row with 2-point gaps. The selected 
 
 ### Cards / Containers
 
-In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. Desktop ordinary grid cards and details retain separate date and reserved weather rows; feed rows and the featured favorite use inline date/weather as described above.
+In the mini-panel, each dated event and its checklist share one card. Only the selected favorite is featured: Georgia title, larger right-aligned calendar leaf, and a separate relative-label line. Eligible weather follows the full date beneath the title, separated by a middle dot; the relative-label line contains no duplicate forecast. When no forecast is eligible or event weather is disabled, the forecast and its separator are absent. Ordinary cards put a smaller leaf on the left and use compact date/count/weather metadata. Notes and checklists remain inside the same event block; individual subtask rows have no horizontal separators. Desktop ordinary grid cards retain separate date and reserved weather rows; feed rows, the featured favorite and compact details use inline date/weather as described above.
 
 ### Inputs / Fields
 
@@ -266,16 +266,26 @@ The `Значок` field is an outlined selection control with label, selected e
 Desktop details, mini-panel cards and the shared editor order their note, `Подзадачи` and
 `Вложения` content in that sequence. Subtask and attachment headings share readable semibold
 weight and primary ink; the desktop checklist label is `Подзадачи`, not `Подготовиться`.
+Desktop details use 24-point content insets and 20-point section spacing. A wrapping 27-point
+Georgia title sits beside the smaller calendar leaf; a full-width 12-point date/eligible-weather
+line follows, then the 22–23-point relative label. Forecast arrival does not introduce another row.
+The saved empty note section is hidden; editor note entry and the empty checklist message remain.
 Saved attachment sections disappear when empty; the editor still offers Add at zero.
-Desktop file rows reserve a 44 × 44-point preview area beside filename and import-time size;
-mini-panel summary, All-files and shared editor rows use 36 × 36 points. Photos use a thumbnail,
+Desktop saved summaries use a left-aligned two-column shelf, up to four files, with 10-point gaps
+and a maximum width of 490 points. Preview canvases are 88 points high; filenames reserve two
+12-point lines above secondary import-time size. Mini summaries use the first three files in
+three equal columns, 8-point gaps and 68-point-high canvases, with two-line compact filenames.
+A single file uses only the first column. Whole tiles are native buttons; canvas geometry remains
+fixed through loading/failure. The bounded raster request must fit the shelf rather than enlarge
+the old 44-point thumbnail. All-files rows retain 44-point desktop / 36-point mini previews;
+the shared editor retains 36 points. Photos use a thumbnail,
 PDFs show the whole first page within that area, and movies show one static frame with a small
 video indication. Other formats also request a best-effort native preview; unavailable or failed
 previews use a file-type fallback. The reserved
-area stays fixed during loading and failure. The whole row remains one explicit open action;
+area stays fixed during loading and failure. The whole tile or row remains one explicit preview action;
 the decorative preview adds no separate keyboard focus or playback control.
-With more than four attachments, desktop and mini summaries show the first four in saved order
-and `Показать все N`. That action opens a bounded searchable library. Desktop uses the shared
+Above four desktop files or above three mini files, `Показать все N` opens the complete bounded
+searchable library. Saved order is unchanged. Desktop uses the shared
 native sheet with the simple header `Вложение` at left and a cross at right, with no
 header count or Back button. It shares the desktop Settings dismissal pattern: the cross,
 `Escape`, or the surrounding dimmed backdrop closes it. The backdrop consumes the click
@@ -297,7 +307,15 @@ use the event's pencil as their sole editor entry. Saved desktop sections contai
 including empty sections. Direct subtask checkboxes, file opening and `Показать все N` remain.
 Attachment rows can be added or removed in the shared editor before Save, with
 Cancel preserving saved files. Long names truncate with their full name available as help.
-Files open only by explicit action in their default application; videos do not autoplay.
+Saved files first open a large quick preview; a separate `Открыть в приложении` action launches
+their default application. Desktop reuses its native sheet; mini uses an internal 390 × 540 screen
+with its usual plain Back chevron. Both use a Georgia `Вложение` heading, filename and one `i из N`
+position, flexible native preview canvas and fixed previous/next/external-open controls.
+Arrows traverse the entire event in saved order, without wrap; first/last disable the relevant
+arrow. Closing the top view returns to its originating event or mounted library/query.
+The desktop backdrop consumes its input and uses the same top-view close behavior as the cross.
+Missing files retain filename/navigation and an unavailable state; native unsupported-file fallback
+keeps external-open available. Videos do not autoplay.
 Only the editor and deletion confirmation explain that copied attachments are deleted with
 the event after its date while originals remain untouched. Saved summaries and file libraries
 do not include that warning. Import progress and errors use native, readable controls.
