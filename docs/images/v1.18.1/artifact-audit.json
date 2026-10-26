@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "version": "1.18.1",
+  "build": "34",
+  "productionExecutableSHA256": "15273382640c6ab3277a410ca53bc3b457bee18f41f646f91257868db09b2661",
+  "acceptedExecutableSHA256": "9d1750836b52666100a5bfe570dd70109bcf750b0780babb409f3fd4ac1b8814",
+  "unsignedCodeUnchangedFromAcceptedRelease": true,
+  "keyFingerprintUnchanged": true,
+  "publicKeyOnlySignatureChecks": true,
+  "modifiedArchiveAndFeedRejected": true,
+  "feedTrailerExactlyBounded": true,
+  "extractedTreeEntries": 166,
+  "extractedBytesModesLinksMatch": true,
+  "nestedCodesignPassed": true,
+  "testConfigurationAbsent": true,
+  "files": {
+    "CountdownManager-1.18.1-34.zip": {
+      "bytes": 5886185,
+      "sha256": "603169fff5b4233ce89799322ed3b76b1f49b80853428080ad96141f11dc3f72"
+    },
+    "appcast.xml": {
+      "bytes": 1299,
+      "sha256": "5db22ff45054e4a9871393f400053ddcb518fd8fa73929e87e61cd59a4b71630"
+    }
+  }
+}

@@ -1891,10 +1891,11 @@ final class DesktopSmokeRuntime {
                 return self.controls.entries[weatherID] == nil && self.controls.entries[separatorID] == nil
             }
             guard self.controls.value(weatherID) == "available",
-                  let forecast = self.controls.frame(weatherID), let separator = self.controls.frame(separatorID) else { return false }
+                  let forecast = self.controls.frame(weatherID),
+                  self.controls.entries[separatorID] == nil else { return false }
             return metadata.insetBy(dx: -1, dy: -1).contains(forecast)
-                && abs(date.midY - forecast.midY) < 4 && separator.minX >= date.maxX + 4
-                && forecast.minX >= separator.maxX + 4 && date.height <= 18
+                && abs(date.midY - forecast.midY) < 4
+                && forecast.minX >= date.maxX + 4 && forecast.minX <= date.maxX + 10 && date.height <= 18
         }
     }
 

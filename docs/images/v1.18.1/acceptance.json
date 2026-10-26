@@ -1,0 +1,49 @@
+{
+  "version": "1.18.1",
+  "build": "34",
+  "baseCommit": "81366f3",
+  "sourceSHA256": {
+    "Resources/Info.plist": "2656fc53d1dcb08a5506536d99f56c89f268cd0e1a75176bf87e1a491e0b578e",
+    "Sources/CountdownManager/AttachmentPreview.swift": "dd233af0b35ab4a8aadf3bab193d9f5824b823afb2aeea0c03e0a79f350d7fd5",
+    "Sources/CountdownManager/Desktop/DesktopEventDetail.swift": "06c199b5229cb91890835b1ea6daf3240c93ca31b1f6208fa00daa8d79a219f8",
+    "Sources/CountdownManager/DesktopSmokeRuntime.swift": "a34e3de82a5bff11712f85a1562872bea9b513a694396ea31c50a72257a7073b",
+    "XCUITests/CountdownManagerXCUITests.swift": "9254cc9902f1aa1e2cf2f4f6fbf3ea4efe1ba949e77250c884e57def94671421"
+  },
+  "lint": {
+    "violations": 0,
+    "files": 75
+  },
+  "fast": "CoreChecks and UIChecks passed",
+  "nativeDesktop": {
+    "passed": 27,
+    "total": 27,
+    "executableSHA256": "9d1750836b52666100a5bfe570dd70109bcf750b0780babb409f3fd4ac1b8814"
+  },
+  "external": {
+    "passed": 2,
+    "total": 2,
+    "testDurationSeconds": 91.56,
+    "bundleMode": "Xcode Debug isolated xcui-testing",
+    "executableSHA256": "d00c4613f00c684cbf470b2f5800e102d318a63a9e6e9e6ba008690d16868a80"
+  },
+  "baseline": "One external scenario failed on unmodified preview code: Right must navigate without first focusing an arrow button",
+  "syntheticData": true,
+  "captures": {
+    "desktop-weather-stable-collection-66.png": "934f25ee31721d7f714844891e19076db7254e895aca2c96cdcafc364e7be7bf",
+    "desktop-keyboard-preview.png": "5a3fbdc2822649fd6932f12c9e6eba6821e5baee5ebe21ec8978199bd5c6e5a1",
+    "mini-keyboard-preview.png": "669a2de9f96eb38ad8a2daceee92ef8467c029eb687b5c715a198038eb960e50",
+    "desktop-feed-inline-wide-dark.png": "cef5bf944916cbbada553135c071b373c665a62d0996f910ea7872af2ea343b9"
+  },
+  "logs": {
+    "lint.log": "2df94dc592f993c8c733053ee90d8200e4c4c4307d12c647688828e208a46538",
+    "fast.log": "aa63ad0598add76bf22d2e14ee7d9c3e1811177c157de214dc0584b4eb072150",
+    "baseline.log": "a44fa52afcb1343963d1cfd7b30086067be7084fe8e2da628e2ce9be1139fe67",
+    "keyboard.log": "8b8c200bc939be464c7d746bbeb2fbf179c4d901a60c35251a032685ee1939a1",
+    "desktop.log": "22986d2aae37540e60704f2fb9faeef02adef1c65830e2f3ce0522739ad3f7b6"
+  },
+  "limitations": [
+    "Release native bundle and external Debug bundle have distinct hashes and modes.",
+    "Not a publication, installation or Sparkle update acceptance.",
+    "Third-party Quick Look providers and every macOS version were not tested."
+  ]
+}

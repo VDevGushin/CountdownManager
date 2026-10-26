@@ -1,0 +1,35 @@
+{
+  "applicationBuild": "34",
+  "applicationVersion": "1.18.1",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "release-desktop-weather-stable-collection-66.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 433791.43900375004,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "934f25ee31721d7f714844891e19076db7254e895aca2c96cdcafc364e7be7bf"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "release-desktop-feed-inline-wide-dark.png",
+      "height": 1656,
+      "highContrast": false,
+      "observationUptime": 433760.34355912503,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "cef5bf944916cbbada553135c071b373c665a62d0996f910ea7872af2ea343b9"
+    }
+  ],
+  "executableSHA256": "15273382640c6ab3277a410ca53bc3b457bee18f41f646f91257868db09b2661",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true
+}

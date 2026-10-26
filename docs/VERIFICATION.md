@@ -332,6 +332,10 @@ Focused external XCUITest cases are `testDesktopAttachmentPreviewClicksEscapeAnd
 and `testMiniAttachmentPreviewBackAndMissingCopyRecovery`. They perform actual file/arrow/Back
 clicks, Escape, direct and library-origin backdrop clicks, search after returning, unavailable
 copy recovery and byte comparisons. Internal smoke actions do not substitute for those inputs.
+The same external cases exercise unmodified Left/Right navigation, first/last boundaries,
+the full saved order from filtered search, and recovery from an unavailable copy in the mini-panel.
+Desktop forecast geometry requires date and forecast to share a row without a middle dot,
+including available, missing and disabled forecast states.
 
 Quick Look's public host API has no content-ready/error callback: `native-preview-requested`
 means a validated local URL is bound to a live renderer, not that every provider has rendered

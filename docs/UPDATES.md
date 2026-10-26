@@ -1,5 +1,15 @@
 # Preparing signed updates
 
+## Preparing 1.18.1 / build 34
+
+This patch adds Left/Right keyboard navigation to attachment quick preview in both surfaces
+and removes the middle dot between date and forecast in desktop details. The source bundle
+version is 1.18.1/34. Publication and installation are separate from these repository changes;
+the latest confirmed published release remains 1.18.0/33.
+See [patch status](releases/v1.18.1.md) for focused verification and current screenshots.
+The signed candidate ZIP and appcast passed the [public-key-only artifact audit](images/v1.18.1/artifact-audit.json).
+The production key, stable HTTPS feed and bundle identifier are unchanged.
+
 ## Published 1.18.0 / build 33
 
 This minor release adds the attachment shelf, compact desktop details and embedded native
@@ -224,7 +234,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.18.0 COUNTDOWN_BUILD_NUMBER=33 \
+  COUNTDOWN_VERSION=1.18.1 COUNTDOWN_BUILD_NUMBER=34 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -234,13 +244,13 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.0/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.1/' \
     --output "$work_dir/release"
 )
 ```
 
-The numbers above reproduce preparation of the published 1.18.0 / build 33; acceptance,
-signed-artifact and publication status are tracked in [releases/v1.18.0.md](releases/v1.18.0.md).
+The numbers above prepare 1.18.1 / build 34; acceptance,
+signed-artifact and publication status are tracked in [releases/v1.18.1.md](releases/v1.18.1.md).
 Commands alone do not establish acceptance or publication. The last confirmed distributed version
 is 1.18.0 / build 33. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than

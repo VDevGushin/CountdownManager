@@ -1,3 +1,4 @@
+import AppKit
 import XCTest
 import Carbon
 
@@ -1296,6 +1297,16 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.buttons[prefix + ".previous"].click()
         XCTAssertTrue(preview.staticTexts[files[0].name].waitForExistence(timeout: 3))
         activateForKeyboardInput()
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts["1 из 6"].exists, "Left at the first file must not wrap")
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[1].name].waitForExistence(timeout: 3),
+                      "Right must navigate without first focusing an arrow button")
+        try checkPreviewKeysAfterContentClick(preview: preview, files: files, index: 1)
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[0].name].waitForExistence(timeout: 3))
+        try checkPreviewKeysAfterContentClick(preview: preview, files: files, index: 0)
+        attachQuickPreviewScreenshot("Desktop quick preview 1.18.1", element: preview)
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(previewBack))
         XCTAssertTrue(selected.waitForExistence(timeout: 3))
@@ -1324,9 +1335,12 @@ final class CountdownManagerXCUITests: XCTestCase {
         attachQuickPreviewAXSnapshot("Desktop preview with retained filtered library", element: preview)
         XCTAssertFalse(search.exists, "The retained library search must leave accessibility while hidden")
         XCTAssertFalse(app.buttons[prefix + ".next"].isEnabled)
-        app.buttons[prefix + ".previous"].click()
+        activateForKeyboardInput()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts["6 из 6"].exists, "Right at the last file must not wrap")
+        app.typeKey(.leftArrow, modifierFlags: [])
         XCTAssertTrue(preview.staticTexts[files[4].name].waitForExistence(timeout: 3),
-                      "Preview arrows must traverse the full saved array, not just one search result")
+                      "Keyboard arrows must traverse the full saved array, not just one search result")
         activateForKeyboardInput()
         app.typeKey(.escape, modifierFlags: [])
         XCTAssertTrue(waitForAbsence(previewBack))
@@ -1384,8 +1398,17 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(preview.staticTexts[files[0].name].exists)
         XCTAssertTrue(preview.staticTexts["Копия недоступна"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons[prefix + ".external"].isEnabled)
+        activateForKeyboardInput()
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts["1 из 6"].exists)
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[1].name].waitForExistence(timeout: 3))
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts["Копия недоступна"].waitForExistence(timeout: 3))
         app.buttons[prefix + ".next"].click()
         XCTAssertTrue(preview.staticTexts[files[1].name].waitForExistence(timeout: 3))
+        try checkPreviewKeysAfterContentClick(preview: preview, files: files, index: 1)
+        attachQuickPreviewScreenshot("Mini quick preview 1.18.1", element: preview)
         app.buttons[prefix + ".back"].click()
         XCTAssertTrue(waitForAbsence(preview))
         XCTAssertTrue(first.waitForExistence(timeout: 3))
@@ -1405,6 +1428,11 @@ final class CountdownManagerXCUITests: XCTestCase {
         attachQuickPreviewAXSnapshot("Mini preview with retained filtered library", element: app.windows["main.panel"])
         XCTAssertFalse(search.exists, "The retained mini library search must leave accessibility while hidden")
         XCTAssertTrue(preview.staticTexts["6 из 6"].exists)
+        activateForKeyboardInput()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts["6 из 6"].exists)
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[4].name].waitForExistence(timeout: 3))
         app.buttons[prefix + ".back"].click()
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         XCTAssertEqual(search.value as? String, "06")
@@ -1417,6 +1445,25 @@ final class CountdownManagerXCUITests: XCTestCase {
 
     private func attachQuickPreviewAXSnapshot(_ name: String, element: XCUIElement) {
         let snapshot = XCTAttachment(string: element.debugDescription)
+        snapshot.name = name
+        snapshot.lifetime = .keepAlways
+        add(snapshot)
+    }
+
+    private func checkPreviewKeysAfterContentClick(preview: XCUIElement, files: [QuickPreviewFile], index: Int) throws {
+        // The middle of the observed preview is content, below its filename and above navigation.
+        preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        app.typeKey(.rightArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[index + 1].name].waitForExistence(timeout: 3),
+                      "Right must change files after clicking inside the rendered document")
+        preview.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).click()
+        app.typeKey(.leftArrow, modifierFlags: [])
+        XCTAssertTrue(preview.staticTexts[files[index].name].waitForExistence(timeout: 3),
+                      "Left must change files after clicking inside the rendered document")
+    }
+
+    private func attachQuickPreviewScreenshot(_ name: String, element: XCUIElement) {
+        let snapshot = XCTAttachment(screenshot: element.screenshot())
         snapshot.name = name
         snapshot.lifetime = .keepAlways
         add(snapshot)
@@ -1437,8 +1484,9 @@ final class CountdownManagerXCUITests: XCTestCase {
         try FileManager.default.createDirectory(at: sourceFolder, withIntermediateDirectories: true)
         let files = try (1...6).map { number in
             let identifier = "88888888-8888-8888-8888-" + String(format: "%012d", number)
-            let name = String(format: "%02d", number) + "-preview.txt"
-            let bytes = Data("Synthetic preview file \(number). Original contents stay intact.\n".utf8)
+            let content = try quickPreviewFixtureContent(number: number)
+            let name = String(format: "%02d", number) + "-preview." + content.fileExtension
+            let bytes = content.bytes
             let source = sourceFolder.appendingPathComponent(name)
             let copy = attachmentCopyURL(id: identifier, name: name)
             try bytes.write(to: source)
@@ -1453,6 +1501,31 @@ final class CountdownManagerXCUITests: XCTestCase {
         items[0]["attachments"] = metadata
         try writeItems(items, primaryID: eventID)
         return files
+    }
+
+    private func quickPreviewFixtureContent(number: Int) throws -> (fileExtension: String, bytes: Data) {
+        guard number <= 2 else {
+            return ("txt", Data("Synthetic preview file \(number). Original contents stay intact.\n".utf8))
+        }
+        let image = NSImage(size: NSSize(width: 600, height: 400))
+        image.lockFocus()
+        NSColor(calibratedRed: 0.9, green: 0.76, blue: 0.53, alpha: 1).setFill()
+        NSRect(x: 0, y: 0, width: 600, height: 400).fill()
+        ("Countdown • Keyboard preview" as NSString).draw(at: NSPoint(x: 35, y: 300), withAttributes: [
+            .font: NSFont.systemFont(ofSize: 28), .foregroundColor: NSColor.black
+        ])
+        ("Synthetic file \(number) — ← / →" as NSString).draw(at: NSPoint(x: 35, y: 230), withAttributes: [
+            .font: NSFont.systemFont(ofSize: 22), .foregroundColor: NSColor.black
+        ])
+        image.unlockFocus()
+        if number == 2 {
+            let view = NSImageView(frame: NSRect(x: 0, y: 0, width: 600, height: 400))
+            view.image = image
+            return ("pdf", view.dataWithPDF(inside: view.bounds))
+        }
+        let tiff = try XCTUnwrap(image.tiffRepresentation)
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(data: tiff))
+        return ("png", try XCTUnwrap(bitmap.representation(using: .png, properties: [:])))
     }
 
     private func requireQuickPreviewFilesUnchanged(_ files: [QuickPreviewFile], missingIndex: Int? = nil) throws {

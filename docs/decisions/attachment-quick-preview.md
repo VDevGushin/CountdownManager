@@ -15,6 +15,9 @@ owned by the existing Store/repository.
 Embed `QLPreviewView(.normal)` inside the existing attachment presentation. Countdown owns the
 filename, derived position, navigation and explicit external-open button. Each surface owns one
 transient identity-based preview session; no second saved collection or preview archive is added.
+The previous/next controls also own unmodified Left/Right keyboard shortcuts, using the same
+session navigation as clicks. Keyboard browsing spans the full saved event order, including
+when the retained source library has a search query, and stops at each end.
 The library stays mounted with its original dimensions while inactive. Separate accessibility
 containers distinguish the active screen from retained hidden content.
 

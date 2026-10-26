@@ -235,6 +235,7 @@ struct AttachmentPreviewView: View {
         return Button { session.move(by: distance, in: item, resolveURL: resolveURL) } label: {
             Image(systemName: symbol).font(.system(size: 12)).frame(width: 16, height: 20)
         }
+        .keyboardShortcut(distance < 0 ? .leftArrow : .rightArrow, modifiers: [])
         .accessibilityLabel(label).help(label)
         .accessibilityIdentifier(prefix + (distance < 0 ? ".previous" : ".next"))
         .uiSmokeControl(id: prefix + (distance < 0 ? ".previous" : ".next"), action: {

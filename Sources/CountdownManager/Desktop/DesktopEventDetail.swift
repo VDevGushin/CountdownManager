@@ -161,9 +161,6 @@ struct DesktopEventDetail: View {
                     .lineLimit(1)
                     .layoutPriority(1)
                 if item.showsWeather, let forecast = weather.forecast(for: item.date) {
-                    Text("·")
-                        .accessibilityHidden(true)
-                        .uiSmokeControl(id: "desktop.detail.weather.separator.\(item.id)")
                     DesktopForecastLabel(forecast: forecast)
                         .fixedSize()
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))

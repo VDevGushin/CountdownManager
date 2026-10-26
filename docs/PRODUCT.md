@@ -166,7 +166,9 @@ share one line, with temperature after the date; checklist progress and attachme
 share a separate horizontal summary line. Their compact height does not reserve a separate
 weather row or stack the two counts. Collection grid cards retain their reserved weather row.
 The desktop details use a compact title/calendar identity followed by one full-width date and
-eligible-temperature line, then the remaining-time label. A saved empty note adds no section;
+eligible-temperature line, then the remaining-time label. Date and weather are separated only
+by spacing, without a middle dot, consistently with desktop feed and favorite cards.
+A saved empty note adds no section;
 the note field remains available in the editor. Nonempty notes and long titles remain fully
 readable in the scrolling details. Arriving, disappearing or
 disabled forecasts must not shift surrounding content for otherwise unchanged events and
@@ -510,7 +512,8 @@ also exposes no duplicate add/change button.
 Opening a saved attachment first shows a large, read-only native quick preview in the originating
 surface. Desktop reuses the single native sheet; the mini-panel uses an internal screen with
 its usual plain Back chevron. The preview shows the filename and one derived `i из N` position.
-Previous/next traverse the entire event's saved order, including when opened from filtered search;
+Previous/next buttons and the unmodified Left/Right arrow keys traverse the entire event's saved
+order in both surfaces, including when opened from filtered search;
 they stop at the ends without wrapping. Legacy collections above 15 remain fully navigable.
 An explicit `Открыть в приложении` action launches the active local copy in its default application;
 previewing never autoplays video. macOS provides best-effort content or its native fallback for

@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "1.18.1",
+  "build": "34",
+  "passed": 27,
+  "total": 27,
+  "durationSeconds": 53.272,
+  "executableSHA256": "15273382640c6ab3277a410ca53bc3b457bee18f41f646f91257868db09b2661",
+  "unchangedExecutable": true,
+  "isolatedHome": "/private/tmp/countdown-1.18.1-release/native-home",
+  "productionDataUsed": false,
+  "stallDetected": false
+}

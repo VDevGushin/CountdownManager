@@ -268,6 +268,8 @@ URL/external-open work. Selection uses stable IDs; adjacent files derive from th
 event rather than a second attachment collection. A generation token rejects late results after
 navigation, close or reopen. Each surface owns its session; Store/repository retain data ownership.
 The shared quick-preview view embeds `QLPreviewView` for the selected repository-owned URL.
+Its previous/next buttons assign unmodified Left/Right keyboard shortcuts to the same session
+actions, so both input routes share saved-order navigation and boundary validation.
 It disables autoplay, creates a renderer per selected identity and explicitly closes it on
 dismantling; a closed Quick Look renderer is never reused. URL resolution is distinguished from
 native content rendering, because Quick Look has no public ready/error callback for this host.
