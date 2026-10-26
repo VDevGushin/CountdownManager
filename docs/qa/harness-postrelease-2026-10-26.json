@@ -1,0 +1,95 @@
+{
+  "status": "PASS",
+  "date": "2026-10-26",
+  "scope": "Post-release project harness and documentation consistency; no product Swift changes",
+  "release": "1.18.0/33",
+  "baseCommit": "d9aade54ece0ba80d8dc3493e13ab59717bb9565",
+  "checks": [
+    {
+      "name": "swift-harness",
+      "passed": 12,
+      "status": "PASS",
+      "logSHA256": "3b70273f02294ccc856fc15e249de91dc528b185d311730324403dff24a1057b"
+    },
+    {
+      "name": "agent-evals",
+      "passed": 33,
+      "status": "PASS",
+      "logSHA256": "0474198d615cc7568fc681f895092c8f7e3b12bb306382fdbfb7386148ffbb37"
+    },
+    {
+      "name": "native-hooks",
+      "passed": 3,
+      "status": "PASS",
+      "logSHA256": "b77b3eecbb8b58408bbf2c56825f5a7e1c3ea451dc9b20633ade6ed8a8a1e8e9"
+    },
+    {
+      "name": "update-tools",
+      "passed": 12,
+      "status": "PASS",
+      "logSHA256": "c3030e758a54e1d8b6d7e2fd5113b0115a5965ed0647060860940b92e97d4709"
+    },
+    {
+      "name": "native-field-chrome",
+      "passed": 4,
+      "status": "PASS",
+      "logSHA256": "adf44aaf3026e8bb039d085a7cae74119354460e65f19241d221d5ea73f71f16"
+    }
+  ],
+  "totalPassed": 64,
+  "reviewedInputsSHA256": {
+    "AGENTS.md": "9ec5a3bfc24bceb728c988b7703eccaf87a276950504c4b3d5eb7aeab0c3a1e2",
+    ".codex/hooks.json": "12e9343d1e902b710ca9162abfa86d96f3178548c566b571fd508d43cb8c3953",
+    ".codex/hooks/swift_harness.py": "40e1335710d8416d25e6569f619aed6b64072f34ab9b2d944e4bc15b9e3399a6",
+    "evals/README.md": "616de32d35e1deaf19e79cfbf96cbc25b078e4f8b35a7410ffabf477a223e631",
+    "evals/run.py": "692a572edb83ad958f5f9a478cd9343bcd35de64e872873247d476f568d04dae",
+    "evals/native_hooks.py": "5dcb2cec3d4011892dc7295a2526277e72a55f0ecb29577c9983725981f31620",
+    "verify.sh": "0aa599b65e01984bcd052a655b55aa6cce19cf42c17510854b014a99bda864f0",
+    "README.md": "b1b551e9dfc5ffe3627ef3356e1afd08e4ddca89508cd395ce91dfc1608f228b",
+    "docs/UPDATES.md": "8c6a08f18c5cc747c85f97bcab0d11892757d992cef81ddbdaa4a33f63b7ee9c",
+    "docs/VERIFICATION.md": "a7623c8e9bb2b17c8e5019f96c81f73429937de83238123a97520d7ec4560135",
+    "docs/PRODUCT.md": "c1a064ca7a7e5a9c173fddc48768471004d1fabf0b6a12b16f06db0fe0895fe3",
+    "docs/ARCHITECTURE.md": "b5b86ee04dcf7cc2524190d5a5b30f62d153b7de225ad8c5ab43960a4257cc1a",
+    ".impeccable/design.json": "e3d8bd7fb01e38f7b34c6ebc59a70f92f822d487a0acb5c4be76c07b9c8af7d2",
+    ".agents/skills/macos-desktop-design/SKILL.md": "2b4a719ea269372cc86245be805caa0d5a1271ae7856b174ef7456205e31ed70",
+    ".agents/skills/macos-platform-research/SKILL.md": "b2af9e8a84e1039ac4f711f89a34efb49f3fdfc145504c6864d25837a945eca3",
+    ".agents/skills/product-qa/SKILL.md": "9adddfb14abdefaaf35a64ff252f81d98c47068ed03c68bf1b990d639c6163e4",
+    ".agents/skills/swift-code-quality/SKILL.md": "72cc41b20f7d12bc7fea161d55f03e6cbf83c8557111dd2bce766fdb2b3d8974"
+  },
+  "updated": [
+    "README developer route commands and released wording",
+    "UPDATES current release/archive links",
+    "PRODUCT and ARCHITECTURE diagnostic Save acceptance scope",
+    "VERIFICATION historical/current boundaries"
+  ],
+  "protectedSkillsAndHooksChanged": false,
+  "newApplicationUIOrSwiftBuildRun": false,
+  "liveModelEvalsOrNativeCodexDeliveryRepeated": false,
+  "boundaries": [
+    "Deterministic native-hooks regression tests do not establish fresh in-app Codex hook registration/trust",
+    "Existing 1.18.0 product acceptance remains valid; product executable unchanged",
+    "Historical releases and screenshots are preserved"
+  ],
+  "independentAudit": {
+    "harness": {
+      "installed_cli_version": "0.157.1",
+      "hooks": "SessionStart/PostToolUse/Stop configuration and script behavior agree with documentation",
+      "active_hook_baseline_and_locks": "Preserve",
+      "live_delivery_limit": "No new opt-in native Codex delivery or live model evaluation performed; historical evidence remains labeled historical",
+      "official_reference": "https://learn.chatgpt.com/docs/hooks"
+    },
+    "designSidecar": {
+      "path": ".impeccable/design.json",
+      "valid_json": true,
+      "schema_version": 2,
+      "generated_at_preserved": "2026-10-16T08:04:08.897117+00:00",
+      "color_names_match": 38,
+      "typography_names_match": 8,
+      "source_references_exist": 6,
+      "component_references": "PASS",
+      "panel_metrics_and_authority_boundary": "PASS",
+      "changed": false
+    },
+    "blockers": []
+  }
+}

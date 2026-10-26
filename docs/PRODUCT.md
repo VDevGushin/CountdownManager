@@ -951,9 +951,10 @@ macOS version, architecture, time/offset, timer phase, updater state, Store coun
 and the current weather state. It does not attach event JSON, a preferences dump, filesystem paths,
 request details or arbitrary historical error text. Cancelling the dialog writes no archive;
 failures remain visible and do not replace an existing destination with an incomplete archive.
-The automated native-dialog check currently covers opening, Cancel, reopening and Cancel;
-physical confirmation of Save is not yet established. Archive creation/redaction has separate
-deterministic coverage; see `docs/VERIFICATION.md` for the acceptance boundary.
+The general in-process native-dialog check covers opening, Cancel, reopening and Cancel.
+Separate external 1.18.0 acceptance confirmed native Save and inspected the written ZIP after
+correcting the diagnostic test's Go to Folder text clearing. Archive creation/redaction also has
+deterministic coverage; see `docs/VERIFICATION.md` for the exact build/input-source boundaries.
 
 Journal submission is asynchronous and bounded: it admits at most 512 pending messages with a
 4 KiB UTF-8 input budget per message and may drop records under pressure. Diagnostic availability

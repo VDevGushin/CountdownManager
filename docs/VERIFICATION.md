@@ -346,7 +346,7 @@ boundaries. UIChecks adds Store draft lifetimes, partial import failures, failed
 durable expiry cleanup and refusal to bypass attachment persistence with a fake writer.
 All source files, copies and preferences in these checks are temporary fixtures.
 
-#### Native sheets, shared editor previews and favorite metadata — current follow-up
+#### Native sheets, shared editor previews and favorite metadata — contract and historical 1.16.0 acceptance
 
 Desktop Settings, file libraries and create/edit must all attach through the same native SwiftUI
 sheet mechanism. Verify native attachment, usable settings/files/editor bounds, close/reopen and
@@ -373,11 +373,12 @@ Cancel must preserve event bytes and release imported files through existing cle
 
 The featured favorite's date and eligible forecast share a full-width row below title/calendar
 identity. Check narrow/wide panes with pending/loaded/missing/off forecasts and unchanged selection,
-divider and data. Ordinary collection-grid metadata and details retain their existing composition.
+divider and data. Ordinary collection-grid metadata retains its composition; current compact
+details use the inline date/forecast contract in the attachment-shelf section above.
 The exact `5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254` candidate passed
 native desktop **27/27** in **52.034 seconds**, exit 0, unchanged executable and no main-thread
 stall or launcher timeout. Final strict lint is **0/71**; final CoreChecks/UIChecks passed exit 0.
-[Current provenance](images/v1.16.0/native-sheets/PROVENANCE.md) records 42 selected images from
+[Historical 1.16.0 provenance](images/v1.16.0/native-sheets/PROVENANCE.md) records 42 selected images from
 110 native PNGs, exact source-manifest hash, retained failed attempts and evidence limits.
 PNG/PDF/movie/TXT previews reached ready and corrupt input retained fallback in 36-point editor
 areas; both mini editor themes show the files in their actual viewport. This desktop route
@@ -441,7 +442,7 @@ Russian filename matching is native-regression evidence. This is not full VoiceO
 or default-app-opening acceptance. The [combined receipt](images/v1.16.0/attachment-overlay/acceptance.json)
 keeps these scopes separate.
 
-#### Priority, 15-file limit and searchable libraries — follow-up acceptance
+#### Priority, 15-file limit and searchable libraries — historical 1.16.0 acceptance
 
 The accepted follow-up passed fresh exact-bundle checks on 2026-10-24/25: strict SwiftLint
 (0 violations in 70 files), CoreChecks/UIChecks, native desktop 27/27, mini 23/23 and editor 5/5.
@@ -458,8 +459,13 @@ retain earlier successful imports. Legacy collections above 15 must load without
 or a read error, preserve existing identities on unrelated edits and Cancel, allow removal,
 and block new identities until the current draft is below 15.
 
-Use the focused native `verifyAttachmentThumbnails`, `verifyAttachmentLibrary` and
-`verifyRemovedDesktopLibraryOwner` scenarios for:
+The historical follow-up used the focused native `verifyAttachmentThumbnails`,
+`verifyAttachmentLibrary` and `verifyRemovedDesktopLibraryOwner` scenarios for the matrix below.
+Its first-four row summaries describe that accepted 1.16.0 layout. Current two/three-column
+shelves, three-file mini threshold and quick-preview acceptance are documented in the
+attachment-shelf section above; the 15-file storage/editor invariants remain unchanged.
+
+The historical matrix covered:
 
 - relative note → `Подзадачи` → `Вложения` placement in desktop details, mini cards and editor;
   consistent heading height/primary appearance and absence of the old desktop checklist label;
@@ -900,6 +906,10 @@ with the user's ABC input source. Its [protocol](images/v1.15.0/preflight-input-
 records independent ZIP inspection, unchanged event bytes and no clipboard fallback. This is
 external evidence for that identified build and input source; general in-process smoke still
 proves only its Cancel routes, and other input layouts remain outside that acceptance.
+The 1.18.0 release additionally passed the actual diagnostic Cancel/Save/ZIP-inspection route
+under ABC after correcting native Go to Folder text clearing in its test driver. Its
+[external receipt](images/v1.18.0/external-xcui.json) records the full 27/28 run and affected-only
+1/1 repeat separately; this does not expand the in-process Save driver's capabilities.
 
 ## Weather verification
 

@@ -159,10 +159,10 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The confirmed published version-specific archive URL remains
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.17.0/CountdownManager-1.17.0-32.zip`.
-The next release preparation uses tag `v1.18.0` and archive `CountdownManager-1.18.0-33.zip`;
-that candidate URL is not yet a verified public download.
+The confirmed published version-specific archive URL is
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.0/CountdownManager-1.18.0-33.zip`.
+Tag `v1.18.0`, that archive and the version/stable appcasts were anonymously verified after
+publication; [the publication receipt](images/v1.18.0/publication.json) records their exact hashes.
 Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
 with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
 Keep the canonical stable feed above unchanged for future releases.
@@ -239,9 +239,10 @@ the seed contents. Running these commands does not create a permanent backup:
 )
 ```
 
-The numbers above configure preparation of 1.18.0 / build 33; local acceptance and signed-artifact
-status are tracked in [releases/v1.18.0.md](releases/v1.18.0.md). Commands alone do not establish
-acceptance or publication. The last confirmed distributed version is 1.17.0 / build 32. For subsequent releases,
+The numbers above reproduce preparation of the published 1.18.0 / build 33; acceptance,
+signed-artifact and publication status are tracked in [releases/v1.18.0.md](releases/v1.18.0.md).
+Commands alone do not establish acceptance or publication. The last confirmed distributed version
+is 1.18.0 / build 33. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
@@ -251,8 +252,8 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.17.0.md](releases/v1.17.0.md);
-previous release evidence is retained in [releases/v1.16.0.md](releases/v1.16.0.md).
+Current published release status is recorded in [releases/v1.18.0.md](releases/v1.18.0.md);
+previous release evidence is retained in [releases/v1.17.0.md](releases/v1.17.0.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus

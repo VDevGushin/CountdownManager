@@ -899,7 +899,9 @@ settings navigation, event editing and the retained shell keep their existing li
 The general in-process runtime check exercises native open/Cancel/reopen/Cancel only. It does not
 invoke the save panel's `ok(nil)`: that programmatic driver hung in an isolated AppKit reproduction
 and is not reliable evidence for the physical Save route. The ZIP worker is checked independently
-below the dialog boundary; physical Save remains a native acceptance limitation.
+below the dialog boundary. Separate external 1.18.0 acceptance exercised actual Save and ZIP
+inspection under the identified ABC input source; see `docs/VERIFICATION.md` for its provenance
+and the affected-only driver correction. This does not broaden the in-process driver's scope.
 
 `WeatherDiagnostics` uses this existing journal through an injected Sendable sink. It records:
 
