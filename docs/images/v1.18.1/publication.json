@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "published": true,
+  "version": "1.18.1",
+  "build": "34",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.18.1",
+  "releaseID": 423767830,
+  "publishedAt": "2026-10-26T01:45:08Z",
+  "checkedAt": "2026-10-26T01:46:06.345824+00:00",
+  "anonymous": true,
+  "credentialsUsed": false,
+  "latestRedirect": {
+    "httpStatus": 200,
+    "url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.18.1"
+  },
+  "sourceCommit": "c7c6e8cf47f088cbe4329c95532070ed992572d7",
+  "annotatedTag": "v1.18.1",
+  "tagObject": "5568bc1a120e0ff9ae98b013166b1705fe04982d",
+  "downloads": [
+    {
+      "name": "archive",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.1/CountdownManager-1.18.1-34.zip",
+      "httpStatus": 200,
+      "bytes": 5886185,
+      "sha256": "603169fff5b4233ce89799322ed3b76b1f49b80853428080ad96141f11dc3f72"
+    },
+    {
+      "name": "versionFeed",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.1/appcast.xml",
+      "httpStatus": 200,
+      "bytes": 1299,
+      "sha256": "5db22ff45054e4a9871393f400053ddcb518fd8fa73929e87e61cd59a4b71630"
+    },
+    {
+      "name": "stableFeed",
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "httpStatus": 200,
+      "bytes": 1299,
+      "sha256": "5db22ff45054e4a9871393f400053ddcb518fd8fa73929e87e61cd59a4b71630"
+    }
+  ]
+}
