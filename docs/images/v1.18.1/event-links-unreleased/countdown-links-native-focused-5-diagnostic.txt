@@ -1,0 +1,2 @@
+DesktopSmoke
+FAIL after 0 scenarios: mini link removal: surface=Optional(CountdownManagerUI.EventEditorSession.Surface.panel) links=Optional(0) error=nil

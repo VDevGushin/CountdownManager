@@ -300,6 +300,65 @@ no new input route or accessibility control is introduced by the decorative symb
 
 ## Desktop window
 
+### Event link evidence
+
+`EventLinkChecks.swift` covers accepted HTTP/HTTPS including Unicode, rejected other schemes,
+missing hosts/embedded whitespace/credentials, trim, domain fallback, 0/10/11 limits, duplicate
+identities, legacy omission and malformed present JSON. Repository checks assert unchanged disk
+bytes after invalid saves and stale revision rejection. `EventLinkWorkflowChecks.swift` covers
+editor draft/Cancel/Save/reload, stale owner/value rejection, browser failure through an injected
+opener and failed persistence retaining durable data plus the draft. These checks do not launch
+an actual external browser.
+
+`./verify.sh desktop-capture <marked-directory>` includes link layout coverage in the existing
+desktop runtime: domain fallback, shared desktop/mini rendering, invalid-address inline error,
+Save gating and unchanged JSON after Cancel. Mini-panel checks cover the collapsed default,
+heading/count horizontal alignment, repeated disclosure, hidden-row removal from the registered
+interactive hierarchy, unchanged event bytes and retained state on ordinary hide/show. Desktop checks cover zero/positive link indicators in favorite/grid/feed,
+coexistence with checklist/files and containment in the existing summary host. Detail checks
+assert trailing counts and value/symbol alignment for tasks, attachments and links. Twelve
+`desktop-links-*`, `desktop-material-headings-*`, `editor-links-error-*`, `mini-links-*` and
+`mini-links-collapsed-*` captures use
+isolated Light/Dark windows. For an already built bundle, launch it
+through LaunchServices with `--ui-smoke-desktop --ui-smoke-event-links` and a fresh marked smoke
+home to run this scope alone; preserve executable SHA256, manifest, logs and source provenance.
+Native field insertion is in-process evidence, not physical keyboard input. Do not infer reliable
+reopen/Save delivery from this registry: diagnostic attempts observed retained/stale editor controls
+and completion callbacks despite successful disk writes. Ordinary interactions below are the
+acceptance authority for those transitions; no production lifecycle assertion was relaxed.
+
+External case `testEventLinksEditorSaveCancelValidationAndRelaunch` uses ordinary Add/trash and
+native text entry in the mini-panel: Save gating, durable address, Cancel, actual relaunch and
+removing the last link. `testDesktopEventLinkCancelReopenAndSave` separately exercises desktop
+name editing, Cancel/reopen with original text and Save with durable changed text.
+`testMiniLinksDisclosureAtZeroOneAndTenPreservesData` checks 0/1/10 saved links, collapsed row
+absence, ordinary header and trailing-count clicks, expand/collapse reversal and unchanged JSON.
+Record these
+runs independently, not as a combined all-green suite. Actual browser-page content, macOS 13 and
+VoiceOver require their own evidence. The 2026-10-27 manual handoff launched Safari but browser
+inspection was stopped by the computer-use URL policy; page content was not certified.
+
+Build provenance matters for visual review: Xcode's current SDK-27 Debug bundle adopts different
+system control styling than the SwiftPM build. `vtool -show-build` observed SDK 27.0 versus 13.0
+for the reviewed Debug and ordinary Release executables. Use the ordinary `build.sh` path with
+the project's SDKROOT for current-product screenshots; do not treat Debug styling as a requested
+redesign. Apple documents automatic native-control changes on a new-Xcode rebuild in
+[Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass).
+
+The final 2026-10-27 closure passed the complete native desktop campaign **28/28** and a single
+fresh external links campaign **3/3** (113.760 seconds). Before the final ABC run, a separate
+Russian-layout attempt delivered punctuation instead of Latin address letters and failed 1/3;
+that attempt is retained separately. CoreChecks/UIChecks additionally reject removed and expired
+link clicks before the cached rendering day refreshes. The native summary sequence now asserts
+value-before-symbol ordering and a shared trailing icon column for tasks/files/links.
+
+The prior 15-scenario stop was a test-registration defect: a dynamically replaced desktop event
+control used the appearance/change callback registration path and was missing/unusable in the
+registry despite a saved visible favorite. Desktop event controls now use the existing native
+representable registration path, which refreshes identity, action and enabled state coherently.
+No product persistence/lifecycle assertions were skipped. See
+[completion evidence](images/v1.18.1/event-links-unreleased/completion/PROVENANCE.md).
+
 ### Attachment evidence
 
 #### Attachment shelf and embedded quick preview

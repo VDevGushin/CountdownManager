@@ -1,0 +1,5 @@
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopEventLinkCancelReopenAndSave]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopEventLinkCancelReopenAndSave]' passed (29.164 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 29.164 (29.164) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 29.164 (29.165) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 29.164 (29.166) seconds

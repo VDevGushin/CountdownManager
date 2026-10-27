@@ -225,12 +225,13 @@ package final class Store: ObservableObject {
     @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
     @Published package private(set) var isExportingDiagnostics = false
-    @Published var error: String?
+    @Published package var error: String?
     @Published package private(set) var loginStatus: SMAppService.Status
     package let loginItemManagementIsAvailable: Bool
     private let fileURL: URL
     private let repository: CountdownRepository
     private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
+    private let openWebURL: (URL) -> Bool
     private let now: () -> Date
     private let recordDiagnostic: @Sendable (String) -> Void
     private let disclosureCache: SubtaskDisclosureCache
@@ -255,6 +256,7 @@ package final class Store: ObservableObject {
         persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil,
         now: @escaping () -> Date = Date.init,
         loginItemManagementIsAvailable: Bool = true,
+        openWebURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
         diagnosticRecord: @escaping @Sendable (String) -> Void = { DiagnosticLog.shared.record($0) }
     ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -263,6 +265,7 @@ package final class Store: ObservableObject {
         today = Day(now())
         repository = CountdownRepository(fileURL: resolvedURL)
         self.persistenceSaveOverride = persistenceSaveOverride
+        self.openWebURL = openWebURL
         self.now = now
         self.recordDiagnostic = diagnosticRecord
         self.loginItemManagementIsAvailable = loginItemManagementIsAvailable
@@ -489,6 +492,19 @@ package final class Store: ObservableObject {
         let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
         recordDiagnostic("data.normalize deferred removed=\(data.items.count - updated.items.count)")
         stagePersistence(updated, reason: "normalize", disclosureCleanup: removedEventIDs)
+    }
+
+    package func openLink(_ link: EventLink, eventID: UUID) {
+        guard !isLoading, !readFailed,
+              data.items.contains(where: {
+                  $0.id == eventID && $0.date >= Day(now()) && $0.links.contains(link)
+              }), let url = link.url else {
+            error = "Ссылка больше недоступна для этого события."
+            return
+        }
+        if !openWebURL(url) {
+            error = "Не удалось открыть ссылку. Проверьте браузер по умолчанию и повторите попытку."
+        }
     }
 
     package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {

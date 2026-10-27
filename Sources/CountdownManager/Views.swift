@@ -288,6 +288,10 @@ struct ManagerView: View {
                 }, showAll: { showAttachmentList(item.id) })
                 .padding(.top, 8)
             }
+            if !item.links.isEmpty {
+                SavedLinkSection(item: item, surface: "panel", open: { store.openLink($0, eventID: item.id) })
+                    .padding(.top, 8)
+            }
         }
         .padding(12)
         .background(AuroraInstrument.surface(
@@ -964,6 +968,7 @@ struct EditorView: View {
             date: Day(date),
             emoji: draft.emoji,
             subtasks: draft.subtasks,
+            links: draft.links,
             today: store.today,
             savedNote: savedNote
         )
@@ -1010,6 +1015,10 @@ struct EditorView: View {
                                 await store.editorAttachmentThumbnailURL(attachment, eventID: item?.id,
                                                                          draftID: attachmentSession.id)
                             })
+                        }
+                        VStack(alignment: .leading, spacing: 0) {
+                            Divider().padding(.bottom, 13)
+                            EditorLinkSection(links: $draft.links)
                         }
                     }
                     .padding(.top, 12)

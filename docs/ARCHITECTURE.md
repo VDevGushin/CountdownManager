@@ -366,6 +366,28 @@ Backward reading of JSON without this field does not imply downgrade safety: 1.1
 attachment metadata on writes. Attachment associations can only be restored from a matched JSON
 and `Attachments/` backup; the presence of copied bytes alone does not recover their event ownership.
 
+### `EventLink`
+
+`Sources/CountdownCore/EventLink.swift` owns UUID, optional name, raw address, HTTP/HTTPS URL
+validation and name/domain presentation. Drafts may be incomplete; `CountdownData.save` trims
+and validates the collection before mutation. Decode and repository writes also enforce count,
+unique identities and usable addresses. Empty metadata is omitted; absent metadata defaults empty.
+
+`EventEditorDraft.links` is the only editor snapshot. `EditorLinkSection` owns field focus and
+validation visibility, while the existing Save/Cancel/session guard owns persistence and lifetime.
+`SavedLinkSection` is shared by desktop details and mini cards. The mini owns only transient
+disclosure state, starting collapsed; desktop remains expanded. `DesktopEventCard` uses the same
+neutral summary metrics as attachments for its nonzero link count, and the shared desktop event
+accessibility label includes the count without adding another action.
+`Store.openLink` revalidates owner
+and exact saved value before calling its injected browser-opening boundary (NSWorkspace in the app).
+Desktop browser summaries and detail metadata share `DesktopSummaryLabelStyle`: tabular
+value/progress first, then a fixed 18-point native symbol column. `SavedMaterialHeading` is shared
+by desktop attachments/links and requires their count and symbol; checklist progress reuses the
+same metadata style. Mini-panel headers keep their disclosure role.
+No browser or network work occurs during rendering, draft editing or save. URLs/names are never
+added to diagnostic log fields. The Xcode and Swift package targets include the same sources.
+
 ### `Subtask`
 
 Contains stable identity, text, and completion state. Domain limits such as maximum count and text length live with the model.

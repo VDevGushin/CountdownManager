@@ -440,9 +440,9 @@ class AgentEvalChecks(unittest.TestCase):
             self.assertEqual(runner.oracle(case, root, root)["exit_code"], 0)
             self.assertEqual(hook.read_text(), original)
 
-    def test_suite_has_seven_cases_and_each_fixture_applies_to_current_source(self):
+    def test_suite_has_eight_cases_and_each_fixture_applies_to_current_source(self):
         suite = runner.load_suite()
-        self.assertEqual(len(suite["cases"]), 7)
+        self.assertEqual(len(suite["cases"]), 8)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for relative in ("Sources/CountdownCore/Countdown.swift", ".codex/hooks/swift_harness.py",

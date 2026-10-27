@@ -44,6 +44,22 @@ Prefer native window chrome, toolbar actions, menus, text fields, checkboxes, da
 
 Keep the ordinary and failure states useful: no events, no selection, search without results, long titles and notes, an unavailable selected event, a pending or failed save, and incomplete preparation. Select only states relevant to the change.
 
+## Preserve each surface's established interaction family
+
+Before proposing a new control or content section, identify its nearest existing sibling on each
+changed surface and read that implementation plus the matching `DESIGN.md`/`PRODUCT.md` rules.
+Compare default/expanded/collapsed states, header/count geometry, click target, empty state and
+hidden accessibility content, not only palette and type. For example, mini-panel link lists follow
+attachments' disclosure family while desktop details remain expanded. Explain an intentional
+behavioral difference as a proposal before treating it as the new contract.
+
+Use the application's existing symbol names/assets for familiar actions. In HTML, render or export
+the same native symbol when available; do not hand-draw a competing trash, pencil or other existing
+icon. Label an unavoidable placeholder explicitly instead of presenting it as the app's design.
+Review analogous mini/desktop states at zero, one and the real content limit. Identify the sibling
+file and the observed comparison in the handoff. Check build/SDK provenance before showing native
+captures: a new-SDK Debug style is not evidence for the ordinary installed-product appearance.
+
 ## Keyboard, accessibility, and appearance
 
 Account for logical keyboard focus, visible focus indication, selection versus activation, labelled icon actions, and the existing save/cancel/close commands. Do not assign competing shortcuts or steal text-editing commands to drive navigation.

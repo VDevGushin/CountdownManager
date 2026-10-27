@@ -451,6 +451,126 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(task["isCompleted"] as? Bool, true)
     }
 
+    func testMiniLinksDisclosureAtZeroOneAndTenPreservesData() throws {
+        for count in [0, 1, 10] {
+            var items = try persistedItems()
+            let links: [[String: Any]] = (0..<count).map { index in
+                ["id": String(format: "55555555-5555-5555-5555-%012d", index + 1),
+                 "name": "Ссылка \(index + 1)", "address": "https://example.com/\(index + 1)"]
+            }
+            items[0]["links"] = links
+            try writeItems(items, primaryID: eventID)
+            let before = try Data(contentsOf: dataURL)
+            app.launch()
+            XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+            let toggle = app.buttons["panel.links.toggle.\(eventID)"]
+            if count == 0 {
+                XCTAssertFalse(toggle.exists)
+            } else {
+                XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+                XCTAssertTrue(toggle.label.contains(String(count)))
+                let first = app.buttons["panel.links.open.55555555-5555-5555-5555-000000000001"]
+                XCTAssertFalse(first.exists)
+                toggle.click()
+                XCTAssertTrue(first.waitForExistence(timeout: 3))
+                toggle.click()
+                XCTAssertTrue(waitForAbsence(first))
+                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).click()
+                XCTAssertTrue(first.waitForExistence(timeout: 3))
+                toggle.click()
+                XCTAssertTrue(waitForAbsence(first))
+            }
+            XCTAssertEqual(try Data(contentsOf: dataURL), before)
+            if count != 10 { app.terminate() }
+        }
+    }
+
+    func testDesktopEventLinkCancelReopenAndSave() throws {
+        let linkID = "44444444-4444-4444-4444-444444444444"
+        var items = try persistedItems()
+        items[0]["links"] = [["id": linkID, "name": "Маршрут", "address": "https://example.com/route"]]
+        try writeItems(items, primaryID: eventID)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let edit = app.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        edit.click()
+        let name = app.textFields["editor.links.name.\(linkID)"]
+        XCTAssertTrue(name.waitForExistence(timeout: 3))
+        revealInEditor(name, fullyInViewport: true)
+        replace(name, with: "Черновик")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        XCTAssertTrue(edit.isEnabled)
+        edit.click()
+        let reopened = app.textFields["editor.links.name.\(linkID)"]
+        XCTAssertTrue(reopened.waitForExistence(timeout: 3))
+        XCTAssertEqual(reopened.value as? String, "Маршрут")
+        revealInEditor(reopened, fullyInViewport: true)
+        replace(reopened, with: "Новый маршрут")
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["desktop.links.open.\(linkID)"].waitForExistence(timeout: 3))
+        let links = try XCTUnwrap(try persistedItems().first?["links"] as? [[String: Any]])
+        XCTAssertEqual(links.first?["name"] as? String, "Новый маршрут")
+    }
+
+    func testEventLinksEditorSaveCancelValidationAndRelaunch() throws {
+        app.launch()
+        openEditor()
+        let add = app.buttons["editor.links.add"]
+        revealInEditor(add, fullyInViewport: true)
+        add.click()
+        let addresses = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "editor.links.address."))
+        XCTAssertEqual(addresses.count, 1)
+        let address = addresses.element(boundBy: 0)
+        let suffix = String(address.identifier.dropFirst("editor.links.address.".count))
+        revealInEditor(address, fullyInViewport: true)
+        replace(address, with: "file:///tmp/test")
+        let name = app.textFields["editor.links.name.\(suffix)"]
+        name.click()
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
+        XCTAssertTrue(app.staticTexts["editor.links.error.\(suffix)"].exists)
+        replace(name, with: "Маршрут")
+        replace(address, with: "https://example.com/route")
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        app.buttons["editor.save"].click()
+        let disclosure = app.buttons["panel.links.toggle.\(eventID)"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        let open = app.buttons["panel.links.open.\(suffix)"]
+        XCTAssertFalse(open.exists)
+        disclosure.click()
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        disclosure.click()
+        XCTAssertTrue(waitForAbsence(open))
+        disclosure.click()
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        let links = try XCTUnwrap(try persistedItems().first?["links"] as? [[String: Any]])
+        XCTAssertEqual(links.first?["address"] as? String, "https://example.com/route")
+        XCTAssertEqual(links.first?["name"] as? String, "Маршрут")
+        openEditor()
+        let reopened = app.textFields["editor.links.address.\(suffix)"]
+        revealInEditor(reopened, fullyInViewport: true)
+        replace(reopened, with: "https://example.com/discard")
+        app.buttons["editor.cancel"].click()
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["panel.links.toggle.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["panel.links.open.\(suffix)"].exists)
+        app.buttons["panel.links.toggle.\(eventID)"].click()
+        XCTAssertTrue(app.buttons["panel.links.open.\(suffix)"].waitForExistence(timeout: 3))
+        openEditor()
+        let restored = app.textFields["editor.links.address.\(suffix)"]
+        XCTAssertTrue(restored.waitForExistence(timeout: 3))
+        XCTAssertEqual(restored.value as? String, "https://example.com/route")
+        let remove = app.buttons["editor.links.remove.\(suffix)"]
+        revealInEditor(remove, fullyInViewport: true)
+        remove.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAbsence(app.buttons["panel.links.open.\(suffix)"]))
+        XCTAssertNil(try persistedItems().first?["links"])
+    }
+
     func testAddedSubtaskDeletePreservesNeighborTextOnSave() throws {
         app.launch()
         openEditor()

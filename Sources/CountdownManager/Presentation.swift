@@ -207,6 +207,7 @@ package func editorCanSave(
     date: Day,
     emoji: String,
     subtasks: [Subtask] = [],
+    links: [EventLink] = [],
     today: Day,
     savedNote: String? = nil
 ) -> Bool {
@@ -222,6 +223,7 @@ package func editorCanSave(
         && CountdownNote.isAllowed(note, savedNote: savedNote)
         && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
         && subtasksAreValid
+        && (try? EventLink.validate(links)) != nil
 }
 
 package enum EditorFocusTarget: Hashable {
@@ -289,6 +291,7 @@ package struct EventEditorDraft: Equatable {
     package var note: String
     package var emoji: String
     package var subtasks: [Subtask]
+    package var links: [EventLink]
     package var attachments: [EventAttachment]
     package var showsWeather: Bool
     package private(set) var usesAutomaticTitle: Bool
@@ -298,6 +301,7 @@ package struct EventEditorDraft: Equatable {
         note = item?.note ?? ""
         emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
+        links = item?.links ?? []
         attachments = item?.attachments ?? []
         showsWeather = item?.showsWeather ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
@@ -309,6 +313,7 @@ package struct EventEditorDraft: Equatable {
         emoji = ""
         subtasks = []
         attachments = []
+        links = []
         showsWeather = true
         usesAutomaticTitle = true
     }
@@ -359,7 +364,8 @@ package struct EventEditorDraft: Equatable {
             subtasks: subtasks,
             showsWeather: showsWeather,
             usesAutomaticTitle: usesAutomaticTitle,
-            attachments: attachments
+            attachments: attachments,
+            links: links
         )
     }
 }

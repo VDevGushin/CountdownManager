@@ -299,6 +299,15 @@ The shared editor keeps its full editable list and 36-point previews before Save
 reopening. Preview loading/failure does not change the row area or disable editing.
 Editor symbols occupy a fixed 18-point-wide column; filenames and size labels align across
 PDF, image, movie and other file types instead of following each SF Symbol's intrinsic width.
+Saved web links follow the same mini-panel disclosure family as attachments: a fixed-width
+chevron, 12-point semibold primary-ink heading, trailing neutral count and one full-width click
+target. Start collapsed; retain the mounted session's state on hide/show. Collapsed link rows are
+removed from interaction and accessibility. Desktop links remain an expanded detail section;
+no mini-panel disclosure is copied into the desktop. Its expanded heading has the same trailing
+neutral count and native link symbol as desktop attachments' count/paperclip. Checklist progress,
+attachment count and link count in details all use value then symbol in one trailing column. An empty saved links section is absent.
+The editor uses the existing SF Symbol `trash`, native rounded fields, and separated Add spacing.
+
 The mini-panel uses a collapsible attachments section inside the same event card. Its disclosure
 rotates one fixed chevron, as subtasks do; expanding or collapsing must not move the heading
 or count horizontally. Both surfaces
@@ -328,6 +337,15 @@ Desktop browser cards also show a neutral 11-point paperclip/count summary only 
 exist, separately from the user's emoji. Ordinary grid cards stack it below checklist progress
 inside the existing status host, so narrow cards can fit both. Feed cards and the featured favorite
 use one compact status row. Zero attachments add neither a visible symbol nor an accessible zero state.
+The saved-link indicator follows this same status family: system `link`, neutral 11-point medium
+count, no zero placeholder. Grid cards stack it below file count; feed and favorite include it in
+the same horizontal status row. It is a summary rather than another interactive control.
+All three desktop browser summaries use number/progress before the SF Symbol, tabular digits,
+a 6-point internal gap and an 18-point symbol column. In grid cards the symbol columns align at
+the right; favorite/feed retain the value-symbol order in their common status row. Detail section
+headers reuse the same value-symbol metadata style. Mini-panel disclosures keep their own treatment.
+
+
 
 The featured desktop favorite places date and forecast inline on their own full-width row
 below title/calendar identity. This preserves room for both in a narrow browser pane; ordinary

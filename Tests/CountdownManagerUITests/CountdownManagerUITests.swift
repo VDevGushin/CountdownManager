@@ -10,6 +10,7 @@ enum UIChecks {
             .appendingPathComponent("CountdownManagerUIChecks-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
+        try await testEventLinkWorkflows(in: directory.appendingPathComponent("links"))
         let today = Day(Date())
         let yesterdayDate = Day.calendar.date(byAdding: .day, value: -1, to: today.date())!
         let tomorrowDate = Day.calendar.date(byAdding: .day, value: 1, to: today.date())!

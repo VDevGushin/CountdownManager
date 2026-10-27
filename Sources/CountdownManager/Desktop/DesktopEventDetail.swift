@@ -11,6 +11,7 @@ struct DesktopEventDetail: View {
     let toggleFavorite: () -> Void
     let delete: () -> Void
     let toggleSubtask: (UUID) -> Void
+    let openLink: (EventLink) -> Void
     let openAttachment: (EventAttachment) -> Void
     let attachmentThumbnailURL: @MainActor (EventAttachment) async -> URL?
     let showAttachments: () -> Void
@@ -39,6 +40,7 @@ struct DesktopEventDetail: View {
                                            open: openAttachment, thumbnailURL: attachmentThumbnailURL,
                                            showAll: showAttachments)
                         .id(item.id)
+                    SavedLinkSection(item: item, surface: "desktop", open: { openLink($0) })
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -199,6 +201,7 @@ struct DesktopEventDetail: View {
                     .uiSmokeControl(id: "desktop.subtasks.heading.\(item.id.uuidString)")
                 Spacer()
                 DesktopCompletionLabel(presentation: presentation)
+                    .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.details.tasks.\(item.id)"))
                     .uiSmokeControl(id: "desktop.checklist.progress", value: {
                         presentation.completionLabel ?? "empty"
                     })

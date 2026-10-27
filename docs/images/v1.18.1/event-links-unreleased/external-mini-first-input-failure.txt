@@ -1,0 +1,7 @@
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' started.
+/Users/vladislav.gushchin/AI-Agents/Countdown/XCUITests/CountdownManagerXCUITests.swift:1769: error: -[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch] : XCTAssertEqual failed: ("Optional(":////")") is not equal to ("Optional("file:///tmp/test")")
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' failed (22.099 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.099 (22.100) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.099 (22.101) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 22.099 (22.102) seconds
+** TEST FAILED **

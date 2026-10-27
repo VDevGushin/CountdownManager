@@ -51,6 +51,12 @@ Do not redesign adjacent code merely because it can be improved.
 
 Do not invent product semantics to make an implementation convenient.
 
+For a UI addition, read the affected surface's `DESIGN.md` guidance and its closest implemented
+sibling before coding. Preserve existing symbols, native control treatment, disclosure/default
+state and empty/count behavior; one shared data model does not mean identical panel/desktop
+interaction. Carry the chosen sibling comparison into focused acceptance checks. Do not invent
+another visual/action family merely because the feature is new.
+
 ## 2 — Prefer native, direct solutions
 
 Use current Swift language features and standard Apple APIs when they express the required behaviour clearly.

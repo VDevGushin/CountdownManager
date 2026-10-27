@@ -41,6 +41,20 @@ This is a risk lens, not a mandatory checklist. Skip dimensions that cannot affe
 
 Prefer observable outcomes over implementation details. Watch for stale state, duplicated effects, lost drafts, incorrect focus, inaccessible controls, animation that ignores Reduce Motion, and regressions in adjacent flows sharing the same state or component.
 
+## Compare the new UI with its existing sibling
+
+For an added or changed UI family, name the existing control/section used as the reference and
+compare it on each affected surface. Check symbols and native treatment, header/count alignment,
+disclosure/default state, full click area and empty/one/limit content. A visible list screenshot
+does not prove collapse or hidden-row accessibility. Exercise the applicable interactions; verify
+that disclosure changes no event bytes and that hiding/reopening follows the established contract.
+Do not import desktop presentation into the mini-panel or a mini disclosure into desktop details
+without a product reason. Confirm the reviewed build's SDK/style matches the ordinary build path.
+When delivering a tester app, verify its actual launcher and packaged native bundle, not only the
+underlying build. Preserve LaunchServices registration and the isolated home; a shell wrapper
+executing a raw Cocoa executable is not equivalent evidence for status-item/panel anchoring.
+
+
 ## Observe transitions, not just settled states
 
 When a changed flow includes asynchronous saves, pending controls, or redraws, observe representative actions during the transition as well as after completion. Include rapid repeated input when relevant. Look for brief flashes, unrelated controls dimming or disabling together, blank frames, layout jumps, and lost focus. A passing end-state assertion or settled screenshot cannot establish that a transition is visually stable.

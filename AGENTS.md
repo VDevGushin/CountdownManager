@@ -14,6 +14,7 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 ## Sources of truth
 
 - User-visible behaviour and invariants: `docs/PRODUCT.md`
+- Established native visual language and per-surface UI families: `DESIGN.md`; product behaviour still belongs to `docs/PRODUCT.md`
 - Current implementation and ownership: `docs/ARCHITECTURE.md`
 - Verification commands, capabilities, and limitations: `docs/VERIFICATION.md`
 - Durable technical rationale: `docs/decisions/`

@@ -1,0 +1,9 @@
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopEventLinkCancelReopenAndSave]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopEventLinkCancelReopenAndSave]' passed (29.693 seconds).
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' passed (59.827 seconds).
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testMiniLinksDisclosureAtZeroOneAndTenPreservesData]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testMiniLinksDisclosureAtZeroOneAndTenPreservesData]' passed (24.240 seconds).
+	 Executed 3 tests, with 0 failures (0 unexpected) in 113.760 (113.763) seconds
+	 Executed 3 tests, with 0 failures (0 unexpected) in 113.760 (113.764) seconds
+	 Executed 3 tests, with 0 failures (0 unexpected) in 113.760 (113.765) seconds

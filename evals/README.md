@@ -3,15 +3,22 @@
 These evals assess the agent maintaining Countdown Manager: scoped repairs, evidence-based reviews,
 verification choices, data protection and state ownership. They do not replace application tests.
 
-Version 4 has seven cases in `cases.json`. Two inject repairable defects; two inject defects for
+Version 5 has eight cases in `cases.json`. Two inject repairable defects; two inject defects for
 read-only review; two test evidence interpretation and product/architecture reasoning; one checks
-that a documentation-only correction avoids unrelated skills and application checks. Prompts are
+that a documentation-only correction avoids unrelated skills and application checks; one checks
+mini/desktop interaction and icon consistency. Prompts are
 in Russian, matching normal project work. Criteria are fixed before the subject runs.
 
 Version 4 updates `favorite-ownership` to the current explicit-favorite contract: without a
 selection, events stay ordinary and the idle menu bar shows Mars alone. It requires reading the
 presentation paths as well as the helper fallback. Frozen version-3 runs keep their original
 criteria and results; this revision does not reassess them.
+
+Version 5 adds `mini-desktop-style-boundary`, a read-only behavioral review of a proposal to make
+all material lists always expanded and replace existing native icons in an HTML concept. Its rubric
+requires concrete sibling/source comparisons, the separate mini/desktop interaction contracts and
+appropriate disclosure/hidden-content evidence. No live model run is implied by adding the case;
+run it explicitly with `--case mini-desktop-style-boundary` when agent evaluation is requested.
 
 ## Run
 

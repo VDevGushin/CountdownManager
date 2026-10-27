@@ -150,13 +150,8 @@ struct SavedAttachmentSection: View {
                     .uiSmokeControl(id: "panel.attachments.toggle.\(item.id.uuidString)",
                                     action: { expanded.toggle() }, value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    HStack {
-                        heading
-                        Spacer()
-                        Text(String(item.attachments.count))
-                            .font(.system(size: 11))
-                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    }
+                    SavedMaterialHeading(title: "Вложения", count: item.attachments.count, symbolName: "paperclip",
+                                         controlPrefix: "desktop.attachments", eventID: item.id)
                 }
                 if !compact || expanded {
                     LazyVGrid(columns: shelfColumns, alignment: .leading, spacing: compact ? 8 : 10) {

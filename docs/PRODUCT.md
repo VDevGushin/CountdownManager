@@ -445,6 +445,45 @@ There is no overdue state and no automatic rollover.
 
 Incomplete subtasks do not prevent event expiry.
 
+### Links
+
+An event may contain up to ten web links. Each has stable identity, an optional name and a required
+full HTTP/HTTPS address. Outer whitespace is removed on Save. Other schemes, missing hosts,
+embedded whitespace and URL credentials are rejected. A missing name displays the domain.
+No network request, preview, favicon or page download occurs merely by saving or rendering a link.
+
+The shared event editor adds, changes and removes link rows after attachments. Each row contains
+name and address fields and the same native trash symbol used for subtasks. Invalid or incomplete
+rows block Save and show an inline address explanation after leaving a field. Removing the row
+allows Save again. The count is N/10; Add is disabled at ten and explains how to make room.
+All link edits remain in the event draft until Save; Cancel preserves saved links. Failed writes
+retain the draft for retry. New event and day drafts start without links.
+
+Saved desktop details and mini-panel cards show a compact Links section after attachments only
+when nonempty. Desktop section headings pair «Ссылки» at the left with a trailing neutral
+saved-link count and link symbol, matching the attachments count/paperclip and checklist
+progress/symbol. All three right-hand summaries use value then symbol in one trailing column. Each row shows name/domain plus link and external-opening symbols. The entire row
+is keyboard-accessible and opens the current saved address in the default browser. Full address
+is available as hover help. The action validates the owning active event and saved link identity;
+stale, removed or expired links cannot open. Failed opening reports an error without deleting data.
+Desktop collection cards, feed rows and the featured favorite show a neutral link symbol and
+saved-link count alongside checklist/file summaries when positive. Browser summary labels
+place the number/progress first and the symbol after it. Grid summaries align the three symbols
+in one trailing column; favorite/feed summaries use the same value-then-symbol order.
+ Zero links produce no symbol,
+count or accessible placeholder. This is a summary, not a new opening/editing action; file-preview
+behavior is unchanged.
+In the mini-panel, the section starts collapsed like attachments: a fixed chevron, semibold heading
+and trailing count form one full-width disclosure button. Opening or closing it changes no saved
+event data; hidden rows are absent from input and accessibility. Hide/show retains its current
+state during the mounted panel session; a fresh app launch starts collapsed. Desktop links stay
+expanded and do not gain a disclosure control. At zero links the saved section remains absent.
+
+
+Old JSON without links reads as an empty list; empty lists are omitted on write. Invalid present
+metadata is not silently discarded. Older application versions do not preserve unknown link data
+when writing: backward reading does not imply downgrade safety. Links expire with their event.
+
 ### Attachments
 
 An event may contain local file attachments: photos, videos, documents and exported correspondence

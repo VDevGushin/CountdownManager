@@ -250,6 +250,7 @@ struct DesktopRootView: View {
                             edit: { beginEditor(item: selection) }, toggleFavorite: { toggleFavorite(selection) },
                             delete: { deleteEvent(selection.id) },
                             toggleSubtask: { toggleSubtask(selection, subtaskID: $0) },
+                            openLink: { store.openLink($0, eventID: selection.id) },
                             openAttachment: { attachment in
                                 showAttachmentPreview(attachment, item: selection, origin: .summary)
                             },
