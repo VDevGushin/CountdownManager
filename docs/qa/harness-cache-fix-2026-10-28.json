@@ -1,0 +1,85 @@
+{
+  "checkedAt": "2026-10-28T19:54:30.252863+03:00",
+  "baseCommit": "7ff56315c1db7c9a569b6adec2fedc1b18a359fb",
+  "branch": "codex/event-links",
+  "workingTreeFixNotCommitted": true,
+  "resolvedFinding": "CACHE_DEPENDENCIES",
+  "status": "PASS",
+  "change": "Extend the existing gate_fingerprint dependency list; lifecycle, Swift-touched policy and hook definitions stay unchanged.",
+  "regressions": {
+    "beforeFix": "16 test methods: FAILED (14 subtest failures, 2 errors); old code reused cached success for changed/unreadable verifier inputs.",
+    "afterFix": "16/16 PASS",
+    "independentInputExpectations": 9,
+    "coverage": [
+      "Each dependency content change reruns lint/fast and recaches success.",
+      "Each dependency creation/removal changes the fingerprint.",
+      "Changed verifier failure blocks despite previous cached success; successful retry is cached.",
+      "Ordinary README/DESIGN/PRODUCT prose and read-only calls preserve a valid cache.",
+      "Verifier edits in a session without Swift work do not invoke application checks.",
+      "Unreadable verifier dependency blocks at hook boundary.",
+      "Existing missing/corrupt state and concurrent lifecycle checks remain passing."
+    ]
+  },
+  "verification": {
+    "total": 96,
+    "passed": 96,
+    "suites": [
+      {
+        "command": "python3 -B Tests/test_swift_harness.py",
+        "tests": 16,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_hooks.py",
+        "tests": 3,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_agent_evals.py",
+        "tests": 36,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_design_system.py",
+        "tests": 7,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_design_contract.py",
+        "tests": 18,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_field_chrome.py",
+        "tests": 4,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_update_tools.py",
+        "tests": 12,
+        "result": "PASS"
+      }
+    ],
+    "diffCheck": "PASS",
+    "changedPythonSyntax": "PASS"
+  },
+  "fileHashes": {
+    ".codex/hooks/swift_harness.py": "8764e33a9d8ec83ca13ef4fe1429a0c96ffdc43db910df0a1f0df936877b9c04",
+    "Tests/test_swift_harness.py": "56a861181d428ee13acca20246e3deac8c72a573eefbd74d33f3f212f152146c",
+    ".codex/hooks.json": "12e9343d1e902b710ca9162abfa86d96f3178548c566b571fd508d43cb8c3953",
+    "README.md": "7b75875cc9ffdcadc7cf9fc1130899d5efa10932528ab198baa57a53f3192fb2",
+    "docs/VERIFICATION.md": "f44448960fd6cce273a19c5f0d8bdcca6bac671ee179a0304ba276087285341b"
+  },
+  "boundaries": [
+    "No application Swift source change, GUI run, installation, signing or user-data mutation.",
+    "No new live agent eval or native Codex app-server fault-injection run.",
+    "The prior proposal-default behavioral eval remains FAIL; this cache repair does not regrade it.",
+    "No global trust edit, hook definition change, commit or push performed.",
+    "Fingerprint inputs are explicit; new non-Swift fast-gate dependencies must be added and covered by regression."
+  ],
+  "priorAudit": "harness-integrity-after-v1.19.0-2026-10-28.json",
+  "followUp": {
+    "completionReceipt": "harness-completion-2026-10-28.json",
+    "newLiveRun": "2/2 PASS; old failure preserved"
+  }
+}

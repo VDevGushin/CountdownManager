@@ -34,7 +34,8 @@ artifact metadata and old screenshots establish. A platform compatibility declar
 of having built with that SDK, and a shared source component is not a pixel or runtime guarantee.
 
 Adding these cases and passing deterministic runner checks do **not** mean a live model passed them.
-A live run and its independent rubric review remain opt-in; no live run is claimed for this revision.
+A live run and its independent rubric review remain opt-in; recorded executions and their
+boundaries are listed below, separately from adding the cases.
 Use `--case proposal-default-is-not-acceptance` when that evaluation is requested.
 
 Native component/source drift also has a deterministic gate:
@@ -214,3 +215,23 @@ both real success markers and a successful enclosing invocation remain necessary
 
 The initial approach follows OpenAI's [Testing Agent Skills Systematically with Evals](https://developers.openai.com/blog/eval-skills)
 and [non-interactive Codex documentation](https://learn.chatgpt.com/docs/non-interactive-mode).
+
+## 2026-10-28 scope-routing follow-up
+
+The earlier `native-style-scope-2026-10-28` run remains frozen: native-style provenance passed;
+proposal/default acceptance failed mandatory design-skill and DESIGN reads despite passing
+qualitative review. Its FAIL has not been regraded or erased.
+
+`AGENTS.md` now explicitly routes read-only UI-prototype acceptance/consent reviews through
+the design skill, DESIGN and PRODUCT, while excluding ordinary documentation/harness work.
+The unchanged version-6 suite and runner were used for a new one-repeat run of
+`proposal-default-is-not-acceptance` and the `docs-only` negative control. Both passed mechanical
+checks and separate model-assisted rubric review: **2/2 PASS**. The former read all required
+sources and retained read-only scope; the latter changed only the injected README typo and
+did not run application checks or irrelevant design/Swift/QA skills.
+
+Artifacts: `artifacts/harness-completion-2026-10-28`; durable receipt:
+[`docs/qa/harness-completion-2026-10-28.json`](../docs/qa/harness-completion-2026-10-28.json).
+CLI 0.157.1, high effort, ignored user config, CLI-default model unresolved. This is a targeted
+smoke result, not a controlled model comparison, a ten-case rerun or a reliability percentage.
+Fresh native Codex hook delivery/fault injection was not part of this run.

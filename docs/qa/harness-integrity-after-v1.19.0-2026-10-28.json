@@ -1,0 +1,132 @@
+{
+  "checkedAt": "2026-10-28T19:07:54.198162+03:00",
+  "sourceCommit": "7ff56315c1db7c9a569b6adec2fedc1b18a359fb",
+  "branch": "codex/event-links",
+  "verdict": "LOCAL_MECHANICS_PASS_WITH_CONFIRMED_CACHE_GAP",
+  "localTests": {
+    "total": 92,
+    "passed": 92,
+    "suites": [
+      {
+        "command": "python3 -B Tests/test_swift_harness.py",
+        "tests": 12,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_hooks.py",
+        "tests": 3,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_agent_evals.py",
+        "tests": 36,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_design_system.py",
+        "tests": 7,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_design_contract.py",
+        "tests": 18,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_native_field_chrome.py",
+        "tests": 4,
+        "result": "PASS"
+      },
+      {
+        "command": "python3 -B Tests/test_update_tools.py",
+        "tests": 12,
+        "result": "PASS"
+      }
+    ]
+  },
+  "configuration": {
+    "events": [
+      "SessionStart",
+      "PostToolUse",
+      "Stop"
+    ],
+    "schemaAndGitRootResolution": "matches official hooks documentation",
+    "projectTrust": "trusted",
+    "storedProjectHookTrustEntries": 3,
+    "cliVersion": "0.157.1",
+    "sessionStateSnapshotMatchesCurrentSwift": true,
+    "sessionCachedGateMatchesCurrentSwiftAndDeclaredInputs": true,
+    "swiftSnapshotEntriesIncludingPackage": 88,
+    "skillRouterPathsExist": true,
+    "designSidecarSourceReferencesExist": 6,
+    "globalDesignDetectorIgnores": false,
+    "localPrototypeExceptionsRemainFileScoped": true
+  },
+  "findings": [
+    {
+      "id": "CACHE_DEPENDENCIES",
+      "severity": "P2",
+      "status": "CONFIRMED_UNFIXED",
+      "location": ".codex/hooks/swift_harness.py:163",
+      "problem": "The cached Swift completion gate fingerprints Swift contents, .swiftlint.yml and verify.sh, but omits new Python native-design verifier dependencies and the native design contract.",
+      "reproduction": {
+        "fixture": "temporary directory only; source repository unchanged",
+        "swiftTouched": true,
+        "cachedPassPresent": true,
+        "mutatedInputsIndependently": [
+          "Tests/test_native_design_system.py",
+          "Resources/NativeDesignContract.json",
+          "scripts/native_design_contract.py"
+        ],
+        "fingerprintChanged": false,
+        "stopReply": "{}",
+        "lintCalls": 0,
+        "fastCalls": 0
+      },
+      "impact": "After a cached pass in a Swift-touched session, editing those verifier dependencies can reuse the old pass without rerunning the changed gates. This does not invalidate the separately executed successful audit tests.",
+      "recommendedCorrection": "Expand and regression-test the completion gate dependency fingerprint while preserving the no-application-check rule for genuinely docs/harness-only work."
+    },
+    {
+      "id": "LAST_LIVE_EVAL",
+      "severity": "FOLLOW_UP",
+      "status": "PREVIOUS_FAILURE_REMAINS_OPEN",
+      "source": "evals/artifacts/native-style-scope-2026-10-28/summary.json",
+      "overall": "FAIL",
+      "cases": {
+        "native-style-build-provenance-1": "PASS",
+        "proposal-default-is-not-acceptance-1": "FAIL"
+      },
+      "failedChecks": [
+        "read:.agents/skills/macos-desktop-design/SKILL.md",
+        "read:DESIGN.md"
+      ],
+      "boundary": "Historical authorized two-case run, not a fresh evaluation of this audit. Deterministic eval-runner tests do not turn this behavioral result into PASS."
+    }
+  ],
+  "readmeReview": "Current 1.19.0/35 route and verification descriptions reviewed; no README change required for this read-only audit.",
+  "protectedFilesChanged": false,
+  "reviewedFileHashes": {
+    "AGENTS.md": "cfdcf0a6457a12e599e328a13dbc4d8dad431e46fd6c7c7c0bd535d15d64a4b0",
+    ".codex/hooks.json": "12e9343d1e902b710ca9162abfa86d96f3178548c566b571fd508d43cb8c3953",
+    ".codex/hooks/swift_harness.py": "40e1335710d8416d25e6569f619aed6b64072f34ab9b2d944e4bc15b9e3399a6",
+    "verify.sh": "3765bea66274a1fd0a0f23893b41a2f4b98998edbe5672d6918aa0aac0b78f8a",
+    "Resources/NativeDesignContract.json": "5b7cf1b1251f2c3e0b9e2c105c439bbf9bfb637a55995e1a72396190e4cc0bff",
+    "Tests/test_native_design_system.py": "7cc710efbe0d849948c0c106ecea90b9237de3e6b423e09f60b2c5446fbf86bd",
+    "Tests/test_native_design_contract.py": "a79c17d8b6b099c2e060d4312eb767bd7cede49eb7aec978e5dc9f3f922a1685",
+    "evals/cases.json": "f1d2da199785202c6f6b26d0e1c5252427647f82130e459e1ecfc37514b26481"
+  },
+  "evidenceBoundaries": [
+    "No new live model eval or native Codex app-server enforcement run.",
+    "Current saved session state and configured trust are corroborating evidence, not a new end-to-end fault-injection test.",
+    "No application UI run, installation, signing, production-data access, commit or push.",
+    "Only this audit receipt is added; harness code and rules are unchanged."
+  ],
+  "officialReference": "https://learn.chatgpt.com/docs/hooks",
+  "followUp": {
+    "status": "CACHE_DEPENDENCIES_FIXED_AFTER_AUDIT",
+    "receipt": "harness-cache-fix-2026-10-28.json",
+    "localTestsAfterFix": "96/96 PASS",
+    "liveEvalStatusUnchanged": "Original FAIL remains historical; new targeted run 2/2 PASS",
+    "completionReceipt": "harness-completion-2026-10-28.json"
+  }
+}

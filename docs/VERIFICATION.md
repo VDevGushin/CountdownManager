@@ -47,11 +47,22 @@ Codex hooks run SwiftLint only on changed Swift files after an edit. Before a Sw
 
 SessionStart establishes the verification baseline. Missing, unreadable or malformed state cannot
 certify a session: later hooks report a blocking diagnostic instead of silently initializing a new
-baseline or treating the failure as success. A successful gate is cached against Swift contents plus
-`.swiftlint.yml` and `verify.sh`; changing those verification inputs invalidates the cached result.
+baseline or treating the failure as success. A successful gate is cached against Swift contents
+(including `Package.swift`) and the explicit verification dependencies: the hook implementation,
+`.swiftlint.yml`, `verify.sh`, `Package.resolved`, both native-design Python test files,
+`scripts/native_design_contract.py`, `Resources/NativeDesignContract.json`, and the native component
+inventory JSON. Changing, adding or removing one invalidates the cached result; an unreadable
+dependency blocks instead of certifying the old pass. The list in `gate_fingerprint` must grow
+when the fast route gains another non-Swift dependency.
+Unchanged inputs reuse the successful gate. Ordinary prose changes, including README, DESIGN
+and PRODUCT, do not invalidate it. Sessions with no Swift edits still skip application checks;
+harness-only work uses its focused Python tests. In a session that has already changed Swift,
+a verifier change requires a fresh successful completion gate even if Swift bytes are unchanged.
 This cache does not track every toolchain or environment change; rerun affected checks when those
 change materially. Hook regression checks cover state failures, Stop gates, cache invalidation,
-read-only calls and concurrent lifecycle calls. They do not prove native hook registration or trust.
+read-only calls and concurrent lifecycle calls. The cache regressions cover each named dependency,
+failed-verifier rejection/retry, ordinary documentation and non-Swift sessions. They do not prove
+native hook registration or trust.
 
 The separate native hook check exercises actual `hook/started` and `hook/completed` notifications
 through Codex app-server in an isolated copy. Hook script/config bytes match the reviewed repository.

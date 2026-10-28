@@ -23,6 +23,19 @@ spec = importlib.util.spec_from_file_location("swift_harness", HARNESS_PATH)
 harness = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(harness)
 
+# Independent expectations: omitting a verifier from the hook must break a regression.
+VERIFICATION_INPUTS = (
+    ".codex/hooks/swift_harness.py",
+    ".swiftlint.yml",
+    "verify.sh",
+    "Package.resolved",
+    "Tests/test_native_design_system.py",
+    "Tests/test_native_design_contract.py",
+    "scripts/native_design_contract.py",
+    "Resources/NativeDesignContract.json",
+    "docs/qa/native-component-families-2026-10-28.json",
+)
+
 
 def worker(root, stage):
     root = Path(root)
@@ -246,10 +259,11 @@ class SwiftHarnessChecks(unittest.TestCase):
                 self.assertEqual(run.call_count, 2)
 
     def test_verification_input_changes_invalidate_cached_pass(self):
-        for filename in (".swiftlint.yml", "verify.sh"):
+        for filename in VERIFICATION_INPUTS:
             with self.subTest(filename=filename), tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
                 root = Path(directory)
                 config = root / filename
+                config.parent.mkdir(parents=True, exist_ok=True)
                 config.write_text("old")
                 snapshot = {"Example.swift": "same"}
                 path = root / "state.json"
@@ -266,17 +280,129 @@ class SwiftHarnessChecks(unittest.TestCase):
                 lint.assert_called_once_with(root)
                 run.assert_called_once_with([str(root / "verify.sh"), "fast"], cwd=root)
                 self.assertNotEqual(harness.load_state(path)["last_gate_pass"], old_gate)
+                with (
+                    patch.object(harness, "swift_snapshot", return_value=snapshot),
+                    patch.object(harness, "lint_command") as cached_lint,
+                    patch.object(harness, "run") as cached_run,
+                    contextlib.redirect_stdout(io.StringIO()),
+                ):
+                    harness.stop(root, {}, path)
+                cached_lint.assert_not_called()
+                cached_run.assert_not_called()
 
     def test_verification_input_creation_and_removal_change_fingerprint(self):
+        for filename in VERIFICATION_INPUTS:
+            with self.subTest(filename=filename), tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
+                root = Path(directory)
+                snapshot = {"Example.swift": "same"}
+                missing = harness.gate_fingerprint(root, snapshot)
+                dependency = root / filename
+                dependency.parent.mkdir(parents=True, exist_ok=True)
+                dependency.write_text("content")
+                self.assertNotEqual(missing, harness.gate_fingerprint(root, snapshot))
+                dependency.unlink()
+                self.assertEqual(missing, harness.gate_fingerprint(root, snapshot))
+
+    def test_changed_verifier_failure_blocks_then_retry_is_cached(self):
+        with tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
+            root = Path(directory)
+            dependency = root / "Tests/test_native_design_system.py"
+            dependency.parent.mkdir()
+            dependency.write_text("old verifier")
+            snapshot = {"Example.swift": "same"}
+            path = root / "state.json"
+            old_gate = harness.gate_fingerprint(root, snapshot)
+            harness.save_state(path, state_for(snapshot, touched=True, gate=old_gate))
+            dependency.write_text("new verifier")
+            output = io.StringIO()
+            with (
+                patch.object(harness, "swift_snapshot", return_value=snapshot),
+                patch.object(harness, "lint_command", return_value=(0, "")) as lint,
+                patch.object(harness, "run", return_value=subprocess.CompletedProcess([], 1, "changed verifier failed")) as run,
+                contextlib.redirect_stdout(output),
+            ):
+                harness.stop(root, {}, path)
+                self.assertEqual(json.loads(output.getvalue())["decision"], "block")
+                self.assertNotEqual(harness.load_state(path)["last_gate_pass"], harness.gate_fingerprint(root, snapshot))
+                run.return_value = subprocess.CompletedProcess([], 0, "PASS")
+                harness.stop(root, {}, path)
+                self.assertEqual(harness.load_state(path)["last_gate_pass"], harness.gate_fingerprint(root, snapshot))
+                harness.stop(root, {}, path)
+                self.assertEqual(lint.call_count, 2)
+                self.assertEqual(run.call_count, 2)
+
+    def test_readonly_and_prose_changes_preserve_a_valid_cache(self):
         with tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
             root = Path(directory)
             snapshot = {"Example.swift": "same"}
-            missing = harness.gate_fingerprint(root, snapshot)
-            (root / "verify.sh").write_text("content")
-            present = harness.gate_fingerprint(root, snapshot)
-            self.assertNotEqual(missing, present)
-            (root / "verify.sh").unlink()
-            self.assertEqual(missing, harness.gate_fingerprint(root, snapshot))
+            path = root / "state.json"
+            gate = harness.gate_fingerprint(root, snapshot)
+            harness.save_state(path, state_for(snapshot, touched=True, gate=gate))
+            for filename in ("README.md", "DESIGN.md", "docs/PRODUCT.md"):
+                prose = root / filename
+                prose.parent.mkdir(parents=True, exist_ok=True)
+                prose.write_text("Documentation-only change")
+            with (
+                patch.object(harness, "swift_snapshot", return_value=snapshot),
+                patch.object(harness, "lint_command") as lint,
+                patch.object(harness, "run") as run,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                harness.post_tool_use(root, {}, path)
+                harness.stop(root, {}, path)
+            lint.assert_not_called()
+            run.assert_not_called()
+            self.assertEqual(harness.load_state(path)["last_gate_pass"], gate)
+
+    def test_verifier_changes_without_swift_work_do_not_run_app_checks(self):
+        with tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
+            root = Path(directory)
+            path = root / "state.json"
+            snapshot = {"Example.swift": "same"}
+            with (
+                patch.object(harness, "swift_snapshot", return_value=snapshot),
+                patch.object(harness, "lint_command") as lint,
+                patch.object(harness, "run") as run,
+                contextlib.redirect_stdout(io.StringIO()),
+            ):
+                harness.session_start(root, {}, path)
+                for filename in VERIFICATION_INPUTS:
+                    dependency = root / filename
+                    dependency.parent.mkdir(parents=True, exist_ok=True)
+                    dependency.write_text("Changed verification input")
+                harness.post_tool_use(root, {}, path)
+                harness.stop(root, {}, path)
+            lint.assert_not_called()
+            run.assert_not_called()
+            self.assertFalse(harness.load_state(path)["swift_touched"])
+
+    def test_unreadable_verifier_blocks_instead_of_reusing_cached_pass(self):
+        with tempfile.TemporaryDirectory(prefix="countdown-hook-check-") as directory:
+            root = Path(directory)
+            dependency = root / "Resources/NativeDesignContract.json"
+            dependency.parent.mkdir()
+            dependency.write_text("old contract")
+            snapshot = {"Example.swift": "same"}
+            path = root / "state.json"
+            gate = harness.gate_fingerprint(root, snapshot)
+            harness.save_state(path, state_for(snapshot, touched=True, gate=gate))
+            dependency.unlink()
+            dependency.mkdir()
+            output = io.StringIO()
+            with (
+                patch.object(harness, "git_root", return_value=root),
+                patch.object(harness, "read_event", return_value={"session_id": "test"}),
+                patch.object(harness, "state_path", return_value=path),
+                patch.object(harness, "swift_snapshot", return_value=snapshot),
+                patch.object(harness, "lint_command") as lint,
+                patch.object(harness, "run") as run,
+                patch.object(sys, "argv", [str(HARNESS_PATH), "stop"]),
+                contextlib.redirect_stdout(output),
+            ):
+                harness.main()
+            self.assertEqual(json.loads(output.getvalue())["decision"], "block")
+            lint.assert_not_called()
+            run.assert_not_called()
 
 
 if __name__ == "__main__":
