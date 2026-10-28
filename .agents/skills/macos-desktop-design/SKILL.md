@@ -15,6 +15,14 @@ Distinguish an idea, an interactive mockup, and a requested native implementatio
 
 Infer routine design choices from the task and established interface. Ask only about unresolved product choices that would materially change the result. Do not make the owner choose framework APIs, pixel values, or a design workflow.
 
+Treat a prototype default, an unsubmitted review form and a separate roadmap idea as proposals.
+A general request to implement the described feature does not itself accept an unresolved extra
+mutation, undo, deletion or persistence policy. Keep the approved feature moving by excluding the
+extra mechanism, or resolve only that material product choice. Record the user instruction or
+submitted decision that changes the contract; agent-authored docs and passing implementation
+tests cannot substitute for that source. Routine technical and visual choices inside the accepted
+contract remain the agent's responsibility.
+
 ## Give each surface a job
 
 Choose a window, temporary panel, inspector, or settings surface according to the work it supports. Preserve existing roles unless the requested change calls for a new one.

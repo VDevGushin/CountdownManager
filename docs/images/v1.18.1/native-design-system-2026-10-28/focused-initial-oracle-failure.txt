@@ -1,0 +1,2 @@
+DesktopSmoke
+FAIL after 0 scenarios: timeout: desktop.event.7820B4DC-D321-4056-A0BF-E92C8058DB97 = Материалы поездки

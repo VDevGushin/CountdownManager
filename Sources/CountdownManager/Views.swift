@@ -11,6 +11,7 @@ struct ManagerView: View {
     @ObservedObject var weather: WeatherController
     let diagnosticsContext: () -> DiagnosticExportContext
     var showDesktop: () -> Void = {}
+    @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
@@ -61,7 +62,16 @@ struct ManagerView: View {
                         showingSettings = false
                     }
                 }
-                if showingEditor {
+                if let request = textAttachmentRequest {
+                    TextAttachmentComposer(text: request.text,
+                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? "Событие недоступно",
+                        submit: { text in
+                            let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
+                            if saved { finishEditor() }
+                            return saved
+                        }, cancel: finishEditor)
+                }
+                if showingEditor, textAttachmentRequest == nil {
                     EditorView(
                         store: store,
                         item: editing,
@@ -309,6 +319,9 @@ struct ManagerView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("event.card.\(item.id.uuidString)")
         .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.title })
+        .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
+            enabled: !showingSettings && attachmentListEventID == nil,
+            showText: { presentTextAttachment(eventID: item.id, text: $0) }))
     }
 
     private func featuredEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
@@ -470,31 +483,21 @@ struct ManagerView: View {
 
     private func eventActions(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
         HStack(spacing: 0) {
-            Button { togglePrimary(item.id) } label: {
-                Image(systemName: presentation.isPrimary ? "star.fill" : "star")
-                    .foregroundStyle(presentation.isPrimary ? plannerAccent : AuroraInstrument.secondaryInk(for: colorScheme))
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            AuroraSymbolAction(symbolName: presentation.isPrimary ? "star.fill" : "star",
+                surface: .mini, tone: presentation.isPrimary ? .accent : .secondary,
+                accessibilityLabel: presentation.isPrimary
+                    ? "Снять основное событие: \(item.title)" : "Сделать основным событием: \(item.title)",
+                action: { togglePrimary(item.id) })
             .help(presentation.isPrimary ? "Снять основное событие" : "Сделать основным событием")
             .accessibilityIdentifier("event.primary.\(item.id.uuidString)")
-            .accessibilityLabel(presentation.isPrimary
-                ? "Снять основное событие: \(item.title)" : "Сделать основным событием: \(item.title)")
             .accessibilityValue(presentation.isPrimary ? "Выбрано" : "Не выбрано")
             .uiSmokeControl(
                 id: "event.primary.\(item.id.uuidString)",
                 action: { togglePrimary(item.id) },
                 value: { presentation.isPrimary ? "Выбрано" : "Не выбрано" }
             )
-            Button { edit(item.id) } label: {
-                Image(systemName: "pencil")
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-            .accessibilityLabel("Редактировать событие: \(item.title)")
+            AuroraSymbolAction(symbolName: "pencil", surface: .mini, tone: .secondary,
+                accessibilityLabel: "Редактировать событие: \(item.title)", action: { edit(item.id) })
             .accessibilityIdentifier("event.edit.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.edit.\(item.id.uuidString)", action: { edit(item.id) })
         }
@@ -553,7 +556,7 @@ struct ManagerView: View {
     }
 
     private func openSettings() {
-        guard !showingEditor, attachmentListEventID == nil else { return }
+        guard !showingEditor, attachmentListEventID == nil, !store.hasPendingPersistence else { return }
         attachmentPreview.close()
         attachmentListEventID = nil
         showingSettings = true
@@ -623,7 +626,15 @@ struct ManagerView: View {
         attachmentLibraryIsSource = false
     }
 
+    private func presentTextAttachment(eventID: UUID, text: String) {
+        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
+              store.active.contains(where: { $0.id == eventID }), editorSession.beginPanelEditor() else { return }
+        textAttachmentRequest = TextAttachmentRequest(eventID: eventID, text: text)
+        showingDayChoices = false
+    }
+
     private func finishEditor() {
+        textAttachmentRequest = nil
         editorSession.endPanelEditor()
         editing = nil
         dayPreset = nil
@@ -887,6 +898,7 @@ struct EditorView: View {
     let done: () -> Void
     private let isNewDay: Bool
     private let selectDayDate: Bool
+    @State private var composingText: String?
     @State private var draft: EventEditorDraft
     @State private var date: Date
     @State private var primary: Bool
@@ -979,6 +991,21 @@ struct EditorView: View {
     }
 
     var body: some View {
+        ZStack {
+            editorContent
+                .opacity(composingText == nil ? 1 : 0)
+                .disabled(composingText != nil)
+                .allowsHitTesting(composingText == nil)
+                .accessibilityHidden(composingText != nil)
+            if let text = composingText {
+                TextAttachmentComposer(text: text, eventTitle: draft.title, submit: { text in
+                    await addTextToDraft(text)
+                }, cancel: { composingText = nil })
+            }
+        }
+    }
+
+    private var editorContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(item != nil ? EventUIStrings.editEvent : (isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent))
                 .font(.custom("Georgia", size: 21))
@@ -1015,6 +1042,12 @@ struct EditorView: View {
                                 await store.editorAttachmentThumbnailURL(attachment, eventID: item?.id,
                                                                          draftID: attachmentSession.id)
                             })
+                            Button("Вставить текст как вложение…") { beginTextComposition() }
+                                .buttonStyle(.borderless)
+                                .padding(.top, 10)
+                                .disabled(draft.attachments.count >= EventAttachment.maximumCount)
+                                .accessibilityIdentifier("editor.materials.paste")
+                                .uiSmokeControl(id: "editor.materials.paste", action: beginTextComposition)
                         }
                         VStack(alignment: .leading, spacing: 0) {
                             Divider().padding(.bottom, 13)
@@ -1047,6 +1080,14 @@ struct EditorView: View {
                 UISmokeControlRegistry.shared.markFocused("editor.title")
             }
         }
+        .modifier(MaterialDropZone(enabled: !isSaving && !isImportingAttachments && !isUnavailable
+                                    && !confirmingDeletion && composingText == nil,
+                                  beginReceiving: {
+                                      guard !isSaving, !isImportingAttachments, !isUnavailable else { return false }
+                                      isImportingAttachments = true
+                                      return true
+                                  }, finishReceiving: { isImportingAttachments = false },
+                                  receive: receiveMaterials, reportError: { store.error = $0 }))
         .environment(\.locale, Locale(identifier: "ru_RU"))
         .environment(\.calendar, Day.calendar)
         .onChange(of: date) { newDate in
@@ -1188,8 +1229,7 @@ struct EditorView: View {
                 }
                 Spacer(minLength: 0)
                 Button("Отмена", action: cancel)
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .auroraSecondaryAction()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("editor.cancel")
                     .uiSmokeControl(id: "editor.cancel", action: cancel)
@@ -1198,10 +1238,7 @@ struct EditorView: View {
                     if isSaving { ProgressView().controlSize(.small) }
                     else { Text("Сохранить") }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
-                .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
+                .auroraPrimaryAction()
                 .keyboardShortcut(.defaultAction)
                 .accessibilityIdentifier("editor.save")
                 .uiSmokeControl(id: "editor.save", action: save)
@@ -1749,10 +1786,43 @@ struct EditorView: View {
     }
 
     private func cancel() {
-        guard !isSaving else { return }
+        guard !isSaving, composingText == nil else { return }
         DiagnosticLog.shared.record("editor.cancel mode=\(item == nil ? "new" : "edit")")
         attachmentSession.cancel()
         done()
+    }
+
+    private func beginTextComposition() {
+        guard !isSaving, !isImportingAttachments, !isUnavailable, composingText == nil,
+              draft.attachments.count < EventAttachment.maximumCount else { return }
+        composingText = NSPasteboard.general.string(forType: .string) ?? ""
+    }
+
+    private func addTextToDraft(_ text: TextAttachment) async -> Bool {
+        guard !isSaving, !isImportingAttachments, !isUnavailable,
+              draft.attachments.count < EventAttachment.maximumCount else { return false }
+        isImportingAttachments = true
+        defer { isImportingAttachments = false }
+        guard await attachmentSession.prepare(in: store),
+              let attachment = await store.createTextAttachment(text, draftID: attachmentSession.id),
+              !isUnavailable else { return false }
+        draft.attachments.append(attachment)
+        composingText = nil
+        return true
+    }
+
+    private func receiveMaterials(_ materials: EventMaterials) {
+        guard !isSaving, !isImportingAttachments, !isUnavailable, !confirmingDeletion, composingText == nil else { return }
+        if let text = materials.text { composingText = text; return }
+        do { try materials.validateCapacity(for: draft.countdown(id: item?.id ?? UUID(), date: Day(date))) }
+        catch { store.error = error.localizedDescription; return }
+        if materials.files.isEmpty { draft.links += materials.links; return }
+        isImportingAttachments = true
+        attachmentSession.importFiles(in: store, currentAttachments: draft.attachments, sources: materials.files) { imported in
+            draft.attachments += imported
+            if imported.count == materials.files.count { draft.links += materials.links }
+            isImportingAttachments = false
+        }
     }
 
     private func addAttachments() {
@@ -1768,7 +1838,7 @@ struct EditorView: View {
     }
 
     private func save() {
-        guard canSave, !isSaving, !isImportingAttachments, !confirmingDeletion else { return }
+        guard canSave, !isSaving, !isImportingAttachments, !confirmingDeletion, composingText == nil else { return }
         if let item, item.date < Day(Date()) {
             store.refresh()
             return

@@ -351,6 +351,22 @@ The featured desktop favorite places date and forecast inline on their own full-
 below title/calendar identity. This preserves room for both in a narrow browser pane; ordinary
 collection-grid metadata keeps its existing layout.
 
+### Material intake
+
+Saved event drop targets use the existing 8-point event silhouette, accent tint and a stationary
+2-point accent outline only while targeted. They add no resting upload container or add button to
+saved material sections. Number/symbol summaries and mini disclosure state remain unchanged.
+The context menu adds `Вставить текст как вложение…` without changing the star/pencil/trash family.
+
+Text composition follows the shared editor: 21-point Georgia title in a 49-point header, 16-point
+insets, native rounded filename field, a scrolling 13-point system text editor and a fixed 58-point
+Save/Cancel-family action row. Its content has no note-length limit. Desktop reuses its native sheet;
+mini uses the retained 390 × 540 manager surface beneath the timer. The existing event editor stays
+mounted and inactive while its nested text composer is visible. Native text editing and Paste remain
+available. Saved-event additions add no status row, Undo button or replacement toast. The primary
+Create action and existing editor Save share `auroraPrimaryAction()` so native button style, size,
+Aurora tint, Increase Contrast branch, foreground and typography cannot drift between them.
+
 ### Navigation
 
 The mini-panel's fixed list footer carries local-storage reassurance, an `Открыть основное окно` button, a small settings gear, and Quit. The window button opens or brings forward the retained desktop window. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
@@ -401,3 +417,29 @@ A real month label sits in a terracotta strip above the Georgia day numeral, wit
 - **Don't** promote illustrative HTML previews in the sidecar into native control specifications.
 
 Documentation boundary: extracted from `AuroraInstrument.swift`, `Views.swift`, `SettingsView.swift`, `CountdownTimer.swift`, and the supporting presentation constants; `docs/PRODUCT.md` supplies the accepted native behavior. The approved imported HTML establishes visual authority, while current Swift source establishes token values. Native captures were reviewed by the implementation and independent review passes; this document pass does not claim a separate capture run. The sidecar's HTML/CSS are illustrative light-appearance translations for a design panel, not runtime evidence or pixel-equivalent AppKit rendering. No pre-existing defect is canonized here.
+
+
+## Executable native design contract
+
+The accepted app identity is `native-warm-calendar-v1`, independent of the application's release
+number. `Resources/NativeDesignContract.json` records deployment and linked compatibility plus the
+required native appearance matrix. `AuroraInstrument.swift` owns the actual colors/tokens and shared
+primary, secondary and symbol-action components. Use `auroraPrimaryAction()` for editor Save and
+text-attachment Create, `auroraSecondaryAction()` for their Cancel actions, and `AuroraSymbolAction`
+for the existing event star/pencil/trash family. Toolbar Event and Create-day use
+`auroraToolbarAction()` and `AuroraToolbarLabel`; the date menu explicitly uses native
+`menuStyle(.button)`, hides the framework indicator and places the standard neutral `chevron.down`
+in that shared label. It retains its existing today/tomorrow/date choices without a second action. Surface-specific native styles, targets and state
+semantics remain explicit; sharing a component is not authority to change a control's behavior.
+Existing material headings, summary labels, mini disclosures and native fields keep their current
+named owners. The inventory in `docs/qa/native-component-families-2026-10-28.json` maps these families.
+
+Builds explicitly retain the accepted linked-on-or-after compatibility metadata 13.0 instead of
+inheriting a different visual branch from `SDKROOT` or the toolchain. The actual compiler headers
+SDK may be newer and is recorded separately; this is not described as compiling with SDK13 headers.
+`build.sh` verifies contract/authority hashes, native load commands and signatures and embeds
+`NativeBuildProvenance.json`. A release version change does not change this design contract.
+
+Source/build gates catch component and provenance drift; they cannot approve a new product mechanic
+or certify rendered pixels. Changed native UI is reviewed against accepted siblings in Light/Dark
+and standard/Increase Contrast. A/B captures must name the actual build and rendering method.

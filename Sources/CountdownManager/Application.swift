@@ -120,7 +120,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var desktopSmokeRuntime: DesktopSmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
     private var accessibilityDisplayObserver: NSObjectProtocol?
-    private var isPanelRequestedVisible = false
+    private var panelPresentation = PanelPresentationState()
+    private var isPanelRequestedVisible: Bool { panelPresentation.requestedVisible }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let uiSmokeConfiguration: UISmokeConfiguration?
@@ -186,6 +187,13 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             button.target = self
             button.action = #selector(togglePanel)
             button.setAccessibilityLabel("Countdown Manager")
+            let materialDragView = StatusItemMaterialDragView(frame: button.bounds)
+            materialDragView.autoresizingMask = [.width, .height]
+            materialDragView.revealPanel = { [weak self] in
+                guard let self, !self.editorSession.desktopIsPresented else { return }
+                self.showPanel(activate: false)
+            }
+            button.addSubview(materialDragView)
             // Inherit the status button's actual appearance, including its system window.
             let appearanceView = StatusItemAppearanceView(frame: .zero)
             appearanceView.setAccessibilityElement(false)
@@ -430,21 +438,26 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
     }
 
-    private func showPanel() {
+    private func showPanel(activate: Bool = true) {
         guard let button = statusItem.button,
               !(isPanelRequestedVisible && panel.isVisible && panel.isOnActiveSpace) else { return }
-        isPanelRequestedVisible = false
+        panelPresentation.requestHide()
         if panel.isVisible {
             panel.orderOut(nil)
         }
         guard positionPanel(relativeTo: button) else { return }
-        isPanelRequestedVisible = true
+        panelPresentation.requestShow()
         recordShellLifecycle("show-begin")
         store.refresh()
         weather.updateEvents(store.active)
-        NSApp.activate(ignoringOtherApps: true)
-        recordShellLifecycle("show-after-activate")
-        panel.makeKeyAndOrderFront(nil)
+        if activate {
+            NSApp.activate(ignoringOtherApps: true)
+            recordShellLifecycle("show-after-activate")
+            panel.makeKeyAndOrderFront(nil)
+        } else {
+            // Activating the receiver while hovering can disturb the source application's drag.
+            panel.orderFrontRegardless()
+        }
         recordShellLifecycle("show-after-panel")
         startMarsOpeningAnimation()
     }
@@ -469,7 +482,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
 
     private func hidePanel(source: String) {
         guard isPanelRequestedVisible || panel.isVisible else { return }
-        isPanelRequestedVisible = false
+        panelPresentation.requestHide()
         recordShellLifecycle("hide source=\(source)")
         panel.orderOut(nil)
     }
@@ -566,9 +579,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     func windowDidChangeOcclusionState(_ notification: Notification) {
         recordShellLifecycle("panel-occlusion-did-change")
         guard !UISmokeConfiguration.suppressesShellLifecycleCallbacks,
-              isPanelRequestedVisible,
-              !panel.occlusionState.contains(.visible) else { return }
-        hidePanel(source: "panel-occluded")
+              let window = notification.object as? NSWindow, window === panel else { return }
+        let isVisible = panel.occlusionState.contains(.visible)
+        if panelPresentation.observeOcclusion(isVisible: isVisible) {
+            hidePanel(source: "panel-occluded")
+        } else if isPanelRequestedVisible, !isVisible {
+            // A prior orderOut can finish before the new presentation is acknowledged.
+            recordShellLifecycle("panel-occlusion-before-visible-acknowledgement")
+        }
     }
 
     func windowDidResignKey(_ notification: Notification) {
@@ -607,7 +625,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             "shell.lifecycle event=\(event) appActive=\(NSApp.isActive) "
                 + "visible=\(panel?.isVisible ?? false) key=\(panel?.isKeyWindow ?? false) "
                 + "onActiveSpace=\(panel?.isOnActiveSpace ?? false) "
-                + "occlusion=\(occlusion) requested=\(isPanelRequestedVisible)"
+                + "occlusion=\(occlusion) requested=\(isPanelRequestedVisible) "
+                + "visibleAcknowledged=\(panelPresentation.hasVisibleAcknowledgement)"
         )
     }
 

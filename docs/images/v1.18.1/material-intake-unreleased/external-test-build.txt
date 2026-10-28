@@ -1,0 +1,4 @@
+2026-10-28: xcodebuild build-for-testing, platform macOS arm64, ONLY_ACTIVE_ARCH=YES.
+** TEST BUILD SUCCEEDED **
+Source: /private/tmp/countdown-materials-external-build.log
+No test method execution is claimed by this build result.

@@ -80,6 +80,22 @@ requires an unambiguous exit (standalone or in the final AND-only chain); comple
 should run it separately so skipped or masked checks cannot be credited.
 Verbose lint may instead provide its real final zero-violation `Done linting!` summary.
 
+## Native design-system gates
+
+`./verify.sh fast` first runs `Tests/test_native_design_system.py` and
+`Tests/test_native_design_contract.py`. These protect shared control families, the fixed native
+identity and absence of the removed addition-Undo/status row; mutation checks demonstrate rejection
+of component/palette drift. The app build uses `Resources/NativeDesignContract.json` through
+`scripts/native_design_contract.py`. `build.sh` embeds actual compiler SDK/toolchain information
+separately from deployment/linked compatibility and rejects mismatched metadata or authorities.
+This also applies to the UI app built by verify.sh; there is no separate unverified pre-build route.
+
+The actual headers SDK and linked compatibility are different facts. The contract retains the
+accepted linked compatibility 13.0 but never relabels newer headers as SDK13. Version/build numbers
+do not authorize a new identity. The script's `renderedAppearanceVerified=false` is deliberate:
+only separate native captures/acceptance can establish actual appearance. Review Light/Dark and
+standard/Increase Contrast against existing native siblings; a green source gate is not pixel proof.
+
 ## CoreChecks
 
 `CoreChecks` covers behaviour without application UI:
@@ -299,6 +315,37 @@ beside the PNGs for independent QA. This does not establish external keyboard or
 no new input route or accessibility control is introduced by the decorative symbol.
 
 ## Desktop window
+
+### Drag and paste material intake
+
+`UIChecks` includes `MaterialIntakeChecks.swift`: native NSItemProvider decoding priority,
+exact receiving identity, local copy/original byte comparison, durable additions across ordinary
+edits, full UTF-8 text round-trip (1000 lines, emoji, blank lines, trailing newline), text draft
+Cancel/late-write rejection, file/link capacity rejection, failed mixed imports, failed persistence
+cleanup and civil-day expiry. A deliberately delayed provider checks admission locking, duplicate
+rejection, cancellation and late results not clearing a newer reservation. The same Store API checks
+that scheduling reserves its operation synchronously before creating its task.
+
+The focused native route `--ui-smoke-desktop --ui-smoke-material-intake` uses a fresh marked
+smoke home. It checks persisted file/link content and both surfaces' absence of `materials.undo`
+and `materials.status`, unchanged footer position, 390×600 mini dimensions and existing collapsed
+sections. Its composer captures are isolated native component fixtures, not external-input proof.
+
+Native desktop regression still covers the single sheet, inactive parent, editor ownership and
+mini/desktop sibling behaviour. A native host registered for drop/context menu may return the inert
+NSHostingView from hitTest while a sheet is attached; the oracle accepts only nil or that root,
+rejects any divider/control hit and additionally requires background actions to be disabled.
+This does not substitute a view hitTest query for a real outside click.
+
+Focused external cases are `testFinderFileDropTargetsUnselectedEventAndPersists` and
+`testSafariLinkDropCreatesOnlyWebLink`. They use their own marked test home, synthetic source file
+and local HTML link; they do not use production events. Their 2026-10-28 build-for-testing passed,
+but the runtime attempt stopped before test execution because system automation mode timed out.
+Do not count a successfully compiled test as a successful external interaction.
+
+Actual cross-app drags, status hover/cancel, source-app representations and ordinary Paste routing
+require external input or explicit manual acceptance on an isolated tester. Never infer them from
+provider unit tests. [Current evidence and limitations](images/v1.18.1/material-intake-unreleased/PROVENANCE.md).
 
 ### Event link evidence
 
@@ -1245,3 +1292,13 @@ controls, stable neighboring UUIDs/text/completion, focus and scrolling, live Re
 Save/Cancel boundaries. A focused external XCUITest types into newly added rows, deletes a middle
 row and verifies the retained neighbors after Save. Settled geometry and motion-policy checks do
 not establish perceived intermediate smoothness.
+
+
+### Panel pending-show acknowledgement regression
+
+`PanelPresentationChecks.swift` covers pending-show/visible acknowledgement, late hidden/visible
+observations, reset on explicit hide and 200 rapid request sequences. These are pure request-state
+checks, not physical Space acceptance. The existing full desktop status-hide→compact flow retains
+its strict visible-panel assertion without adding a settlement wait. A real failure at scenario 10
+was traced to an occlusion callback hiding a newly requested panel before its visible acknowledgement;
+that run must not be labelled a false positive or combined with a subsequent passing campaign.

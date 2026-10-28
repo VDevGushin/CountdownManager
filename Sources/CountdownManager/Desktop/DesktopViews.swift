@@ -1,9 +1,11 @@
+import AppKit
 import CountdownCore
 import SwiftUI
 
 struct DesktopRootView: View {
     private enum DesktopSheet: Equatable {
         case editor
+        case textAttachment
         case settings
         case attachments(UUID)
     }
@@ -27,6 +29,7 @@ struct DesktopRootView: View {
     let switchToPanel: () -> Void
     let diagnosticsContext: () -> DiagnosticExportContext
     var smokeControlScope = ""
+    var registerPasteAction: (((() -> Void)?) -> Void)?
     @State private var mode = DesktopEventViewMode.collection
     @State private var query = ""
     @State private var selectedID: UUID?
@@ -36,6 +39,7 @@ struct DesktopRootView: View {
     // Retain ownership through native dismissal so background actions cannot enter while the sheet is closing.
     @State private var presentedSheet: DesktopSheet?
     @State private var sheetIsClosing = false
+    @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
     @State private var dayPreset: DayCreationPreset?
     @State private var selectDayDate = false
@@ -66,6 +70,7 @@ struct DesktopRootView: View {
     }
     private var canPresentSettings: Bool {
         !showingEditor && !showingSettings && !editorSession.hasActiveEditor && attachmentsEventID == nil
+            && !store.hasPendingPersistence
     }
     private var canSwitchToPanel: Bool {
         !showingEditor && !showingSettings && !editorSession.desktopIsPresented && attachmentsEventID == nil
@@ -74,7 +79,7 @@ struct DesktopRootView: View {
     private var attachmentLibraryItem: Countdown? {
         store.active.first { $0.id == attachmentsEventID && !$0.attachments.isEmpty }
     }
-    private var showingEditor: Bool { presentedSheet == .editor }
+    private var showingEditor: Bool { presentedSheet == .editor || presentedSheet == .textAttachment }
     private var showingSettings: Bool { presentedSheet == .settings }
     private var attachmentsEventID: UUID? {
         if case let .attachments(eventID) = presentedSheet { return eventID }
@@ -116,7 +121,15 @@ struct DesktopRootView: View {
         .environmentObject(accessibilitySettings)
         .environmentObject(appearanceSettings)
         .environment(\.colorScheme, colorScheme)
-        .onAppear(perform: reconcileSelection)
+        .onAppear {
+            reconcileSelection()
+            registerPasteAction?({
+                guard canMutate, !(NSApp.keyWindow?.firstResponder is NSTextView), let selectedID,
+                      let text = NSPasteboard.general.string(forType: .string) else { return }
+                presentTextAttachment(eventID: selectedID, text: text)
+            })
+        }
+        .onDisappear { registerPasteAction?(nil) }
         .onChange(of: collection.events.map(\.id)) { _ in reconcileSelection() }
         .onChange(of: editorSession.hasActiveEditor) { _ in processPendingActions() }
         .onChange(of: store.hasPendingPersistence) { _ in processPendingActions() }
@@ -158,6 +171,20 @@ struct DesktopRootView: View {
                            didSave: eventSaved, done: dismissSheet)
             }
             .frame(width: 430, height: 600)
+        case .textAttachment:
+            if let request = textAttachmentRequest {
+                VStack(spacing: 0) {
+                    if let error = store.error { errorBanner(error) }
+                    TextAttachmentComposer(text: request.text,
+                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? "Событие недоступно",
+                        submit: { text in
+                            let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
+                            if saved { dismissSheet() }
+                            return saved
+                        }, cancel: dismissSheet)
+                }
+                .frame(width: 430, height: 600)
+            }
         case .settings:
             SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
                          diagnosticsContext: diagnosticsContext, back: dismissSettings,
@@ -237,7 +264,8 @@ struct DesktopRootView: View {
                     store: store, weather: weather, collection: collection, mode: mode,
                     selectedID: selectedID, isFiltering: !query.isEmpty,
                     select: { selectedID = $0 }, resetFilters: resetFilters,
-                    create: { beginEditor(preset: .today(store.today)) }, canCreate: canMutate
+                    create: { beginEditor(preset: .today(store.today)) }, canCreate: canMutate,
+                    editorSession: editorSession, showTextAttachment: { presentTextAttachment(eventID: $0, text: $1) }
                 )
                 .frame(minWidth: minimum, maxWidth: geometry.size.width - minimum - 1)
                 .layoutPriority(1)
@@ -259,6 +287,9 @@ struct DesktopRootView: View {
                             }, showAttachments: { presentAttachments(eventID: selection.id) }
                         )
                         .id(selection.id)
+                        .modifier(EventMaterialTarget(store: store, editorSession: editorSession,
+                            eventID: selection.id, enabled: canMutate,
+                            showText: { presentTextAttachment(eventID: selection.id, text: $0) }))
                     } else {
                         noSelection
                             .uiSmokeControl(id: "desktop.inspector")
@@ -298,7 +329,10 @@ struct DesktopRootView: View {
                 .accessibilityLabel("Найти событие")
                 .accessibilityIdentifier("desktop.search")
                 .uiSmokeControl(id: "desktop.search", action: { searchFocused = true }, value: { query })
-            Button { beginEditor() } label: { Label("Событие", systemImage: "plus") }
+            Button { beginEditor() } label: {
+                AuroraToolbarLabel(title: "Событие", systemImage: "plus", showsMenuIndicator: false)
+            }
+                .auroraToolbarAction()
                 .keyboardShortcut("n", modifiers: .command)
                 .accessibilityIdentifier("desktop.create")
                 .uiSmokeControl(id: "desktop.create", action: { beginEditor() })
@@ -310,8 +344,11 @@ struct DesktopRootView: View {
                     beginEditor(preset: .tomorrow(after: store.today), selectDate: true)
                 }
             } label: {
-                Label("Создать день", systemImage: "calendar.badge.plus")
+                AuroraToolbarLabel(title: "Создать день", systemImage: "calendar.badge.plus", showsMenuIndicator: true)
             }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .auroraToolbarAction()
             .fixedSize()
             .disabled(!canMutate)
             .accessibilityIdentifier("desktop.create-day")
@@ -456,6 +493,7 @@ struct DesktopRootView: View {
     private func finishSheetDismissal() {
         let wasEditor = showingEditor
         presentedSheet = nil
+        textAttachmentRequest = nil
         attachmentPreview.close()
         attachmentLibraryIsSource = false
         attachmentPreviewWasPresented = false
@@ -466,6 +504,14 @@ struct DesktopRootView: View {
     private func switchSurfaceToPanel() {
         guard canSwitchToPanel else { return }
         switchToPanel()
+    }
+
+    private func presentTextAttachment(eventID: UUID, text: String) {
+        guard canMutate, !isProcessingActions,
+              store.active.contains(where: { $0.id == eventID }), editorSession.beginDesktopEditor() else { return }
+        selectedID = eventID
+        textAttachmentRequest = TextAttachmentRequest(eventID: eventID, text: text)
+        presentedSheet = .textAttachment
     }
 
     private func beginEditor(item: Countdown? = nil, preset: DayCreationPreset? = nil, selectDate: Bool = false) {

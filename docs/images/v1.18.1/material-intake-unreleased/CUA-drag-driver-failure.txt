@@ -1,0 +1,1 @@
+2026-10-28: native Finder drag attempted twice after explicit left/right tiling. Both attempts stopped before beginning the gesture with windowNotFoundAtPosition((295.0, 130.5)). No product drop result is inferred. Native AX controls and screenshots work; cross-window pointer drag did not.

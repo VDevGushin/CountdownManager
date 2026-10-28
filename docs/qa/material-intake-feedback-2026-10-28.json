@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-28",
+  "timezone": "Europe/Moscow",
+  "branch": "codex/event-links",
+  "scope": "Feedback collected while the user tests the separate materials preview",
+  "implementation_started": true,
+  "items": [
+    {
+      "id": "M-01",
+      "status": "superseded",
+      "topic": "Informational message auto-hide",
+      "user_quote": "автоскрытие точно нужно",
+      "requirement": "Automatically dismiss informational material-addition and addition-cancelled messages so they do not occupy a permanent row.",
+      "duration_seconds": null,
+      "note": "The assistant's earlier 2–3 second / 8 second suggestions were not confirmed by the user. This does not authorize silently hiding import progress or errors.",
+      "superseded_by": "M-02: remove entire row, not auto-hide it"
+    },
+    {
+      "id": "M-02",
+      "status": "implemented_and_verified",
+      "topic": "New Undo addition action",
+      "user_quote": "почему я могу отменить добавление - у нас такого не было раньше",
+      "note": "Initially questioned by the user, then explicitly resolved: remove addition Undo and its entire status row. Implemented and verified in the corrected candidate.",
+      "requirement": "Remove addition Undo, its receipt/message state and the entire status/progress/success/cancelled row. No replacement notification. Preserve all intake, native text Undo, editor Save/Cancel and errors."
+    },
+    {
+      "id": "M-03",
+      "status": "implemented_native_style_correction_with_rendering_limit",
+      "topic": "Create day menu appearance",
+      "user_quote": "а чего тут кнопка такая ?",
+      "note": "Neutral shared toolbar, no colored framework square; menu role and three actions verified, decorative label chevron not visible in native captures."
+    },
+    {
+      "id": "M-04",
+      "status": "implemented_and_verified",
+      "topic": "Native primary action parity",
+      "user_quote": "кнопка создать вложение шлет нашу дизайн систему",
+      "requirement": "Use the same native primary action family as existing editor Save; compare both appearances and actual build provenance."
+    }
+  ],
+  "working_policy": "User explicitly requested implementation of M-02 and style correction. Preserve the running tester and user-edited TestData; validate in fresh synthetic profiles.",
+  "readme_review": "Reviewed; no README or product screenshot update needed for feedback recording alone.",
+  "user_manual_feedback": {
+    "date": "2026-10-28",
+    "quote": "так ну я все проверил - и вроде бы работает",
+    "result": "positive qualified overall user report",
+    "scope": "corrected build with local copy of the user main collection",
+    "individual_gestures_recorded": false,
+    "note": "Do not infer separate certification of every drag source, physical Spaces, VoiceOver or IME from this general report. Personal-copy edits have not been merged into the primary store."
+  }
+}

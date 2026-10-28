@@ -65,6 +65,17 @@ Add focused regression coverage for the actual intermediate failure state. Prefe
 
 Apply this proportionately to the affected interaction, not as a requirement to record every task. State which transitions were actually observed and which remain unverified; do not report “no flicker” based only on final-state captures.
 
+## Separate agreement, implementation and appearance
+
+Validate the user's accepted scope separately from implementation behavior. A prototype's default
+selection and passing tests written for an agent's own addition are not acceptance evidence.
+Check that unrequested mutation/undo/status mechanics have not appeared in the new flow.
+For native style acceptance, compare the actual build's recorded compiler SDK, linked compatibility
+and shared component family with the accepted reference. A version change alone does not authorize
+a new visual identity. Run the design-system/contract gates from docs/VERIFICATION.md; do not infer
+runtime appearance from shared source code or SDK metadata alone. Review native captures in the
+required themes and contrast states before reporting visual parity.
+
 ## Preserve valid evidence
 
 Do not rerun evidence that is still valid merely to make the report look complete. Reuse it when the relevant code, configuration, build provenance, environment, and failure mode have not changed.

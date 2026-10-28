@@ -1,6 +1,34 @@
 import Foundation
 import CountdownCore
 
+/// A show request is not a presented panel until WindowServer reports visible occlusion state.
+package struct PanelPresentationState: Equatable {
+    package private(set) var requestedVisible = false
+    package private(set) var hasVisibleAcknowledgement = false
+
+    package init() {}
+
+    package mutating func requestShow() {
+        requestedVisible = true
+        hasVisibleAcknowledgement = false
+    }
+
+    package mutating func requestHide() {
+        requestedVisible = false
+        hasVisibleAcknowledgement = false
+    }
+
+    /// Returns whether an acknowledged presentation has become occluded and must be hidden.
+    package mutating func observeOcclusion(isVisible: Bool) -> Bool {
+        guard requestedVisible else { return false }
+        if isVisible {
+            hasVisibleAcknowledgement = true
+            return false
+        }
+        return hasVisibleAcknowledgement
+    }
+}
+
 package enum EventUIStrings {
     package static let addEvent = "Добавить событие"
     package static let newEvent = "Новое событие"

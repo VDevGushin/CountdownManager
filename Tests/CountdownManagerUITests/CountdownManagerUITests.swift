@@ -6,10 +6,12 @@ import CountdownManagerUI
 @main
 enum UIChecks {
     static func main() async throws {
+        testPanelPresentationRequestLifecycle()
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("CountdownManagerUIChecks-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
 
+        try await testMaterialIntake(in: directory.appendingPathComponent("materials"))
         try await testEventLinkWorkflows(in: directory.appendingPathComponent("links"))
         let today = Day(Date())
         let yesterdayDate = Day.calendar.date(byAdding: .day, value: -1, to: today.date())!

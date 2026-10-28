@@ -1,0 +1,30 @@
+DesktopSmoke
+✓ collection/feed retain one explicit favorite and use the same shared events/weather
+✓ mixed checklist groups active before completed in both views; reopening regroups without changing stored order
+✓ desktop checklist and panel favorite changes propagate without a second store or fallback featured card
+✓ native split panes retain a third of content width and 320pt floor at minimum/large window sizes
+✓ divider grip covers a 12pt band at native divider positions and passes pane content through
+✓ one editor owner protects drafts across surfaces; native close veto, Cancel and durable Save preserve identity
+✓ reverse panel-to-desktop editor exclusion keeps the original draft owner
+✓ settings and editor attach native sheets to the retained desktop; settings close preserves selection/divider and nested diagnostic Cancel releases its guard
+✓ desktop settings disable forecast supply through the shared weather owner
+✓ system, light and dark preferences propagate through both native windows and both settings hosts
+✓ explicit compact-mode transition hides only desktop; status-item toggling preserves it and return retains selection/view/timer
+✓ menu-only startup promotes once; close/reopen and compact dismissal retain desktop role, hierarchy and timer; selection reconciles
+✓ search creation Cancel preserves query/data; Save clears search and reveals one durable new event on both surfaces
+✓ nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions
+✓ native link rendering in desktop/mini Light/Dark, collapsed default, repeated disclosure and hidden-row removal, retained hide/show state, unchanged disclosure JSON, domain fallback, inline invalid-address Save guard and unchanged JSON after Cancel; ordinary Save/reopen/delete input is external XCUITest evidence
+✓ attachment indicators cover favorite/grid/feed, zero absence, attachment-only and ten-subtask coexistence at minimum pane width
+✓ shared desktop/mini attachment rows, editor Cancel and Save, durable copy removal and original-file preservation
+✓ 0/1/3/4/6/15 attachments: hidden empty sections, desktop two-column/mini three-column shelves and searchable native desktop sheet with close/reopen, mini Back and owner-removal cleanup
+✓ note/preparation/files order and matching headings; both editors show 36pt previews and aligned names, while editor15/15 admission guard, fourteen-file retry and Cancel preserve durable fifteen files
+✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups
+✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state
+✓ mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents
+✓ ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month
+✓ rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider
+✓ search no-results removes empty month headings and restoration preserves events, favorite and split position
+✓ forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider
+✓ synthetic pending/loaded, missing, global and per-event weather preserve overview/card/detail geometry in narrow/wide collection and feed
+✓ overview and favorite date/weather share unclipped horizontal rows with stable pending/loaded/off geometry in narrow/wide collection and feed
+PASS: 28/28

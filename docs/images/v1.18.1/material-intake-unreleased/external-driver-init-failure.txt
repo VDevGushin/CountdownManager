@@ -1,0 +1,20 @@
+
+2026-10-28 08:06:52.335850+0300 CountdownManagerXCUITests-Runner[15490:10771656] [Default] Running tests...
+2026-10-28 08:07:52.417848+0300 CountdownManagerXCUITests-Runner[15490:10771656] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={NSLocalizedDescription=Timed out while enabling automation mode.}
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/countdown-materials-external-01.xcresult
+
+2026-10-28 08:08:00.675 xcodebuild[15137:10769124] [MT] IDETestOperationsObserverDebug: 69.621 elapsed -- Testing started completed.
+2026-10-28 08:08:00.675 xcodebuild[15137:10769124] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-28 08:08:00.675 xcodebuild[15137:10769124] [MT] IDETestOperationsObserverDebug: 69.621 sec, +69.621 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/countdown-materials-external-01.xcresult
+
+Testing failed:
+	CountdownManagerXCUITests-Runner (15490) encountered an error (The test runner failed to initialize for UI testing. (Underlying Error: Timed out while enabling automation mode.))
+
+** TEST FAILED **
+
+Testing started

@@ -1,0 +1,98 @@
+{
+  "desktop-materials-no-status-light.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "desktop-materials-no-status-dark.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "desktop-materials-no-status-light-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "desktop-materials-no-status-dark-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "mini-materials-no-status-light.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "mini-materials-no-status-dark.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "mini-materials-no-status-light-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "mini-materials-no-status-dark-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-editor-light.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-editor-dark.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-editor-light-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "light",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-editor-dark-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": null,
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-composer-native-fixture-light.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": "light",
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-composer-native-fixture-dark.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": "dark",
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-composer-native-fixture-light-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": "light",
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  },
+  "material-composer-native-fixture-dark-contrast.png": {
+    "nativeAppearance": "NSAppearanceNameDarkAqua",
+    "globalEnvironmentOverride": "dark",
+    "fixtureLocalScheme": "dark",
+    "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
+  }
+}

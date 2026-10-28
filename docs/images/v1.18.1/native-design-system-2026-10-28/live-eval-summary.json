@@ -1,0 +1,18 @@
+{
+  "status": "FAIL",
+  "runs": [
+    {
+      "case": "native-style-build-provenance-1",
+      "status": "PASS",
+      "failed_checks": []
+    },
+    {
+      "case": "proposal-default-is-not-acceptance-1",
+      "status": "FAIL",
+      "failed_checks": [
+        "read:.agents/skills/macos-desktop-design/SKILL.md",
+        "read:DESIGN.md"
+      ]
+    }
+  ]
+}

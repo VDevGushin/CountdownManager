@@ -134,6 +134,140 @@ enum AuroraInstrument {
     }
 }
 
+private struct AuroraPrimaryActionModifier: ViewModifier {
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .tint(AuroraInstrument.accent(for: colorScheme,
+                                          highContrast: accessibilitySettings.prefersHighContrast))
+            .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
+            .font(.system(size: 12))
+    }
+}
+
+private struct AuroraSecondaryActionModifier: ViewModifier {
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(AuroraInstrument.accent(for: colorScheme,
+                                          highContrast: accessibilitySettings.prefersHighContrast))
+            .font(.system(size: 12))
+    }
+}
+
+private struct AuroraToolbarActionModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+            .font(.system(size: 13))
+            .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
+    }
+}
+
+extension View {
+    func auroraPrimaryAction() -> some View {
+        modifier(AuroraPrimaryActionModifier())
+    }
+
+    func auroraSecondaryAction() -> some View {
+        modifier(AuroraSecondaryActionModifier())
+    }
+
+    func auroraToolbarAction() -> some View {
+        modifier(AuroraToolbarActionModifier())
+    }
+}
+
+struct AuroraToolbarLabel: View {
+    let title: String
+    let systemImage: String
+    let showsMenuIndicator: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Label(title, systemImage: systemImage)
+            if showsMenuIndicator {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9))
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+}
+
+struct AuroraSymbolAction: View {
+    enum Surface {
+        case desktop
+        case mini
+    }
+
+    enum Tone {
+        case ink
+        case secondary
+        case accent
+    }
+
+    let symbolName: String
+    let surface: Surface
+    let tone: Tone
+    let role: ButtonRole?
+    let accessibilityLabel: String
+    let action: () -> Void
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    init(symbolName: String, surface: Surface, tone: Tone, role: ButtonRole? = nil, accessibilityLabel: String,
+         action: @escaping () -> Void) {
+        self.symbolName = symbolName
+        self.surface = surface
+        self.tone = tone
+        self.role = role
+        self.accessibilityLabel = accessibilityLabel
+        self.action = action
+    }
+
+    private var foreground: Color {
+        switch tone {
+        case .ink:
+            AuroraInstrument.ink(for: colorScheme)
+        case .secondary:
+            AuroraInstrument.secondaryInk(for: colorScheme)
+        case .accent:
+            AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+        }
+    }
+
+    @ViewBuilder var body: some View {
+        switch surface {
+        case .desktop:
+            button.buttonStyle(.borderless)
+        case .mini:
+            button.buttonStyle(.plain)
+        }
+    }
+
+    private var button: some View {
+        Button(role: role, action: action) {
+            Image(systemName: symbolName)
+                .frame(width: 28, height: 28)
+                .contentShape(Rectangle())
+        }
+        .foregroundStyle(foreground)
+        .accessibilityLabel(accessibilityLabel)
+    }
+}
+
 enum AuroraTimerAppearance {
     case idle
     case running

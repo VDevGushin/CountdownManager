@@ -327,12 +327,20 @@ class AgentEvalChecks(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copy2(ROOT / "verify.sh", root / "verify.sh")
+            tests = root / "Tests"
+            tests.mkdir()
+            # Protocol fixtures isolate cache forwarding from the independently tested native gates.
+            for guard in ("test_native_design_system.py", "test_native_design_contract.py"):
+                (tests / guard).write_text('import os\nwith open(os.environ["NATIVE_GUARD_LOG"], "a") as log:\n'
+                                          '    log.write("' + guard + '\\n")\n')
             swift = root / "swift"
             swift.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n')
             swift.chmod(0o755)
             for cached in (False, True):
                 log = root / ("cached.log" if cached else "default.log")
-                environment = {**os.environ, "PATH": str(root) + ":/usr/bin:/bin", "CALL_LOG": str(log)}
+                native_log = root / ("cached-native.log" if cached else "default-native.log")
+                environment = {**os.environ, "PATH": str(root) + ":/usr/bin:/bin", "CALL_LOG": str(log),
+                               "NATIVE_GUARD_LOG": str(native_log)}
                 environment.pop("COUNTDOWN_SWIFTPM_CACHE_PATH", None)
                 if cached:
                     environment["COUNTDOWN_SWIFTPM_CACHE_PATH"] = str(root / "local cache")
@@ -346,6 +354,27 @@ class AgentEvalChecks(unittest.TestCase):
                 self.assertEqual(all("--cache-path" in line for line in lines), cached)
                 self.assertEqual(all("--force-resolved-versions" in line for line in lines), cached)
                 self.assertEqual(all("--build-system native" in line for line in lines), cached)
+                self.assertEqual(native_log.read_text().splitlines(), [
+                    "test_native_design_system.py", "test_native_design_contract.py"])
+
+    def test_fast_verification_stops_before_swift_when_a_native_design_gate_fails(self):
+        for failed_gate in ("test_native_design_system.py", "test_native_design_contract.py"):
+            with self.subTest(failed_gate=failed_gate), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                shutil.copy2(ROOT / "verify.sh", root / "verify.sh")
+                tests = root / "Tests"
+                tests.mkdir()
+                for guard in ("test_native_design_system.py", "test_native_design_contract.py"):
+                    (tests / guard).write_text("raise SystemExit(" + ("1" if guard == failed_gate else "0") + ")\n")
+                swift = root / "swift"
+                swift.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALL_LOG"\n')
+                swift.chmod(0o755)
+                log = root / "swift.log"
+                result = subprocess.run(["/bin/bash", str(root / "verify.sh"), "fast"],
+                                        env={**os.environ, "PATH": str(root) + ":/usr/bin:/bin", "CALL_LOG": str(log)},
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertFalse(log.exists(), "A rejected design contract must block both Swift products")
 
     def test_empty_answer_and_malformed_trace_fail(self):
         self.assertEqual(self.grade(final="")["status"], "FAIL")
@@ -440,9 +469,9 @@ class AgentEvalChecks(unittest.TestCase):
             self.assertEqual(runner.oracle(case, root, root)["exit_code"], 0)
             self.assertEqual(hook.read_text(), original)
 
-    def test_suite_has_eight_cases_and_each_fixture_applies_to_current_source(self):
+    def test_suite_has_ten_cases_and_each_fixture_applies_to_current_source(self):
         suite = runner.load_suite()
-        self.assertEqual(len(suite["cases"]), 8)
+        self.assertEqual(len(suite["cases"]), 10)
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for relative in ("Sources/CountdownCore/Countdown.swift", ".codex/hooks/swift_harness.py",
@@ -453,6 +482,35 @@ class AgentEvalChecks(unittest.TestCase):
                 shutil.copy2(ROOT / relative, destination)
             for case in suite["cases"]:
                 runner.inject(root, case["fixture"])
+
+    def test_proposal_default_acceptance_case_is_readonly_and_covers_the_scope_boundary(self):
+        suite = runner.load_suite()
+        self.assertEqual(suite["version"], 6)
+        case = next(case for case in suite["cases"] if case["id"] == "proposal-default-is-not-acceptance")
+        self.assertIsNone(case["fixture"])
+        self.assertIsNone(case["oracle"])
+        self.assertEqual(case["allowed_changes"], [])
+        self.assertEqual(case["required_checks"], [])
+        self.assertEqual(set(case["forbidden_checks"]), {
+            "swiftlint", "core-checks", "ui-checks", "hook-tests", "real-ui", "xcui", "app-build"})
+        self.assertTrue({"AGENTS.md", ".agents/skills/macos-desktop-design/SKILL.md",
+                         "docs/PRODUCT.md", "DESIGN.md"}.issubset(case["required_reads"]))
+        self.assertEqual([entry["id"] for entry in case["rubric"]], [
+            "acceptance-source", "scope-boundary", "noncircular-evidence", "proportionate-next-step"])
+
+    def test_native_style_case_keeps_build_provenance_distinct_from_metadata(self):
+        case = next(case for case in runner.load_suite()["cases"]
+                    if case["id"] == "native-style-build-provenance")
+        self.assertIsNone(case["fixture"])
+        self.assertIsNone(case["oracle"])
+        self.assertEqual(case["allowed_changes"], [])
+        self.assertEqual(case["required_checks"], [])
+        self.assertEqual(set(case["forbidden_checks"]), {
+            "swiftlint", "core-checks", "ui-checks", "hook-tests", "real-ui", "xcui", "app-build"})
+        self.assertTrue({"build.sh", "Resources/NativeDesignContract.json", "DESIGN.md",
+                         ".agents/skills/macos-platform-research/SKILL.md"}.issubset(case["required_reads"]))
+        self.assertEqual([entry["id"] for entry in case["rubric"]], [
+            "actual-build-provenance", "component-authority", "bounded-evidence", "read-only-scope"])
 
     def test_swift_oracle_checks_actual_compiled_behaviour_before_and_after_injection(self):
         case = next(c for c in runner.load_suite()["cases"] if c["id"] == "fix-today-label")

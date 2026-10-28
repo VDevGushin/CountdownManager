@@ -1,0 +1,29 @@
+warning: '--skip-update' option is deprecated and will be removed in a future release
+[0/1] Planning build
+Building for production...
+[0/3] Write sources
+[1/3] Write swift-version--58304C5D6DBC2206.txt
+[3/4] Compiling CountdownManagerUI Application.swift
+[4/6] Compiling UIChecks AppearanceChecks.swift
+[4/6] Write Objects.LinkFileList
+[5/6] Linking UIChecks
+Build of product 'UIChecks' complete! (92.31s)
+CoreGraphics PDF has logged an error. Set environment variable "CG_PDF_VERBOSE" to learn more.
+PASS materials delayed providers: admission lock, duplicate rejection, cancellation, late delivery, reservation handoff
+PASS materials: provider priority, exact target, local copies, identity-only undo, Unicode text, Cancel, caps, failed batch, stale owner
+PASS links opening: removed values and civil-day expiry reject stale clicks before rendering refresh
+PASS links workflows: draft/Cancel/Save/restart, invalid drafts, stale identity, browser rejection, failed write retains disk and draft
+PASS historical attachment limit: seventeen real copies survive load, unrelated Save and repository reload
+PASS attachment Store workflows: copy/Save/reload/removal, Cancel and active pins, failed Save retry, durable expiry cleanup, override refusal and fifteen-file batch limit
+Attachment Quick Look: txt → preview
+Attachment Quick Look: rtf → preview
+Attachment Quick Look: countdown-preview-test → fallback
+PASS attachment thumbnails: real PNG/MP4, PDF page zero, bounded raster, corrupt/missing/type fallback, pre-cancellation and unchanged file bytes
+PASS attachment preview: late/cancelled/same-ID resolution, missing copy, independent surfaces, owner/current-file removal and four seeded 180-command identity sequences
+PASS Mars opening turn: finite slow full circle, fixed center, linear phases and no repetition
+PASS Mars opening lifecycle: real layer start/restart/stop, other animation preservation and reduced motion
+PASS regression workflows: edited event reload/identity, rejected and failed edit retry, durable checklist preference cleanup, failed midnight normalization retry
+PASS editor draft regression: repeated remove/add and neighbor edits, empty-row Save validation, discard/reopen and durable Save; Thursday/Friday boundary titles and manual override
+PASS automatic titles: draft entry routes, identical/Unicode/manual/reset edits, two-way failed Save retry, Cancel and durable reload, expired/missing identity rejection; 8 overlapping-write outcomes; 4 reproducible seeds × 192 actions
+Async workflow regression checks passed (3 workflows)
+PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor/save and midnight rejection, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; today/tomorrow day defaults, seven Russian weekdays, civil-date boundaries and title override

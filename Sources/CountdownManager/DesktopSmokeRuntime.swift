@@ -113,7 +113,9 @@ final class DesktopSmokeRuntime {
         }
         Task { @MainActor in
             do {
-                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-links") {
+                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-material-intake") {
+                    try await verifyMaterialIntakeWithoutStatus()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-links") {
                     try await wait("loaded isolated link store") { !self.store.isLoading }
                     try require(store.active.isEmpty, "link fixture must start empty")
                     showDesktop()
@@ -132,6 +134,111 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyMaterialIntakeWithoutStatus() async throws {
+        try await wait("loaded isolated material store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "material fixture must start empty")
+        let priorContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let priorMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: priorContrast, reduceMotion: priorMotion) }
+        let event = Countdown(title: "Материалы поездки", date: Day(store.tomorrow), emoji: "")
+        let seeded = await store.save(event, primary: false)
+        try require(seeded, "cannot seed material event")
+        showDesktop()
+        try await wait("material event rendered in desktop") {
+            self.controls.entries["desktop.event.\(event.id)"]?.isEnabled == true
+                && self.controls.frame("desktop.event.\(event.id)") != nil
+        }
+        let host = try value(desktopWindow(), "material desktop")
+        let footerBefore = try value(controls.frame("desktop.settings"), "desktop footer before addition")
+        let source = configuration.homeURL.appendingPathComponent("MaterialSource.txt")
+        let bytes = Data("Материалы поездки\n\nПроверить адрес и документы.\n".utf8)
+        try bytes.write(to: source)
+        let payload = EventMaterials(files: [source], links: [EventLink(address: "https://example.com/materials")])
+        let added = await store.appendMaterials(payload, to: event.id)
+        try require(added, "material addition failed")
+        try await expect("desktop.attachments.indicator.\(event.id)", "1")
+        try await expect("desktop.links.indicator.\(event.id)", "1")
+        try require(controls.entries["materials.undo"] == nil && controls.entries["materials.status"] == nil,
+                    "saved addition exposes removed undo/status row in desktop")
+        let footerAfter = try value(controls.frame("desktop.settings"), "desktop footer after addition")
+        try require(abs(footerAfter.minY - footerBefore.minY) < 1, "addition shifts desktop footer")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            host.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("desktop-materials-no-status-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: host)
+          }
+        }
+        showPanel()
+        try await expect("panel.attachments.toggle.\(event.id)", "collapsed")
+        try await expect("panel.links.toggle.\(event.id)", "collapsed")
+        try require(controls.entries["materials.undo"] == nil && controls.entries["materials.status"] == nil,
+                    "saved addition exposes removed undo/status row in mini")
+        let panel = try value(panelWindow(), "material mini panel")
+        try require(panel.frame.width == 390 && panel.frame.height == 600, "mini panel dimensions changed")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("mini-materials-no-status-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: panel)
+          }
+        }
+        let stored = try value(store.active.first(where: { $0.id == event.id }), "added materials")
+        let attachment = try value(stored.attachments.first, "saved material file")
+        let copyURL = try value(await store.attachmentThumbnailURL(attachment, eventID: event.id), "owned material URL")
+        let copyBytes = try Data(contentsOf: copyURL)
+        let originalBytes = try Data(contentsOf: source)
+        try require(copyBytes == bytes && originalBytes == bytes, "material bytes differ")
+        let reloaded = try await CountdownRepository(fileURL: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json")).load()
+        try require(reloaded.items.first(where: { $0.id == event.id }) == stored,
+                    "immediate material addition does not survive repository reload")
+        let persistedBeforeEditor = try Data(contentsOf: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json"))
+        try await press("event.edit.\(event.id)")
+        try await wait("material editor visible in mini") {
+            self.editorSession.isPresented && self.controls.frame("editor.edit") != nil
+        }
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("material-editor-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: panel)
+          }
+        }
+        try await press("editor.cancel")
+        try await wait("material editor Cancel returns") { !self.editorSession.hasActiveEditor }
+        let persistedAfterEditor = try Data(contentsOf: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json"))
+        try require(persistedAfterEditor == persistedBeforeEditor, "editor Cancel changed saved material data")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            let composer = TextAttachmentComposer(text: "Инструкция к поездке\n\nДокументы и билеты взять с собой.\n",
+                eventTitle: event.title, submit: { _ in false }, cancel: {})
+                .environmentObject(accessibilitySettings)
+                .environment(\.colorScheme, scheme)
+                .frame(width: 430, height: 600)
+            let controller = NSHostingController(rootView: composer)
+            let fixture = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 430, height: 600),
+                                   styleMask: [.titled], backing: .buffered, defer: false)
+            fixture.contentViewController = controller
+            fixture.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            fixture.makeKeyAndOrderFront(nil)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("material-composer-native-fixture-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: fixture)
+            fixture.orderOut(nil)
+          }
+        }
+        passed.append("file/link addition persists owned bytes and original; no addition undo/status controls on desktop or mini; fixed footer/panel and collapsed sections retained")
     }
 
     private func runAttachmentFocusedChecks() async throws {
@@ -2503,7 +2610,16 @@ final class DesktopSmokeRuntime {
                 let localPoint = NSPoint(x: rect.midX + offset, y: rect.minY + rect.height * height)
                 let point = grip.convert(localPoint, to: content.superview)
                 let hit = content.hitTest(point)
-                let routesAsExpected = hasNativeSheet ? hit == nil : hit === grip
+                // Native drop/context-menu registration may retain the hosting view as an inert
+                // fallback hit. No background control or divider may receive that sheet's input.
+                let routesAsExpected = hasNativeSheet ? (hit == nil || hit === content) : hit === grip
+                if hasNativeSheet {
+                    for id in ["desktop.mode", "desktop.create", "desktop.detail.edit", "desktop.settings"] {
+                        if let control = controls.entries[controlScope + id] {
+                            try require(!control.isEnabled, "background action enabled under native sheet: \(id)")
+                        }
+                    }
+                }
                 try require(routesAsExpected, "unexpected expanded divider hit routing after \(action); "
                             + "expected=\(hasNativeSheet ? "blocked by native sheet" : "divider grip"), "
                             + "height=\(height), offset=\(offset), localPoint=\(localPoint), point=\(point), gripRect=\(rect), "

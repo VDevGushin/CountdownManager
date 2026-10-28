@@ -12,6 +12,8 @@ struct DesktopEventBrowser: View {
     let resetFilters: () -> Void
     let create: () -> Void
     let canCreate: Bool
+    @ObservedObject var editorSession: EventEditorSession
+    let showTextAttachment: (UUID, String) -> Void
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
@@ -120,6 +122,8 @@ struct DesktopEventBrowser: View {
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
+        .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
+                                      enabled: canCreate, showText: { showTextAttachment(item.id, $0) }))
     }
 }
 

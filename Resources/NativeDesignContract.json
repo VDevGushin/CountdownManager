@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "styleVersion": "native-warm-calendar-v1",
+  "deploymentTarget": "13.0",
+  "nativeLinkedCompatibility": "13.0",
+  "sourceAuthority": {
+    "behavior": "docs/PRODUCT.md",
+    "visual": "DESIGN.md",
+    "tokensAndComponents": "Sources/CountdownManager/AuroraInstrument.swift"
+  },
+  "requiredNativeReview": {
+    "themes": ["light", "dark"],
+    "contrast": ["standard", "increased"],
+    "surfaces": ["desktop", "mini-panel", "editor", "text-composer"]
+  }
+}

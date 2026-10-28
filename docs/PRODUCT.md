@@ -445,6 +445,48 @@ There is no overdue state and no automatic rollover.
 
 Incomplete subtasks do not prevent event expiry.
 
+### Adding materials by drag and paste
+
+A saved event accepts ordinary local files and HTTP/HTTPS links on its desktop browser card,
+desktop details or mini-panel card. The target is the receiving event, including an unselected
+card; dropping does not change another event. Hover adds a stationary accent outline/tint without
+changing the card geometry or disclosure state. One preferred representation is used per dropped
+item: a file URL has priority over a web URL, followed by plain text. Unsupported schemes, folders,
+packages and symbolic links are rejected. File promises from Mail/Photos are not advertised.
+
+A successful saved-event addition commits immediately. There is no addition-Undo action,
+receipt or status/progress/success row on either surface, and no replacement toast or notification.
+The event's existing file/link counts show the saved result. Existing editor Save/Cancel and native
+text Undo/Redo retain their normal meaning. A potential future undo of deletion is a separate
+feature and is not implemented by this intake flow. Removal/expiry cannot resurrect an event.
+Both existing limits apply before importing a batch. A failed saved-event batch commits
+none of its materials and cleans up temporary owned copies. Failed writes preserve durable data.
+The pending addition blocks another addition and entry to an editor until it finishes.
+
+The event context menu exposes `Вставить текст как вложение…`. In desktop details, Paste also
+opens it when an event is selected and no text field is editing; text-field Paste keeps its normal
+meaning. Clipboard text is read only in response to an explicit paste/menu/button action. A plain
+text drop opens the same composer. It previews the complete editable text and proposes a filename
+from its first nonempty line. The user may change both. `Создать вложение` writes a UTF-8 `.txt`
+without trimming or truncating its content; paragraphs and trailing newlines survive. Rich text
+formatting is not preserved. This uses one of the 15 attachment slots and the existing preview,
+expiry and owned-file cleanup rules. Empty text and unsafe/overlong names cannot be submitted.
+
+The shared editor accepts drops into its retained draft and offers the text action beside its
+attachment controls. Nested text composition retains the surrounding editor and attachment session.
+Cancelling the composer returns to that draft. Whole-event Save/Cancel retains its existing meaning;
+cancelling the event discards draft-only text files as well as imported copies. Mini hide/show retains
+the composer, as for the existing editor. Desktop composition uses the existing native sheet owner;
+mini composition uses the internal manager screen under the same timer.
+
+Rapid hide/show requests must preserve the latest explicit show. A still-pending show is not
+cancelled by an unconfirmed hidden occlusion observation; subsequent confirmed full occlusion and
+explicit deactivation/Space/close retain their existing hide behavior.
+
+Hovering a supported drag over the status icon reveals the anchored mini-panel without activating
+the app or committing anything. The user then drops onto a specific event; the icon itself does not
+accept a drop. Ordinary status-item clicks and panel hide/Space rules retain their existing meaning.
+
 ### Links
 
 An event may contain up to ten web links. Each has stable identity, an optional name and a required

@@ -3,10 +3,11 @@
 These evals assess the agent maintaining Countdown Manager: scoped repairs, evidence-based reviews,
 verification choices, data protection and state ownership. They do not replace application tests.
 
-Version 5 has eight cases in `cases.json`. Two inject repairable defects; two inject defects for
+Version 6 has ten cases in `cases.json`. Two inject repairable defects; two inject defects for
 read-only review; two test evidence interpretation and product/architecture reasoning; one checks
 that a documentation-only correction avoids unrelated skills and application checks; one checks
-mini/desktop interaction and icon consistency. Prompts are
+mini/desktop interaction and icon consistency; one checks that a proposal/default is not promoted
+to accepted product scope; one checks native build/style provenance and shared component authority. Prompts are
 in Russian, matching normal project work. Criteria are fixed before the subject runs.
 
 Version 4 updates `favorite-ownership` to the current explicit-favorite contract: without a
@@ -19,6 +20,30 @@ all material lists always expanded and replace existing native icons in an HTML 
 requires concrete sibling/source comparisons, the separate mini/desktop interaction contracts and
 appropriate disclosure/hidden-content evidence. No live model run is implied by adding the case;
 run it explicitly with `--case mini-desktop-style-boundary` when agent evaluation is requested.
+
+Version 6 adds `proposal-default-is-not-acceptance`, a read-only review of a generic implementation
+request following an unsubmitted prototype default. Its rubric separates deletion recovery from
+addition Undo, requires an actual source for product acceptance, and rejects circular evidence from
+the agent's own changed docs/tests. It also preserves autonomy for routine implementation choices;
+this case does not require approval of every edit. The prompt contains the relevant history because
+ignored local prototype artifacts are not guaranteed to exist in an eval checkout.
+
+Version 6 also adds `native-style-build-provenance`. It distinguishes actual SDK/toolchain use from
+a patched metadata field, requires named native component reuse, and limits what source checks,
+artifact metadata and old screenshots establish. A platform compatibility declaration is not proof
+of having built with that SDK, and a shared source component is not a pixel or runtime guarantee.
+
+Adding these cases and passing deterministic runner checks do **not** mean a live model passed them.
+A live run and its independent rubric review remain opt-in; no live run is claimed for this revision.
+Use `--case proposal-default-is-not-acceptance` when that evaluation is requested.
+
+Native component/source drift also has a deterministic gate:
+`python3 -B Tests/test_native_design_system.py`. It checks the inventoried shared action and toolbar
+consumers (including native Menu button style, a hidden framework indicator and the shared native
+SF-chevron label), named symbol roles, the frozen `theme-v1` token recipe and the absence of rejected addition-Undo/status
+source. Its direct mutation tests must reject real style/token/status changes. This guard and the
+separate native build-contract guard run before CoreChecks/UIChecks in `verify.sh fast`; neither
+proves pixel identity, actual SDK use from a patched metadata field, or live agent compliance.
 
 ## Run
 

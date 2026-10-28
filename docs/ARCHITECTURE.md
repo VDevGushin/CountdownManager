@@ -86,6 +86,9 @@ Key files:
 - `Presentation.swift`
 - `StatusBarImages.swift`
 - `Views.swift`
+- `MaterialIntake.swift`
+- `TextAttachmentView.swift`
+- `StatusItemMaterialDragView.swift`
 - `AttachmentViews.swift`
 - `AttachmentPreview.swift`
 - `Diagnostics.swift`
@@ -1006,3 +1009,41 @@ Real UI Smoke runs the production application runtime with isolated test state.
 External XCUITest is maintained through the Xcode test project and runner.
 
 Verification selection and command details belong in `docs/VERIFICATION.md`.
+
+
+## Material intake
+
+`MaterialDropZone` resolves NSItemProvider representations in file/web/text priority and cancels
+late delivery when its target disappears. `EventMaterialTarget` binds the receiving event identity
+and checks the shared editor gate before applying an asynchronous result. It shares the existing
+Store/repository; there is no second persistence or clipboard-monitoring owner.
+
+Store owns pending quick additions and their admission locks. It imports into a temporary repository
+draft, revalidates the current event and capacities after awaits, merges only new materials into the
+latest event and commits through existing revision/recovery handling. There is no addition receipt,
+result-message state or Undo API/view. Existing errors retain their established owner and presentation.
+`TextAttachment` defines plain-text filename/content
+validation; `AttachmentFiles` writes UTF-8 text using the same owned-folder/marker boundary as copies.
+
+DesktopRootView reserves EventEditorSession and reuses DesktopSheet for a text composer. ManagerView
+uses its existing internal navigation and the same editor-session reservation. EditorView retains its
+own draft and EditorAttachmentSession under its nested composer, using that session's normal cleanup.
+StatusItemMaterialDragView forwards ordinary mouse tracking to the original NSStatusBarButton and
+reveals the existing panel during drag hover; it is not a file-import destination. Hover reveal orders
+the panel without application activation, preserving the source application's drag.
+
+
+The desktop Paste action follows AppKit's responder chain through its existing window controller.
+The hosted root registers the current selected-event action while mounted. Native text responders
+handle Paste first; the window controller only offers attachment composition for its key window
+without a sheet. This avoids introducing a root-level SwiftUI paste hit target over a blocked
+background. See Apple's [event architecture](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html).
+
+
+The panel's presentation request is owned by one `PanelPresentationState` in AppDelegate. A new
+show remains pending until a visible occlusion observation is received; an earlier orderOut's
+completion cannot cancel an unacknowledged show. After that acknowledgement, full occlusion keeps
+its existing hide meaning. Explicit close/deactivation/Space/desktop-focus paths still hide
+immediately. This does not attribute notifications to generations or use key/responder state,
+window polling, timers, or hosting reconstruction. The native rapid hide→compact scenario remains
+strict; its previous real disappearance is preserved separately from test-oracle failures.
