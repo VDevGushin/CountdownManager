@@ -1,10 +1,11 @@
 # Preparing signed updates
 
-## Preparing 1.19.0 / build 35
+## Published 1.19.0 / build 35
 
-The current branch prepares saved links, material drag-and-drop, plain-text attachments and an
+Release 1.19.0/35 adds saved links, material drag-and-drop, plain-text attachments and an
 in-app release-help window. The existing production identity, stable feed and signing key are
-unchanged. This section does not claim publication: [candidate state](releases/v1.19.0.md).
+unchanged. Published as Latest; anonymous ZIP/version feed/stable feed match the signed bytes.
+[Release status](releases/v1.19.0.md) · [publication receipt](images/v1.19.0/publication.json).
 The [Markdown notes](releases/v1.19.0-notes.md) explain actual user actions; the
 [HTML notes](releases/v1.19.0-notes.html) should be embedded in the signed appcast using Sparkle
 2.10.0 `generate_appcast --embed-release-notes` with a companion file matching the ZIP stem.
@@ -17,11 +18,11 @@ The release build uses the canonical `build.sh`, explicit headers SDK 15.4 and t
 headers SDK must not be presented as the previously inspected candidate. Exact-package captures
 and signature/hash receipts belong under `docs/images/v1.19.0/`.
 
-## Published 1.18.1 / build 34
+## Previous published 1.18.1 / build 34
 
 This patch adds Left/Right keyboard navigation to attachment quick preview in both surfaces
 and removes the middle dot between date and forecast in desktop details. The source bundle
-version is 1.18.1/34. Release 1.18.1/34 is published as Latest; anonymous ZIP, version appcast
+version is 1.18.1/34. Release 1.18.1/34 was published as Latest and is superseded by 1.19.0; anonymous ZIP, version appcast
 and stable appcast returned HTTP 200 with exact signed SHA-256 values.
 See [patch status](releases/v1.18.1.md) for focused verification and current screenshots.
 The [publication receipt](images/v1.18.1/publication.json) records the confirmed source commit
@@ -189,9 +190,9 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The confirmed published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.1/CountdownManager-1.18.1-34.zip`.
-Tag `v1.18.1`, that archive and the version/stable appcasts were anonymously verified after
-publication; [the publication receipt](images/v1.18.1/publication.json) records their exact hashes.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.19.0/CountdownManager-1.19.0-35.zip`.
+Tag `v1.19.0`, that archive and the version/stable appcasts were anonymously verified after
+publication; [the publication receipt](images/v1.19.0/publication.json) records their exact hashes.
 Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
 with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
 Keep the canonical stable feed above unchanged for future releases.
@@ -271,7 +272,7 @@ the seed contents. Running these commands does not create a permanent backup:
 The numbers above reproduce preparation of published 1.18.1 / build 34; acceptance,
 signed-artifact and publication status are tracked in [releases/v1.18.1.md](releases/v1.18.1.md).
 Commands alone do not establish acceptance or publication. The last confirmed distributed version
-is 1.18.1 / build 34. For subsequent releases,
+is 1.19.0 / build 35. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
@@ -281,8 +282,8 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.18.1.md](releases/v1.18.1.md);
-previous release evidence is retained in [releases/v1.18.0.md](releases/v1.18.0.md).
+Current published release status is recorded in [releases/v1.19.0.md](releases/v1.19.0.md);
+previous release evidence is retained in [releases/v1.18.1.md](releases/v1.18.1.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
 An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus

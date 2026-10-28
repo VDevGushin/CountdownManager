@@ -7,7 +7,7 @@
   "nativeWhatsNew": "1/1",
   "nativeMaterials": "1/1",
   "productionDataUsed": false,
-  "published": false,
+  "published": true,
   "executableSHA256": "7ba9177241df23e6471c551728d37c0448d605fe6e60ee3511277e9f3563058c",
   "sourceHashes": {
     "Package.resolved": "44370a704a00901a505e56fe2542eee70322f33ca1812a2d72a85544d1e8da74",
@@ -160,5 +160,10 @@
     "updateOwnersUnchanged": true,
     "keyboardAcceptance": "keyboard-acceptance.json",
     "secondFullSparkleRunClaimed": false
+  },
+  "publicationReceipt": "publication.json",
+  "publicationScreenshot": {
+    "file": "published-release.jpg",
+    "sha256": "8e04c4a4f4cb23f404b8feb25d0e849496c99be4eb6a1424e1c7ed6227598f87"
   }
 }

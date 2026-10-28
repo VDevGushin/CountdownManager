@@ -1,7 +1,8 @@
-# 1.19.0 / build 35 candidate evidence
+# 1.19.0 / build 35 release evidence
 
-Status: locally built, natively checked and signed; genuine isolated update passed. Publication
-is recorded separately. All captures use newly created marked demonstration homes. No
+Status: published as Latest, with anonymous signed-byte delivery verified in
+[publication.json](publication.json). Genuine isolated update and final keyboard acceptance are
+separate evidence with their stated boundaries. All captures use newly created marked demonstration homes. No
 production or user-edited preview data was used.
 
 ## Exact candidate
