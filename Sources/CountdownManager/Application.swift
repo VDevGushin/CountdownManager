@@ -95,11 +95,13 @@ private final class StatusItemAppearanceView: NSView {
 }
 
 @MainActor
-private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
     private var hostingController: NSHostingController<CountdownManagerRootView>!
     private var desktopController: DesktopWindowController?
+    private var whatsNewController: WhatsNewWindowController!
+    private var automaticWhatsNewIsEnabled = false
     private var store: Store!
     private var timer: CountdownTimer!
     private var updates: ApplicationUpdates!
@@ -136,7 +138,14 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         DiagnosticLog.shared.record("app.launch version=\(version) build=\(build) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
         MainThreadWatchdog.shared.start()
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
+        automaticWhatsNewIsEnabled = uiSmokeConfiguration == nil
+            || ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new")
         appearanceSettings = ApplicationAppearance(defaults: defaults)
+        whatsNewController = WhatsNewWindowController(defaults: defaults, accessibilitySettings: accessibilitySettings) { [weak self] in
+            guard let self, NSApp.isActive, self.canShowWhatsNew,
+                  self.desktopController?.window?.isVisible != true else { return }
+            self.showPanel()
+        }
         keepAwake = KeepAwakeController(defaults: defaults)
         if UISmokeConfiguration.captureWasRequested {
             defaults.set(Date().addingTimeInterval(-1).timeIntervalSince1970,
@@ -209,6 +218,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 keepAwake: keepAwake,
                 weather: weather,
                 showDesktop: { [weak self] in self?.showDesktopWindow() },
+                showWhatsNew: { [weak self] in self?.showWhatsNew() },
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment,
                 appearanceSettings: appearanceSettings
@@ -245,6 +255,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 let appearance = scheme.flatMap { NSAppearance(named: $0 == .dark ? .darkAqua : .aqua) }
                 self?.panel.appearance = appearance
                 self?.desktopController?.window?.appearance = appearance
+                self?.whatsNewController.window?.appearance = appearance
             }
         recordShellLifecycle("launch-ready")
         activeSpaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -312,7 +323,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 showDesktop: { [weak self] in self?.showDesktopWindow() },
                 hideDesktop: { [weak self] in self?.desktopController?.hide() },
                 showPanel: { [weak self] in self?.showPanel() },
-                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) }
+                pressStatusItem: { [weak self] in self?.statusItem.button?.performClick(nil) },
+                whatsNewWindow: { [weak self] in self?.whatsNewController.window },
+                showWhatsNew: { [weak self] in self?.showWhatsNew() }
             )
             DispatchQueue.main.async { [weak self] in self?.desktopSmokeRuntime?.start() }
         } else if let uiSmokeConfiguration, UISmokeConfiguration.wasRequested {
@@ -460,6 +473,36 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
         recordShellLifecycle("show-after-panel")
         startMarsOpeningAnimation()
+        if activate { offerWhatsNewIfNeeded() }
+    }
+
+    private var canShowWhatsNew: Bool {
+        !editorSession.hasActiveEditor && !store.isLoading && !store.hasPendingPersistence
+            && !store.isExportingDiagnostics && !updates.isPresentingUpdateUI
+            && NSApp.modalWindow == nil
+            && desktopController?.window?.attachedSheet == nil && panel.attachedSheet == nil
+    }
+
+    private func offerWhatsNewIfNeeded() {
+        guard automaticWhatsNewIsEnabled, whatsNewController.hasUnseenRelease else { return }
+        showWhatsNew()
+    }
+
+    @objc private func showWhatsNew() {
+        guard canShowWhatsNew else {
+            DiagnosticLog.shared.record("whats-new.blocked editor=\(editorSession.hasActiveEditor) "
+                + "busy=\(store.hasPendingPersistence) export=\(store.isExportingDiagnostics) "
+                + "updater=\(updates.isPresentingUpdateUI) modal=\(NSApp.modalWindow != nil) "
+                + "desktopSheet=\(desktopController?.window?.attachedSheet != nil) panelSheet=\(panel.attachedSheet != nil)")
+            return
+        }
+        DiagnosticLog.shared.record("whats-new.present")
+        hidePanel(source: "whats-new")
+        whatsNewController.present()
+    }
+
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        menuItem.action != #selector(showWhatsNew) || canShowWhatsNew
     }
 
     private func positionPanel(relativeTo button: NSStatusBarButton) -> Bool {
@@ -524,7 +567,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 switchToPanel: { [weak self] in self?.switchToPanel() },
                 diagnosticsContext: {
                     makeDiagnosticExportContext(timer: sharedTimer, updates: sharedUpdates, weather: sharedWeather)
-                }
+                },
+                showWhatsNew: { [weak self] in self?.showWhatsNew() }
             )
             desktopController = DesktopWindowController(rootView: rootView, editorSession: editorSession)
             desktopController?.window?.appearance = appearanceSettings.nativeAppearance(
@@ -533,6 +577,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         }
         desktopController?.show()
         if desktopController?.window?.isVisible == true { startMarsOpeningAnimation() }
+        offerWhatsNewIfNeeded()
     }
 
     private func startMarsOpeningAnimation() {
@@ -635,6 +680,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private func installApplicationMenu() {
         let menu = NSMenu()
         let appMenu = NSMenu()
+        let whatsNewItem = appMenu.addItem(
+            withTitle: "Что нового…", action: #selector(showWhatsNew), keyEquivalent: ""
+        )
+        whatsNewItem.target = self
+        appMenu.addItem(.separator())
         let checkItem = appMenu.addItem(
             withTitle: "Проверить обновления…", action: #selector(ApplicationUpdates.checkForUpdates(_:)), keyEquivalent: ""
         )

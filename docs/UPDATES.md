@@ -1,5 +1,22 @@
 # Preparing signed updates
 
+## Preparing 1.19.0 / build 35
+
+The current branch prepares saved links, material drag-and-drop, plain-text attachments and an
+in-app release-help window. The existing production identity, stable feed and signing key are
+unchanged. This section does not claim publication: [candidate state](releases/v1.19.0.md).
+The [Markdown notes](releases/v1.19.0-notes.md) explain actual user actions; the
+[HTML notes](releases/v1.19.0-notes.html) should be embedded in the signed appcast using Sparkle
+2.10.0 `generate_appcast --embed-release-notes` with a companion file matching the ZIP stem.
+Generate the final appcast after adding the notes, verify its signature again, and never edit
+the signed feed afterward. Upload only the audited production ZIP and feed; fixture keys,
+personal test profiles and temporary signing exports are not release assets.
+
+The release build uses the canonical `build.sh`, explicit headers SDK 15.4 and the independent
+`native-warm-calendar-v1` style contract (linked compatibility/minimum OS 13.0). A different
+headers SDK must not be presented as the previously inspected candidate. Exact-package captures
+and signature/hash receipts belong under `docs/images/v1.19.0/`.
+
 ## Published 1.18.1 / build 34
 
 This patch adds Left/Right keyboard navigation to attachment quick preview in both surfaces

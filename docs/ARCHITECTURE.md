@@ -132,6 +132,7 @@ NSApplication / AppDelegate
 ├── WeatherController → location/provider requests and bounded memory cache
 ├── EventEditorSession → optional panel/desktop editor owner
 ├── ApplicationAppearance → shared persisted system/light/dark choice
+├── WhatsNewWindowController → read-only release help / WhatsNewHistory → isolated-or-standard UserDefaults
 ├── DesktopWindowController (lazy, retained)
 │   └── NSWindow / NSHostingController<DesktopRootView>
 │       ├── window-local mode/search/filter/selection
@@ -163,6 +164,22 @@ from accessibility. Settings navigation is separate from `EventEditorSession` an
 an updater editor blocker.
 
 ### Desktop surface
+
+`AppDelegate` also retains one ordinary `WhatsNewWindowController` for release help. It has its
+own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/timer. Safe explicit
+panel/desktop opening offers the unseen release; drag-hover and background startup do not.
+The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
+before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
+the same isolated defaults selection as the rest of the runtime. Manual menu entry bypasses only
+the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
+the controller never promotes activation policy. Other automated routes suppress the automatic
+offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.
+Settings provides a service-action entry on both surfaces because accessory-only applications
+do not have an ordinary application menu. Mini Settings stays mounted while help is visible.
+Desktop Settings retains a one-shot intent through native sheet dismissal. The observed
+SwiftUI `onDismiss` callback arrives while AppKit's parent still reports `attachedSheet`;
+one main-queue dispatch unwinds that native callback before invoking the same guarded help
+action. This is not a timer, polling or an unconditional retry over an active sheet.
 
 `DesktopWindowController` owns one titled, resizable `NSWindow` and its hosting hierarchy.
 The first explicit show promotes accessory startup to regular application activation policy;

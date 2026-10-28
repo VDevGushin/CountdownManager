@@ -316,6 +316,24 @@ no new input route or accessibility control is introduced by the decorative symb
 
 ## Desktop window
 
+### What's new release help
+
+`UIChecks` runs `WhatsNewChecks.swift` against two fresh UUID defaults suites: unseen reads and
+an unpresented owner do not consume the release; an explicit/idempotent mark survives owner and
+defaults reopening; another release and another profile retain independent history. These tests
+do not by themselves prove UI admission.
+
+The focused native route `--ui-smoke-desktop --ui-smoke-whats-new` uses a fresh marked smoke
+home and the real AppDelegate/controller: no background auto-opening, pending import/editor
+deferral, first safe mini opening, hidden mini while help is front, retained timer deadline,
+ordinary close, no automatic repeat, manual reopen, unchanged retained editor text/Cancel and
+event bytes. It requires actual 430×560 content bounds to reject native hosting shrink/clipping,
+checks re-admission on close and both Settings entries (including native desktop sheet dismissal
+and retained mini Settings). Four captures cover Light/Dark × standard/Increase Contrast with Reduce Motion.
+The source design gate pins `whatsnew.dismiss` to `auroraPrimaryAction`; a source pass alone is
+not visual acceptance. External Escape/Return/menu interaction and cross-Space behavior need
+separate external input; internal registry activation is not that evidence.
+
 ### Drag and paste material intake
 
 `UIChecks` includes `MaterialIntakeChecks.swift`: native NSItemProvider decoding priority,

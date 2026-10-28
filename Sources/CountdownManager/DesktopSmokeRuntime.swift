@@ -75,6 +75,8 @@ final class DesktopSmokeRuntime {
     private let hideDesktop: () -> Void
     private let showPanel: () -> Void
     private let pressStatusItem: () -> Void
+    private let whatsNewWindow: () -> NSWindow?
+    private let showWhatsNew: () -> Void
     private var captures: [[String: Any]] = []
     private var passed: [String] = []
     private var controls: UISmokeControlRegistry { .shared }
@@ -86,7 +88,8 @@ final class DesktopSmokeRuntime {
          desktopWindow: @escaping () -> NSWindow?, panelWindow: @escaping () -> NSWindow?,
          statusButton: @escaping () -> NSStatusBarButton?,
          showDesktop: @escaping () -> Void, hideDesktop: @escaping () -> Void, showPanel: @escaping () -> Void,
-         pressStatusItem: @escaping () -> Void) {
+         pressStatusItem: @escaping () -> Void,
+         whatsNewWindow: @escaping () -> NSWindow?, showWhatsNew: @escaping () -> Void) {
         self.configuration = configuration
         self.store = store
         self.timer = timer
@@ -103,6 +106,8 @@ final class DesktopSmokeRuntime {
         self.hideDesktop = hideDesktop
         self.showPanel = showPanel
         self.pressStatusItem = pressStatusItem
+        self.whatsNewWindow = whatsNewWindow
+        self.showWhatsNew = showWhatsNew
     }
 
     func start() {
@@ -113,7 +118,9 @@ final class DesktopSmokeRuntime {
         }
         Task { @MainActor in
             do {
-                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-material-intake") {
+                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new") {
+                    try await verifyWhatsNew()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-material-intake") {
                     try await verifyMaterialIntakeWithoutStatus()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-links") {
                     try await wait("loaded isolated link store") { !self.store.isLoading }
@@ -134,6 +141,107 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyWhatsNew() async throws {
+        try await wait("loaded isolated highlights store") { !self.store.isLoading }
+        try require(whatsNewWindow()?.isVisible != true, "highlights opened during background startup")
+        let event = Countdown(title: "Поездка", date: Day(store.tomorrow), emoji: "")
+        let seeded = await store.save(event, primary: false)
+        try require(seeded, "cannot seed highlights event")
+        try await wait("status item attached to screen") { self.statusButton()?.window?.screen != nil }
+        let savedBytes = try Data(contentsOf: configuration.dataURL)
+        try require(store.beginMaterialResolution(), "cannot reserve pending material intake")
+        showWhatsNew()
+        try require(whatsNewWindow()?.isVisible != true, "highlights interrupted pending material intake")
+        store.endMaterialResolution()
+        try require(editorSession.beginPanelEditor(), "cannot reserve retained draft")
+        showPanel()
+        try await wait("retained mini editor visible") { self.controls.frame("editor.new") != nil }
+        showWhatsNew()
+        try require(whatsNewWindow()?.isVisible != true, "highlights interrupted an active editor")
+        try await press("editor.cancel")
+        try await wait("mini editor Cancel finished cleanup") {
+            !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence
+        }
+        hideDesktop()
+        timer.start(minutes: 5)
+        let runningDeadline = timer.deadline
+        pressStatusItem()
+        pressStatusItem()
+        try await wait("automatic highlights visible after safe explicit opening") { self.whatsNewWindow()?.isVisible == true }
+        let window = try value(whatsNewWindow(), "native highlights window")
+        try require(window.contentView?.bounds.size == NSSize(width: 430, height: 560),
+                    "highlights content shrank or clipped instead of 430x560")
+        try await expect("whatsnew.content", WhatsNewView.releaseID)
+        try require(panelWindow()?.isVisible != true, "mini floats over highlights")
+        try require(timer.deadline == runningDeadline, "highlights changed timer deadline")
+        let priorContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let priorMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: priorContrast, reduceMotion: priorMotion) }
+        for contrast in [false, true] {
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+            for scheme in [ColorScheme.light, .dark] {
+                visualEnvironment.colorSchemeOverride = scheme
+                try await Task.sleep(nanoseconds: 100_000_000)
+                try capture("whats-new-\(scheme == .dark ? "dark" : "light")\(contrast ? "-contrast" : "")", window: window)
+            }
+        }
+        try await wait("highlights key window for Escape") { window.isKeyWindow }
+        let escape = try value(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+            characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 0x35),
+            "native Escape event")
+        NSApp.sendEvent(escape)
+        try await wait("highlights closed normally") { !window.isVisible }
+        showDesktop()
+        try require(!window.isVisible, "highlights repeated after one presentation")
+        try await press("desktop.create")
+        try await replaceFocusedText(control: "editor.title", text: "Черновик перед новостями")
+        showWhatsNew()
+        try require(!window.isVisible && editorSession.hasActiveEditor, "manual highlights replaced an editor")
+        try await expect("editor.title", "Черновик перед новостями")
+        try await press("editor.cancel")
+        try await wait("retained draft cancelled normally") {
+            !self.editorSession.hasActiveEditor && self.desktopWindow()?.attachedSheet == nil
+        }
+        showWhatsNew()
+        try await wait("manual highlights reopened") { window.isVisible }
+        try require(editorSession.beginPanelEditor(), "cannot reserve work before highlights close")
+        hideDesktop()
+        try await press("whatsnew.dismiss")
+        try await wait("manual highlights dismissed") { !window.isVisible }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try require(panelWindow()?.isVisible != true, "highlights close reopened panel over active work")
+        editorSession.endPanelEditor()
+        try await wait("close-time reservation cleanup finished") { !self.store.hasPendingPersistence }
+        showDesktop()
+        try await press("desktop.settings")
+        try await wait("desktop settings attached") { self.desktopWindow()?.attachedSheet != nil }
+        try await press("settings.whats-new")
+        try await wait("highlights from desktop Settings after native dismissal") {
+            window.isVisible && self.desktopWindow()?.attachedSheet == nil
+        }
+        try await press("whatsnew.dismiss")
+        try await wait("desktop Settings highlights closed") { !window.isVisible }
+        hideDesktop()
+        showPanel()
+        try await press("settings.open")
+        try await wait("mini Settings navigation ready") {
+            self.controls.frame("settings.back") != nil && self.panelWindow()?.isKeyWindow == true
+        }
+        try await press("settings.whats-new")
+        try await wait("highlights from mini Settings") { window.isVisible }
+        try await press("whatsnew.dismiss")
+        try await wait("mini Settings restored after highlights") {
+            !window.isVisible && self.panelWindow()?.isVisible == true
+        }
+        try await press("settings.back")
+        try require(timer.deadline == runningDeadline, "reopening highlights changed timer")
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(savedBytes == after, "highlights changed event bytes")
+        timer.delete()
+        passed.append("native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures")
     }
 
     private func verifyMaterialIntakeWithoutStatus() async throws {

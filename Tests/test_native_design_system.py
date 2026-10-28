@@ -31,6 +31,7 @@ PROMINENT_EXCEPTIONS: dict[str, tuple[str, ...]] = {}
 ACTION_CONTROLS = {
     "editor.save": ("Sources/CountdownManager/Views.swift", "primary-action", "auroraPrimaryAction"),
     "materials.text.create": ("Sources/CountdownManager/TextAttachmentView.swift", "primary-action", "auroraPrimaryAction"),
+    "whatsnew.dismiss": ("Sources/CountdownManager/WhatsNew.swift", "primary-action", "auroraPrimaryAction"),
     "editor.cancel": ("Sources/CountdownManager/Views.swift", "secondary-action", "auroraSecondaryAction"),
     "materials.text.cancel": ("Sources/CountdownManager/TextAttachmentView.swift", "secondary-action", "auroraSecondaryAction"),
 }
@@ -291,16 +292,17 @@ class NativeDesignSystemChecks(unittest.TestCase):
     def test_current_sources_obey_named_native_families(self):
         self.assertEqual(validate_sources(ROOT), [])
 
-    def test_replacing_create_shared_style_with_direct_style_is_rejected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = self.fixture(directory)
-            path = root / "Sources/CountdownManager/TextAttachmentView.swift"
-            text = path.read_text()
-            self.assertEqual(text.count(".auroraPrimaryAction()"), 1)
-            path.write_text(text.replace(".auroraPrimaryAction()", ".buttonStyle(.borderedProminent)"))
-            failures = validate_sources(root)
-            self.assertTrue(any("shared action family bypassed: materials.text.create" in item for item in failures), failures)
-            self.assertTrue(any("direct prominent style outside authority" in item for item in failures), failures)
+    def test_replacing_shared_primary_with_direct_style_is_rejected(self):
+        for identifier in ("materials.text.create", "whatsnew.dismiss"):
+            with self.subTest(control=identifier), tempfile.TemporaryDirectory() as directory:
+                root = self.fixture(directory)
+                path = root / ACTION_CONTROLS[identifier][0]
+                text = path.read_text()
+                self.assertEqual(text.count(".auroraPrimaryAction()"), 1)
+                path.write_text(text.replace(".auroraPrimaryAction()", ".buttonStyle(.borderedProminent)"))
+                failures = validate_sources(root)
+                self.assertTrue(any("shared action family bypassed: " + identifier in item for item in failures), failures)
+                self.assertTrue(any("direct prominent style outside authority" in item for item in failures), failures)
 
     def test_toolbar_cannot_bypass_shared_family_or_revert_menu_to_automatic(self):
         for identifier, mutation in (("desktop.create", "shared"),

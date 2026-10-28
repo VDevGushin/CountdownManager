@@ -148,6 +148,7 @@ struct CountdownManagerRootView: View {
     let keepAwake: KeepAwakeController
     let weather: WeatherController
     var showDesktop: () -> Void = {}
+    var showWhatsNew: () -> Void = {}
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
     @ObservedObject var appearanceSettings: ApplicationAppearance
@@ -157,7 +158,8 @@ struct CountdownManagerRootView: View {
         VStack(spacing: 0) {
             CountdownTimerStrip(timer: timer)
             ManagerView(store: store, updates: updates, editorSession: editorSession, keepAwake: keepAwake,
-                        weather: weather, diagnosticsContext: makeDiagnosticsContext, showDesktop: showDesktop)
+                        weather: weather, diagnosticsContext: makeDiagnosticsContext, showDesktop: showDesktop,
+                        showWhatsNew: showWhatsNew)
         }
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())

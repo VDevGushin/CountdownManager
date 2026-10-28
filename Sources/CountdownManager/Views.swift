@@ -11,6 +11,7 @@ struct ManagerView: View {
     @ObservedObject var weather: WeatherController
     let diagnosticsContext: () -> DiagnosticExportContext
     var showDesktop: () -> Void = {}
+    var showWhatsNew: () -> Void = {}
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
@@ -58,7 +59,7 @@ struct ManagerView: View {
                 }
                 if showingSettings {
                     SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
-                                 diagnosticsContext: diagnosticsContext) {
+                                 diagnosticsContext: diagnosticsContext, showWhatsNew: showWhatsNew) {
                         showingSettings = false
                     }
                 }

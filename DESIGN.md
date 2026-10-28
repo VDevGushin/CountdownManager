@@ -132,6 +132,12 @@ components:
 
 ## Overview
 
+The 1.19.0 read-only `Что нового` window reuses the Settings header (Georgia 21, 49-point
+height, 16-point insets), system 13-point explanatory text, existing `link`, `paperclip` and
+`doc.text` symbols, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
+58-point footer. Its 430×560 content scrolls between header and footer. Native title-bar close,
+Escape and Return retain normal window semantics. It introduces no new visual/action family.
+
 **Creative North Star: "Warm Calendar Leaves"**
 
 Countdown Manager uses warm paper and terracotta calendar leaves to make a small dated-event utility feel tangible. Georgia gives event names and dates an editorial character; compact native system text keeps actions, settings, and checklists legible. The warm dark appearance preserves the same hierarchy through related surfaces rather than applying a neutral black theme.

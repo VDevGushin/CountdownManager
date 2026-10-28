@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "version": "1.19.0",
+  "build": "35",
+  "publicKeyOnly": true,
+  "productionKeyFingerprint": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "signatureChecks": [
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "archive",
+      "validSignature": true
+    },
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "feed",
+      "validSignature": true
+    }
+  ],
+  "feedTrailerExactlyBounded": true,
+  "releaseNotesEmbedded": true,
+  "extractedTreeEntries": 168,
+  "extractedBytesModesSymlinksEqual": true,
+  "strictDeepCodeSign": true,
+  "productionConfiguration": true,
+  "nativeBuildContractVerified": true,
+  "files": {
+    "CountdownManager-1.19.0-35.zip": {
+      "bytes": 6243670,
+      "sha256": "339efbdab0e9f8ba53d30d688985f5e200c1b17c5ee436b8c603309bb68dcbaf"
+    },
+    "appcast.xml": {
+      "bytes": 4953,
+      "sha256": "c664030aab8df972d2b7f96e811d652083d307dbe86294dd0411a35c8b4f280d"
+    }
+  }
+}

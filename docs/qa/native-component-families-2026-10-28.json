@@ -46,6 +46,12 @@
           "member": "TextAttachmentComposer Create",
           "accessibility_id": "materials.text.create",
           "reuse": "auroraPrimaryAction"
+        },
+        {
+          "file": "Sources/CountdownManager/WhatsNew.swift",
+          "member": "WhatsNewView read-only dismissal",
+          "accessibility_id": "whatsnew.dismiss",
+          "reuse": "auroraPrimaryAction"
         }
       ],
       "symbols": [],

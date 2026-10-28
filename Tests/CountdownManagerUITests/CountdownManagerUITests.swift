@@ -7,6 +7,7 @@ import CountdownManagerUI
 enum UIChecks {
     static func main() async throws {
         testPanelPresentationRequestLifecycle()
+        await testWhatsNewHistory()
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("CountdownManagerUIChecks-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }

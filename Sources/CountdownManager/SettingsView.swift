@@ -57,6 +57,7 @@ struct SettingsView: View {
     @ObservedObject var keepAwake: KeepAwakeController
     @ObservedObject var weather: WeatherController
     let diagnosticsContext: () -> DiagnosticExportContext
+    var showWhatsNew: () -> Void = {}
     let back: () -> Void
     var backShortcut: KeyboardShortcut?
     var showsCloseButton = false
@@ -126,6 +127,12 @@ struct SettingsView: View {
                         .disabled(store.isExportingDiagnostics)
                         .accessibilityIdentifier("settings.diagnostics")
                         .uiSmokeControl(id: "settings.diagnostics", action: saveDiagnostics)
+                        Button(action: showWhatsNew) {
+                            actionLabel("Что нового…", symbol: "doc.text")
+                        }
+                        .disabled(store.isExportingDiagnostics || store.hasPendingPersistence || updates.isPresentingUpdateUI)
+                        .accessibilityIdentifier("settings.whats-new")
+                        .uiSmokeControl(id: "settings.whats-new", action: showWhatsNew)
                     }
                     if let version = applicationVersionLabel() {
                         Text(version)

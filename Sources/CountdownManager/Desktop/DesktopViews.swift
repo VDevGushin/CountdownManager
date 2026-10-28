@@ -28,6 +28,7 @@ struct DesktopRootView: View {
     let showPanel: () -> Void
     let switchToPanel: () -> Void
     let diagnosticsContext: () -> DiagnosticExportContext
+    var showWhatsNew: () -> Void = {}
     var smokeControlScope = ""
     var registerPasteAction: (((() -> Void)?) -> Void)?
     @State private var mode = DesktopEventViewMode.collection
@@ -39,6 +40,7 @@ struct DesktopRootView: View {
     // Retain ownership through native dismissal so background actions cannot enter while the sheet is closing.
     @State private var presentedSheet: DesktopSheet?
     @State private var sheetIsClosing = false
+    @State private var showWhatsNewAfterSettings = false
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
     @State private var dayPreset: DayCreationPreset?
@@ -187,7 +189,8 @@ struct DesktopRootView: View {
             }
         case .settings:
             SettingsView(store: store, updates: updates, keepAwake: keepAwake, weather: weather,
-                         diagnosticsContext: diagnosticsContext, back: dismissSettings,
+                         diagnosticsContext: diagnosticsContext, showWhatsNew: presentWhatsNewFromSettings,
+                         back: dismissSettings,
                          backShortcut: .cancelAction, showsCloseButton: true)
                 .frame(width: 430, height: 560)
                 .background {
@@ -484,6 +487,14 @@ struct DesktopRootView: View {
         dismissSheet()
     }
 
+    private func presentWhatsNewFromSettings() {
+        guard showingSettings, !sheetIsClosing, !store.isExportingDiagnostics,
+              !store.hasPendingPersistence else { return }
+        showWhatsNewAfterSettings = true
+        DiagnosticLog.shared.record("whats-new.settings-request")
+        dismissSheet()
+    }
+
     private func dismissSheet() {
         guard presentedSheet != nil, !sheetIsClosing else { return }
         attachmentPreview.cancelPendingEffects()
@@ -492,6 +503,9 @@ struct DesktopRootView: View {
 
     private func finishSheetDismissal() {
         let wasEditor = showingEditor
+        let presentWhatsNew = showWhatsNewAfterSettings
+        DiagnosticLog.shared.record("whats-new.settings-dismissed requested=\(presentWhatsNew)")
+        showWhatsNewAfterSettings = false
         presentedSheet = nil
         textAttachmentRequest = nil
         attachmentPreview.close()
@@ -499,6 +513,11 @@ struct DesktopRootView: View {
         attachmentPreviewWasPresented = false
         sheetIsClosing = false
         if wasEditor { editorSession.endDesktopEditor() }
+        if presentWhatsNew {
+            // SwiftUI calls onDismiss before AppKit detaches the parent's sheet.
+            // Unwind that callback; the shared action still rechecks current admission.
+            DispatchQueue.main.async { showWhatsNew() }
+        }
     }
 
     private func switchSurfaceToPanel() {

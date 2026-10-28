@@ -11,6 +11,25 @@ Countdown Manager is not a task manager or calendar replacement. Outside the sin
 The application does not require an account or internet connection for event and timer use.
 Optional weather forecasts require a network connection.
 
+## What's new
+
+Release 1.19.0 includes a read-only `Что нового` screen explaining saved links, file/link
+drag-and-drop and `Вставить текст как вложение…`. It is offered once on the first safe explicit
+opening of the panel or desktop after installing this release, including a first installation.
+Background/login startup and material-drag hover never trigger it. An active event/text editor,
+native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
+until a later safe explicit opening; an active timer alone does not block it.
+
+The release is marked presented only after its window becomes visible. Closing or pressing
+`Понятно` acknowledges the presentation; restarting or reopening the app does not offer the same
+release again. `Настройки → Что нового…` opens it again manually on either surface; the application
+menu also provides `Что нового…` when the desktop activation policy exposes that menu. The read-only window
+uses the existing appearance, leaves event/draft bytes and the timer untouched, and does not
+change the application's activation policy. Opening from the mini-panel hides that panel;
+an explicit close returns to the panel on the active Space when no desktop is visible and the
+application is still active and admission is still safe. It does not reopen over updater/modal UI,
+an editor or pending work, or after application deactivation.
+
 ## Primary interface
 
 Accepted product contract for the menu-bar panel shell.
