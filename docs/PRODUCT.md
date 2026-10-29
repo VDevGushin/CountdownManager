@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Countdown Manager is a native macOS application for tracking today's and future events by calendar day, with a quick menu-bar panel and a larger desktop window.
+Countdown Manager is a native macOS application for tracking dated events by calendar day, with a quick menu-bar panel and a larger desktop window. Events may be explicitly retained after their date.
 
 The product is intentionally small and quiet. The central concept is an event date and the number of calendar days remaining until that date, including `Сегодня` on the event's date. The application also provides one lightweight countdown timer for short time-based reminders.
 
@@ -13,8 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.19.0 includes a read-only `Что нового` screen explaining saved links, file/link
-drag-and-drop and `Вставить текст как вложение…`. It is offered once on the first safe explicit
+Release 1.20.0 updates the read-only `Что нового` screen with instructions for retaining events
+after their date, finding past events and keeping a retained primary visible. The release-help
+window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -468,7 +469,7 @@ After an event's calendar date has ended, it expires automatically unless `Со�
 was saved. Expired events are removed rather than moved into an archive. Incomplete subtasks do not
 prevent expiry.
 
-A retained event keeps its identity, exact date, note, subtasks and attachment copies until explicit
+A retained event keeps its identity, exact date, note, subtasks, saved links and attachment copies until explicit
 deletion. The editor explains `Событие и вложения останутся, пока вы их не удалите.` Retention is off
 for ordinary/day creation and legacy events, and is committed only by Save. An unsaved retention
 change cannot prevent stored expiry across midnight. A saved retained event remains editable across

@@ -28,11 +28,11 @@ private func testRetainedLinksAndMaterialIntake(in directory: URL) async throws 
     let expired = Countdown(title: "Expired materials", date: today, emoji: "", links: [link])
     let savedKept = await store.save(kept, primary: true)
     let savedExpired = await store.save(expired, primary: false)
-    precondition(savedKept && savedExpired)
+    precondition(savedKept && savedExpired, "Retention material fixtures must save before midnight")
     now = retentionUIDay(2026, 10, 30).date()
     store.refresh()
     await waitForRetentionStore(store)
-    precondition(store.data.items == [kept])
+    precondition(store.data.items == [kept], "Midnight must retain exactly the saved retained event")
     store.openLink(link, eventID: kept.id)
     store.openLink(link, eventID: expired.id)
     precondition(opened == [link.url!], "Only the retained event may still open its saved link")
@@ -42,30 +42,35 @@ private func testRetainedLinksAndMaterialIntake(in directory: URL) async throws 
     let addedLink = EventLink(name: " Booking ", address: " https://example.com/booking ")
     let text = TextAttachment(name: "Notes.txt", text: "Paragraph one\n\nParagraph two 👋\n")
     let added = await store.appendMaterials(EventMaterials(files: [source], links: [addedLink], textFile: text), to: kept.id)
-    precondition(added)
+    precondition(added, "Retained past event must accept file/link/text intake: \(store.error ?? "no error")")
     let result = store.data.items[0]
-    precondition(result.keepsAfterDate && result.date == kept.date && result.id == kept.id)
-    precondition(result.links == [link, addedLink.normalized()] && result.attachments.count == 2)
-    precondition(store.data.primaryID == kept.id)
+    precondition(result.keepsAfterDate && result.date == kept.date && result.id == kept.id,
+                 "Material intake must preserve retained event identity and original date")
+    precondition(result.links == [link, addedLink.normalized()] && result.attachments.count == 2,
+                 "All classified materials must be present after a successful batch")
+    precondition(store.data.primaryID == kept.id, "Material intake must preserve primary selection")
     for (attachment, expected) in zip(result.attachments, [originalBytes, Data(text.text.utf8)]) {
         let copy = directory.appendingPathComponent("Attachments").appendingPathComponent(attachment.id.uuidString)
             .appendingPathComponent(attachment.name)
         let bytes = try Data(contentsOf: copy)
-        precondition(bytes == expected)
+        precondition(bytes == expected, "Copied file and composed UTF-8 text must retain their exact bytes")
     }
     let draft = EventEditorDraft(item: result)
-    precondition(draft.countdown(id: result.id, date: result.date) == result,
-                 "Editor reopening must preserve both retention and all links/materials")
+    var edited = store.data
+    try edited.save(draft.countdown(id: result.id, date: result.date), primary: true, today: Day(now))
+    precondition(edited == store.data,
+                 "Saving a reopened draft must preserve both retention and all links/materials after normalizing empty notes")
     let before = try Data(contentsOf: json)
     let invalid = await store.appendMaterials(EventMaterials(links: [EventLink(address: "file:///tmp/invalid")]), to: kept.id)
     let stale = await store.appendMaterials(EventMaterials(files: [source]), to: expired.id)
-    precondition(!invalid && !stale && store.data.items == [result])
+    precondition(!invalid && !stale && store.data.items == [result],
+                 "Invalid URLs and expired targets must not change the retained event")
     let after = try Data(contentsOf: json)
-    precondition(after == before)
+    precondition(after == before, "Rejected material additions must preserve durable JSON bytes")
     let reloaded = try await CountdownRepository(fileURL: json).load()
-    precondition(reloaded == store.data)
+    precondition(reloaded == store.data, "A fresh repository must read the complete retained material snapshot")
     let sourceAfter = try Data(contentsOf: source)
-    precondition(sourceAfter == originalBytes)
+    precondition(sourceAfter == originalBytes, "Material intake must never alter the original source file")
     print("PASS retained materials: saved links open after midnight; copied files, web links and exact text append durably; editor/reload retain all fields; invalid and expired targets preserve bytes")
 }
 

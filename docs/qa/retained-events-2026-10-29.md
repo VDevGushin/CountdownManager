@@ -1,13 +1,16 @@
 # Retained events — 2026-10-29
 
-Status: implemented and verified within the limits below. Not released or installed.
-Branch: `codex/retained-events`. Published version remains 1.18.1/build 34.
+Status: historical pre-integration implementation evidence, verified within the limits below.
+Branch: `codex/retained-events`. These checks used the earlier 1.18.1/build 34-labelled candidate.
+The release integrates the published 1.19.0 material/link source line and targets **1.20.0/build 36**.
+Final package and publication status are recorded in [release 1.20.0](../releases/v1.20.0.md);
+the earlier hashes and PASS totals below are preserved rather than relabelled as final-package evidence.
 
 ## Accepted behaviour
 
 The third native event option is `Сохранять после даты события`, below weather and primary.
 It defaults to off for new/day/legacy events. Saved retention keeps the event, identity, date,
-note, task completion and owned file copies after the civil date. Past labels are `Вчера` or
+note, task completion, saved links and owned file copies after the civil date. Past labels are `Вчера` or
 `N дней назад` in secondary ink. The primary stays above the list and in the menu; it is not
 duplicated. Other past events are last, recent first, under `Прошедшие` on desktop and without
 an extra section on mini. Equal dates retain input order.
@@ -49,14 +52,28 @@ only after durable event writing, leaving originals untouched. Failed writes ret
 ## Isolation and limits
 
 All tests use temporary files, separate preferences and synthetic event/file data. No production
-Countdown data is used as a mutable fixture. No installation, commit, push or publication is part
-of this task. Older versions that ignore retention may expire these events and delete their owned
+Countdown data is used as a mutable fixture. No installation, commit, push or publication was part
+of this implementation-evidence stage. The subsequent release is tracked separately. Older versions that ignore retention may expire these events and delete their owned
 copies; downgrade recovery requires matched JSON and Attachments backups.
 
 Controlled-clock midnight tests establish civil-day policy, not physical sleep/wake timing.
 Settled screenshots do not establish absence of transient flicker. Direct native UI fallback covers checkbox clicks, fresh-process loading and draft cancellation.
 The confirmed-delete path is covered by in-process native and core tests; its new external XCUITest
 remains unexecuted. VoiceOver speech, IME and external date-picker entry were not checked.
+
+## Integrated 1.20.0/36 release acceptance
+
+The feature was subsequently integrated with the published 1.19.0 links/materials/guide source
+line. Its exact signed 1.20.0/36 package passed **60/60 unique native scenarios**: desktop 30,
+mini 23, editor 5, materials 1 and release help 1. Current source gates passed SwiftLint 0/89,
+CoreChecks/UIChecks, design-source 7/7, build-contract 18/18 and update-tool checks 12/12.
+
+These results are separate from the pre-integration counts and hashes above. The exact final
+executable, unchanged runtime hash, twelve fresh images, artifact signatures and compatibility
+boundaries are recorded in [release status](../releases/v1.20.0.md),
+[native receipt](../images/v1.20.0/native-production.json) and
+[artifact audit](../images/v1.20.0/artifact-audit.json). Anonymous publication remains pending.
+A real 1.19.0 → 1.20.0 update/relaunch was not rerun, and the external XCTest limitation remains.
 
 ## Durable receipts and current images
 
@@ -66,6 +83,6 @@ remains unexecuted. VoiceOver speech, IME and external date-picker entry were no
 - [Native 29-scenario result](../images/v1.18.1/retained-events-candidate/ui-smoke-result.txt)
 - [Current native image provenance and hashes](../images/v1.18.1/retained-events-candidate/PROVENANCE.md)
 
-README now shows current feature images explicitly as an unpublished working version and preserves
-historical release images. The complete raw capture sets/tested bundles are preserved temporarily
+The implementation-stage images below remain historical. README release images are refreshed
+separately for 1.20.0/36, preserving these earlier hashes and historical published release images. The complete raw capture sets/tested bundles are preserved temporarily
 under `/private/tmp/countdown-retention-full-evidence/`.

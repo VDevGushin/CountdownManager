@@ -132,11 +132,11 @@ components:
 
 ## Overview
 
-The 1.19.0 read-only `Что нового` window reuses the Settings header (Georgia 21, 49-point
-height, 16-point insets), system 13-point explanatory text, existing `link`, `paperclip` and
-`doc.text` symbols, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
+The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
+height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s three explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
 58-point footer. Its 430×560 content scrolls between header and footer. Native title-bar close,
-Escape and Return retain normal window semantics. It introduces no new visual/action family.
+Escape and Return retain normal window semantics. Release 1.20.0 changes only its release ID and
+three instructions for retention, past ordering and primary visibility; the component introduces no new visual/action family.
 
 **Creative North Star: "Warm Calendar Leaves"**
 

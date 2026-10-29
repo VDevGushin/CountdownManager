@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "version": "1.20.0",
+  "build": "36",
+  "publicKeyOnly": true,
+  "productionExecutableSHA256": "e6004aa7d3425b982fca4a45b93ef2df521f250bd6bc73b386388e3986a487fa",
+  "productionKeyFingerprint": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "signatureChecks": [
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "archive",
+      "validSignature": true
+    },
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "feed",
+      "validSignature": true
+    }
+  ],
+  "feedTrailerExactlyBounded": true,
+  "releaseNotesEmbedded": true,
+  "releaseNotesTermsChecked": [
+    "Сохранять после даты события",
+    "Прошедшие",
+    "Не удалять",
+    "ссылки",
+    "1.20.0"
+  ],
+  "extractedTreeEntries": 168,
+  "extractedBytesModesSymlinksEqual": true,
+  "strictDeepCodeSign": true,
+  "productionConfiguration": true,
+  "nativeBuildContractVerified": true,
+  "files": {
+    "CountdownManager-1.20.0-36.zip": {
+      "bytes": 6295841,
+      "sha256": "27611f52b1d24a0b918f5e324500e76fc6d92d0e0fceb34699f7c7a686f7db2e"
+    },
+    "appcast.xml": {
+      "bytes": 4997,
+      "sha256": "e8eb15e0f636d0579c5a2cc51c247e6a4d03959b225ce88472e5b8560cf2dfa0"
+    }
+  }
+}

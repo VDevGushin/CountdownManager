@@ -1,5 +1,34 @@
 # Preparing signed updates
 
+## Preparing 1.20.0 / build 36
+
+Status: **READY_TO_PUBLISH**. Exact-package acceptance and signatures passed; anonymous delivery is pending.
+This release retains selected events after their date together with links, notes, tasks and owned
+file copies. The event editor’s third checkbox controls retention independently of the primary;
+ordinary past events follow future groups, while a retained primary stays above the list and in
+the menu bar. The native `Что нового` release ID and its three instructions are updated to 1.20.0.
+
+[Release status](releases/v1.20.0.md) · [Russian Markdown notes](releases/v1.20.0-notes.md) ·
+[HTML notes](releases/v1.20.0-notes.html). The HTML companion must match the final ZIP stem and be
+embedded with Sparkle `generate_appcast --embed-release-notes` before feed signing; verify the final
+signed feed after generation. No private key, fixture key or isolated profile belongs in assets.
+
+The production bundle ID, stable HTTPS feed and signing key remain unchanged. The canonical build
+continues to use headers SDK 15.4, linked compatibility/minimum macOS 13.0 and the independent
+`native-warm-calendar-v1` style contract. Exact 1.20.0/36 evidence belongs under `docs/images/v1.20.0/`.
+The 1.19.0 material/link workflows remain included; this release is based on that published line,
+not the older 1.18.1 checkout used for the first retention prototype.
+
+The exact signed package passed **60/60 unique native scenarios** (desktop 30, mini 23, editor 5,
+materials 1, help 1), with unchanged executable, isolated data and no recorded main-thread stall.
+Final source gates are SwiftLint 0/89, CoreChecks/UIChecks, design-source 7/7, build-contract 18/18
+and update-tool checks 12/12. [Production receipt](images/v1.20.0/native-production.json) and
+[public-key-only audit](images/v1.20.0/artifact-audit.json) record the separate runtime and artifact
+boundaries. A real 1.19.0 → 1.20.0 Sparkle installation/relaunch was not rerun; the new external
+XCUITests did not execute because automation mode timed out. No prior update or external-test
+result is relabelled as evidence for this payload.
+
+
 ## Published 1.19.0 / build 35
 
 Release 1.19.0/35 adds saved links, material drag-and-drop, plain-text attachments and an

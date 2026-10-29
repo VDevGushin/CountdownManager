@@ -42,5 +42,16 @@
   "productionDataMutated": false,
   "committed": false,
   "installed": false,
-  "published": false
+  "published": false,
+  "evidenceScope": "pre-integration retention implementation candidate labelled 1.18.1/34",
+  "subsequentReleaseTarget": "1.20.0/36",
+  "releaseStatusDocument": "docs/releases/v1.20.0.md",
+  "integratedReleaseEvidence": {
+    "version": "1.20.0",
+    "build": "36",
+    "nativeReceipt": "docs/images/v1.20.0/native-production.json",
+    "artifactAudit": "docs/images/v1.20.0/artifact-audit.json",
+    "nativeUniqueScenarios": 60,
+    "publicationConfirmed": false
+  }
 }
