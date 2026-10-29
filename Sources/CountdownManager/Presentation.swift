@@ -91,6 +91,7 @@ package struct CountdownRowPresentation: Equatable {
     package let remainingDays: Int
     package let dateAndRemainingLabel: String
     package let isToday: Bool
+    package let isPast: Bool
     package let isPrimary: Bool
     package var isFeatured: Bool { isPrimary }
     package let activeSubtasks: [Subtask]
@@ -102,19 +103,26 @@ package struct CountdownRowPresentation: Equatable {
         remainingDays = item.date.days(from: today)
         note = item.note
         dateLabel = humanDateLabel(item.date)
-        switch remainingDays {
-        case 0: remainingLabel = "Сегодня"
-        case 1: remainingLabel = "Завтра"
-        default: remainingLabel = "Через \(dayLabel(remainingDays))"
-        }
+        remainingLabel = relativeCountdownLabel(remainingDays)
         dateAndRemainingLabel = "\(dateLabel) · \(remainingLabel)"
         isToday = remainingDays == 0
+        isPast = remainingDays < 0
         isPrimary = primaryID == item.id
         activeSubtasks = item.subtasks.filter { !$0.isCompleted }
         completedSubtasks = item.subtasks.filter(\.isCompleted)
         completionLabel = item.subtasks.isEmpty
             ? nil
             : "\(completedSubtasks.count)/\(item.subtasks.count)"
+    }
+}
+
+package func relativeCountdownLabel(_ days: Int) -> String {
+    switch days {
+    case ..<(-1): return "\(dayLabel(-days)) назад"
+    case -1: return "Вчера"
+    case 0: return "Сегодня"
+    case 1: return "Завтра"
+    default: return "Через \(dayLabel(days))"
     }
 }
 
@@ -167,8 +175,8 @@ package struct StatusBarPresentation: Equatable {
 }
 
 package func statusBarPresentation(data: CountdownData, today: Day) -> StatusBarPresentation {
-    guard let favorite = data.items.first(where: { $0.id == data.primaryID && $0.date >= today }) else {
-        let hasEvents = data.items.contains { $0.date >= today }
+    guard let favorite = data.items.first(where: { $0.id == data.primaryID && $0.isAvailable(on: today) }) else {
+        let hasEvents = data.items.contains { $0.isAvailable(on: today) }
         return StatusBarPresentation(
             title: "",
             icon: .mars,
@@ -176,7 +184,7 @@ package func statusBarPresentation(data: CountdownData, today: Day) -> StatusBar
         )
     }
     let days = favorite.date.days(from: today)
-    let remaining = days == 1 ? "Завтра" : countdownLabel(days)
+    let remaining = days < 0 ? relativeCountdownLabel(days) : (days == 1 ? "Завтра" : countdownLabel(days))
     if eventListEmoji(favorite.emoji) == nil {
         return StatusBarPresentation(title: remaining, icon: .calendar, toolTip: "Countdown Manager · \(remaining)")
     }
@@ -190,12 +198,17 @@ package func statusBarTitle(data: CountdownData, today: Day) -> String {
 
 package func activeCountdowns(in data: CountdownData, today: Day) -> [Countdown] {
     data.items.enumerated()
-        .filter { $0.element.date >= today }
+        .filter { $0.element.isAvailable(on: today) }
         .sorted {
             let lhsPrimary = $0.element.id == data.primaryID
             let rhsPrimary = $1.element.id == data.primaryID
             if lhsPrimary != rhsPrimary { return lhsPrimary }
-            if $0.element.date != $1.element.date { return $0.element.date < $1.element.date }
+            let lhsPast = $0.element.date < today
+            let rhsPast = $1.element.date < today
+            if lhsPast != rhsPast { return !lhsPast }
+            if $0.element.date != $1.element.date {
+                return lhsPast ? $0.element.date > $1.element.date : $0.element.date < $1.element.date
+            }
             return $0.offset < $1.offset
         }
         .map(\.element)
@@ -208,10 +221,11 @@ package func editorCanSave(
     emoji: String,
     subtasks: [Subtask] = [],
     today: Day,
-    savedNote: String? = nil
+    savedNote: String? = nil,
+    savedDate: Day? = nil
 ) -> Bool {
     let cleanedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
-    let dateIsValid = date >= today
+    let dateIsValid = date >= today || date == savedDate
     let subtasksAreValid = subtasks.count <= Subtask.maximumCount
         && subtasks.allSatisfy {
             let cleaned = $0.text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -291,6 +305,7 @@ package struct EventEditorDraft: Equatable {
     package var subtasks: [Subtask]
     package var attachments: [EventAttachment]
     package var showsWeather: Bool
+    package var keepsAfterDate: Bool
     package private(set) var usesAutomaticTitle: Bool
 
     package init(item: Countdown?) {
@@ -300,6 +315,7 @@ package struct EventEditorDraft: Equatable {
         subtasks = item?.subtasks ?? []
         attachments = item?.attachments ?? []
         showsWeather = item?.showsWeather ?? false
+        keepsAfterDate = item?.keepsAfterDate ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
     }
 
@@ -310,6 +326,7 @@ package struct EventEditorDraft: Equatable {
         subtasks = []
         attachments = []
         showsWeather = true
+        keepsAfterDate = false
         usesAutomaticTitle = true
     }
 
@@ -358,6 +375,7 @@ package struct EventEditorDraft: Equatable {
             emoji: emoji,
             subtasks: subtasks,
             showsWeather: showsWeather,
+            keepsAfterDate: keepsAfterDate,
             usesAutomaticTitle: usesAutomaticTitle,
             attachments: attachments
         )

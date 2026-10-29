@@ -37,7 +37,7 @@ available, and today's expiry warning retains its exact meaning in a quiet ochre
 The additional emoji is an independent, outlined full-width field labelled `Значок`, displaying
 `Без значка` or the selected emoji and a disclosure chevron. A separate small clear button appears
 inside that field only when an emoji is selected; clearing must not also open the picker. The
-weather and favorite native checkboxes form a distinct group below it, separated by 13 points.
+weather, favorite and `Сохранять после даты события` native checkboxes form a distinct group below it, in that order, separated from the icon field by 13 points. Retention help stays directly below its checkbox.
 Subtasks follow a separate section, with room prioritized for their editable text. The form scrolls
 while Delete, Cancel and Save share one fixed bottom action row; deletion still requires an inline
 confirmation. The field is a selection control, not an editable text input. The picker is initially
@@ -55,9 +55,9 @@ Use ordinary controls inside the panel. The event interface uses a warm ivory pa
 Event cards express their civil-day distance as `Сегодня`, `Завтра`, then `Через N дней`
 with correct Russian day forms. The exact date and event title remain visible and unchanged.
 A featured card uses one 21-point Georgia line below the date: green for today and the
-existing terracotta accent for future days. Secondary metadata is ordered `date · relative label`,
+existing terracotta accent for future days. Retained past events use `Вчера` or `N дней назад` in neutral secondary ink, never a negative countdown or overdue warning. Secondary metadata is ordered `date · relative label`,
 including today; only today's relative label is green. The menu bar uses `Сегодня`, `Завтра`, then its
-compact numeric day format. Labels are derived from the current civil day; expiry rules are unchanged.
+compact numeric day format for future dates and `Вчера`/`N дней назад` for a retained past favorite. Labels are derived from the current civil day.
 
 The featured title uses 23-point Georgia and a compact 54 × 65 calendar leaf; secondary events
 use 14-point semibold titles and 42 × 51 leaves. The entire secondary header stays 51 points high,
@@ -122,7 +122,9 @@ or note, and event creation. There is no separate favorite-only filter: only one
 favorite, and both views already show the same featured favorite card above ordinary events;
 the nearest event never substitutes for an absent favorite. Ordinary events follow stable date
 order, preserving existing order for equal dates, grouped under month-and-year headings in both
-views. Empty months are omitted; a favorite is not duplicated inside its month. Switching views
+views. Retained past ordinary events follow all future sections in one final `Прошедшие` section,
+most recent first and stable for equal dates. A retained past favorite remains above all groups and
+is not duplicated in `Прошедшие`. The mini-panel uses the same favorite/future/past order without month or past section headings. Empty months are omitted; a favorite is not duplicated inside its month. Switching views
 reflows the same event identities in a short, approximately 0.15-second non-spring animation;
 the calendar, title and metadata retain their visual identities instead of instantly replacing
 one card composition with another. Month headings and cards move in the same layout transaction.
@@ -350,7 +352,8 @@ An event contains:
 - an optional additional emoji;
 - zero to ten subtasks;
 - optional local file attachments;
-- an optional weather-display choice.
+- an optional weather-display choice;
+- an optional retain-after-date choice, off by default and independent of the favorite.
 
 Multiple events may use the same date.
 
@@ -361,7 +364,7 @@ Event dates and countdowns use calendar-day semantics rather than elapsed-second
 A new event may use today's date or a future date. The ordinary header `+` initially selects
 tomorrow; empty-state creation offers today, tomorrow or the native date-selection route.
 
-Past dates cannot be selected or saved. Date validation uses the current calendar day when saving, including when a draft remains open across midnight.
+New events cannot use past dates, including when retention is selected. Date validation uses the current calendar day when saving, including when a draft remains open across midnight.
 
 Saving the first event does not select a favorite automatically. The favorite choice in a new draft is initially off.
 
@@ -385,9 +388,14 @@ This is a single-day creation shortcut; it does not create a week or store reusa
 
 ### Editing an event
 
-An existing event may be edited while it is scheduled for today.
+An existing event remains editable while available, including after its date when retention was saved.
 
-An active event may be moved to today's date or a future date. An event occurring today may also remain on today's date.
+An available event may be moved to today's date or a future date. A retained past event may keep
+its original saved date while editing its title, note, subtasks, attachments and other options; it
+cannot move to another past date. Turning retention off for a past event and pressing Save opens
+an explicit deletion confirmation. Cancel keeps the event and draft available; confirmed deletion
+uses the ordinary durable deletion boundary and removes owned copies only after persistence succeeds.
+A failed deletion keeps the draft and existing event/files available for retry.
 
 Editing does not change durable event data until the user explicitly saves.
 
@@ -433,17 +441,22 @@ On that date, its countdown is represented as `Сегодня`.
 
 The event remains editable and removable during that day.
 
-When an editor's selected date is today, it shows `После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся.` This applies to ordinary event creation, day creation and editing an existing event.
+When an editor's selected date is today and retention is off, it shows `После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся.` This applies to ordinary event creation, day creation and editing an existing event.
 
 ### Expiry
 
-After an event's calendar date has ended, the event expires automatically.
+After an event's calendar date has ended, it expires automatically unless `Сохранять после даты события`
+was saved. Expired events are removed rather than moved into an archive. Incomplete subtasks do not
+prevent expiry.
 
-Expired events are removed rather than moved into an archive.
+A retained event keeps its identity, exact date, note, subtasks and attachment copies until explicit
+deletion. The editor explains `Событие и вложения останутся, пока вы их не удалите.` Retention is off
+for ordinary/day creation and legacy events, and is committed only by Save. An unsaved retention
+change cannot prevent stored expiry across midnight. A saved retained event remains editable across
+midnight even if its open draft has retention switched off.
 
-There is no overdue state and no automatic rollover.
-
-Incomplete subtasks do not prevent event expiry.
+Retained past events are past dates, not overdue tasks. There is no automatic rollover, separate
+archive screen or implicit retention based on favorite status or attachments.
 
 ### Attachments
 
@@ -532,7 +545,8 @@ or blocking unrelated event edits.
 
 Attachments follow the existing event lifetime. Deleting an event, removing an attachment with
 Save, or automatic event expiry removes the corresponding application-owned copies after the
-event change reaches disk. The original files remain untouched. There is no attachment archive
+event change reaches disk. Retained events keep their copies after the date, including through
+restart, preview and unrelated edits. The original files remain untouched. There is no attachment archive
 and no automatic extension of an event's date. Only the editor and event-deletion confirmation
 explain expiry/removal of copies; ordinary saved summaries and All-files lists do not repeat
 that explanation. Cleanup failure is reported separately from successful event
@@ -781,7 +795,7 @@ and tomorrow respectively. The choose-date route uses the existing native editor
 prompt to select a date. Date changes update the weekday title until its first manual edit; a custom
 title is then preserved. No new calendar, persisted data type or automatic Save is introduced.
 
-Today's expiry warning and mutation-time midnight validation are unchanged. Cancel creates no
+Today's expiry warning is conditional on retention being off; mutation-time midnight validation remains authoritative. Cancel creates no
 event; panel hide/show retains the draft. Hidden/repeated creation actions cannot replace an open
 editor. First successful Save restores the existing header/list. Deleting or expiring the last event
 returns this empty state, and its calendar leaf follows `Store.today` across midnight/wake/reopen.
@@ -849,6 +863,11 @@ Weather forecasts and automatic coordinates are not event data.
 The optional `usesAutomaticTitle` JSON boolean defaults to false when absent; true is encoded
 explicitly, false is omitted. The textual title is also retained for compatible older readers.
 Unsupported null or non-boolean mode values fail safely rather than guessing the user's intent.
+
+The optional `keepsAfterDate` JSON boolean defaults to false when absent; true is encoded explicitly,
+false is omitted. Null or non-boolean values fail safely. Older versions that do not understand
+retention can drop this flag and remove past events and their copies. A downgrade requires a matched
+backup of the event JSON and `Attachments/`; it is not a safe way to preserve retained events.
 
 Invalid or corrupted user data must fail safely.
 
@@ -977,7 +996,7 @@ Countdown Manager currently does not provide:
 - timer pause or snooze;
 - event or subtask notifications/reminders;
 - event archives;
-- overdue events;
+- overdue-task status (retained past events remain ordinary dated events);
 - automatic event rollover;
 - independent subtask dates;
 - subtask priorities;

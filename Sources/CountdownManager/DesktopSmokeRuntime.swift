@@ -876,6 +876,129 @@ final class DesktopSmokeRuntime {
         try await verifyPendingDesktopActions()
         try await verifyMonthlyBrowsing()
         try await verifyWeatherGeometry()
+        try await verifyRetainedEvents()
+    }
+
+    private func verifyRetainedEvents() async throws {
+        let retainedWindow = try value(desktopWindow(), "retention parent window")
+        let directory = configuration.homeURL.appendingPathComponent("RetainedEvents", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let fileURL = directory.appendingPathComponent("events.json")
+        let suite = "CountdownRetentionSmoke.\(UUID().uuidString)"
+        let defaults = try value(UserDefaults(suiteName: suite), "retention preferences")
+        var now = store.today.date()
+        let fixture = Store(fileURL: fileURL, disclosureDefaults: defaults, now: { now },
+                            loginItemManagementIsAvailable: false)
+        try await wait("retention fixture loads") { !fixture.isLoading }
+        let source = directory.appendingPathComponent("Маршрут.txt")
+        let sourceBytes = Data("Маршрут и заметки о поездке.".utf8)
+        try sourceBytes.write(to: source)
+        let token = UUID()
+        let began = await fixture.beginAttachmentDraft(token)
+        try require(began, "cannot begin retention attachment import")
+        let attachment = try value(await fixture.importAttachment(from: source, draftID: token), "retained attachment")
+        let recentDay = Day(try value(Day.calendar.date(byAdding: .day, value: 1, to: now), "recent day"))
+        let futureDay = Day(try value(Day.calendar.date(byAdding: .day, value: 5, to: now), "future day"))
+        let favorite = Countdown(title: "Поездка в Суздаль", note: "Маршрут и документы остались рядом с датой.",
+                                 date: fixture.today, emoji: "", subtasks: [try Subtask(text: "Проверить маршрут", isCompleted: true)],
+                                 keepsAfterDate: true, attachments: [attachment])
+        let recent = Countdown(title: "Встреча с друзьями", date: recentDay, emoji: "", keepsAfterDate: true)
+        let ordinary = Countdown(title: "Забрать посылку", date: fixture.today, emoji: "")
+        let future = Countdown(title: "Поездка за город", date: futureDay, emoji: "")
+        for event in [ordinary, recent, favorite, future] {
+            let saved = await fixture.save(event, primary: event.id == favorite.id)
+            try require(saved, "cannot seed retained event fixture")
+        }
+        await fixture.discardAttachmentDraft(token)
+        let copy = try value(await fixture.attachmentThumbnailURL(attachment, eventID: favorite.id), "retained attachment copy")
+        now = try value(Day.calendar.date(byAdding: .day, value: 2, to: now), "retention midnight clock")
+        fixture.refresh()
+        try await wait("retention expiry commits") {
+            !fixture.hasPendingPersistence && fixture.active.map(\.id) == [favorite.id, future.id, recent.id]
+        }
+        let retainedBytes = try Data(contentsOf: copy)
+        try require(retainedBytes == sourceBytes, "retention expiry removed attachment bytes")
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let appearance = ApplicationAppearance(defaults: defaults)
+        let prefix = "retention."
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: appearance, showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: prefix
+        ), editorSession: session)
+        let window = try value(controller.window, "retention desktop")
+        window.setContentSize(NSSize(width: 1200, height: 900))
+        let mini = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
+                            styleMask: [.borderless], backing: .buffered, defer: false)
+        let miniPrefix = "retention-mini."
+        mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
+            timer: timer, store: fixture, updates: updates, editorSession: session,
+            keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
+            visualEnvironment: visualEnvironment, appearanceSettings: appearance
+        ).uiSmokeControlScope(miniPrefix))
+        retainedWindow.orderOut(nil)
+        controller.show()
+        defer {
+            mini.close()
+            window.close()
+            retainedWindow.makeKeyAndOrderFront(nil)
+            defaults.removePersistentDomain(forName: suite)
+        }
+        try await expect(prefix + "desktop.inspector", favorite.id.uuidString)
+        try await expect(prefix + "desktop.past", "Прошедшие")
+        try await expect(prefix + "desktop.collection.remaining.\(recent.id)", "Вчера")
+        try await captureWindowThemes("retention-desktop-collection", window: window)
+        try await press(prefix + "desktop.mode")
+        try await expect(prefix + "desktop.mode", "feed")
+        let content = try value(window.contentView, "retention desktop content")
+        let split = try value(nativeSplit(in: content), "retention desktop split")
+        let browserScroll = try value(nativeScroll(in: split.arrangedSubviews[0]), "retention browser scroll")
+        try await waitForFeedLayoutBeforeScrolling(lastID: recent.id, scroll: browserScroll, controlScope: prefix)
+        try await captureWindowThemes("retention-desktop-feed", window: window)
+        mini.makeKeyAndOrderFront(nil)
+        try await expect(miniPrefix + "event.relative.\(favorite.id)", "2 дня назад")
+        try await expect(miniPrefix + "event.relative.\(recent.id)", "Вчера")
+        try await captureWindowThemes("retention-mini-list", window: mini)
+        mini.orderOut(nil)
+        window.makeKeyAndOrderFront(nil)
+        passed.append("retained events survive civil-day expiry with copied files; past favorite and bottom group render in desktop collection/feed and mini")
+        try await press(prefix + "desktop.detail.edit")
+        try await expect(prefix + "editor.keep", "on")
+        try await expect(prefix + "editor.attachments.expiry", "retained")
+        try await press(prefix + "editor.keep")
+        try await expect(prefix + "editor.attachments.expiry", "expires")
+        try await press(prefix + "editor.cancel")
+        try await wait("retention Cancel closes editor") { window.attachedSheet == nil }
+        try require(fixture.active.first { $0.id == favorite.id }?.keepsAfterDate == true,
+                    "retention checkbox Cancel changed stored flag")
+        try await press(prefix + "desktop.detail.edit")
+        try await expect(prefix + "editor.keep", "on")
+        let editor = try value(window.attachedSheet, "retention editor sheet")
+        try await captureWindowThemes("retention-editor", window: editor)
+        try await press(prefix + "editor.save")
+        try await wait("past retained Save closes editor") { window.attachedSheet == nil }
+        try await press(prefix + "desktop.detail.edit")
+        try await press(prefix + "editor.keep")
+        try await press(prefix + "editor.save")
+        try await expect(prefix + "event.delete.explanation", "past-retention")
+        try require(fixture.active.contains { $0.id == favorite.id }, "unchecked retained event deleted without confirmation")
+        try await press(prefix + "event.delete.cancel")
+        try await expect(prefix + "editor.keep", "on")
+        try await press(prefix + "editor.keep")
+        try await press(prefix + "editor.save")
+        try await press(prefix + "event.delete.confirm")
+        try await wait("confirmed retained event deletion commits") {
+            !fixture.hasPendingPersistence && !fixture.active.contains { $0.id == favorite.id }
+                && window.attachedSheet == nil && !FileManager.default.fileExists(atPath: copy.path)
+        }
+        let originalBytes = try Data(contentsOf: source)
+        try require(originalBytes == sourceBytes, "retained deletion changed original source")
+        let disk = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: fileURL))
+        try require(disk == fixture.data && disk.primaryID == nil, "retained deletion not durable or favorite remained")
+        passed.append("native retention checkbox Cancel/Save preserve past event; unchecking requires explicit confirmation, cancellation restores flag, confirmed deletion removes only owned copy")
     }
 
     private func verifyAttachments() async throws {
@@ -1954,6 +2077,8 @@ final class DesktopSmokeRuntime {
         let fixture = Store(fileURL: fixtureURL, disclosureDefaults: defaults,
                             loginItemManagementIsAvailable: false)
         let session = EventEditorSession()
+        // The hidden parent keeps its hierarchy and may have headings for the same calendar months.
+        let scope = "monthly."
         let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
         let originalMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
         let originalContrast = accessibilitySettings.isolatedCaptureOverrideValue
@@ -1984,7 +2109,8 @@ final class DesktopSmokeRuntime {
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
             appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
-            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) }
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: scope
         ), editorSession: session)
         let window = try value(controller.window, "monthly browsing window")
         window.setContentSize(NSSize(width: 1200, height: 900))
@@ -1997,72 +2123,72 @@ final class DesktopSmokeRuntime {
             accessibilitySettings.setIsolatedCaptureOverrides(highContrast: originalContrast, reduceMotion: originalMotion)
             visualEnvironment.colorSchemeOverride = originalScheme
         }
-        try await wait("monthly fixture rendered") { self.controls.entries["desktop.detail.\(favorite.id)"] != nil }
-        let divider = try await positionDivider(in: window, fraction: 0.61)
+        try await wait("monthly fixture rendered") { self.controls.entries[scope + "desktop.detail.\(favorite.id)"] != nil }
+        let divider = try await positionDivider(in: window, fraction: 0.61, controlScope: scope)
         let expected = DesktopEventCollection(items: fixture.active, today: fixture.today, primaryID: favorite.id, query: "")
         try require(expected.monthSections.count == 3, "sparse fixture does not cross three months and years")
         for section in expected.monthSections {
-            try await expect("desktop.month.\(section.id)", section.title)
+            try await expect(scope + "desktop.month.\(section.id)", section.title)
         }
         try await wait("favorite precedes chronologically ordered month headings") {
-            let frames = expected.monthSections.compactMap { self.controls.frame("desktop.month.\($0.id)") }
+            let frames = expected.monthSections.compactMap { self.controls.frame(scope + "desktop.month.\($0.id)") }
             guard frames.count == expected.monthSections.count,
                   let first = frames.first,
-                  let favoriteFrame = self.controls.frame("desktop.event.\(favorite.id)") else { return false }
+                  let favoriteFrame = self.controls.frame(scope + "desktop.event.\(favorite.id)") else { return false }
             return favoriteFrame.maxY < first.minY && zip(frames, frames.dropFirst()).allSatisfy { pair in
                 pair.0.maxY < pair.1.minY
             }
         }
         let favoriteMonth = favorite.date.year * 12 + favorite.date.month
-        try require(controls.entries["desktop.month.\(favoriteMonth)"] == nil,
+        try require(controls.entries[scope + "desktop.month.\(favoriteMonth)"] == nil,
                     "favorite-only month leaves an empty ordinary section")
-        try await expect("desktop.presentation.\(favorite.id)", "favorite")
+        try await expect(scope + "desktop.presentation.\(favorite.id)", "favorite")
         try await captureMonthlyThemes("desktop-monthly-collection", window: window)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
-        try await captureModeSequence("desktop-mode-to-feed", window: window, events: sparse)
+        try await captureModeSequence("desktop-mode-to-feed", window: window, events: sparse, controlScope: scope)
         passed.append("mode changes retain the same calendar, title, metadata and completion view owners instead of replacing card contents")
         try await captureMonthlyThemes("desktop-monthly-feed", window: window)
         for section in expected.monthSections {
-            try await expect("desktop.month.\(section.id)", section.title)
+            try await expect(scope + "desktop.month.\(section.id)", section.title)
         }
-        try await requireDivider(divider, in: window, after: "monthly collection/feed transition")
+        try await requireDivider(divider, in: window, after: "monthly collection/feed transition", controlScope: scope)
         passed.append("ordinary native events have month/year headings in both views; favorite remains separate without an empty favorite-only month")
 
-        try await captureModeSequence("desktop-mode-to-collection", window: window, events: sparse)
+        try await captureModeSequence("desktop-mode-to-collection", window: window, events: sparse, controlScope: scope)
         for _ in 0..<7 {
-            try require(controls.press("desktop.mode"), "rapid view switch rejected")
+            try require(controls.press(scope + "desktop.mode"), "rapid view switch rejected")
             try await Task.sleep(nanoseconds: 20_000_000)
         }
-        try await requireBrowsingMode("feed", events: sparse)
-        try await requireDivider(divider, in: window, after: "rapid alternating modes")
+        try await requireBrowsingMode("feed", events: sparse, controlScope: scope)
+        try await requireDivider(divider, in: window, after: "rapid alternating modes", controlScope: scope)
         try capture("desktop-mode-rapid-last-feed", window: window)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
         try require(accessibilitySettings.prefersReducedMotion, "monthly Reduce Motion override was not applied")
-        try await captureModeSequence("desktop-mode-reduced", window: window, events: sparse)
+        try await captureModeSequence("desktop-mode-reduced", window: window, events: sparse, controlScope: scope)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
-        try require(controls.press("desktop.mode"), "live motion mode switch rejected")
+        try require(controls.press(scope + "desktop.mode"), "live motion mode switch rejected")
         try await Task.sleep(nanoseconds: 35_000_000)
         try capture("desktop-mode-live-before-reduced", window: window)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
         try capture("desktop-mode-live-after-reduced", window: window)
         try await Task.sleep(nanoseconds: 35_000_000)
         try capture("desktop-mode-live-reduced-35ms", window: window)
-        try require(controls.press("desktop.mode"), "live Reduce Motion reverse switch rejected")
-        try await requireBrowsingMode("collection", events: sparse)
+        try require(controls.press(scope + "desktop.mode"), "live Reduce Motion reverse switch rejected")
+        try await requireBrowsingMode("collection", events: sparse, controlScope: scope)
         try capture("desktop-mode-live-reduced", window: window)
-        try await requireDivider(divider, in: window, after: "live Reduce Motion reversal")
+        try await requireDivider(divider, in: window, after: "live Reduce Motion reversal", controlScope: scope)
         passed.append("rapid alternating modes accept the final tap; reduced-motion and live mid-transition reversal retain event identities, favorite and native divider")
 
         let beforeSearch = fixture.data
-        try await replaceFocusedText(control: "desktop.search", text: "Не существующая группа месяца")
+        try await replaceFocusedText(control: scope + "desktop.search", text: "Не существующая группа месяца")
         try await wait("monthly search removes fixture cards and headings") {
-            (sparse + [favorite]).allSatisfy { self.controls.entries["desktop.event.\($0.id)"] == nil }
-                && expected.monthSections.allSatisfy { self.controls.entries["desktop.month.\($0.id)"] == nil }
+            (sparse + [favorite]).allSatisfy { self.controls.entries[scope + "desktop.event.\($0.id)"] == nil }
+                && expected.monthSections.allSatisfy { self.controls.entries[scope + "desktop.month.\($0.id)"] == nil }
         }
-        try await requireDivider(divider, in: window, after: "monthly search no results")
+        try await requireDivider(divider, in: window, after: "monthly search no results", controlScope: scope)
         try capture("desktop-monthly-search-empty", window: window)
-        try await replaceFocusedText(control: "desktop.search", text: "")
-        try await requireBrowsingMode("collection", events: sparse)
+        try await replaceFocusedText(control: scope + "desktop.search", text: "")
+        try await requireBrowsingMode("collection", events: sparse, controlScope: scope)
         try require(fixture.data == beforeSearch, "monthly browsing changed persisted events")
         passed.append("search no-results removes empty month headings and restoration preserves events, favorite and split position")
 
@@ -2075,7 +2201,7 @@ final class DesktopSmokeRuntime {
         }
         let ordinary = DesktopEventCollection(items: fixture.active, today: fixture.today,
                                               primaryID: favorite.id, query: "").ordinary
-        try await requireBrowsingMode("collection", events: ordinary)
+        try await requireBrowsingMode("collection", events: ordinary, controlScope: scope)
         let content = try value(window.contentView, "long-list content")
         let split = try value(nativeSplit(in: content), "long-list split")
         let scroll = try value(nativeScroll(in: split.arrangedSubviews[0]), "native browser scroll")
@@ -2084,25 +2210,25 @@ final class DesktopSmokeRuntime {
         }
         try scrollBrowser(scroll, toEnd: true)
         let last = try value(ordinary.last, "last monthly event")
-        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll)
-        try await press("desktop.event.\(last.id)")
-        try await wait("last long-list event selected") { self.controls.entries["desktop.detail.\(last.id)"] != nil }
+        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll, controlScope: scope)
+        try await press(scope + "desktop.event.\(last.id)")
+        try await wait("last long-list event selected") { self.controls.entries[scope + "desktop.detail.\(last.id)"] != nil }
         try capture("desktop-monthly-long-end-collection", window: window)
         accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
-        try await captureModeSequence("desktop-mode-long-to-feed", window: window, events: ordinary)
-        try await waitForFeedLayoutBeforeScrolling(lastID: last.id, scroll: scroll)
+        try await captureModeSequence("desktop-mode-long-to-feed", window: window, events: ordinary, controlScope: scope)
+        try await waitForFeedLayoutBeforeScrolling(lastID: last.id, scroll: scroll, controlScope: scope)
         try scrollBrowser(scroll, toEnd: true)
-        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll)
+        try await requireVisibleBrowserEvent(last.id, window: window, scroll: scroll, controlScope: scope)
         try capture("desktop-monthly-long-end-feed", window: window)
-        try await requireDivider(divider, in: window, after: "long-list scroll, selection and view change")
+        try await requireDivider(divider, in: window, after: "long-list scroll, selection and view change", controlScope: scope)
         for _ in 0..<7 {
-            try require(controls.press("desktop.mode"), "rapid long-list switch rejected")
+            try require(controls.press(scope + "desktop.mode"), "rapid long-list switch rejected")
             try await Task.sleep(nanoseconds: 20_000_000)
         }
-        try await requireBrowsingMode("collection", events: ordinary)
-        try await requireDivider(divider, in: window, after: "rapid long-list mode switching")
+        try await requireBrowsingMode("collection", events: ordinary, controlScope: scope)
+        try await requireDivider(divider, in: window, after: "rapid long-list mode switching", controlScope: scope)
         try scrollBrowser(scroll, toEnd: false)
-        try await expect("desktop.presentation.\(favorite.id)", "favorite")
+        try await expect(scope + "desktop.presentation.\(favorite.id)", "favorite")
         passed.append("forty additional events remain scrollable through the final month in grid/list, selectable at the end and retain favorite and divider")
     }
 
@@ -2139,39 +2265,39 @@ final class DesktopSmokeRuntime {
         }
     }
 
-    private func captureModeSequence(_ name: String, window: NSWindow, events: [Countdown]) async throws {
-        let expected = controls.value("desktop.mode") == "collection" ? "feed" : "collection"
-        let owners = try cardContentOwners(events)
+    private func captureModeSequence(_ name: String, window: NSWindow, events: [Countdown], controlScope: String) async throws {
+        let expected = controls.value(controlScope + "desktop.mode") == "collection" ? "feed" : "collection"
+        let owners = try cardContentOwners(events, controlScope: controlScope)
         let started = ProcessInfo.processInfo.systemUptime
-        try require(controls.press("desktop.mode"), "sampled mode switch rejected")
+        try require(controls.press(controlScope + "desktop.mode"), "sampled mode switch rejected")
         for milliseconds in [0, 100, 240] {
             let delay = started + Double(milliseconds) / 1_000 - ProcessInfo.processInfo.systemUptime
             try await Task.sleep(nanoseconds: UInt64(max(0.001, delay) * 1_000_000_000))
-            let currentOwners = try cardContentOwners(events)
+            let currentOwners = try cardContentOwners(events, controlScope: controlScope)
             try require(currentOwners == owners, "view mode replaced a card's content hierarchy")
             try capture("\(name)-\(milliseconds)ms", window: window)
             captures[captures.count - 1]["requestedOffsetMilliseconds"] = milliseconds
             let capturedAt = captures[captures.count - 1]["observationUptime"] as? Double ?? started
             captures[captures.count - 1]["elapsedMilliseconds"] = (capturedAt - started) * 1_000
         }
-        try await requireBrowsingMode(expected, events: events)
+        try await requireBrowsingMode(expected, events: events, controlScope: controlScope)
     }
 
-    private func cardContentOwners(_ events: [Countdown]) throws -> [String: ObjectIdentifier] {
+    private func cardContentOwners(_ events: [Countdown], controlScope: String) throws -> [String: ObjectIdentifier] {
         let identifiers = events.flatMap { event in
-            ["leaf", "title", "metadata", "completion"].map { "desktop.card.\($0).\(event.id)" }
-                + ["desktop.collection.remaining.\(event.id)"]
+            ["leaf", "title", "metadata", "completion"].map { controlScope + "desktop.card.\($0).\(event.id)" }
+                + [controlScope + "desktop.collection.remaining.\(event.id)"]
         }
         return try Dictionary(uniqueKeysWithValues: identifiers.map { identifier in
             (identifier, try value(controls.entries[identifier]?.ownerID, "card content owner \(identifier)"))
         })
     }
 
-    private func requireBrowsingMode(_ expected: String, events: [Countdown]) async throws {
+    private func requireBrowsingMode(_ expected: String, events: [Countdown], controlScope: String) async throws {
         try await wait("monthly browser reaches \(expected) without losing event identities") {
-            self.controls.value("desktop.mode") == expected && events.allSatisfy {
-                self.controls.value("desktop.presentation.\($0.id)") == expected
-                    && self.controls.entries["desktop.event.\($0.id)"]?.isEnabled == true
+            self.controls.value(controlScope + "desktop.mode") == expected && events.allSatisfy {
+                self.controls.value(controlScope + "desktop.presentation.\($0.id)") == expected
+                    && self.controls.entries[controlScope + "desktop.event.\($0.id)"]?.isEnabled == true
             }
         }
     }
@@ -2181,14 +2307,14 @@ final class DesktopSmokeRuntime {
         return view.subviews.lazy.compactMap { self.nativeScroll(in: $0) }.first
     }
 
-    private func waitForFeedLayoutBeforeScrolling(lastID: UUID, scroll: NSScrollView) async throws {
+    private func waitForFeedLayoutBeforeScrolling(lastID: UUID, scroll: NSScrollView, controlScope: String) async throws {
         var previousHeight: CGFloat?
         var stableSamples = 0
         var samples: [[String: Any]] = []
         // The mode value changes before animated row widths and the document extent reach their final layout.
         try await wait("full-width feed rows and stable scroll extent") {
             guard let height = scroll.documentView?.bounds.height,
-                  let row = self.controls.frame("desktop.event.\(lastID)") else { return false }
+                  let row = self.controls.frame(controlScope + "desktop.event.\(lastID)") else { return false }
             let expectedWidth = scroll.contentView.bounds.width - 48
             samples.append(["uptime": ProcessInfo.processInfo.systemUptime, "documentHeight": height,
                             "lastRowWidth": row.width, "expectedRowWidth": expectedWidth])
@@ -2204,8 +2330,8 @@ final class DesktopSmokeRuntime {
             .write(to: configuration.homeURL.appendingPathComponent("feed-scroll-layout-settled.json"))
     }
 
-    private func requireVisibleBrowserEvent(_ id: UUID, window: NSWindow, scroll: NSScrollView) async throws {
-        let mode = controls.value("desktop.mode") ?? "unknown"
+    private func requireVisibleBrowserEvent(_ id: UUID, window: NSWindow, scroll: NSScrollView, controlScope: String) async throws {
+        let mode = controls.value(controlScope + "desktop.mode") ?? "unknown"
         var samples: [[String: Any]] = []
         func observation() -> [String: Any] {
             let rect = { (frame: CGRect?) -> [CGFloat] in
@@ -2214,8 +2340,8 @@ final class DesktopSmokeRuntime {
             }
             return [
                 "uptime": ProcessInfo.processInfo.systemUptime,
-                "event": rect(controls.frame("desktop.event.\(id)")),
-                "viewport": rect(controls.frame("desktop.browser")),
+                "event": rect(controls.frame(controlScope + "desktop.event.\(id)")),
+                "viewport": rect(controls.frame(controlScope + "desktop.browser")),
                 "documentBounds": rect(scroll.documentView?.bounds),
                 "documentFrame": rect(scroll.documentView?.frame),
                 "clipBounds": rect(scroll.contentView.bounds), "scrollFrame": rect(scroll.frame),
@@ -2227,8 +2353,8 @@ final class DesktopSmokeRuntime {
         do {
             try await wait("last monthly event is rendered inside browser viewport") {
                 samples.append(observation())
-                guard let viewport = self.controls.frame("desktop.browser"),
-                      let event = self.controls.frame("desktop.event.\(id)") else { return false }
+                guard let viewport = self.controls.frame(controlScope + "desktop.browser"),
+                      let event = self.controls.frame(controlScope + "desktop.event.\(id)") else { return false }
                 return event.intersection(viewport).height >= min(event.height, viewport.height) - 2
             }
         } catch {

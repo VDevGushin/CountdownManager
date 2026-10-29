@@ -338,6 +338,7 @@ struct ManagerView: View {
                     ? AuroraInstrument.todayColor(
                         for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
                     )
+                    : presentation.isPast ? AuroraInstrument.secondaryInk(for: colorScheme)
                     : AuroraInstrument.accentInk(
                         for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
                     ))
@@ -890,6 +891,7 @@ struct EditorView: View {
     @State private var isImportingAttachments = false
     @StateObject private var attachmentSession = EditorAttachmentSession()
     @State private var confirmingDeletion = false
+    @State private var removingPastRetention = false
     @State private var emojiPicker: EditorEmojiPickerState = .closed
     @State private var noteFocusRequest = 0
     @FocusState private var focusedField: EditorFocusTarget?
@@ -951,11 +953,17 @@ struct EditorView: View {
         }
     }
 
-    private var minimumDate: Date { store.today.date() }
-    private var validDate: Bool { Day(date) >= store.today }
+    private var savedEvent: Countdown? {
+        item.flatMap { original in store.active.first { $0.id == original.id } }
+    }
+    private var retainedDate: Day? {
+        savedEvent.flatMap { $0.keepsAfterDate ? $0.date : nil }
+    }
+    private var minimumDate: Date { min(retainedDate ?? store.today, store.today).date() }
+    private var validDate: Bool { Day(date) >= store.today || Day(date) == retainedDate }
     private var isUnavailable: Bool {
         guard let item else { return false }
-        return item.date < store.today || !store.active.contains(where: { $0.id == item.id })
+        return !store.active.contains(where: { $0.id == item.id })
     }
     private var canSave: Bool {
         !isUnavailable && editorCanSave(
@@ -965,7 +973,8 @@ struct EditorView: View {
             emoji: draft.emoji,
             subtasks: draft.subtasks,
             today: store.today,
-            savedNote: savedNote
+            savedNote: savedNote,
+            savedDate: retainedDate
         )
     }
 
@@ -1005,6 +1014,7 @@ struct EditorView: View {
                         VStack(alignment: .leading, spacing: 0) {
                             Divider().padding(.bottom, 13)
                             EditorAttachmentSection(attachments: $draft.attachments,
+                                                    keepsAfterDate: draft.keepsAfterDate,
                                                     isImporting: isImportingAttachments, add: addAttachments,
                                                     thumbnailURL: { attachment in
                                 await store.editorAttachmentThumbnailURL(attachment, eventID: item?.id,
@@ -1116,7 +1126,7 @@ struct EditorView: View {
                 .frame(minHeight: 28)
                 .accessibilityIdentifier("editor.date")
                 .uiSmokeControl(id: "editor.date", value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
-            if Day(date) == store.today || !validDate {
+            if (Day(date) == store.today && !draft.keepsAfterDate) || !validDate {
                 Text(dateHelp)
                     .font(.system(size: 10.5))
                     .foregroundStyle(validDate
@@ -1145,6 +1155,19 @@ struct EditorView: View {
                 .accessibilityIdentifier("editor.primary")
                 .uiSmokeControl(id: "editor.primary", action: { primary.toggle() },
                                 value: { primary ? "Выбрано" : "Не выбрано" })
+            VStack(alignment: .leading, spacing: 5) {
+                Toggle("Сохранять после даты события", isOn: $draft.keepsAfterDate)
+                    .accessibilityIdentifier("editor.keep")
+                    .uiSmokeControl(id: "editor.keep", action: { draft.keepsAfterDate.toggle() },
+                                    value: { draft.keepsAfterDate ? "on" : "off" })
+                Text(draft.keepsAfterDate
+                     ? "Событие и вложения останутся, пока вы их не удалите."
+                     : "После окончания даты событие и прикреплённые копии файлов будут удалены. Исходные файлы сохранятся.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 18)
+            }
         }
         .toggleStyle(.checkbox)
         .font(.system(size: 12))
@@ -1166,7 +1189,7 @@ struct EditorView: View {
             Divider()
             HStack(spacing: 9) {
                 if item != nil && !isUnavailable {
-                    Button(role: .destructive) { confirmingDeletion = true } label: {
+                    Button(role: .destructive, action: requestDeletion) {
                         Label("Удалить", systemImage: "trash")
                             .font(.system(size: 11))
                             .frame(minHeight: 28)
@@ -1174,7 +1197,7 @@ struct EditorView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .accessibilityIdentifier("event.delete")
-                    .uiSmokeControl(id: "event.delete", action: { confirmingDeletion = true })
+                    .uiSmokeControl(id: "event.delete", action: requestDeletion)
                     .disabled(isSaving || isImportingAttachments || confirmingDeletion)
                 }
                 Spacer(minLength: 0)
@@ -1207,12 +1230,16 @@ struct EditorView: View {
 
     private var deletionControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Удалить событие, подзадачи и прикреплённые копии файлов без возможности восстановления? Исходные файлы сохранятся.")
+            Text(removingPastRetention
+                 ? "Дата события уже прошла. Без сохранения событие, подзадачи и прикреплённые копии файлов будут удалены. Исходные файлы сохранятся."
+                 : "Удалить событие, подзадачи и прикреплённые копии файлов без возможности восстановления? Исходные файлы сохранятся.")
                 .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("event.delete.explanation")
+                .uiSmokeControl(id: "event.delete.explanation", value: { removingPastRetention ? "past-retention" : "manual" })
             HStack(spacing: 16) {
-                Button("Не удалять") { confirmingDeletion = false }
+                Button("Не удалять", action: cancelDeletion)
                     .accessibilityIdentifier("event.delete.cancel")
-                    .uiSmokeControl(id: "event.delete.cancel", action: { confirmingDeletion = false })
+                    .uiSmokeControl(id: "event.delete.cancel", action: cancelDeletion)
                 Button("Удалить событие", role: .destructive, action: delete)
                     .accessibilityIdentifier("event.delete.confirm")
                     .uiSmokeControl(id: "event.delete.confirm", action: delete)
@@ -1240,8 +1267,20 @@ struct EditorView: View {
         }
     }
 
+    private func requestDeletion() {
+        removingPastRetention = false
+        confirmingDeletion = true
+    }
+
+    private func cancelDeletion() {
+        if removingPastRetention { draft.keepsAfterDate = true }
+        removingPastRetention = false
+        confirmingDeletion = false
+    }
+
     private var dateHelp: String {
         guard validDate else { return "Прошлая дата недоступна. Выберите сегодня или позже." }
+        if draft.keepsAfterDate { return "Событие и вложения останутся, пока вы их не удалите." }
         return Day(date) == store.today ? EventUIStrings.todayExpiryNotice : "Можно выбрать сегодня или будущую дату."
     }
 
@@ -1760,8 +1799,11 @@ struct EditorView: View {
 
     private func save() {
         guard canSave, !isSaving, !isImportingAttachments, !confirmingDeletion else { return }
-        if let item, item.date < Day(Date()) {
-            store.refresh()
+        store.refresh()
+        guard canSave else { return }
+        if Day(date) < store.today, !draft.keepsAfterDate {
+            removingPastRetention = true
+            confirmingDeletion = true
             return
         }
         let countdown = draft.countdown(id: item?.id ?? UUID(), date: Day(date))

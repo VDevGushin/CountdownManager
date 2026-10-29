@@ -198,12 +198,14 @@ The native status-item panel is retained at 390 × 600 points: a 60-point timer 
 
 The list starts with the current date and event count, then the selected favorite if any, followed by ordinary events. Without a favorite, all cards remain compact. The header has 16-point horizontal insets and 12-point vertical padding. The scrolling list uses 12-point side insets, 10-point gaps, and 12-point card padding. The service footer is fixed below the list at 33 points high with 18-point side insets.
 
-Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather and favorite checkboxes form the next distinct group after a 13-point gap.
+Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather, favorite and retain-after-date checkboxes form the next distinct group after a 13-point gap. Retention is third, with its short explanation directly beneath it.
 
 The desktop window uses a separate browser/details split. Its icon-only native
 segmented control switches collection/grid and feed/list, retaining names and hover help.
 One favorite stays above month-and-year sections; empty months and duplicate favorite rows are
-omitted. Section headings use 20-point Georgia, with 24-point section gaps. Grid cards keep a
+omitted. Retained past ordinary events form one last `Прошедшие` group, recent first. A past favorite
+stays featured above all groups without duplication; mini keeps its plain list, with ordinary past
+events last. `Вчера`/`N дней назад` uses secondary ink in both surfaces. Section headings use 20-point Georgia, with 24-point section gaps. Grid cards keep a
 180-point minimum width and 12-point gaps; list rows use 10-point gaps. A short 150 ms
 ease-in-out reflows the same ordinary event identities without scaling text, spring effects or
 fading the entire browser. Calendar, title and metadata remain persistent visual elements;
@@ -317,7 +319,10 @@ The desktop backdrop consumes its input and uses the same top-view close behavio
 Missing files retain filename/navigation and an unavailable state; native unsupported-file fallback
 keeps external-open available. Videos do not autoplay.
 Only the editor and deletion confirmation explain that copied attachments are deleted with
-the event after its date while originals remain untouched. Saved summaries and file libraries
+the event on expiry when retention is off, or on explicit deletion, while originals remain untouched.
+The third event option `Сохранять после даты события` explains that the event and its files remain
+until explicit deletion. Turning it off on a past event invokes the existing inline deletion
+confirmation at Save. Saved summaries and file libraries
 do not include that warning. Import progress and errors use native, readable controls.
 The editor counter is `N/15`: Add is disabled at 15 or above with a visible explanation,
 and removing to 14 enables one new file immediately. Oversized picker batches report remaining

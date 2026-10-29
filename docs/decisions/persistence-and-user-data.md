@@ -32,7 +32,11 @@ After a successful load, abandoned imports can be collected; invalid JSON never 
 The multi-file operation is not advertised as an atomic transaction with the JSON replacement.
 
 Copies follow the event's accepted deletion and expiry rules; original files are never removed.
-Attachments are not an archive and do not change the lifetime of the owning event.
+Attachments are not an archive and do not change the lifetime of the owning event. An explicitly
+saved `keepsAfterDate` flag retains that event and its references after its date. Unchecked past
+retention is handled as confirmed event deletion; ordinary Save cannot silently expire the draft.
+Legacy missing flags remain false. Older versions that ignore the flag are unsafe downgrade writers
+for retained events; recovery requires matched JSON and attachment copies.
 
 Existing compatible stored data remains readable unless an explicit product migration changes that contract.
 

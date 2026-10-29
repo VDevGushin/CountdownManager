@@ -186,7 +186,7 @@ extension Store {
     }
 
     private func attachmentIsActive(_ attachment: EventAttachment, eventID: UUID) -> Bool {
-        data.items.contains { $0.id == eventID && $0.date >= Day(now()) && $0.attachments.contains(attachment) }
+        data.items.contains { $0.id == eventID && $0.isAvailable(on: Day(now())) && $0.attachments.contains(attachment) }
     }
 
     private func reportAttachmentCleanupFailure() {
@@ -499,7 +499,7 @@ package final class Store: ObservableObject {
         if currentDay != today { today = currentDay }
         var updated = data
         // Check at the mutation boundary: an editor task may run after expiry/removal.
-        if requireExisting && !updated.items.contains(where: { $0.id == countdown.id && $0.date >= today }) {
+        if requireExisting && !updated.items.contains(where: { $0.id == countdown.id && $0.isAvailable(on: today) }) {
             error = "Событие больше недоступно. Черновик не сохранён."
             return false
         }

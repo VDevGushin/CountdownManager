@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-29",
+  "branch": "codex/retained-events",
+  "status": "implemented-not-released-or-installed",
+  "swiftSourceSHA256": "d998107c82c4ac0d48efec10f7b36ffc57be433674414a72481753254dd006a1",
+  "swiftlint": {
+    "status": "PASS",
+    "violations": 0,
+    "files": 77
+  },
+  "fast": {
+    "status": "PASS",
+    "suites": [
+      "CoreChecks",
+      "UIChecks"
+    ]
+  },
+  "nativeDesktop": {
+    "status": "PASS",
+    "passed": 29,
+    "total": 29,
+    "executableSHA256": "224cfc19524519cfd81060882a04db1352d8915cc57d06f9c0a889980a6e6f5e"
+  },
+  "visualReview": {
+    "status": "PASS",
+    "images": 8
+  },
+  "externalXCTest": {
+    "status": "INFRA_ERROR",
+    "executed": 0,
+    "reason": "Timed out while enabling automation mode."
+  },
+  "directNativeUIFallback": {
+    "isolated": true,
+    "thirdCheckbox": true,
+    "conditionalHelp": true,
+    "saveFlagAndPrimary": true,
+    "freshProcessLoadsFlag": true,
+    "cancelPreservesFlag": true,
+    "externalConfirmedDelete": false
+  },
+  "productionDataMutated": false,
+  "committed": false,
+  "installed": false,
+  "published": false
+}

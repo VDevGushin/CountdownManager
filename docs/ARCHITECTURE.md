@@ -102,9 +102,9 @@ Key files:
 - `DesktopSmokeRuntime.swift`
 
 `CountdownRowPresentation` derives card-relative labels from the existing civil-day distance:
-Today/Tomorrow/Through N days with Russian pluralization. Views use this same label in featured
-and secondary cards; the independent menu formatter uses Today/Tomorrow then the numeric Core day formatter. No saved state
-or data-format change is needed for these labels.
+Today/Tomorrow/Through N days and Yesterday/N days ago with Russian pluralization. Views use this same label in featured
+and secondary cards; the independent menu formatter uses Today/Tomorrow then the numeric Core day
+formatter for future dates, and Yesterday/N days ago for retained past dates. The labels remain derived from civil-day distance; `Countdown.keepsAfterDate` owns retention independently of primary selection.
 
 ### `CountdownManager`
 
@@ -211,6 +211,10 @@ Outside the band its hit test returns nil; dragging calls the existing `NSSplitV
 so the native delegate still constrains the panes. The overlay never replaces SwiftUI's split
 delegate or changes divider drawing. A weak native-view reference and scoped resize observation
 are cleared when the bridge leaves the window; failure to find the split leaves native input intact.
+`DesktopEventCollection` partitions available ordinary events into ascending future month sections
+and descending `pastItems`, rendered as one final `Прошедшие` group. The explicit favorite is
+excluded from both partitions, including when retained after its date. Stable equal-date order
+uses the stored input position. Mini ordering uses the same future/past rule without sections.
 The browser contains selection buttons and summaries; detail actions route favorite, checklist
 and confirmed event deletion through the same Store, with pending-persistence and active-editor guards.
 `DesktopCalendarLeaf` composes the existing native calendar tile without a desktop emoji overlay.
@@ -382,7 +386,7 @@ It owns operations including:
 - event deletion;
 - subtask CRUD and completion toggling.
 
-It stores the optional explicit favorite in `primaryID`. Normalization clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
+It stores the optional explicit favorite in `primaryID`. Normalization expires only events whose date ended and whose `keepsAfterDate` is false, and clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
 
 `Countdown.usesAutomaticTitle` is persisted with the plain `title`. Missing metadata defaults to
 false and false is omitted on encode; no weekday-text inference is performed. `automaticEventTitle`
@@ -795,7 +799,11 @@ The header calendar control reveals inline `Сегодня`, `Завтра` and 
 the existing `+` still opens ordinary event creation directly. Day creation supplies today's date
 for `Сегодня`, tomorrow for the other routes, no additional emoji, an automatic Russian weekday
 title and empty note/subtasks. Ordinary creation initially selects tomorrow and a custom empty title.
-The same native date field accepts today/future dates and presents today's expiry notice.
+The same native date field accepts today/future dates; an existing retained past event may keep
+its saved date. The core mutation boundary rejects new or changed past dates. Today's expiry notice
+appears only with retention off. The third event checkbox edits `keepsAfterDate` in the draft; a
+past retained draft with retention turned off uses the existing inline deletion confirmation and
+Store deletion rather than an ordinary Save. Cancel and write failures retain the editing context.
 `EventEditorDraft` restores the persisted title mode. Its user-input setter disables automatic naming
 only when text actually changes; date updates and the explicit `Название по дате` action mutate the
 draft directly. The action shares the title's label row, adding no second native field outline or

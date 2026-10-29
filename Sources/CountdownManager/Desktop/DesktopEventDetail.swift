@@ -174,6 +174,7 @@ struct DesktopEventDetail: View {
                 .foregroundStyle(presentation.isToday
                     ? AuroraInstrument.todayColor(for: colorScheme,
                                                   highContrast: accessibilitySettings.prefersHighContrast)
+                    : presentation.isPast ? AuroraInstrument.secondaryInk(for: colorScheme)
                     : AuroraInstrument.accent(for: colorScheme,
                                               highContrast: accessibilitySettings.prefersHighContrast))
         }

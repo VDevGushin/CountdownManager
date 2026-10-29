@@ -148,6 +148,29 @@ write failure and an explicit reset followed by successful retry. The date/title
 fields must match the durable snapshot.
 This is in-process native input, with external keyboard delivery covered separately by XCUITest.
 
+### Retained past events
+
+The ordinary `fast` gate includes `RetentionChecks.swift` and `RetentionWorkflowChecks.swift`.
+They exercise strict optional retention metadata, civil-day/year/leap-day boundaries, ordinary
+expiry versus retained identity/primary preservation, unchanged past-date edits, rejected backdating
+and stale drafts, retained legacy note/attachment allowances, actual copied bytes across restart,
+failed midnight/edit/delete persistence and retry, shared ordering/grouping/search, and Russian
+relative labels. All files and preferences are isolated.
+
+The existing `desktop`/`desktop-capture` route also runs native retention workflows using an injected
+civil clock and a separate isolated Store: collection/feed final past group, past favorite, mini list,
+editor Save/Cancel, conditional file-lifetime explanation and uncheck → confirmation → cancel →
+confirmed deletion with owned/original bytes. `desktop-capture` includes
+`retention-desktop-collection-{dark,light}`, `retention-desktop-feed-{dark,light}`,
+`retention-mini-list-{dark,light}` and `retention-editor-{dark,light}`. These are native synthetic
+fixtures using the production views; they do not change the system clock or production data.
+
+External XCUITest methods `testRetentionCheckboxCancelSaveAndReopen` and
+`testPastRetentionUncheckConfirmsDeletionAndPreservesFilesOnCancel` exercise real checkbox/button
+input, three-option order, draft cancellation, fresh launch persistence and confirmed past-event
+deletion with six owned copies. They complement the controlled-clock tests; they do not establish
+external date-picker editing, VoiceOver speech or physical midnight/wake timing.
+
 ### Automatic event titles
 
 Core `AutomaticTitleChecks.swift` checks missing/false/true metadata, malformed present types and

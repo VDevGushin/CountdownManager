@@ -52,6 +52,18 @@ struct DesktopEventBrowser: View {
                     eventButton(item, featured: false)
                 }
             }
+            if !collection.pastItems.isEmpty {
+                Text("Прошедшие")
+                    .font(.custom("Georgia", size: 20))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("desktop.past")
+                    .uiSmokeControl(id: "desktop.past", value: { "Прошедшие" })
+                    .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
+                ForEach(collection.pastItems) { item in
+                    eventButton(item, featured: false)
+                }
+            }
         }
         .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15), value: mode)
     }
@@ -415,7 +427,8 @@ private struct DesktopEventCard: View {
     }
 
     private var timeColor: Color {
-        presentation.isToday ? AuroraInstrument.todayColor(
+        if presentation.isPast { return AuroraInstrument.secondaryInk(for: colorScheme) }
+        return presentation.isToday ? AuroraInstrument.todayColor(
             for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
         ) : accent
     }

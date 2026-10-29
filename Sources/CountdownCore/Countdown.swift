@@ -125,6 +125,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var emoji: String
     public var subtasks: [Subtask]
     public var showsWeather: Bool
+    public var keepsAfterDate: Bool
     public var usesAutomaticTitle: Bool
     public var attachments: [EventAttachment]
 
@@ -136,6 +137,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         emoji: String,
         subtasks: [Subtask] = [],
         showsWeather: Bool = false,
+        keepsAfterDate: Bool = false,
         usesAutomaticTitle: Bool = false,
         attachments: [EventAttachment] = []
     ) {
@@ -146,12 +148,13 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.emoji = emoji
         self.subtasks = subtasks
         self.showsWeather = showsWeather
+        self.keepsAfterDate = keepsAfterDate
         self.usesAutomaticTitle = usesAutomaticTitle
         self.attachments = attachments
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, note, date, emoji, subtasks, showsWeather, usesAutomaticTitle, attachments
+        case id, title, note, date, emoji, subtasks, showsWeather, keepsAfterDate, usesAutomaticTitle, attachments
     }
 
     public init(from decoder: Decoder) throws {
@@ -163,6 +166,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         emoji = try values.decode(String.self, forKey: .emoji)
         subtasks = try values.decodeIfPresent([Subtask].self, forKey: .subtasks) ?? []
         showsWeather = values.contains(.showsWeather) ? try values.decode(Bool.self, forKey: .showsWeather) : false
+        keepsAfterDate = values.contains(.keepsAfterDate) ? try values.decode(Bool.self, forKey: .keepsAfterDate) : false
         usesAutomaticTitle = values.contains(.usesAutomaticTitle)
             ? try values.decode(Bool.self, forKey: .usesAutomaticTitle) : false
         attachments = values.contains(.attachments)
@@ -182,8 +186,13 @@ public struct Countdown: Identifiable, Codable, Equatable {
         try values.encode(emoji, forKey: .emoji)
         try values.encode(subtasks, forKey: .subtasks)
         if showsWeather { try values.encode(true, forKey: .showsWeather) }
+        if keepsAfterDate { try values.encode(true, forKey: .keepsAfterDate) }
         if usesAutomaticTitle { try values.encode(true, forKey: .usesAutomaticTitle) }
         if !attachments.isEmpty { try values.encode(attachments, forKey: .attachments) }
+    }
+
+    public func isAvailable(on today: Day) -> Bool {
+        keepsAfterDate || date >= today
     }
 }
 
@@ -231,7 +240,7 @@ public struct CountdownData: Codable, Equatable {
     }
 
     public mutating func normalize(today: Day) {
-        items.removeAll { $0.date < today }
+        items.removeAll { !$0.isAvailable(on: today) }
         if !items.contains(where: { $0.id == primaryID }) {
             primaryID = nil
         }
@@ -248,18 +257,20 @@ public struct CountdownData: Codable, Equatable {
             try cleaned.subtasks[index].normalizeAndValidate()
         }
         guard !cleaned.title.isEmpty else { throw CountdownError.title }
-        let savedNote = items.first(where: { $0.id == item.id && $0.date >= today })?.note
+        let savedItem = items.first { $0.id == item.id && $0.isAvailable(on: today) }
+        let savedNote = savedItem?.note
         guard CountdownNote.isAllowed(item.note ?? "", savedNote: savedNote) else { throw CountdownError.note }
         if item.note == savedNote { cleaned.note = savedNote }
-        guard cleaned.date >= today else { throw CountdownError.date }
+        let retainedPastDate = cleaned.keepsAfterDate && savedItem?.keepsAfterDate == true
+            && cleaned.date == savedItem?.date
+        guard cleaned.date >= today || retainedPastDate else { throw CountdownError.date }
         guard cleaned.emoji.isEmpty || Self.isEmoji(cleaned.emoji) else { throw CountdownError.emoji }
         guard cleaned.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
         guard Set(cleaned.attachments.map(\.id)).count == cleaned.attachments.count else {
             throw EventAttachmentError.invalidMetadata
         }
         if cleaned.attachments.count > EventAttachment.maximumCount {
-            let savedIDs = Set(items.first(where: { $0.id == item.id && $0.date >= today })?
-                .attachments.map(\.id) ?? [])
+            let savedIDs = Set(savedItem?.attachments.map(\.id) ?? [])
             // Historical over-limit events stay editable, but may not gain new references.
             guard cleaned.attachments.allSatisfy({ savedIDs.contains($0.id) }) else {
                 throw EventAttachmentError.limitExceeded

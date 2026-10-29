@@ -30,6 +30,7 @@ package struct DesktopEventCollection: Equatable {
     package let favorite: Countdown?
     package let ordinary: [Countdown]
     package let monthSections: [DesktopEventMonthSection]
+    package let pastItems: [Countdown]
 
     package var events: [Countdown] {
         (favorite.map { [$0] } ?? []) + ordinary
@@ -39,16 +40,22 @@ package struct DesktopEventCollection: Equatable {
         let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let matching = items.enumerated().filter { entry in
             let item = entry.element
-            return item.date >= today
+            return item.isAvailable(on: today)
                 && (search.isEmpty || item.title.localizedCaseInsensitiveContains(search)
                     || (item.note?.localizedCaseInsensitiveContains(search) ?? false))
         }.sorted { first, second in
-            if first.element.date != second.element.date { return first.element.date < second.element.date }
+            let firstIsPast = first.element.date < today
+            let secondIsPast = second.element.date < today
+            if firstIsPast != secondIsPast { return !firstIsPast }
+            if first.element.date != second.element.date {
+                return firstIsPast ? first.element.date > second.element.date : first.element.date < second.element.date
+            }
             return first.offset < second.offset
         }.map(\.element)
         favorite = matching.first { $0.id == primaryID }
         ordinary = matching.filter { $0.id != primaryID }
-        monthSections = Self.groupedByMonth(ordinary)
+        monthSections = Self.groupedByMonth(ordinary.filter { $0.date >= today })
+        pastItems = ordinary.filter { $0.date < today }
     }
 
     private static func groupedByMonth(_ items: [Countdown]) -> [DesktopEventMonthSection] {

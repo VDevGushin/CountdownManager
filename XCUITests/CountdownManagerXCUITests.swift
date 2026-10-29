@@ -890,6 +890,88 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(try persistedItems().isEmpty)
     }
 
+    func testRetentionCheckboxCancelSaveAndReopen() throws {
+        let original = try Data(contentsOf: dataURL)
+        app.launch()
+        openEditor()
+        let keep = app.checkBoxes["editor.keep"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 3))
+        revealInEditor(keep, fullyInViewport: true)
+        XCTAssertEqual(keep.value as? String, "0", "Legacy events must start without retention")
+        XCTAssertLessThan(app.checkBoxes["editor.weather"].frame.minY, app.checkBoxes["editor.primary"].frame.minY)
+        XCTAssertLessThan(app.checkBoxes["editor.primary"].frame.minY, keep.frame.minY)
+        keep.click()
+        XCTAssertEqual(keep.value as? String, "1")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), original, "Cancel must not persist the new option")
+
+        openEditor()
+        revealInEditor(keep, fullyInViewport: true)
+        XCTAssertEqual(keep.value as? String, "0")
+        keep.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        let saved = try XCTUnwrap(try persistedItems().first)
+        XCTAssertEqual(saved["keepsAfterDate"] as? Bool, true)
+        XCTAssertEqual(saved["title"] as? String, "XCUITest Event")
+        XCTAssertTrue(waitForFavorite(eventID), "Retention must not change the favorite")
+
+        app.terminate()
+        app.launch()
+        openEditor()
+        revealInEditor(keep, fullyInViewport: true)
+        XCTAssertEqual(keep.value as? String, "1", "The checkbox must survive a fresh application load")
+        keep.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertNil(try persistedItems().first?["keepsAfterDate"], "Disabling future retention must keep the event")
+        XCTAssertTrue(waitForFavorite(eventID))
+    }
+
+    func testPastRetentionUncheckConfirmsDeletionAndPreservesFilesOnCancel() throws {
+        let files = try writeQuickPreviewFixture()
+        var items = try persistedItems()
+        items[0]["date"] = ["year": 2001, "month": 1, "day": 2]
+        items[0]["keepsAfterDate"] = true
+        try writeItems(items, primaryID: eventID)
+        let original = try Data(contentsOf: dataURL)
+        app.launch()
+        openEditor()
+        let title = app.textFields["editor.title"]
+        replace(title, with: "Черновик сохранённого события")
+        let keep = app.checkBoxes["editor.keep"]
+        revealInEditor(keep, fullyInViewport: true)
+        XCTAssertEqual(keep.value as? String, "1")
+        keep.click()
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        app.buttons["editor.save"].click()
+        let explanation = app.staticTexts["event.delete.explanation"]
+        XCTAssertTrue(explanation.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["event.delete.cancel"].isHittable)
+        XCTAssertEqual(try Data(contentsOf: dataURL), original, "Requesting confirmation must not delete or save")
+        app.buttons["event.delete.cancel"].click()
+        XCTAssertEqual(title.value as? String, "Черновик сохранённого события")
+        revealInEditor(keep, fullyInViewport: true)
+        XCTAssertEqual(keep.value as? String, "1", "Cancel must restore retention and keep the rest of the draft")
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+        for file in files {
+            XCTAssertEqual(try Data(contentsOf: file.copy), file.bytes)
+            XCTAssertEqual(try Data(contentsOf: file.source), file.bytes)
+        }
+
+        keep.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.delete.confirm"].waitForExistence(timeout: 3))
+        app.buttons["event.delete.confirm"].click()
+        XCTAssertTrue(app.buttons["event.empty.today"].waitForExistence(timeout: 3))
+        XCTAssertTrue(try persistedItems().isEmpty)
+        for file in files {
+            XCTAssertTrue(waitForAttachmentFile(file.copy, exists: false), "Confirmed deletion must clean the owned copy")
+            XCTAssertEqual(try Data(contentsOf: file.source), file.bytes, "Original files must remain unchanged")
+        }
+    }
+
     func testWeatherCityMenuSupportsNativeSelection() throws {
         app.launch()
         app.buttons["settings.open"].click()

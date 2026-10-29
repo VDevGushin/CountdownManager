@@ -398,6 +398,7 @@ struct AttachmentListView: View {
 
 struct EditorAttachmentSection: View {
     @Binding var attachments: [EventAttachment]
+    let keepsAfterDate: Bool
     let isImporting: Bool
     let add: () -> Void
     let thumbnailURL: @MainActor (EventAttachment) async -> URL?
@@ -458,8 +459,8 @@ struct EditorAttachmentSection: View {
                     .disabled(isImporting)
                 }
             }
-            attachmentExpiryFootnote
-                .uiSmokeControl(id: "editor.attachments.expiry")
+            attachmentExpiryFootnote(keepsAfterDate: keepsAfterDate)
+                .uiSmokeControl(id: "editor.attachments.expiry", value: { keepsAfterDate ? "retained" : "expires" })
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("editor.attachments")
@@ -467,8 +468,10 @@ struct EditorAttachmentSection: View {
     }
 }
 
-var attachmentExpiryFootnote: some View {
-    Text("Прикреплённые копии удалятся вместе с событием после его даты. Исходные файлы сохранятся.")
+private func attachmentExpiryFootnote(keepsAfterDate: Bool) -> some View {
+    Text(keepsAfterDate
+         ? "Прикреплённые копии останутся после даты события, пока вы не удалите событие или вложения. Исходные файлы сохранятся."
+         : "Прикреплённые копии удалятся вместе с событием после его даты. Исходные файлы сохранятся.")
         .font(.caption2).foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
 }
