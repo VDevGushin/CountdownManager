@@ -34,6 +34,8 @@ For Swift, SwiftUI, AppKit, Foundation, accessibility, lifecycle, concurrency, o
 
 Use [Swift by Sundell articles](https://www.swiftbysundell.com/articles/) as a supplementary source for practical Swift and SwiftUI architecture, state ownership, concurrency, and testing patterns. Check article dates and examples against the project's Swift language mode, supported macOS versions, and current first-party documentation. Consult relevant articles for the task rather than reading the archive by default. Repository contracts and first-party sources retain priority.
 
+Use [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) for API naming and clarity at the call site. The [Habr GoF cheat sheet](https://habr.com/ru/articles/210288/) is a supplementary pattern index from 2014, not guidance on current Apple API behaviour. Its class diagrams are not Swift implementation templates. UIKit examples in supplementary sources require checking their applicability to macOS; do not transfer UIKit lifecycle assumptions to SwiftUI or AppKit.
+
 Do not prefer blog patterns, historical Stack Overflow workarounds, copied architecture templates, or community folklore over current first-party guidance.
 
 Do not perform broad platform research for ordinary code. When a material technical decision depends on uncertain macOS, SwiftUI, or AppKit behaviour, use `.agents/skills/macos-platform-research/SKILL.md`.
@@ -121,11 +123,19 @@ Avoid unnecessary concurrency. Synchronous code is preferable when work is cheap
 
 Do not add locks, queues, actors, or tasks without a concrete concurrency requirement.
 
+Treat an `await` that can suspend as a point where actor-owned state may change. Before applying a result, revalidate the relevant selection, owner existence or revision. Cancellation is cooperative: when replacing an in-flight request, cancel the old work and prevent its late result from overwriting the new request. Use an existing identity/revision guard or a generation token where this race exists; old completion or cleanup must not clear a newer task's handle or loading state. Exercise replacement, cancellation and late completion in focused regression coverage.
+
+Do not assume that `async` means work runs off the main actor. Check the project's language mode and isolation settings before choosing an offload mechanism. Do not block asynchronous work with a semaphore, or silence isolation/Sendable diagnostics without a concrete safety argument.
+
 ## 6 — Keep SwiftUI state local and intentional
 
 Use SwiftUI as a declarative UI system rather than recreating imperative view-controller state management inside it.
 
 Choose state storage according to ownership and lifetime, not convenience.
+
+For the existing `ObservableObject` model, use `@StateObject` when the view owns the object's lifetime and `@ObservedObject` when it observes an externally owned object; environment injection must still have an identifiable owner. Do not create an observed object repeatedly in `body`. Select newer Observation APIs only after checking supported macOS versions and the existing model; do not migrate observation as incidental cleanup.
+
+Keep list identities unique and stable across updates; do not generate IDs in computed properties or use collection offsets as identity for reorderable/deletable entities. Changing `.id(...)` intentionally resets the affected subtree's state and can discard focus or drafts; use it only when that reset is part of the required behaviour, never as a generic redraw fix. See Apple's [StateObject documentation](https://developer.apple.com/documentation/swiftui/stateobject) for initialization and identity semantics.
 
 A view should not own long-lived application state merely because `@State` makes mutation easy.
 
@@ -155,6 +165,8 @@ When bridging SwiftUI and AppKit, make it clear which side owns:
 - focus or first responder;
 - callbacks and cleanup.
 
+In representable bridges, keep long-lived delegates, subscriptions and platform resources in an explicit reference owner, such as a coordinator or existing session, rather than in the transient representable value. Updates must tolerate repeated calls without duplicate registrations or state-feedback loops. Pair registration with the appropriate removal, cancel owned work and release resources at their actual lifecycle boundary; do not tear down a deliberately retained session just because a surface becomes hidden.
+
 Do not compensate for uncertain platform behaviour with complex custom machinery before verifying the platform semantics.
 
 When an approved change adds another application surface, reuse the existing domain, persistence, timer, and service owners. Keep per-surface selection and browsing state separate where appropriate, and define an explicit editor-session policy for overlapping edits. Review close versus Quit, reopen, activation, and focus against the requested contract; do not inherit temporary-panel dismissal rules blindly in a persistent window.
@@ -182,6 +194,27 @@ Before adding a component, view, controller, helper, or modifier that is almost 
 
 Extract shared behaviour when the common semantics and variation points are real today. Do not force small or coincidental duplication into a generic abstraction whose contract is still unclear. Reuse and DRY are decision criteria, not a reason for premature abstraction.
 
+### Apply SOLID and patterns to the current problem
+
+Use SOLID to evaluate boundaries being changed, not as a mandate to refactor the project:
+
+- **Single responsibility:** separate independent reasons to change, such as persistence policy and window presentation. A cohesive owner may still contain several methods and helpers.
+- **Open/closed:** isolate an actual variation point when new implementations must preserve a stable consumer contract. Do not build extension mechanisms for hypothetical features; editing a concrete type is often the simplest correct change.
+- **Liskov substitution:** conformers and subclasses must preserve the consumer's behavioural expectations, including errors, mutation, ordering and isolation. Protocol conformance alone does not prove substitutability; a test double must preserve the semantics relevant to the test.
+- **Interface segregation:** expose the capabilities a consumer needs rather than passing a broad store or service through unrelated code. A closure or concrete value may be sufficient; do not create a protocol for every method.
+- **Dependency inversion:** keep domain policy independent of filesystem, networking and presentation details at meaningful boundaries. Supply dependencies explicitly; dependency injection is a wiring technique, not by itself proof that dependencies point in the right direction.
+
+Before introducing a named pattern, identify the concrete pressure it resolves and compare it with a direct function, enum, closure or existing platform facility. Prefer composition over a custom inheritance hierarchy unless framework subclassing or a real subtype contract requires inheritance. In particular:
+
+- use a strategy for genuinely interchangeable behaviour; a closure may express the whole contract;
+- use an adapter at an API boundary, including SwiftUI/AppKit interoperability, without duplicating authoritative state;
+- prefer the project's supported observation mechanism over building a parallel observer system;
+- model mutually exclusive lifecycle states with an enum when that prevents invalid combinations; state classes need an additional justification;
+- introduce factories only when construction has meaningful variation or lifecycle policy;
+- do not introduce a mutable global singleton to make dependencies convenient.
+
+Pattern names do not justify extra layers. Record a consequential architectural choice in `docs/decisions/` only when its rationale needs to outlive the local code; routine choices do not need a separate document.
+
 ## 9 — Keep types cohesive
 
 A type should have one coherent reason to change.
@@ -205,6 +238,8 @@ Prefer small private helpers for local readability before inventing new architec
 ## 10 — Design APIs for clarity
 
 Prefer names that communicate domain meaning and effect.
+
+Follow the current `.swiftlint.yml`, build settings and neighboring code for formatting, access levels and file organization. Examples from another project do not impose its builders, DI containers, naming suffixes, file headers, copyright, extension layout or commit conventions here. Do not reformat untouched code to adopt a personal-style example.
 
 Make mutation visible in API shape and naming.
 
