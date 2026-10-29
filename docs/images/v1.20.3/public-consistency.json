@@ -1,0 +1,31 @@
+{
+  "version": "1.20.3",
+  "build": "39",
+  "documents": 113,
+  "localReferences": 434,
+  "homepageImages": 4,
+  "errors": [],
+  "publicChecks": {
+    "latest": {
+      "status": 200,
+      "sha256": "6566b4d5de8b28f3b91e01ecab565913ab3945bd7602be812baad2de3b8125cd",
+      "bytes": 154827
+    },
+    "archive": {
+      "status": 200,
+      "sha256": "bcf010244ff042e6e680d23951e0733544533dae99bebf6e03b65d5eab478037",
+      "bytes": 6303823
+    },
+    "versionFeed": {
+      "status": 200,
+      "sha256": "a14376a1e0ee2273a2eecc2acdece93e42fe17f490afc07ba160c5a469ad8809",
+      "bytes": 2168
+    },
+    "stableFeed": {
+      "status": 200,
+      "sha256": "a14376a1e0ee2273a2eecc2acdece93e42fe17f490afc07ba160c5a469ad8809",
+      "bytes": 2168
+    }
+  },
+  "defaultBranch": "main"
+}

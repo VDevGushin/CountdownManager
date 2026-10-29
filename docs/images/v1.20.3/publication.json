@@ -39,5 +39,13 @@
       "anonymous": true,
       "matchesAuditedBytes": true
     }
+  },
+  "homepage": {
+    "defaultBranch": "main",
+    "readmeMatchesLocal": true,
+    "currentVersion": "1.20.3",
+    "currentGraphiteImageVisibleInBrowser": true,
+    "browserScreenshot": "homepage-browser.png",
+    "readmeSHA256": "428499fc109e7942ed9088068e272feffba510890e17b5bb07e5ae47ae59f631"
   }
 }
