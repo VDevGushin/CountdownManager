@@ -75,6 +75,8 @@ final class DesktopSmokeRuntime {
     private let hideDesktop: () -> Void
     private let showPanel: () -> Void
     private let pressStatusItem: () -> Void
+    private let whatsNewWindow: () -> NSWindow?
+    private let showWhatsNew: () -> Void
     private var captures: [[String: Any]] = []
     private var passed: [String] = []
     private var controls: UISmokeControlRegistry { .shared }
@@ -86,7 +88,8 @@ final class DesktopSmokeRuntime {
          desktopWindow: @escaping () -> NSWindow?, panelWindow: @escaping () -> NSWindow?,
          statusButton: @escaping () -> NSStatusBarButton?,
          showDesktop: @escaping () -> Void, hideDesktop: @escaping () -> Void, showPanel: @escaping () -> Void,
-         pressStatusItem: @escaping () -> Void) {
+         pressStatusItem: @escaping () -> Void,
+         whatsNewWindow: @escaping () -> NSWindow?, showWhatsNew: @escaping () -> Void) {
         self.configuration = configuration
         self.store = store
         self.timer = timer
@@ -103,6 +106,8 @@ final class DesktopSmokeRuntime {
         self.hideDesktop = hideDesktop
         self.showPanel = showPanel
         self.pressStatusItem = pressStatusItem
+        self.whatsNewWindow = whatsNewWindow
+        self.showWhatsNew = showWhatsNew
     }
 
     func start() {
@@ -113,7 +118,17 @@ final class DesktopSmokeRuntime {
         }
         Task { @MainActor in
             do {
-                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
+                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new") {
+                    try await verifyWhatsNew()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-material-intake") {
+                    try await verifyMaterialIntakeWithoutStatus()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-links") {
+                    try await wait("loaded isolated link store") { !self.store.isLoading }
+                    try require(store.active.isEmpty, "link fixture must start empty")
+                    showDesktop()
+                    try await wait("link desktop shown") { self.desktopWindow()?.isVisible == true }
+                    try await verifyEventLinks()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
                     try await runAttachmentFocusedChecks()
                 } else {
                     try await run()
@@ -126,6 +141,212 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyWhatsNew() async throws {
+        try await wait("loaded isolated highlights store") { !self.store.isLoading }
+        try require(whatsNewWindow()?.isVisible != true, "highlights opened during background startup")
+        let event = Countdown(title: "Поездка", date: Day(store.tomorrow), emoji: "")
+        let seeded = await store.save(event, primary: false)
+        try require(seeded, "cannot seed highlights event")
+        try await wait("status item attached to screen") { self.statusButton()?.window?.screen != nil }
+        let savedBytes = try Data(contentsOf: configuration.dataURL)
+        try require(store.beginMaterialResolution(), "cannot reserve pending material intake")
+        showWhatsNew()
+        try require(whatsNewWindow()?.isVisible != true, "highlights interrupted pending material intake")
+        store.endMaterialResolution()
+        try require(editorSession.beginPanelEditor(), "cannot reserve retained draft")
+        showPanel()
+        try await wait("retained mini editor visible") { self.controls.frame("editor.new") != nil }
+        showWhatsNew()
+        try require(whatsNewWindow()?.isVisible != true, "highlights interrupted an active editor")
+        try await press("editor.cancel")
+        try await wait("mini editor Cancel finished cleanup") {
+            !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence
+        }
+        hideDesktop()
+        timer.start(minutes: 5)
+        let runningDeadline = timer.deadline
+        pressStatusItem()
+        pressStatusItem()
+        try await wait("automatic highlights visible after safe explicit opening") { self.whatsNewWindow()?.isVisible == true }
+        let window = try value(whatsNewWindow(), "native highlights window")
+        try require(window.contentView?.bounds.size == NSSize(width: 430, height: 560),
+                    "highlights content shrank or clipped instead of 430x560")
+        try await expect("whatsnew.content", WhatsNewView.releaseID)
+        try require(panelWindow()?.isVisible != true, "mini floats over highlights")
+        try require(timer.deadline == runningDeadline, "highlights changed timer deadline")
+        let priorContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let priorMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: priorContrast, reduceMotion: priorMotion) }
+        for contrast in [false, true] {
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+            for scheme in [ColorScheme.light, .dark] {
+                visualEnvironment.colorSchemeOverride = scheme
+                try await Task.sleep(nanoseconds: 100_000_000)
+                try capture("whats-new-\(scheme == .dark ? "dark" : "light")\(contrast ? "-contrast" : "")", window: window)
+            }
+        }
+        try await wait("highlights key window for Escape") { window.isKeyWindow }
+        let escape = try value(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+            characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 0x35),
+            "native Escape event")
+        NSApp.sendEvent(escape)
+        try await wait("highlights closed normally") { !window.isVisible }
+        showDesktop()
+        try require(!window.isVisible, "highlights repeated after one presentation")
+        try await press("desktop.create")
+        try await replaceFocusedText(control: "editor.title", text: "Черновик перед новостями")
+        showWhatsNew()
+        try require(!window.isVisible && editorSession.hasActiveEditor, "manual highlights replaced an editor")
+        try await expect("editor.title", "Черновик перед новостями")
+        try await press("editor.cancel")
+        try await wait("retained draft cancelled normally") {
+            !self.editorSession.hasActiveEditor && self.desktopWindow()?.attachedSheet == nil
+        }
+        showWhatsNew()
+        try await wait("manual highlights reopened") { window.isVisible }
+        try require(editorSession.beginPanelEditor(), "cannot reserve work before highlights close")
+        hideDesktop()
+        try await press("whatsnew.dismiss")
+        try await wait("manual highlights dismissed") { !window.isVisible }
+        try await Task.sleep(nanoseconds: 100_000_000)
+        try require(panelWindow()?.isVisible != true, "highlights close reopened panel over active work")
+        editorSession.endPanelEditor()
+        try await wait("close-time reservation cleanup finished") { !self.store.hasPendingPersistence }
+        showDesktop()
+        try await press("desktop.settings")
+        try await wait("desktop settings attached") { self.desktopWindow()?.attachedSheet != nil }
+        try await press("settings.whats-new")
+        try await wait("highlights from desktop Settings after native dismissal") {
+            window.isVisible && self.desktopWindow()?.attachedSheet == nil
+        }
+        try await press("whatsnew.dismiss")
+        try await wait("desktop Settings highlights closed") { !window.isVisible }
+        hideDesktop()
+        showPanel()
+        try await press("settings.open")
+        try await wait("mini Settings navigation ready") {
+            self.controls.frame("settings.back") != nil && self.panelWindow()?.isKeyWindow == true
+        }
+        try await press("settings.whats-new")
+        try await wait("highlights from mini Settings") { window.isVisible }
+        try await press("whatsnew.dismiss")
+        try await wait("mini Settings restored after highlights") {
+            !window.isVisible && self.panelWindow()?.isVisible == true
+        }
+        try await press("settings.back")
+        try require(timer.deadline == runningDeadline, "reopening highlights changed timer")
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(savedBytes == after, "highlights changed event bytes")
+        timer.delete()
+        passed.append("native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures")
+    }
+
+    private func verifyMaterialIntakeWithoutStatus() async throws {
+        try await wait("loaded isolated material store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "material fixture must start empty")
+        let priorContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let priorMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: priorContrast, reduceMotion: priorMotion) }
+        let event = Countdown(title: "Материалы поездки", date: Day(store.tomorrow), emoji: "")
+        let seeded = await store.save(event, primary: false)
+        try require(seeded, "cannot seed material event")
+        showDesktop()
+        try await wait("material event rendered in desktop") {
+            self.controls.entries["desktop.event.\(event.id)"]?.isEnabled == true
+                && self.controls.frame("desktop.event.\(event.id)") != nil
+        }
+        let host = try value(desktopWindow(), "material desktop")
+        let footerBefore = try value(controls.frame("desktop.settings"), "desktop footer before addition")
+        let source = configuration.homeURL.appendingPathComponent("MaterialSource.txt")
+        let bytes = Data("Материалы поездки\n\nПроверить адрес и документы.\n".utf8)
+        try bytes.write(to: source)
+        let payload = EventMaterials(files: [source], links: [EventLink(address: "https://example.com/materials")])
+        let added = await store.appendMaterials(payload, to: event.id)
+        try require(added, "material addition failed")
+        try await expect("desktop.attachments.indicator.\(event.id)", "1")
+        try await expect("desktop.links.indicator.\(event.id)", "1")
+        try require(controls.entries["materials.undo"] == nil && controls.entries["materials.status"] == nil,
+                    "saved addition exposes removed undo/status row in desktop")
+        let footerAfter = try value(controls.frame("desktop.settings"), "desktop footer after addition")
+        try require(abs(footerAfter.minY - footerBefore.minY) < 1, "addition shifts desktop footer")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            host.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("desktop-materials-no-status-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: host)
+          }
+        }
+        showPanel()
+        try await expect("panel.attachments.toggle.\(event.id)", "collapsed")
+        try await expect("panel.links.toggle.\(event.id)", "collapsed")
+        try require(controls.entries["materials.undo"] == nil && controls.entries["materials.status"] == nil,
+                    "saved addition exposes removed undo/status row in mini")
+        let panel = try value(panelWindow(), "material mini panel")
+        try require(panel.frame.width == 390 && panel.frame.height == 600, "mini panel dimensions changed")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("mini-materials-no-status-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: panel)
+          }
+        }
+        let stored = try value(store.active.first(where: { $0.id == event.id }), "added materials")
+        let attachment = try value(stored.attachments.first, "saved material file")
+        let copyURL = try value(await store.attachmentThumbnailURL(attachment, eventID: event.id), "owned material URL")
+        let copyBytes = try Data(contentsOf: copyURL)
+        let originalBytes = try Data(contentsOf: source)
+        try require(copyBytes == bytes && originalBytes == bytes, "material bytes differ")
+        let reloaded = try await CountdownRepository(fileURL: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json")).load()
+        try require(reloaded.items.first(where: { $0.id == event.id }) == stored,
+                    "immediate material addition does not survive repository reload")
+        let persistedBeforeEditor = try Data(contentsOf: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json"))
+        try await press("event.edit.\(event.id)")
+        try await wait("material editor visible in mini") {
+            self.editorSession.isPresented && self.controls.frame("editor.edit") != nil
+        }
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("material-editor-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: panel)
+          }
+        }
+        try await press("editor.cancel")
+        try await wait("material editor Cancel returns") { !self.editorSession.hasActiveEditor }
+        let persistedAfterEditor = try Data(contentsOf: configuration.homeURL
+            .appendingPathComponent("Application Support/CountdownManager/countdowns.json"))
+        try require(persistedAfterEditor == persistedBeforeEditor, "editor Cancel changed saved material data")
+        for highContrast in [false, true] {
+          accessibilitySettings.setIsolatedCaptureOverrides(highContrast: highContrast, reduceMotion: priorMotion)
+          for scheme in [ColorScheme.light, .dark] {
+            let composer = TextAttachmentComposer(text: "Инструкция к поездке\n\nДокументы и билеты взять с собой.\n",
+                eventTitle: event.title, submit: { _ in false }, cancel: {})
+                .environmentObject(accessibilitySettings)
+                .environment(\.colorScheme, scheme)
+                .frame(width: 430, height: 600)
+            let controller = NSHostingController(rootView: composer)
+            let fixture = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 430, height: 600),
+                                   styleMask: [.titled], backing: .buffered, defer: false)
+            fixture.contentViewController = controller
+            fixture.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            fixture.makeKeyAndOrderFront(nil)
+            try await Task.sleep(nanoseconds: 100_000_000)
+            try capture("material-composer-native-fixture-\(scheme == .dark ? "dark" : "light")\(highContrast ? "-contrast" : "")", window: fixture)
+            fixture.orderOut(nil)
+          }
+        }
+        passed.append("file/link addition persists owned bytes and original; no addition undo/status controls on desktop or mini; fixed footer/panel and collapsed sections retained")
     }
 
     private func runAttachmentFocusedChecks() async throws {
@@ -871,6 +1092,7 @@ final class DesktopSmokeRuntime {
         try await checkFilteredCreation(divider: resizedDivider, window: window)
         try await requireDivider(resizedDivider, in: window, after: "search empty state and creation")
         passed.append("nondefault native divider positions survive selection, mode, checklist, favorite, editor, settings and search-empty transitions")
+        try await verifyEventLinks()
         try await verifyAttachments()
         try await verifyAttachmentThumbnails()
         try await verifyPendingDesktopActions()
@@ -999,6 +1221,180 @@ final class DesktopSmokeRuntime {
         let disk = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: fileURL))
         try require(disk == fixture.data && disk.primaryID == nil, "retained deletion not durable or favorite remained")
         passed.append("native retention checkbox Cancel/Save preserve past event; unchecking requires explicit confirmation, cancellation restores flag, confirmed deletion removes only owned copy")
+    }
+
+    private func verifyEventLinks() async throws {
+        let host = try value(desktopWindow(), "links desktop host")
+        let first = EventLink(name: "Маршрут до отеля", address: "https://example.com/route")
+        let fallback = EventLink(address: "https://tickets.example.com/order/123")
+        let event = Countdown(title: "Поездка: билеты и полезные ссылки", date: Day(store.tomorrow), emoji: "",
+                              links: [first, fallback])
+        let saved = await store.save(event, primary: true)
+        try require(saved, "cannot seed links fixture")
+        let source = configuration.homeURL.appendingPathComponent("LinkSummaryFixture.txt")
+        try Data("Материалы для тестового события".utf8).write(to: source)
+        let token = UUID()
+        let began = await store.beginAttachmentDraft(token)
+        try require(began, "cannot prepare summary file fixture")
+        let files = await store.importAttachments(from: [source, source], draftID: token, currentAttachments: [])
+        try require(files.count == 2, "cannot import summary files")
+        let many = Countdown(title: "Десять ссылок, дела и два файла", date: Day(store.tomorrow), emoji: "",
+                             subtasks: [try Subtask(text: "Проверить материалы"), try Subtask(text: "Собрать вещи")],
+                             attachments: files,
+                             links: (0..<10).map { EventLink(name: "Ссылка \($0 + 1)", address: "https://example.com/\($0)") })
+        let manySaved = await store.save(many, primary: false)
+        try require(manySaved, "cannot seed many-material summary")
+        await store.discardAttachmentDraft(token)
+        let empty = Countdown(title: "Без ссылок и вложений", date: Day(store.tomorrow), emoji: "")
+        let emptySaved = await store.save(empty, primary: false)
+        try require(emptySaved, "cannot seed zero-material summary")
+        host.setContentSize(NSSize(width: 960, height: 850))
+        try await press("desktop.event.\(event.id)")
+        try await expect("desktop.links.\(event.id)", "2")
+        try await expect("desktop.links.count.\(event.id)", "2")
+        try await expect("desktop.links.open.\(fallback.id)", "tickets.example.com")
+        for mode in ["collection", "feed"] {
+            if controls.value("desktop.mode") != mode { try await press("desktop.mode") }
+            try await expect("desktop.mode", mode)
+            if mode == "feed" {
+                try await wait("material summary feed rows finish reflow without overlap") {
+                    guard let first = self.controls.frame("desktop.event.\(many.id)"),
+                          let second = self.controls.frame("desktop.event.\(empty.id)") else { return false }
+                    return abs(first.minX - second.minX) < 1 && abs(first.width - second.width) < 1
+                        && (first.maxY <= second.minY + 1 || second.maxY <= first.minY + 1)
+                }
+            }
+            try await expect("desktop.links.indicator.\(event.id)", "2")
+            try await expect("desktop.links.indicator.\(many.id)", "10")
+            try require(controls.entries["desktop.links.indicator.\(empty.id)"] == nil,
+                        "zero-link event has a summary placeholder")
+            try await expect("desktop.attachments.indicator.\(many.id)", "2")
+            try await wait("link count fits the existing summary host in \(mode)") {
+                guard let count = self.controls.frame("desktop.links.indicator.\(many.id)"),
+                      let host = self.controls.frame("desktop.card.completion.\(many.id)") else { return false }
+                return count.width > 0 && count.height > 0
+                    && count.minX >= host.minX - 1 && count.maxX <= host.maxX + 1
+                    && count.minY >= host.minY - 1 && count.maxY <= host.maxY + 1
+            }
+            try await wait("summary values precede their native symbols in \(mode)") {
+                var symbolEdges: [CGFloat] = []
+                for kind in ["tasks", "attachments", "links"] {
+                    let prefix = "desktop.summary.\(kind).\(many.id)"
+                    guard let value = self.controls.frame(prefix + ".value"),
+                          let symbol = self.controls.frame(prefix + ".icon"),
+                          value.width > 0, symbol.width > 0, value.maxX <= symbol.minX + 1 else { return false }
+                    symbolEdges.append(symbol.maxX)
+                }
+                return mode == "feed" || (symbolEdges.max()! - symbolEdges.min()! < 1)
+            }
+            for scheme in [ColorScheme.light, .dark] {
+                visualEnvironment.colorSchemeOverride = scheme
+                host.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+                try await Task.sleep(nanoseconds: 120_000_000)
+                let prefix = mode == "collection" ? "desktop-links" : "desktop-links-feed"
+                try capture("\(prefix)-\(scheme == .dark ? "dark" : "light")", window: host)
+            }
+        }
+        try await press("desktop.event.\(many.id)")
+        try await expect("desktop.links.count.\(many.id)", "10")
+        try await expect("desktop.attachments.count.\(many.id)", "2")
+        try await wait("saved material counts share a trailing column in details") {
+            guard let links = self.controls.frame("desktop.links.count.\(many.id)"),
+                  let files = self.controls.frame("desktop.attachments.count.\(many.id)") else { return false }
+            return abs(links.maxX - files.maxX) < 1
+        }
+        try await wait("details section summaries share value-symbol ordering and alignment") {
+            var edges: [CGFloat] = []
+            for kind in ["tasks", "paperclip", "link"] {
+                let prefix = "desktop.summary.details.\(kind).\(many.id)"
+                guard let value = self.controls.frame(prefix + ".value"),
+                      let icon = self.controls.frame(prefix + ".icon"), value.maxX <= icon.minX + 1 else { return false }
+                edges.append(icon.maxX)
+            }
+            return edges.max()! - edges.min()! < 1
+        }
+        for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            host.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            try capture("desktop-material-headings-\(scheme == .dark ? "dark" : "light")", window: host)
+        }
+        try await press("desktop.event.\(event.id)")
+        showPanel()
+        try await expect("panel.links.\(event.id)", "2")
+        let toggle = "panel.links.toggle.\(event.id)"
+        let dataBeforeDisclosure = try Data(contentsOf: configuration.dataURL)
+        try await expect(toggle, "collapsed")
+        try require(controls.entries["panel.links.open.\(first.id)"] == nil,
+                    "collapsed links expose an interactive row")
+        let panel = try value(panelWindow(), "links mini panel")
+        for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 120_000_000)
+            try capture("mini-links-collapsed-\(scheme == .dark ? "dark" : "light")", window: panel)
+        }
+        let headingID = "panel.links.heading.\(event.id)"
+        let countID = "panel.links.count.\(event.id)"
+        let collapsedHeading = try value(controls.frame(headingID), "collapsed link heading frame")
+        let collapsedCount = try value(controls.frame(countID), "collapsed link count frame")
+        try await press(toggle)
+        try await expect(toggle, "expanded")
+        try await expect("panel.links.open.\(first.id)", first.displayName)
+        try await wait("link heading/count retain horizontal alignment") {
+            guard let heading = self.controls.frame(headingID), let count = self.controls.frame(countID) else { return false }
+            return abs(heading.minX - collapsedHeading.minX) < 1 && abs(count.maxX - collapsedCount.maxX) < 1
+        }
+        for _ in 0..<3 {
+            try await press(toggle)
+            try await expect(toggle, "collapsed")
+            try await wait("collapsed link rows removed") { self.controls.entries["panel.links.open.\(first.id)"] == nil }
+            try await press(toggle)
+            try await expect(toggle, "expanded")
+        }
+        let dataAfterDisclosure = try Data(contentsOf: configuration.dataURL)
+        try require(dataBeforeDisclosure == dataAfterDisclosure, "link disclosure changed saved JSON")
+        for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            panel.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 120_000_000)
+            try capture("mini-links-\(scheme == .dark ? "dark" : "light")", window: panel)
+        }
+        showDesktop()
+        try await wait("link desktop temporarily hides mini") { self.panelWindow()?.isVisible == false }
+        showPanel()
+        try await expect(toggle, "expanded")
+        try await press(toggle)
+        try await expect(toggle, "collapsed")
+        showDesktop()
+        try await wait("link desktop return") { self.desktopWindow()?.isVisible == true && self.panelWindow()?.isVisible == false }
+        let before = try Data(contentsOf: configuration.dataURL)
+        try await press("desktop.detail.edit")
+        try await expect("editor.links", "2")
+        try await wait("links editor finishes its initial title-focus task") {
+            self.controls.focusedID == "editor.title" && host.attachedSheet?.isKeyWindow == true
+                && NSApp.keyWindow?.firstResponder is NSTextView
+        }
+        try await replaceFocusedText(control: "editor.links.address.\(first.id)", text: "file:///tmp/not-a-web-link")
+        try await replaceFocusedText(control: "editor.links.name.\(first.id)", text: "Маршрут до отеля")
+        try await wait("invalid link has inline error and blocks Save") {
+            self.controls.entries["editor.links.error.\(first.id)"] != nil
+                && self.controls.entries["editor.save"]?.isEnabled == false
+        }
+        let editor = try value(host.attachedSheet, "link editor sheet")
+        for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            editor.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            let scroll = try value(editor.contentView.flatMap { nativeScroll(in: $0) }, "links editor scroll")
+            try scrollBrowser(scroll, toEnd: true)
+            try await Task.sleep(nanoseconds: 120_000_000)
+            try capture("editor-links-error-\(scheme == .dark ? "dark" : "light")", window: editor)
+        }
+        try await press("editor.cancel")
+        try await requireNativeSheetDismissal(editor, host: host, description: "link Cancel")
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(before == after, "link Cancel changed durable JSON")
+        passed.append("native link rendering in desktop/mini Light/Dark, collapsed default, repeated disclosure and hidden-row removal, retained hide/show state, unchanged disclosure JSON, domain fallback, inline invalid-address Save guard and unchanged JSON after Cancel; ordinary Save/reopen/delete input is external XCUITest evidence")
     }
 
     private func verifyAttachments() async throws {
@@ -2448,7 +2844,16 @@ final class DesktopSmokeRuntime {
                 let localPoint = NSPoint(x: rect.midX + offset, y: rect.minY + rect.height * height)
                 let point = grip.convert(localPoint, to: content.superview)
                 let hit = content.hitTest(point)
-                let routesAsExpected = hasNativeSheet ? hit == nil : hit === grip
+                // Native drop/context-menu registration may retain the hosting view as an inert
+                // fallback hit. No background control or divider may receive that sheet's input.
+                let routesAsExpected = hasNativeSheet ? (hit == nil || hit === content) : hit === grip
+                if hasNativeSheet {
+                    for id in ["desktop.mode", "desktop.create", "desktop.detail.edit", "desktop.settings"] {
+                        if let control = controls.entries[controlScope + id] {
+                            try require(!control.isEnabled, "background action enabled under native sheet: \(id)")
+                        }
+                    }
+                }
                 try require(routesAsExpected, "unexpected expanded divider hit routing after \(action); "
                             + "expected=\(hasNativeSheet ? "blocked by native sheet" : "divider grip"), "
                             + "height=\(height), offset=\(offset), localPoint=\(localPoint), point=\(point), gripRect=\(rect), "
@@ -2931,7 +3336,14 @@ final class DesktopSmokeRuntime {
     }
 
     private func press(_ id: String) async throws {
-        try await wait("enabled \(id)") { self.controls.entries[id]?.isEnabled == true }
+        do {
+            try await wait("enabled \(id)") { self.controls.entries[id]?.isEnabled == true }
+        } catch {
+            let entry = controls.entries[id]
+            throw Failure("control \(id): registered=\(entry != nil) enabled=\(String(describing: entry?.isEnabled)) "
+                          + "pending=\(store.hasPendingPersistence) editor=\(String(describing: editorSession.surface)) "
+                          + "sheet=\(desktopWindow()?.attachedSheet != nil)")
+        }
         try require(controls.press(id), "cannot activate \(id)")
     }
 

@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-28",
+  "branch": "codex/event-links",
+  "baseline_commit": "14dc489",
+  "user_scope": {
+    "remove": [
+      "Undo addition action",
+      "entire material status/progress/success/cancelled row",
+      "addition receipt and message state"
+    ],
+    "keep": [
+      "file and HTTP/HTTPS drag-and-drop",
+      "plain text attachment composer",
+      "existing editor Save/Cancel and cleanup",
+      "native text Undo/Redo",
+      "errors and validation",
+      "admission and persistence locks",
+      "existing counts/disclosures"
+    ],
+    "replacement_notification": false,
+    "auto_hide_request": "superseded by explicit removal of the whole status row",
+    "also_fix": [
+      "Create attachment must use existing Save primary-action family",
+      "Create day appearance must match main; investigate build provenance before altering native menu",
+      "Make native design system executable through shared real components and source/build gates",
+      "Style identity stays independent of application version; no new product behavior without source of approval"
+    ]
+  },
+  "confirmed_build_facts": {
+    "installed_1_18_1_34_sdk": "13.0",
+    "links_preview_sdk": "13.0",
+    "materials_preview_sdk": "15.4",
+    "all_minimum_os": "13.0",
+    "create_day_source": "Historical comparison found the same Menu implementation in main/current. Final implementation uses the shared toolbar action family; native menu role and its three actions were verified. Earlier SDK metadata alone did not establish visual causality."
+  },
+  "work": {
+    "root": "Completed correction, shared component system, deterministic gates, canonical build and bounded native acceptance. Old user tester untouched; new separate synthetic preview launched and menu3actions/AXrole verified.",
+    "drag_drop_designer": "Done/frozen: all four shared action families +9-family inventory. Toolbar uses native MenuStyle.button plus shared bordered regular13 ink, no custom tint/chrome.",
+    "native_build_parity": "Done:buildcontract plus actual occlusion pending-show race fix+pure200sequence regression; strictpreviousnativeassert unchanged, final28/28.",
+    "acceptance_harness": "Done:sourcegate7,contract18,evalinfra36,hook12/nativehook3. Userapprovedexact2livecasescompleted; stylecasePASS, proposalcaseFAILmissingrequiredreads despitequalitative4/4; no rereuns/rubricweakening."
+  },
+  "evidence_boundary": "Final current evidence: docs/images/v1.18.1/native-design-system-2026-10-28/PROVENANCE.md and evidence.json; original failed/earlier passing campaigns remain historical and are not merged into final totals.",
+  "running_tester_policy": "User may still have unsaved text composer and real private attachments in .build/materials-preview/TestData; no reset, fixture reuse, redistribution or forcedrestart. New QA uses only fresh synthetic profiles.",
+  "authority": "Scoped implementation and harness correction authorized. User subsequently authorized commit and push on codex/event-links. Main history changes, production installation, release/publication and production data mutation remain outside this authorization.",
+  "harness_gap": "Already-existing policy was not applied; defaults were promoted to accepted behavior and implementation tests checked that invented behavior. Added independent scope case and canonical component/build contract gates; no impossible future guarantee.",
+  "canonical_build": {
+    "path": "/private/tmp/Countdown Materials Corrected Native.app",
+    "build_entry": "build.sh with NativeDesignContract",
+    "compiler_headers_sdk": "15.4",
+    "linked_compatibility": "13.0",
+    "signature_verified": true,
+    "status": "PASS, final source",
+    "preview": ".build/native-design-preview/Countdown Design Preview.app",
+    "archive": ".build/Countdown-Native-Design-Preview.zip"
+  },
+  "native_qa": {
+    "first_focused_run": "failed before scenario completion because expect(id,title) targeted a control without value; changed to enabled entry+frame, no product workaround",
+    "ab_root": "/private/tmp/countdown-design-correction-ab",
+    "ab02": "SDK13 and SDK15 diagnostics both focused1/1 PASS; actual captures prove calendaricon tint differs butcoloredchevronsquarepersistsboth. Thus new explicit native MenuStyle.button toolbarfamily was applied; MUST inspect fresh captures afterfinalbuild.",
+    "capture_fixture_failure": "ab02 composer screenshot was clipped because isolated fixture had no fixed root frame. Fixed .frame430x600 in test fixture, not production. Do not use ab02 composer as accepted screenshot.",
+    "final": "Exact final3 source: desktop28/28, focused1/1,16nativecaptures Light/Dark×standard/contrast for desktop/mini/editor/composer; independentdesignerboundedacceptance. ExplicitnativeMenuAX+3actions checked withCUA.",
+    "remaining": "Native menu does not render decorativeSFChevroninlabel; role/3actions preserved, coloredindicatorgone. Externalphysicaldrag/statushover/Spaces andVoiceOver not newlycertified.",
+    "completed_plan": "Completed on final3: separate synthetic QA bundle and home, recorded provenance, desktop 28/28, focused material intake 1/1, 16 native captures reviewed, README and evidence refreshed. Existing user TestData preserved."
+  },
+  "permission_pending": null
+}

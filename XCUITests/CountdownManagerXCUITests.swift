@@ -451,6 +451,263 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(task["isCompleted"] as? Bool, true)
     }
 
+    func testMiniLinksDisclosureAtZeroOneAndTenPreservesData() throws {
+        for count in [0, 1, 10] {
+            var items = try persistedItems()
+            let links: [[String: Any]] = (0..<count).map { index in
+                ["id": String(format: "55555555-5555-5555-5555-%012d", index + 1),
+                 "name": "Ссылка \(index + 1)", "address": "https://example.com/\(index + 1)"]
+            }
+            items[0]["links"] = links
+            try writeItems(items, primaryID: eventID)
+            let before = try Data(contentsOf: dataURL)
+            app.launch()
+            XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+            let toggle = app.buttons["panel.links.toggle.\(eventID)"]
+            if count == 0 {
+                XCTAssertFalse(toggle.exists)
+            } else {
+                XCTAssertTrue(toggle.waitForExistence(timeout: 3))
+                XCTAssertTrue(toggle.label.contains(String(count)))
+                let first = app.buttons["panel.links.open.55555555-5555-5555-5555-000000000001"]
+                XCTAssertFalse(first.exists)
+                toggle.click()
+                XCTAssertTrue(first.waitForExistence(timeout: 3))
+                toggle.click()
+                XCTAssertTrue(waitForAbsence(first))
+                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).click()
+                XCTAssertTrue(first.waitForExistence(timeout: 3))
+                toggle.click()
+                XCTAssertTrue(waitForAbsence(first))
+            }
+            XCTAssertEqual(try Data(contentsOf: dataURL), before)
+            if count != 10 { app.terminate() }
+        }
+    }
+
+    func testFinderFileDropTargetsUnselectedEventAndPersists() throws {
+        let recipientID = "77777777-7777-7777-7777-777777777777"
+        var fixture = try persistedItems()
+        var recipient = fixture[0]
+        recipient["id"] = recipientID
+        recipient["title"] = "Drop recipient"
+        recipient["subtasks"] = []
+        fixture.append(recipient)
+        try writeItems(fixture, primaryID: nil)
+        let folder = testHome.appendingPathComponent("DragFixture-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent("DropSample.txt")
+        let bytes = Data("Original drag fixture\n\nPreserve paragraphs.\n".utf8)
+        try bytes.write(to: file)
+        app.launch()
+        XCTAssertTrue(app.buttons["desktop.open"].waitForExistence(timeout: 5))
+        app.buttons["desktop.open"].click()
+        try tileMaterialTestWindow(app, side: "Справа")
+        let target = app.buttons["desktop.event.\(recipientID)"]
+        XCTAssertTrue(target.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["desktop.event.\(eventID)"].isSelected)
+        XCTAssertTrue(NSWorkspace.shared.open(folder))
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
+        finder.activate()
+        let sourceWindow = finder.windows[folder.lastPathComponent]
+        XCTAssertTrue(sourceWindow.waitForExistence(timeout: 5))
+        defer {
+            if sourceWindow.exists {
+                let close = sourceWindow.buttons[XCUIIdentifierCloseWindow]
+                if close.exists { close.click() }
+            }
+        }
+        try tileMaterialTestWindow(finder, side: "Слева")
+        let source = sourceWindow.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", file.lastPathComponent)).firstMatch
+        XCTAssertTrue(source.waitForExistence(timeout: 5), sourceWindow.debugDescription)
+        XCTAssertTrue(source.isHittable)
+        source.press(forDuration: 0.6, thenDragTo: target)
+        let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            let items = try? self.persistedItems()
+            return (items?.first(where: { $0["id"] as? String == recipientID })?["attachments"] as? [[String: Any]])?.count == 1
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [added], timeout: 8), .completed)
+        app.activate()
+        XCTAssertTrue(app.buttons["desktop.event.\(eventID)"].isSelected, "Drop target must not become a different owner")
+        let saved = try XCTUnwrap(try persistedItems().first { $0["id"] as? String == recipientID })
+        let attachments = try XCTUnwrap(saved["attachments"] as? [[String: Any]])
+        let attachment = try XCTUnwrap(attachments.first)
+        let identity = try XCTUnwrap(attachment["id"] as? String)
+        let name = try XCTUnwrap(attachment["name"] as? String)
+        let copy = dataURL.deletingLastPathComponent().appendingPathComponent("Attachments/\(identity)/\(name)")
+        XCTAssertEqual(try Data(contentsOf: copy), bytes)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = "Actual Finder drop into unselected event"
+        capture.lifetime = .keepAlways
+        add(capture)
+        XCTAssertFalse(app.buttons["materials.undo"].exists)
+        XCTAssertFalse(app.staticTexts["materials.status"].exists)
+        app.terminate()
+        app.launch()
+        let restored = try XCTUnwrap(try persistedItems().first { $0["id"] as? String == recipientID })
+        XCTAssertEqual((restored["attachments"] as? [[String: Any]])?.count, 1)
+        XCTAssertEqual(try Data(contentsOf: copy), bytes)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+    }
+
+    func testSafariLinkDropCreatesOnlyWebLink() throws {
+        let marker = "MaterialDragBrowserFixture-" + UUID().uuidString
+        let html = testHome.appendingPathComponent(marker + ".html")
+        let address = "https://example.com/material-drag"
+        try "<!doctype html><html><head><title>\(marker)</title></head><body><a href='\(address)' style='display:block;padding:60px;font-size:24px'>Drag material URL</a></body></html>"
+            .write(to: html, atomically: true, encoding: .utf8)
+        app.launch()
+        XCTAssertTrue(app.buttons["desktop.open"].waitForExistence(timeout: 5))
+        app.buttons["desktop.open"].click()
+        try tileMaterialTestWindow(app, side: "Справа")
+        let target = app.buttons["desktop.event.\(eventID)"]
+        XCTAssertTrue(target.waitForExistence(timeout: 5))
+        let safari = XCUIApplication(bundleIdentifier: "com.apple.Safari")
+        safari.activate()
+        let originalWindowCount = safari.windows.count
+        safari.typeKey("n", modifierFlags: .command)
+        let newWindow = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            safari.windows.count > originalWindowCount
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [newWindow], timeout: 5), .completed)
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+        let browserURL = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari"))
+        NSWorkspace.shared.open([html], withApplicationAt: browserURL, configuration: configuration)
+        let sourceWindow = safari.windows.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch
+        XCTAssertTrue(sourceWindow.waitForExistence(timeout: 8))
+        defer {
+            if sourceWindow.exists, sourceWindow.label.contains(marker) {
+                safari.activate()
+                sourceWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)).click()
+                safari.typeKey("w", modifierFlags: .command)
+            }
+        }
+        try tileMaterialTestWindow(safari, side: "Слева")
+        let link = sourceWindow.links["Drag material URL"]
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        link.press(forDuration: 0.6, thenDragTo: target)
+        let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let item = try? self.persistedItems().first else { return false }
+            return (item["links"] as? [[String: Any]])?.first?["address"] as? String == address
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [added], timeout: 8), .completed)
+        let item = try XCTUnwrap(try persistedItems().first)
+        XCTAssertTrue((item["attachments"] as? [[String: Any]] ?? []).isEmpty)
+        app.activate()
+        let capture = XCTAttachment(screenshot: app.screenshot())
+        capture.name = "Actual Safari URL drop"
+        capture.lifetime = .keepAlways
+        add(capture)
+        XCTAssertFalse(app.buttons["materials.undo"].exists)
+        XCTAssertFalse(app.staticTexts["materials.status"].exists)
+        app.terminate()
+        app.launch()
+        let restored = try XCTUnwrap(try persistedItems().first)
+        XCTAssertEqual((restored["links"] as? [[String: Any]])?.first?["address"] as? String, address)
+    }
+
+    private func tileMaterialTestWindow(_ application: XCUIApplication, side: String) throws {
+        application.activate()
+        let menu = application.menuBars.menuBarItems["Окно"]
+        XCTAssertTrue(menu.waitForExistence(timeout: 5))
+        menu.click()
+        let resize = application.menuItems["Переместить и изменить размер"]
+        XCTAssertTrue(resize.waitForExistence(timeout: 3))
+        resize.hover()
+        let command = application.menuItems.matching(NSPredicate(format: "title == %@ OR label == %@", side, side)).firstMatch
+        XCTAssertTrue(command.waitForExistence(timeout: 3))
+        command.click()
+    }
+
+    func testDesktopEventLinkCancelReopenAndSave() throws {
+        let linkID = "44444444-4444-4444-4444-444444444444"
+        var items = try persistedItems()
+        items[0]["links"] = [["id": linkID, "name": "Маршрут", "address": "https://example.com/route"]]
+        try writeItems(items, primaryID: eventID)
+        app.launch()
+        app.buttons["desktop.open"].click()
+        let edit = app.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        edit.click()
+        let name = app.textFields["editor.links.name.\(linkID)"]
+        XCTAssertTrue(name.waitForExistence(timeout: 3))
+        revealInEditor(name, fullyInViewport: true)
+        replace(name, with: "Черновик")
+        app.buttons["editor.cancel"].click()
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        XCTAssertTrue(edit.isEnabled)
+        edit.click()
+        let reopened = app.textFields["editor.links.name.\(linkID)"]
+        XCTAssertTrue(reopened.waitForExistence(timeout: 3))
+        XCTAssertEqual(reopened.value as? String, "Маршрут")
+        revealInEditor(reopened, fullyInViewport: true)
+        replace(reopened, with: "Новый маршрут")
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["desktop.links.open.\(linkID)"].waitForExistence(timeout: 3))
+        let links = try XCTUnwrap(try persistedItems().first?["links"] as? [[String: Any]])
+        XCTAssertEqual(links.first?["name"] as? String, "Новый маршрут")
+    }
+
+    func testEventLinksEditorSaveCancelValidationAndRelaunch() throws {
+        app.launch()
+        openEditor()
+        let add = app.buttons["editor.links.add"]
+        revealInEditor(add, fullyInViewport: true)
+        add.click()
+        let addresses = app.textFields.matching(NSPredicate(format: "identifier BEGINSWITH %@", "editor.links.address."))
+        XCTAssertEqual(addresses.count, 1)
+        let address = addresses.element(boundBy: 0)
+        let suffix = String(address.identifier.dropFirst("editor.links.address.".count))
+        revealInEditor(address, fullyInViewport: true)
+        replace(address, with: "file:///tmp/test")
+        let name = app.textFields["editor.links.name.\(suffix)"]
+        name.click()
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
+        XCTAssertTrue(app.staticTexts["editor.links.error.\(suffix)"].exists)
+        replace(name, with: "Маршрут")
+        replace(address, with: "https://example.com/route")
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        app.buttons["editor.save"].click()
+        let disclosure = app.buttons["panel.links.toggle.\(eventID)"]
+        XCTAssertTrue(disclosure.waitForExistence(timeout: 3))
+        let open = app.buttons["panel.links.open.\(suffix)"]
+        XCTAssertFalse(open.exists)
+        disclosure.click()
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        disclosure.click()
+        XCTAssertTrue(waitForAbsence(open))
+        disclosure.click()
+        XCTAssertTrue(open.waitForExistence(timeout: 3))
+        let links = try XCTUnwrap(try persistedItems().first?["links"] as? [[String: Any]])
+        XCTAssertEqual(links.first?["address"] as? String, "https://example.com/route")
+        XCTAssertEqual(links.first?["name"] as? String, "Маршрут")
+        openEditor()
+        let reopened = app.textFields["editor.links.address.\(suffix)"]
+        revealInEditor(reopened, fullyInViewport: true)
+        replace(reopened, with: "https://example.com/discard")
+        app.buttons["editor.cancel"].click()
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["panel.links.toggle.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.buttons["panel.links.open.\(suffix)"].exists)
+        app.buttons["panel.links.toggle.\(eventID)"].click()
+        XCTAssertTrue(app.buttons["panel.links.open.\(suffix)"].waitForExistence(timeout: 3))
+        openEditor()
+        let restored = app.textFields["editor.links.address.\(suffix)"]
+        XCTAssertTrue(restored.waitForExistence(timeout: 3))
+        XCTAssertEqual(restored.value as? String, "https://example.com/route")
+        let remove = app.buttons["editor.links.remove.\(suffix)"]
+        revealInEditor(remove, fullyInViewport: true)
+        remove.click()
+        app.buttons["editor.save"].click()
+        XCTAssertTrue(app.buttons["event.edit.\(eventID)"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAbsence(app.buttons["panel.links.open.\(suffix)"]))
+        XCTAssertNil(try persistedItems().first?["links"])
+    }
+
     func testAddedSubtaskDeletePreservesNeighborTextOnSave() throws {
         app.launch()
         openEditor()

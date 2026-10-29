@@ -1,0 +1,2 @@
+DesktopSmoke
+FAIL after 0 scenarios: timeout: editor.links.name.59329C1D-AB2E-416D-9377-7BC268469648 = Маршрут до отеля

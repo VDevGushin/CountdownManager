@@ -11,6 +11,7 @@ struct DesktopEventDetail: View {
     let toggleFavorite: () -> Void
     let delete: () -> Void
     let toggleSubtask: (UUID) -> Void
+    let openLink: (EventLink) -> Void
     let openAttachment: (EventAttachment) -> Void
     let attachmentThumbnailURL: @MainActor (EventAttachment) async -> URL?
     let showAttachments: () -> Void
@@ -39,6 +40,7 @@ struct DesktopEventDetail: View {
                                            open: openAttachment, thumbnailURL: attachmentThumbnailURL,
                                            showAll: showAttachments)
                         .id(item.id)
+                    SavedLinkSection(item: item, surface: "desktop", open: { openLink($0) })
                 }
                 .padding(24)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -60,45 +62,31 @@ struct DesktopEventDetail: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
             Spacer(minLength: 0)
-            Button(action: toggleFavorite) {
-                Image(systemName: presentation.isPrimary ? "star.fill" : "star")
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
-            .foregroundStyle(presentation.isPrimary
-                ? AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
-                : AuroraInstrument.ink(for: colorScheme))
-            .accessibilityLabel(presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным")
+            AuroraSymbolAction(symbolName: presentation.isPrimary ? "star.fill" : "star",
+                surface: .desktop, tone: presentation.isPrimary ? .accent : .ink,
+                accessibilityLabel: presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным",
+                action: toggleFavorite)
             .help(presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным")
             .accessibilityIdentifier("desktop.favorite.\(item.id.uuidString)")
             .uiSmokeControl(id: "desktop.favorite.\(item.id.uuidString)", action: toggleFavorite,
                             value: { presentation.isPrimary ? "on" : "off" })
             .fixedSize()
             .disabled(!canMutate)
-            Button(action: edit) {
-                Image(systemName: "pencil")
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
+            AuroraSymbolAction(symbolName: "pencil", surface: .desktop, tone: .ink,
+                accessibilityLabel: "Редактировать событие", action: edit)
                 .fixedSize()
                 .help("Изменить событие")
-                .accessibilityLabel("Редактировать событие")
                 .accessibilityIdentifier("desktop.detail.edit")
                 .uiSmokeControl(id: "desktop.detail.edit", action: edit)
                 .disabled(!canMutate)
-            Button(role: .destructive, action: requestDeletion) {
-                Image(systemName: "trash")
-                    .frame(width: 28, height: 28)
-                    .contentShape(Rectangle())
-            }
+            AuroraSymbolAction(symbolName: "trash", surface: .desktop, tone: .ink, role: .destructive,
+                accessibilityLabel: "Удалить событие: \(item.title)", action: requestDeletion)
                 .fixedSize()
                 .help("Удалить событие")
-                .accessibilityLabel("Удалить событие: \(item.title)")
                 .accessibilityIdentifier("desktop.detail.delete")
                 .uiSmokeControl(id: "desktop.detail.delete", action: requestDeletion)
                 .disabled(!canMutate || confirmingDeletion)
         }
-        .buttonStyle(.borderless)
         .font(.system(size: 16, weight: .regular))
         .padding(.horizontal, 24)
         .frame(height: 54)
@@ -200,6 +188,7 @@ struct DesktopEventDetail: View {
                     .uiSmokeControl(id: "desktop.subtasks.heading.\(item.id.uuidString)")
                 Spacer()
                 DesktopCompletionLabel(presentation: presentation)
+                    .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.details.tasks.\(item.id)"))
                     .uiSmokeControl(id: "desktop.checklist.progress", value: {
                         presentation.completionLabel ?? "empty"
                     })

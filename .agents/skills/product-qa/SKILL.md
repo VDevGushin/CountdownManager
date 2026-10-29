@@ -41,6 +41,20 @@ This is a risk lens, not a mandatory checklist. Skip dimensions that cannot affe
 
 Prefer observable outcomes over implementation details. Watch for stale state, duplicated effects, lost drafts, incorrect focus, inaccessible controls, animation that ignores Reduce Motion, and regressions in adjacent flows sharing the same state or component.
 
+## Compare the new UI with its existing sibling
+
+For an added or changed UI family, name the existing control/section used as the reference and
+compare it on each affected surface. Check symbols and native treatment, header/count alignment,
+disclosure/default state, full click area and empty/one/limit content. A visible list screenshot
+does not prove collapse or hidden-row accessibility. Exercise the applicable interactions; verify
+that disclosure changes no event bytes and that hiding/reopening follows the established contract.
+Do not import desktop presentation into the mini-panel or a mini disclosure into desktop details
+without a product reason. Confirm the reviewed build's SDK/style matches the ordinary build path.
+When delivering a tester app, verify its actual launcher and packaged native bundle, not only the
+underlying build. Preserve LaunchServices registration and the isolated home; a shell wrapper
+executing a raw Cocoa executable is not equivalent evidence for status-item/panel anchoring.
+
+
 ## Observe transitions, not just settled states
 
 When a changed flow includes asynchronous saves, pending controls, or redraws, observe representative actions during the transition as well as after completion. Include rapid repeated input when relevant. Look for brief flashes, unrelated controls dimming or disabling together, blank frames, layout jumps, and lost focus. A passing end-state assertion or settled screenshot cannot establish that a transition is visually stable.
@@ -50,6 +64,17 @@ For a reported visual transient, inspect the supplied recording around the actio
 Add focused regression coverage for the actual intermediate failure state. Prefer controlled asynchronous boundaries over timing-dependent sleeps. Pair state assertions with bounded render observation or a specific manual transition check when the driver cannot faithfully capture the effect; internal flags alone do not prove the absence of flicker. Preserve persistence, editor ownership, and rapid-input semantics rather than masking the symptom by removing safety guards or silently dropping input.
 
 Apply this proportionately to the affected interaction, not as a requirement to record every task. State which transitions were actually observed and which remain unverified; do not report “no flicker” based only on final-state captures.
+
+## Separate agreement, implementation and appearance
+
+Validate the user's accepted scope separately from implementation behavior. A prototype's default
+selection and passing tests written for an agent's own addition are not acceptance evidence.
+Check that unrequested mutation/undo/status mechanics have not appeared in the new flow.
+For native style acceptance, compare the actual build's recorded compiler SDK, linked compatibility
+and shared component family with the accepted reference. A version change alone does not authorize
+a new visual identity. Run the design-system/contract gates from docs/VERIFICATION.md; do not infer
+runtime appearance from shared source code or SDK metadata alone. Review native captures in the
+required themes and contrast states before reporting visual parity.
 
 ## Preserve valid evidence
 

@@ -86,6 +86,9 @@ Key files:
 - `Presentation.swift`
 - `StatusBarImages.swift`
 - `Views.swift`
+- `MaterialIntake.swift`
+- `TextAttachmentView.swift`
+- `StatusItemMaterialDragView.swift`
 - `AttachmentViews.swift`
 - `AttachmentPreview.swift`
 - `Diagnostics.swift`
@@ -129,6 +132,7 @@ NSApplication / AppDelegate
 ├── WeatherController → location/provider requests and bounded memory cache
 ├── EventEditorSession → optional panel/desktop editor owner
 ├── ApplicationAppearance → shared persisted system/light/dark choice
+├── WhatsNewWindowController → read-only release help / WhatsNewHistory → isolated-or-standard UserDefaults
 ├── DesktopWindowController (lazy, retained)
 │   └── NSWindow / NSHostingController<DesktopRootView>
 │       ├── window-local mode/search/filter/selection
@@ -160,6 +164,22 @@ from accessibility. Settings navigation is separate from `EventEditorSession` an
 an updater editor blocker.
 
 ### Desktop surface
+
+`AppDelegate` also retains one ordinary `WhatsNewWindowController` for release help. It has its
+own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/timer. Safe explicit
+panel/desktop opening offers the unseen release; drag-hover and background startup do not.
+The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
+before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
+the same isolated defaults selection as the rest of the runtime. Manual menu entry bypasses only
+the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
+the controller never promotes activation policy. Other automated routes suppress the automatic
+offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.
+Settings provides a service-action entry on both surfaces because accessory-only applications
+do not have an ordinary application menu. Mini Settings stays mounted while help is visible.
+Desktop Settings retains a one-shot intent through native sheet dismissal. The observed
+SwiftUI `onDismiss` callback arrives while AppKit's parent still reports `attachedSheet`;
+one main-queue dispatch unwinds that native callback before invoking the same guarded help
+action. This is not a timer, polling or an unconditional retry over an active sheet.
 
 `DesktopWindowController` owns one titled, resizable `NSWindow` and its hosting hierarchy.
 The first explicit show promotes accessory startup to regular application activation policy;
@@ -369,6 +389,28 @@ identity only below 15, including after draft removal before Save.
 Backward reading of JSON without this field does not imply downgrade safety: 1.15.0 drops unknown
 attachment metadata on writes. Attachment associations can only be restored from a matched JSON
 and `Attachments/` backup; the presence of copied bytes alone does not recover their event ownership.
+
+### `EventLink`
+
+`Sources/CountdownCore/EventLink.swift` owns UUID, optional name, raw address, HTTP/HTTPS URL
+validation and name/domain presentation. Drafts may be incomplete; `CountdownData.save` trims
+and validates the collection before mutation. Decode and repository writes also enforce count,
+unique identities and usable addresses. Empty metadata is omitted; absent metadata defaults empty.
+
+`EventEditorDraft.links` is the only editor snapshot. `EditorLinkSection` owns field focus and
+validation visibility, while the existing Save/Cancel/session guard owns persistence and lifetime.
+`SavedLinkSection` is shared by desktop details and mini cards. The mini owns only transient
+disclosure state, starting collapsed; desktop remains expanded. `DesktopEventCard` uses the same
+neutral summary metrics as attachments for its nonzero link count, and the shared desktop event
+accessibility label includes the count without adding another action.
+`Store.openLink` revalidates owner
+and exact saved value before calling its injected browser-opening boundary (NSWorkspace in the app).
+Desktop browser summaries and detail metadata share `DesktopSummaryLabelStyle`: tabular
+value/progress first, then a fixed 18-point native symbol column. `SavedMaterialHeading` is shared
+by desktop attachments/links and requires their count and symbol; checklist progress reuses the
+same metadata style. Mini-panel headers keep their disclosure role.
+No browser or network work occurs during rendering, draft editing or save. URLs/names are never
+added to diagnostic log fields. The Xcode and Swift package targets include the same sources.
 
 ### `Subtask`
 
@@ -992,3 +1034,41 @@ Real UI Smoke runs the production application runtime with isolated test state.
 External XCUITest is maintained through the Xcode test project and runner.
 
 Verification selection and command details belong in `docs/VERIFICATION.md`.
+
+
+## Material intake
+
+`MaterialDropZone` resolves NSItemProvider representations in file/web/text priority and cancels
+late delivery when its target disappears. `EventMaterialTarget` binds the receiving event identity
+and checks the shared editor gate before applying an asynchronous result. It shares the existing
+Store/repository; there is no second persistence or clipboard-monitoring owner.
+
+Store owns pending quick additions and their admission locks. It imports into a temporary repository
+draft, revalidates the current event and capacities after awaits, merges only new materials into the
+latest event and commits through existing revision/recovery handling. There is no addition receipt,
+result-message state or Undo API/view. Existing errors retain their established owner and presentation.
+`TextAttachment` defines plain-text filename/content
+validation; `AttachmentFiles` writes UTF-8 text using the same owned-folder/marker boundary as copies.
+
+DesktopRootView reserves EventEditorSession and reuses DesktopSheet for a text composer. ManagerView
+uses its existing internal navigation and the same editor-session reservation. EditorView retains its
+own draft and EditorAttachmentSession under its nested composer, using that session's normal cleanup.
+StatusItemMaterialDragView forwards ordinary mouse tracking to the original NSStatusBarButton and
+reveals the existing panel during drag hover; it is not a file-import destination. Hover reveal orders
+the panel without application activation, preserving the source application's drag.
+
+
+The desktop Paste action follows AppKit's responder chain through its existing window controller.
+The hosted root registers the current selected-event action while mounted. Native text responders
+handle Paste first; the window controller only offers attachment composition for its key window
+without a sheet. This avoids introducing a root-level SwiftUI paste hit target over a blocked
+background. See Apple's [event architecture](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html).
+
+
+The panel's presentation request is owned by one `PanelPresentationState` in AppDelegate. A new
+show remains pending until a visible occlusion observation is received; an earlier orderOut's
+completion cannot cancel an unacknowledged show. After that acknowledgement, full occlusion keeps
+its existing hide meaning. Explicit close/deactivation/Space/desktop-focus paths still hide
+immediately. This does not attribute notifications to generations or use key/responder state,
+window polling, timers, or hosting reconstruction. The native rapid hide→compact scenario remains
+strict; its previous real disappearance is preserved separately from test-oracle failures.

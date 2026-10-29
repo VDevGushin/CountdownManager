@@ -53,6 +53,20 @@ Do not redesign adjacent code merely because it can be improved.
 
 Do not invent product semantics to make an implementation convenient.
 
+Treat a prototype default, an unsubmitted review form and a separate roadmap idea as proposals.
+A general request to implement the described feature does not itself accept an unresolved extra
+mutation, undo, deletion or persistence policy. Keep the approved feature moving by excluding the
+extra mechanism, or resolve only that material product choice. Record the user instruction or
+submitted decision that changes the contract; agent-authored docs and passing implementation
+tests cannot substitute for that source. Routine technical and visual choices inside the accepted
+contract remain the agent's responsibility.
+
+For a UI addition, read the affected surface's `DESIGN.md` guidance and its closest implemented
+sibling before coding. Preserve existing symbols, native control treatment, disclosure/default
+state and empty/count behavior; one shared data model does not mean identical panel/desktop
+interaction. Carry the chosen sibling comparison into focused acceptance checks. Do not invent
+another visual/action family merely because the feature is new.
+
 ## 2 — Prefer native, direct solutions
 
 Use current Swift language features and standard Apple APIs when they express the required behaviour clearly.

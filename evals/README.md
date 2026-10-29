@@ -3,15 +3,48 @@
 These evals assess the agent maintaining Countdown Manager: scoped repairs, evidence-based reviews,
 verification choices, data protection and state ownership. They do not replace application tests.
 
-Version 4 has seven cases in `cases.json`. Two inject repairable defects; two inject defects for
+Version 6 has ten cases in `cases.json`. Two inject repairable defects; two inject defects for
 read-only review; two test evidence interpretation and product/architecture reasoning; one checks
-that a documentation-only correction avoids unrelated skills and application checks. Prompts are
+that a documentation-only correction avoids unrelated skills and application checks; one checks
+mini/desktop interaction and icon consistency; one checks that a proposal/default is not promoted
+to accepted product scope; one checks native build/style provenance and shared component authority. Prompts are
 in Russian, matching normal project work. Criteria are fixed before the subject runs.
 
 Version 4 updates `favorite-ownership` to the current explicit-favorite contract: without a
 selection, events stay ordinary and the idle menu bar shows Mars alone. It requires reading the
 presentation paths as well as the helper fallback. Frozen version-3 runs keep their original
 criteria and results; this revision does not reassess them.
+
+Version 5 adds `mini-desktop-style-boundary`, a read-only behavioral review of a proposal to make
+all material lists always expanded and replace existing native icons in an HTML concept. Its rubric
+requires concrete sibling/source comparisons, the separate mini/desktop interaction contracts and
+appropriate disclosure/hidden-content evidence. No live model run is implied by adding the case;
+run it explicitly with `--case mini-desktop-style-boundary` when agent evaluation is requested.
+
+Version 6 adds `proposal-default-is-not-acceptance`, a read-only review of a generic implementation
+request following an unsubmitted prototype default. Its rubric separates deletion recovery from
+addition Undo, requires an actual source for product acceptance, and rejects circular evidence from
+the agent's own changed docs/tests. It also preserves autonomy for routine implementation choices;
+this case does not require approval of every edit. The prompt contains the relevant history because
+ignored local prototype artifacts are not guaranteed to exist in an eval checkout.
+
+Version 6 also adds `native-style-build-provenance`. It distinguishes actual SDK/toolchain use from
+a patched metadata field, requires named native component reuse, and limits what source checks,
+artifact metadata and old screenshots establish. A platform compatibility declaration is not proof
+of having built with that SDK, and a shared source component is not a pixel or runtime guarantee.
+
+Adding these cases and passing deterministic runner checks do **not** mean a live model passed them.
+A live run and its independent rubric review remain opt-in; recorded executions and their
+boundaries are listed below, separately from adding the cases.
+Use `--case proposal-default-is-not-acceptance` when that evaluation is requested.
+
+Native component/source drift also has a deterministic gate:
+`python3 -B Tests/test_native_design_system.py`. It checks the inventoried shared action and toolbar
+consumers (including native Menu button style, a hidden framework indicator and the shared native
+SF-chevron label), named symbol roles, the frozen `theme-v1` token recipe and the absence of rejected addition-Undo/status
+source. Its direct mutation tests must reject real style/token/status changes. This guard and the
+separate native build-contract guard run before CoreChecks/UIChecks in `verify.sh fast`; neither
+proves pixel identity, actual SDK use from a patched metadata field, or live agent compliance.
 
 ## Run
 
@@ -182,3 +215,23 @@ both real success markers and a successful enclosing invocation remain necessary
 
 The initial approach follows OpenAI's [Testing Agent Skills Systematically with Evals](https://developers.openai.com/blog/eval-skills)
 and [non-interactive Codex documentation](https://learn.chatgpt.com/docs/non-interactive-mode).
+
+## 2026-10-28 scope-routing follow-up
+
+The earlier `native-style-scope-2026-10-28` run remains frozen: native-style provenance passed;
+proposal/default acceptance failed mandatory design-skill and DESIGN reads despite passing
+qualitative review. Its FAIL has not been regraded or erased.
+
+`AGENTS.md` now explicitly routes read-only UI-prototype acceptance/consent reviews through
+the design skill, DESIGN and PRODUCT, while excluding ordinary documentation/harness work.
+The unchanged version-6 suite and runner were used for a new one-repeat run of
+`proposal-default-is-not-acceptance` and the `docs-only` negative control. Both passed mechanical
+checks and separate model-assisted rubric review: **2/2 PASS**. The former read all required
+sources and retained read-only scope; the latter changed only the injected README typo and
+did not run application checks or irrelevant design/Swift/QA skills.
+
+Artifacts: `artifacts/harness-completion-2026-10-28`; durable receipt:
+[`docs/qa/harness-completion-2026-10-28.json`](../docs/qa/harness-completion-2026-10-28.json).
+CLI 0.157.1, high effort, ignored user config, CLI-default model unresolved. This is a targeted
+smoke result, not a controlled model comparison, a ten-case rerun or a reliability percentage.
+Fresh native Codex hook delivery/fault injection was not part of this run.

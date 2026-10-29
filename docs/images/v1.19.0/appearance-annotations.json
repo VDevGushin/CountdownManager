@@ -1,0 +1,29 @@
+{
+  "boundary": "Preserve raw manifest: colorSchemeOverride is the shared runtime override. Composer fixtures also apply a local SwiftUI colorScheme and native window appearance, so the filename/local fixture scheme is authoritative for that fixture, not the unrelated global override.",
+  "composer": [
+    {
+      "file": "material-composer-native-fixture-light.png",
+      "appearanceName": "NSAppearanceNameAqua",
+      "colorSchemeOverride": "dark",
+      "highContrast": false
+    },
+    {
+      "file": "material-composer-native-fixture-dark.png",
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride": "dark",
+      "highContrast": false
+    },
+    {
+      "file": "material-composer-native-fixture-light-contrast.png",
+      "appearanceName": "NSAppearanceNameAqua",
+      "colorSchemeOverride": "dark",
+      "highContrast": true
+    },
+    {
+      "file": "material-composer-native-fixture-dark-contrast.png",
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "colorSchemeOverride": "dark",
+      "highContrast": true
+    }
+  ]
+}

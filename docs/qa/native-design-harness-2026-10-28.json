@@ -1,0 +1,165 @@
+{
+  "date": "2026-10-28",
+  "scope": "Executable lexical source-contract and eval-infrastructure checks; no product UI mutation or live model evaluation",
+  "commands": [
+    {
+      "command": "python3 -B Tests/test_native_design_system.py",
+      "tests": 7,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -B Tests/test_agent_evals.py",
+      "tests": 36,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -B Tests/test_swift_harness.py",
+      "tests": 12,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -B Tests/test_native_hooks.py",
+      "tests": 3,
+      "result": "PASS"
+    },
+    {
+      "command": "python3 -B evals/run.py list",
+      "cases": 10,
+      "result": "PASS"
+    }
+  ],
+  "themeRecipe": {
+    "name": "theme-v1",
+    "baseline": "14dc489:Sources/CountdownManager/AuroraInstrument.swift enum AuroraInstrument",
+    "sha256": "87308dc30a8f47d7863d6bd88c7dd7d57d522a4ad5b9ac39c0d766a93eaf5f3b",
+    "normalization": "enum code positions, numeric recipes and branches; whitespace/comments removed; new string-valued tokens require format review; runtime Git and CFBundleVersion are not inputs",
+    "approvalBoundary": "A regenerated golden or inventory is not proof of user approval; intentional style revision needs explicit design-scope/StyleVersion review"
+  },
+  "mutationRegressions": [
+    "Create consumer replaces shared primary modifier with direct prominent style -> rejected",
+    "Toolbar Event/Menu bypass their shared native family, or Menu reverts to automatic style -> rejected",
+    "Toolbar labels bypass the shared native label or framework menu indicator is re-exposed -> rejected",
+    "Different type name reintroduces addition status/Undo UI IDs -> rejected",
+    "Shared SF image replaced by text -> rejected",
+    "Actual RGB recipe constant changed -> rejected"
+  ],
+  "preservedBoundaries": [
+    "Desktop symbol borderless and mini symbol plain remain separate native styles",
+    "Timer/settings/empty-state/regular destructive confirmation are outside the refactor",
+    "Native text Undo/Redo and editor Save/Cancel remain valid",
+    "Build-contract checks belong to the separate native build owner"
+  ],
+  "prominentStyleExceptions": [],
+  "notExecuted": [
+    "live model behavior eval (blocked before process creation)",
+    "independent live behavior rubric review (no model answers exist)",
+    "native-hook delivery run",
+    "application/UI campaign"
+  ],
+  "limits": [
+    "Lexical source-contract check, not a complete Swift AST or pixel/accessibility/runtime certification",
+    "Frozen source/eval files do not grant product acceptance",
+    "Passing checks cannot rule out every future defect"
+  ],
+  "protectedHookFilesUnchanged": true,
+  "sourceHashes": {
+    "Sources/CountdownManager/Application.swift": "2187671412994ee748deaae63302316ab39c314bd8efb7de08e112ed19bf1908",
+    "Sources/CountdownManager/ApplicationUpdates.swift": "2843d62d5860b0fa1d550d7e43bcc01ce23c1776d5851be172f773f020687a36",
+    "Sources/CountdownManager/AttachmentPreview.swift": "dd233af0b35ab4a8aadf3bab193d9f5824b823afb2aeea0c03e0a79f350d7fd5",
+    "Sources/CountdownManager/AttachmentThumbnail.swift": "a1cdf3e41b26014d83fa8f0d47d942cb22e5d8f40c51b8742e141442d13fc8f0",
+    "Sources/CountdownManager/AttachmentViews.swift": "116ff5ca98f1f794fdc6e3965e03753a61aa45bfdca0c87139a59657fa82c4b4",
+    "Sources/CountdownManager/AuroraInstrument.swift": "046437aad41c5f14d37c0f149bd417dc1427b2997239a476d7372b8e5e13824d",
+    "Sources/CountdownManager/CountdownTimer.swift": "e6eb858a7ee3963ee71bdfc1f631209ec014b0f1001e0c0e04ac86c6cd544986",
+    "Sources/CountdownManager/Desktop/DesktopDividerGrip.swift": "a54a541473514944d4cfb6fee1215a27e0ed33120e3a75fa51780cb7df596116",
+    "Sources/CountdownManager/Desktop/DesktopEventDetail.swift": "0182d63126bd4c09eb3b19a4fec1713e31f72201d78130203bdac84a88de7db9",
+    "Sources/CountdownManager/Desktop/DesktopEventViews.swift": "b257b9137b0bb79323fe0a46d536f5dfb05dc718e25cbe3c7997033b52fb0ebd",
+    "Sources/CountdownManager/Desktop/DesktopPresentation.swift": "ab24aa0da1b78d854a94bc62bd087b1afe4715734ba0f924eaf0020f56ebd09c",
+    "Sources/CountdownManager/Desktop/DesktopSheetBackdropDismissal.swift": "152d000dcd27223d384526dc7156b00639a4df06e1d555ef0ff2c065f648dc7c",
+    "Sources/CountdownManager/Desktop/DesktopViews.swift": "bc3d12332cdd5701979ccc36957991629b04b768bb3c0dae57b7dd972946df32",
+    "Sources/CountdownManager/Desktop/DesktopWindowController.swift": "5bf1944803b7a99123766a13d38813672a47c8c8a7d851b9764d07f3d3b35646",
+    "Sources/CountdownManager/DesktopSmokeRuntime.swift": "e30dba6a98479248a090b4b521214003b4f66b3aedcdaa681f07125c353492dd",
+    "Sources/CountdownManager/DiagnosticArchive.swift": "0b0654b6089abbf2823950704eddb6c004d1462c2d30fb4f6b6df0d5118f601e",
+    "Sources/CountdownManager/DiagnosticPrivacy.swift": "c20ebf44371bc66f94b3238c81abd490820d397b9218c36e1c93005d317427d6",
+    "Sources/CountdownManager/Diagnostics.swift": "8f20725d56a5ff7468e83e1a6b7ab2831283a8545137e060b5b3c4be550a036f",
+    "Sources/CountdownManager/EventLinkViews.swift": "9ed4421b10af3259c87503f8f743d3c1d8d7ac4b4c77d0038a6cce36627b74a5",
+    "Sources/CountdownManager/KeepAwake.swift": "efb7e6bff531680c9fd0ea91b9629de01977966366f2d8d37d3d53f02d995142",
+    "Sources/CountdownManager/MarsOpeningAnimation.swift": "b86e5e08f16ae03fbf24385b0b4f6fd8f60589549ace9b50e970f7126280f1e2",
+    "Sources/CountdownManager/MaterialIntake.swift": "f21a90015f18b455ab82adedcbca0d725d5230a355b963a9b223b6de8124de68",
+    "Sources/CountdownManager/NoteEditor.swift": "274ecd51ae9023a5e5c67daaa3ba107ac8360d6b1ad118dd4992ed4bd65526ef",
+    "Sources/CountdownManager/Presentation.swift": "14a54dc268b3d98196dfa7568b109af0bf2f800306afd58506ed35486f22db1b",
+    "Sources/CountdownManager/SettingsView.swift": "919a73b7db096365090f6b1ec52cc3b5f8bfbede0f413e2e38b0521044d5627c",
+    "Sources/CountdownManager/StatusBarImages.swift": "1eb7b6fabb1baa95e7c7e48bdce6a4e8089d81c11815f200f720f5c37c515d42",
+    "Sources/CountdownManager/StatusItemMaterialDragView.swift": "2d5c4619b38d7e9e3657dca08ed978d15c2e08384852e6670f2a3361315a4dd3",
+    "Sources/CountdownManager/Store.swift": "5431096ad242364a10456efc4ddc84a4e29e4a051329606b3bcf5e8677980d0b",
+    "Sources/CountdownManager/TextAttachmentView.swift": "44ec25cb3d828831e2aac20298db1b69acc15f3e912810b99b3be55dc845d87f",
+    "Sources/CountdownManager/TimerCompletionAlert.swift": "739c288254f0fe44f56641b772d60fdf31a69107eebff793d5ac3f11811cb162",
+    "Sources/CountdownManager/UISmokeAttachmentMedia.swift": "b5c185326d66a6412c12a77cc73a6940420f839a2b68b67154e3040159f13fe0",
+    "Sources/CountdownManager/UISmokeControls.swift": "a6ba83d81433821de119f2bf06f90452c1734325771b85482bff7bd9f650cca3",
+    "Sources/CountdownManager/UISmokeRuntime.swift": "56f2aefdfd6fc32236cbac2484d238117a979c17318b8b5eabff6313644b2b26",
+    "Sources/CountdownManager/Views.swift": "1397b4e2503e104e849ec6199806b590c7a9e41a3af8ca87442d64241c89d86a",
+    "Sources/CountdownManager/Weather.swift": "ca19d613515bd4129b9a44c54f5e46eeb60a527edb913cddb246e2b45b28a18f",
+    "Sources/CountdownManager/WeatherDiagnostics.swift": "fe9db0e5ffbbdee5ad682ae8cf1a76e7bad8fec441bef06bb9b25531fdb30a36",
+    "Sources/CountdownManager/WeatherForecasts.swift": "96f35d5e658bdc283fceb7840ed8d1301e401fed4fc43606a72f4c70710f12db",
+    "Sources/CountdownManager/WeatherHTTPMetadata.swift": "d5abf335ea4df2d5ec06081a7029dfc031297eb14398ce4543e699bc18d3c733",
+    "Sources/CountdownManager/WeatherLocation.swift": "9b1071b0bbf436616254b0c9ee9e2a98d414a67dde7ba0c7a3004c253403b23a",
+    "Sources/CountdownManager/WeatherMETNorway.swift": "494a7d7858220d49caa83d4e8b92ca49f1dbb1d0353cd0fd2b8a48d84bbe88a2",
+    "Sources/CountdownManager/WeatherNetwork.swift": "ef4bffa858af28efdd5948e295b4be9a4c4d70229205dc9adad9d8fa1737bcd5",
+    "Sources/CountdownManager/WeatherOpenMeteo.swift": "d248a9bba619ce1a8bec93c163d4655224a43c41097e187e50d638160ccbe382",
+    "Sources/CountdownManager/WeatherRequestPolicy.swift": "581a8416fa00d1a3cc5314f2d28612fa8ff8e94e22dcf5a958215678cef7b9b6",
+    "Sources/CountdownManager/WeatherTransport.swift": "3bc80fdf083907f643082eaede38f1b2f2d205f48b6d4eae1c728eb02a8973f6",
+    "Sources/CountdownManager/WeatherWttr.swift": "3ba9e9755e91d4b264f85898c1e836eb218324bad0d89cbc74551c4cbf74cb7f",
+    "Tests/test_native_design_system.py": "3f6cf8ac651592295fe3aea028fead33b8b6dcb98c44c0bef645ec4b00d9c285",
+    "Tests/test_agent_evals.py": "e24b1157b57a25a2e32b597a4e3223061ec62fc08078e09b93687a73d26831d5",
+    "evals/cases.json": "f1d2da199785202c6f6b26d0e1c5252427647f82130e459e1ecfc37514b26481",
+    "evals/README.md": "edb4a1a95230d7ce2e8bd23ca71b3850c0f61cb1fdea7d5d4323eea58f028ca0",
+    "docs/qa/native-component-families-2026-10-28.json": "807ff9485e93292ae6e4fed47c11e0529c9f60be572b81fb5bf5398db8578958"
+  },
+  "liveEvalAttempt": {
+    "cases": [
+      "proposal-default-is-not-acceptance",
+      "native-style-build-provenance"
+    ],
+    "requestedOutput": "evals/artifacts/native-style-scope-2026-10-28",
+    "status": "BLOCKED_BEFORE_PROCESS_CREATION",
+    "model": "CLI_DEFAULT_UNRESOLVED",
+    "executedCases": 0,
+    "runtimeTraceCreated": false,
+    "outputDirectoryCreated": false,
+    "reason": "Automatic approval review rejected sending the isolated private repository source and resulting traces to the Codex CLI service without explicit authorization for that payload and destination.",
+    "followup": "Separate human authorization is required before this live run; no retry, indirect execution or trust/sandbox workaround was attempted."
+  },
+  "toolbarContract": {
+    "authority": "AuroraToolbarActionModifier / View.auroraToolbarAction",
+    "consumers": [
+      "desktop.create",
+      "desktop.create-day"
+    ],
+    "nativeMenuStyle": "button",
+    "style": "bordered / regular / system13 / AuroraInstrument.ink",
+    "forbiddenLocalForks": [
+      "tint",
+      "custom drawing",
+      "background/overlay/border chrome",
+      "caller-local button/foreground override"
+    ],
+    "decisionBoundary": "Authorized correction after parent native QA rejected shared-button-only candidate with accented framework arrow. Current source guard pins the hidden framework indicator and shared native label, but still does not certify final native rendering.",
+    "labelAuthority": "AuroraToolbarLabel(title:systemImage:showsMenuIndicator:)",
+    "frameworkMenuIndicator": "hidden; Menu keeps native button-style menu and its action semantics",
+    "decorativeIndicator": "native Image(systemName: chevron.down), system9, accessibilityHidden(true), no drawing/chrome/local tint"
+  },
+  "nativeAcceptanceBoundary": {
+    "priorSharedButtonOnlySourcePass": "Historical 7/7 source-only result; parent actual native render still showed accented indicator square",
+    "currentGuard": "Seven methods with expanded toolbar mutation subcases; no visual/runtime equivalence claim",
+    "separateRuntimeFailure": "Parent reported panel disappearance after ten native scenarios; owned by runtime investigation, not changed/hidden by source guard"
+  },
+  "subsequent_authorized_live_run": {
+    "user_authorized_private_source_and_traces_to_codex_cli": true,
+    "cases_executed": 2,
+    "model": "CLI-default unresolved",
+    "style_build_case": "PASS",
+    "proposal_default_case": "FAIL: required design skill and DESIGN.md not read",
+    "overall": "FAIL",
+    "independent_reviewer": "drag_drop_designer",
+    "path": "evals/artifacts/native-style-scope-2026-10-28"
+  }
+}

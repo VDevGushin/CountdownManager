@@ -11,6 +11,25 @@ Countdown Manager is not a task manager or calendar replacement. Outside the sin
 The application does not require an account or internet connection for event and timer use.
 Optional weather forecasts require a network connection.
 
+## What's new
+
+Release 1.19.0 includes a read-only `Что нового` screen explaining saved links, file/link
+drag-and-drop and `Вставить текст как вложение…`. It is offered once on the first safe explicit
+opening of the panel or desktop after installing this release, including a first installation.
+Background/login startup and material-drag hover never trigger it. An active event/text editor,
+native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
+until a later safe explicit opening; an active timer alone does not block it.
+
+The release is marked presented only after its window becomes visible. Closing or pressing
+`Понятно` acknowledges the presentation; restarting or reopening the app does not offer the same
+release again. `Настройки → Что нового…` opens it again manually on either surface; the application
+menu also provides `Что нового…` when the desktop activation policy exposes that menu. The read-only window
+uses the existing appearance, leaves event/draft bytes and the timer untouched, and does not
+change the application's activation policy. Opening from the mini-panel hides that panel;
+an explicit close returns to the panel on the active Space when no desktop is visible and the
+application is still active and admission is still safe. It does not reopen over updater/modal UI,
+an editor or pending work, or after application deactivation.
+
 ## Primary interface
 
 Accepted product contract for the menu-bar panel shell.
@@ -457,6 +476,87 @@ midnight even if its open draft has retention switched off.
 
 Retained past events are past dates, not overdue tasks. There is no automatic rollover, separate
 archive screen or implicit retention based on favorite status or attachments.
+
+### Adding materials by drag and paste
+
+A saved event accepts ordinary local files and HTTP/HTTPS links on its desktop browser card,
+desktop details or mini-panel card. The target is the receiving event, including an unselected
+card; dropping does not change another event. Hover adds a stationary accent outline/tint without
+changing the card geometry or disclosure state. One preferred representation is used per dropped
+item: a file URL has priority over a web URL, followed by plain text. Unsupported schemes, folders,
+packages and symbolic links are rejected. File promises from Mail/Photos are not advertised.
+
+A successful saved-event addition commits immediately. There is no addition-Undo action,
+receipt or status/progress/success row on either surface, and no replacement toast or notification.
+The event's existing file/link counts show the saved result. Existing editor Save/Cancel and native
+text Undo/Redo retain their normal meaning. A potential future undo of deletion is a separate
+feature and is not implemented by this intake flow. Removal/expiry cannot resurrect an event.
+Both existing limits apply before importing a batch. A failed saved-event batch commits
+none of its materials and cleans up temporary owned copies. Failed writes preserve durable data.
+The pending addition blocks another addition and entry to an editor until it finishes.
+
+The event context menu exposes `Вставить текст как вложение…`. In desktop details, Paste also
+opens it when an event is selected and no text field is editing; text-field Paste keeps its normal
+meaning. Clipboard text is read only in response to an explicit paste/menu/button action. A plain
+text drop opens the same composer. It previews the complete editable text and proposes a filename
+from its first nonempty line. The user may change both. `Создать вложение` writes a UTF-8 `.txt`
+without trimming or truncating its content; paragraphs and trailing newlines survive. Rich text
+formatting is not preserved. This uses one of the 15 attachment slots and the existing preview,
+expiry and owned-file cleanup rules. Empty text and unsafe/overlong names cannot be submitted.
+
+The shared editor accepts drops into its retained draft and offers the text action beside its
+attachment controls. Nested text composition retains the surrounding editor and attachment session.
+Cancelling the composer returns to that draft. Whole-event Save/Cancel retains its existing meaning;
+cancelling the event discards draft-only text files as well as imported copies. Mini hide/show retains
+the composer, as for the existing editor. Desktop composition uses the existing native sheet owner;
+mini composition uses the internal manager screen under the same timer.
+
+Rapid hide/show requests must preserve the latest explicit show. A still-pending show is not
+cancelled by an unconfirmed hidden occlusion observation; subsequent confirmed full occlusion and
+explicit deactivation/Space/close retain their existing hide behavior.
+
+Hovering a supported drag over the status icon reveals the anchored mini-panel without activating
+the app or committing anything. The user then drops onto a specific event; the icon itself does not
+accept a drop. Ordinary status-item clicks and panel hide/Space rules retain their existing meaning.
+
+### Links
+
+An event may contain up to ten web links. Each has stable identity, an optional name and a required
+full HTTP/HTTPS address. Outer whitespace is removed on Save. Other schemes, missing hosts,
+embedded whitespace and URL credentials are rejected. A missing name displays the domain.
+No network request, preview, favicon or page download occurs merely by saving or rendering a link.
+
+The shared event editor adds, changes and removes link rows after attachments. Each row contains
+name and address fields and the same native trash symbol used for subtasks. Invalid or incomplete
+rows block Save and show an inline address explanation after leaving a field. Removing the row
+allows Save again. The count is N/10; Add is disabled at ten and explains how to make room.
+All link edits remain in the event draft until Save; Cancel preserves saved links. Failed writes
+retain the draft for retry. New event and day drafts start without links.
+
+Saved desktop details and mini-panel cards show a compact Links section after attachments only
+when nonempty. Desktop section headings pair «Ссылки» at the left with a trailing neutral
+saved-link count and link symbol, matching the attachments count/paperclip and checklist
+progress/symbol. All three right-hand summaries use value then symbol in one trailing column. Each row shows name/domain plus link and external-opening symbols. The entire row
+is keyboard-accessible and opens the current saved address in the default browser. Full address
+is available as hover help. The action validates the owning active event and saved link identity;
+stale, removed or expired links cannot open. Failed opening reports an error without deleting data.
+Desktop collection cards, feed rows and the featured favorite show a neutral link symbol and
+saved-link count alongside checklist/file summaries when positive. Browser summary labels
+place the number/progress first and the symbol after it. Grid summaries align the three symbols
+in one trailing column; favorite/feed summaries use the same value-then-symbol order.
+ Zero links produce no symbol,
+count or accessible placeholder. This is a summary, not a new opening/editing action; file-preview
+behavior is unchanged.
+In the mini-panel, the section starts collapsed like attachments: a fixed chevron, semibold heading
+and trailing count form one full-width disclosure button. Opening or closing it changes no saved
+event data; hidden rows are absent from input and accessibility. Hide/show retains its current
+state during the mounted panel session; a fresh app launch starts collapsed. Desktop links stay
+expanded and do not gain a disclosure control. At zero links the saved section remains absent.
+
+
+Old JSON without links reads as an empty list; empty lists are omitted on write. Invalid present
+metadata is not silently discarded. Older application versions do not preserve unknown link data
+when writing: backward reading does not imply downgrade safety. Links expire with their event.
 
 ### Attachments
 

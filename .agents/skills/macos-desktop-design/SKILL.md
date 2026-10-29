@@ -15,6 +15,14 @@ Distinguish an idea, an interactive mockup, and a requested native implementatio
 
 Infer routine design choices from the task and established interface. Ask only about unresolved product choices that would materially change the result. Do not make the owner choose framework APIs, pixel values, or a design workflow.
 
+Treat a prototype default, an unsubmitted review form and a separate roadmap idea as proposals.
+A general request to implement the described feature does not itself accept an unresolved extra
+mutation, undo, deletion or persistence policy. Keep the approved feature moving by excluding the
+extra mechanism, or resolve only that material product choice. Record the user instruction or
+submitted decision that changes the contract; agent-authored docs and passing implementation
+tests cannot substitute for that source. Routine technical and visual choices inside the accepted
+contract remain the agent's responsibility.
+
 ## Give each surface a job
 
 Choose a window, temporary panel, inspector, or settings surface according to the work it supports. Preserve existing roles unless the requested change calls for a new one.
@@ -43,6 +51,22 @@ Design resizing from content: identify a useful minimum window size, flexible co
 Prefer native window chrome, toolbar actions, menus, text fields, checkboxes, date controls, selection, and focus behaviour when they fit. Preserve platform editing and keyboard conventions. Avoid duplicate field borders and simulated native controls in production code.
 
 Keep the ordinary and failure states useful: no events, no selection, search without results, long titles and notes, an unavailable selected event, a pending or failed save, and incomplete preparation. Select only states relevant to the change.
+
+## Preserve each surface's established interaction family
+
+Before proposing a new control or content section, identify its nearest existing sibling on each
+changed surface and read that implementation plus the matching `DESIGN.md`/`PRODUCT.md` rules.
+Compare default/expanded/collapsed states, header/count geometry, click target, empty state and
+hidden accessibility content, not only palette and type. For example, mini-panel link lists follow
+attachments' disclosure family while desktop details remain expanded. Explain an intentional
+behavioral difference as a proposal before treating it as the new contract.
+
+Use the application's existing symbol names/assets for familiar actions. In HTML, render or export
+the same native symbol when available; do not hand-draw a competing trash, pencil or other existing
+icon. Label an unavoidable placeholder explicitly instead of presenting it as the app's design.
+Review analogous mini/desktop states at zero, one and the real content limit. Identify the sibling
+file and the observed comparison in the handoff. Check build/SDK provenance before showing native
+captures: a new-SDK Debug style is not evidence for the ordinary installed-product appearance.
 
 ## Keyboard, accessibility, and appearance
 

@@ -162,7 +162,19 @@ def snapshot_fingerprint(snapshot: dict[str, str]) -> str:
 
 def gate_fingerprint(root: Path, snapshot: dict[str, str]) -> str:
     inputs = {}
-    for name in (".swiftlint.yml", "verify.sh"):
+    # Keep the successful Swift gate tied to the verifiers it actually executes.
+    # Prose docs stay outside this list; non-Swift sessions skip the gate in stop().
+    for name in (
+        ".codex/hooks/swift_harness.py",
+        ".swiftlint.yml",
+        "verify.sh",
+        "Package.resolved",
+        "Tests/test_native_design_system.py",
+        "Tests/test_native_design_contract.py",
+        "scripts/native_design_contract.py",
+        "Resources/NativeDesignContract.json",
+        "docs/qa/native-component-families-2026-10-28.json",
+    ):
         try:
             inputs[name] = hashlib.sha256((root / name).read_bytes()).hexdigest()
         except FileNotFoundError:

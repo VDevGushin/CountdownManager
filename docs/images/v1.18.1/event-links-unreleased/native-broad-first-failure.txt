@@ -1,0 +1,1 @@
+FAIL after 10 scenarios: panel disappeared after native activation handoff

@@ -85,3 +85,10 @@ package func desktopSelection(current: UUID?, available: [Countdown]) -> UUID? {
 package func desktopMinimumPaneWidth(contentWidth: CGFloat) -> CGFloat {
     max(320, max(0, contentWidth - 1) / 3)
 }
+
+package func desktopEventAccessibilityLabel(_ item: Countdown) -> String {
+    var label = "Открыть событие: \(item.title)"
+    if !item.attachments.isEmpty { label += ". Вложения: \(item.attachments.count)" }
+    if !item.links.isEmpty { label += ". Ссылки: \(item.links.count)" }
+    return label
+}

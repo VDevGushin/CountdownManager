@@ -225,12 +225,13 @@ package final class Store: ObservableObject {
     @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
     @Published package private(set) var isExportingDiagnostics = false
-    @Published var error: String?
+    @Published package var error: String?
     @Published package private(set) var loginStatus: SMAppService.Status
     package let loginItemManagementIsAvailable: Bool
     private let fileURL: URL
     private let repository: CountdownRepository
     private let persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)?
+    private let openWebURL: (URL) -> Bool
     private let now: () -> Date
     private let recordDiagnostic: @Sendable (String) -> Void
     private let disclosureCache: SubtaskDisclosureCache
@@ -245,6 +246,8 @@ package final class Store: ObservableObject {
     private var needsDeferredNormalization = false
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
+    @Published package private(set) var isResolvingMaterials = false
+    @Published package private(set) var isReceivingMaterials = false
     private var attachmentDrafts: Set<UUID> = []
     private var attachmentPicker: (draftID: UUID, panel: NSOpenPanel)?
     @Published private var attachmentOperationCount = 0
@@ -255,6 +258,7 @@ package final class Store: ObservableObject {
         persistenceSaveOverride: ((CountdownData, Int) async throws -> Bool)? = nil,
         now: @escaping () -> Date = Date.init,
         loginItemManagementIsAvailable: Bool = true,
+        openWebURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
         diagnosticRecord: @escaping @Sendable (String) -> Void = { DiagnosticLog.shared.record($0) }
     ) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -263,6 +267,7 @@ package final class Store: ObservableObject {
         today = Day(now())
         repository = CountdownRepository(fileURL: resolvedURL)
         self.persistenceSaveOverride = persistenceSaveOverride
+        self.openWebURL = openWebURL
         self.now = now
         self.recordDiagnostic = diagnosticRecord
         self.loginItemManagementIsAvailable = loginItemManagementIsAvailable
@@ -309,7 +314,7 @@ package final class Store: ObservableObject {
 
     package var hasPendingPersistence: Bool {
         isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
-            || isImportingAttachments
+            || isImportingAttachments || isReceivingMaterials || isResolvingMaterials
     }
 
     package var isImportingAttachments: Bool { attachmentOperationCount > 0 }
@@ -489,6 +494,19 @@ package final class Store: ObservableObject {
         let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
         recordDiagnostic("data.normalize deferred removed=\(data.items.count - updated.items.count)")
         stagePersistence(updated, reason: "normalize", disclosureCleanup: removedEventIDs)
+    }
+
+    package func openLink(_ link: EventLink, eventID: UUID) {
+        guard !isLoading, !readFailed,
+              data.items.contains(where: {
+                  $0.id == eventID && $0.isAvailable(on: Day(now())) && $0.links.contains(link)
+              }), let url = link.url else {
+            error = "Ссылка больше недоступна для этого события."
+            return
+        }
+        if !openWebURL(url) {
+            error = "Не удалось открыть ссылку. Проверьте браузер по умолчанию и повторите попытку."
+        }
     }
 
     package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {
@@ -700,4 +718,89 @@ package final class Store: ObservableObject {
             panel.beginSheetModal(for: host, completionHandler: completion)
         } else { panel.begin(completionHandler: completion) }
     }
+}
+
+
+extension Store {
+    package func beginMaterialResolution() -> Bool {
+        guard !hasPendingPersistence, eventCreationIsAvailable else { return false }
+        isResolvingMaterials = true
+        return true
+    }
+
+    package func endMaterialResolution() { isResolvingMaterials = false }
+
+    package func createTextAttachment(_ text: TextAttachment, draftID: UUID) async -> EventAttachment? {
+        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        attachmentOperationCount += 1
+        defer { attachmentOperationCount -= 1 }
+        do {
+            let attachment = try await repository.createTextAttachment(text, draftID: draftID)
+            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            return attachment
+        } catch {
+            if attachmentDrafts.contains(draftID) {
+                self.error = "Не удалось создать текстовое вложение. " + error.localizedDescription
+            }
+            return nil
+        }
+    }
+
+    package func scheduleMaterialAddition(_ materials: EventMaterials, to eventID: UUID) {
+        guard let original = reserveMaterialAddition(materials, to: eventID) else { return }
+        Task { await appendReservedMaterials(materials, to: eventID, original: original) }
+    }
+
+    @discardableResult
+    package func appendMaterials(_ materials: EventMaterials, to eventID: UUID) async -> Bool {
+        guard let original = reserveMaterialAddition(materials, to: eventID) else { return false }
+        return await appendReservedMaterials(materials, to: eventID, original: original)
+    }
+
+    private func reserveMaterialAddition(_ materials: EventMaterials, to eventID: UUID) -> Countdown? {
+        guard !hasPendingPersistence, eventCreationIsAvailable, !materials.isEmpty,
+              materials.text == nil,
+              let original = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
+            error = "Добавление недоступно. Дождитесь сохранения и выберите действующее событие."
+            return nil
+        }
+        do { try materials.validateCapacity(for: original) }
+        catch { self.error = error.localizedDescription; return nil }
+        isReceivingMaterials = true
+        return original
+    }
+
+    @discardableResult
+    private func appendReservedMaterials(_ materials: EventMaterials, to eventID: UUID,
+                                         original: Countdown) async -> Bool {
+        defer { isReceivingMaterials = false }
+        let draftID = UUID()
+        guard await beginAttachmentDraft(draftID) else { return false }
+        let imported = await importAttachments(from: materials.files, draftID: draftID,
+                                                currentAttachments: original.attachments)
+        let textFile: EventAttachment?
+        if let text = materials.textFile, imported.count == materials.files.count {
+            textFile = await createTextAttachment(text, draftID: draftID)
+        } else { textFile = nil }
+        guard !Task.isCancelled, imported.count == materials.files.count,
+              materials.textFile == nil || textFile != nil,
+              var latest = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
+            await discardAttachmentDraft(draftID)
+            if error == nil { error = "Событие или материалы больше недоступны. Ничего не добавлено." }
+            return false
+        }
+        do { try materials.validateCapacity(for: latest) }
+        catch {
+            self.error = error.localizedDescription
+            await discardAttachmentDraft(draftID)
+            return false
+        }
+        let files = imported + (textFile.map { [$0] } ?? [])
+        latest.attachments += files
+        latest.links += materials.links.map { $0.normalized() }
+        let saved = await save(latest, primary: data.primaryID == eventID, requireExisting: true)
+        await discardAttachmentDraft(draftID)
+        return saved
+    }
+
 }

@@ -1,0 +1,29 @@
+[0/1] Planning build
+Building for production...
+[0/2] Write swift-version--58304C5D6DBC2206.txt
+[1/3] Write sources
+[3/4] Compiling CountdownManagerUI Application.swift
+[4/6] Compiling CountdownManager App.swift
+[4/6] Write Objects.LinkFileList
+[5/6] Linking CountdownManager
+Build of product 'CountdownManager' complete! (84.78s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.oNEWxX/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.oNEWxX/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.oNEWxX/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.oNEWxX/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: replacing existing signature
+/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.oNEWxX/Countdown Manager.app/Contents/Frameworks/Sparkle.framework: replacing existing signature
+/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T//countdown-bundle.oNEWxX/Countdown Manager.app: replacing existing signature
+{
+  "styleVersion": "native-warm-calendar-v1",
+  "compilerSDK": {
+    "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+    "version": "15.4",
+    "canonicalName": "macosx15.4"
+  },
+  "linkedCompatibility": "13.0",
+  "signatureIdentifier": "local.countdownmanager.app",
+  "renderedAppearanceVerified": false
+}
+Готово: /private/tmp/countdown-v1.19.0-amjuo_jh/Countdown Manager.app

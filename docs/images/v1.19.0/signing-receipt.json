@@ -1,0 +1,18 @@
+{
+  "version": "1.19.0",
+  "build": "35",
+  "privateSeedDeleted": true,
+  "productionKeyFingerprintUnchanged": true,
+  "releaseNotesEmbedded": true,
+  "published": false,
+  "assets": {
+    "CountdownManager-1.19.0-35.zip": {
+      "bytes": 6243670,
+      "sha256": "339efbdab0e9f8ba53d30d688985f5e200c1b17c5ee436b8c603309bb68dcbaf"
+    },
+    "appcast.xml": {
+      "bytes": 4953,
+      "sha256": "c664030aab8df972d2b7f96e811d652083d307dbe86294dd0411a35c8b4f280d"
+    }
+  }
+}

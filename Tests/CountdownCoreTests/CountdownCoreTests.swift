@@ -473,6 +473,8 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
 
 @main enum CoreChecks {
     static func main() async throws {
+        try testEventLinkValidationAndCompatibility()
+        try await testEventLinkRepositoryBoundaries()
         let checks = CountdownCoreTests()
         try checks.testCreationAndFieldValidation()
         try checks.testTodayCreationAndMidnightBoundary()

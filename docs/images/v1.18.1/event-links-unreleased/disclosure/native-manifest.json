@@ -1,0 +1,129 @@
+{
+  "applicationBuild" : "34",
+  "applicationVersion" : "1.18.1",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-links-light.png",
+      "height" : 1756,
+      "highContrast" : false,
+      "observationUptime" : 510993.04179625004,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-links-dark.png",
+      "height" : 1756,
+      "highContrast" : false,
+      "observationUptime" : 510993.22808120836,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "desktop-links-feed-light.png",
+      "height" : 1756,
+      "highContrast" : false,
+      "observationUptime" : 510993.62824083335,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "desktop-links-feed-dark.png",
+      "height" : 1756,
+      "highContrast" : false,
+      "observationUptime" : 510993.82264945837,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 1920
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "mini-links-collapsed-light.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510993.99857220834,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "mini-links-collapsed-dark.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510994.14549120836,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "mini-links-light.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510994.40152875002,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "mini-links-dark.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510994.54579758336,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "editor-links-error-light.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510995.29717700003,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "editor-links-error-dark.png",
+      "height" : 1200,
+      "highContrast" : false,
+      "observationUptime" : 510995.44709791668,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    }
+  ],
+  "executableSHA256" : "aec460f96a6065f051be0231725dc74e327ac2737497e3c032c16f27b17e30b8",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

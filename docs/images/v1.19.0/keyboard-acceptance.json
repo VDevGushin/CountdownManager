@@ -1,0 +1,27 @@
+{
+  "scope": "Only WhatsNew Escape routing changed after genuine updater acceptance; no second Sparkle pass claimed",
+  "installedFixtureBuild": "20036",
+  "unsignedProductionPayloadSHA256": "724bfab8d587da6b220b25208a60202910dd26e24a4023d3f6acd9fa2715234b",
+  "signedFixtureExecutableSHA256": "e25b66b324ed0e131c4e0b0468c4d5f6e99908989b4673dd752edabb0901fd77",
+  "previousGenuineReceipt": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/genuine-update-before-escape-fix.json",
+  "previousKeyboardReceipt": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/cancelOperation-only-keyboard-result.json",
+  "status": "PASS",
+  "observations": {
+    "escape": {
+      "result": "PASS",
+      "action": "Settings → What is New → pressKey('Escape')",
+      "observed": "whatsnew.window closed; main.panel with retained Settings returned"
+    },
+    "return": {
+      "result": "PASS",
+      "action": "Settings → What is New → pressKey('Return')",
+      "observed": "whatsnew.window closed; main.panel with retained Settings returned"
+    },
+    "reopen": {
+      "result": "PASS",
+      "observed": "Manual Settings open worked after Escape; repeated news window opened normally"
+    }
+  },
+  "cleanup": "Own fixture exited through mini-panel ordinary Quit button; no production or personal tester was terminated.",
+  "processExitConfirmed": true
+}

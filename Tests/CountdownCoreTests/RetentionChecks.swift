@@ -23,10 +23,12 @@ func testRetentionMetadataCompatibility() throws {
     }
     var kept = ordinary
     kept.keepsAfterDate = true
+    kept.links = [EventLink(name: "Route", address: "https://example.com/route")]
     let roundTrip = try decoder.decode(Countdown.self, from: encoder.encode(kept))
     precondition(roundTrip == kept)
     let encoded = try JSONSerialization.jsonObject(with: encoder.encode(kept)) as? [String: Any]
     precondition(encoded?["keepsAfterDate"] as? Bool == true)
+    precondition((encoded?["links"] as? [[String: Any]])?.count == 1)
 }
 
 func testRetainedCivilDayLifecycleAndValidation() throws {

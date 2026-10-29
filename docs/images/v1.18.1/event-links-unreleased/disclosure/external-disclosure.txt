@@ -1,0 +1,6 @@
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testMiniLinksDisclosureAtZeroOneAndTenPreservesData]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testMiniLinksDisclosureAtZeroOneAndTenPreservesData]' passed (24.596 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.596 (24.597) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.596 (24.598) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 24.596 (24.599) seconds
+** TEST SUCCEEDED **

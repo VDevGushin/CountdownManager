@@ -47,11 +47,22 @@ Codex hooks run SwiftLint only on changed Swift files after an edit. Before a Sw
 
 SessionStart establishes the verification baseline. Missing, unreadable or malformed state cannot
 certify a session: later hooks report a blocking diagnostic instead of silently initializing a new
-baseline or treating the failure as success. A successful gate is cached against Swift contents plus
-`.swiftlint.yml` and `verify.sh`; changing those verification inputs invalidates the cached result.
+baseline or treating the failure as success. A successful gate is cached against Swift contents
+(including `Package.swift`) and the explicit verification dependencies: the hook implementation,
+`.swiftlint.yml`, `verify.sh`, `Package.resolved`, both native-design Python test files,
+`scripts/native_design_contract.py`, `Resources/NativeDesignContract.json`, and the native component
+inventory JSON. Changing, adding or removing one invalidates the cached result; an unreadable
+dependency blocks instead of certifying the old pass. The list in `gate_fingerprint` must grow
+when the fast route gains another non-Swift dependency.
+Unchanged inputs reuse the successful gate. Ordinary prose changes, including README, DESIGN
+and PRODUCT, do not invalidate it. Sessions with no Swift edits still skip application checks;
+harness-only work uses its focused Python tests. In a session that has already changed Swift,
+a verifier change requires a fresh successful completion gate even if Swift bytes are unchanged.
 This cache does not track every toolchain or environment change; rerun affected checks when those
 change materially. Hook regression checks cover state failures, Stop gates, cache invalidation,
-read-only calls and concurrent lifecycle calls. They do not prove native hook registration or trust.
+read-only calls and concurrent lifecycle calls. The cache regressions cover each named dependency,
+failed-verifier rejection/retry, ordinary documentation and non-Swift sessions. They do not prove
+native hook registration or trust.
 
 The separate native hook check exercises actual `hook/started` and `hook/completed` notifications
 through Codex app-server in an isolated copy. Hook script/config bytes match the reviewed repository.
@@ -79,6 +90,22 @@ The eval judge recognizes every listed `verify.sh` UI mode as a build/UI operati
 requires an unambiguous exit (standalone or in the final AND-only chain); complex shell scripts
 should run it separately so skipped or masked checks cannot be credited.
 Verbose lint may instead provide its real final zero-violation `Done linting!` summary.
+
+## Native design-system gates
+
+`./verify.sh fast` first runs `Tests/test_native_design_system.py` and
+`Tests/test_native_design_contract.py`. These protect shared control families, the fixed native
+identity and absence of the removed addition-Undo/status row; mutation checks demonstrate rejection
+of component/palette drift. The app build uses `Resources/NativeDesignContract.json` through
+`scripts/native_design_contract.py`. `build.sh` embeds actual compiler SDK/toolchain information
+separately from deployment/linked compatibility and rejects mismatched metadata or authorities.
+This also applies to the UI app built by verify.sh; there is no separate unverified pre-build route.
+
+The actual headers SDK and linked compatibility are different facts. The contract retains the
+accepted linked compatibility 13.0 but never relabels newer headers as SDK13. Version/build numbers
+do not authorize a new identity. The script's `renderedAppearanceVerified=false` is deliberate:
+only separate native captures/acceptance can establish actual appearance. Review Light/Dark and
+standard/Increase Contrast against existing native siblings; a green source gate is not pixel proof.
 
 ## CoreChecks
 
@@ -322,6 +349,114 @@ beside the PNGs for independent QA. This does not establish external keyboard or
 no new input route or accessibility control is introduced by the decorative symbol.
 
 ## Desktop window
+
+### What's new release help
+
+`UIChecks` runs `WhatsNewChecks.swift` against two fresh UUID defaults suites: unseen reads and
+an unpresented owner do not consume the release; an explicit/idempotent mark survives owner and
+defaults reopening; another release and another profile retain independent history. These tests
+do not by themselves prove UI admission.
+
+The focused native route `--ui-smoke-desktop --ui-smoke-whats-new` uses a fresh marked smoke
+home and the real AppDelegate/controller: no background auto-opening, pending import/editor
+deferral, first safe mini opening, hidden mini while help is front, retained timer deadline,
+ordinary close, no automatic repeat, manual reopen, unchanged retained editor text/Cancel and
+event bytes. It requires actual 430×560 content bounds to reject native hosting shrink/clipping,
+checks re-admission on close and both Settings entries (including native desktop sheet dismissal
+and retained mini Settings). Four captures cover Light/Dark × standard/Increase Contrast with Reduce Motion.
+The source design gate pins `whatsnew.dismiss` to `auroraPrimaryAction`; a source pass alone is
+not visual acceptance. External Escape/Return/menu interaction and cross-Space behavior need
+separate external input; internal registry activation is not that evidence.
+
+### Drag and paste material intake
+
+`UIChecks` includes `MaterialIntakeChecks.swift`: native NSItemProvider decoding priority,
+exact receiving identity, local copy/original byte comparison, durable additions across ordinary
+edits, full UTF-8 text round-trip (1000 lines, emoji, blank lines, trailing newline), text draft
+Cancel/late-write rejection, file/link capacity rejection, failed mixed imports, failed persistence
+cleanup and civil-day expiry. A deliberately delayed provider checks admission locking, duplicate
+rejection, cancellation and late results not clearing a newer reservation. The same Store API checks
+that scheduling reserves its operation synchronously before creating its task.
+
+The focused native route `--ui-smoke-desktop --ui-smoke-material-intake` uses a fresh marked
+smoke home. It checks persisted file/link content and both surfaces' absence of `materials.undo`
+and `materials.status`, unchanged footer position, 390×600 mini dimensions and existing collapsed
+sections. Its composer captures are isolated native component fixtures, not external-input proof.
+
+Native desktop regression still covers the single sheet, inactive parent, editor ownership and
+mini/desktop sibling behaviour. A native host registered for drop/context menu may return the inert
+NSHostingView from hitTest while a sheet is attached; the oracle accepts only nil or that root,
+rejects any divider/control hit and additionally requires background actions to be disabled.
+This does not substitute a view hitTest query for a real outside click.
+
+Focused external cases are `testFinderFileDropTargetsUnselectedEventAndPersists` and
+`testSafariLinkDropCreatesOnlyWebLink`. They use their own marked test home, synthetic source file
+and local HTML link; they do not use production events. Their 2026-10-28 build-for-testing passed,
+but the runtime attempt stopped before test execution because system automation mode timed out.
+Do not count a successfully compiled test as a successful external interaction.
+
+Actual cross-app drags, status hover/cancel, source-app representations and ordinary Paste routing
+require external input or explicit manual acceptance on an isolated tester. Never infer them from
+provider unit tests. [Current evidence and limitations](images/v1.18.1/material-intake-unreleased/PROVENANCE.md).
+
+### Event link evidence
+
+`EventLinkChecks.swift` covers accepted HTTP/HTTPS including Unicode, rejected other schemes,
+missing hosts/embedded whitespace/credentials, trim, domain fallback, 0/10/11 limits, duplicate
+identities, legacy omission and malformed present JSON. Repository checks assert unchanged disk
+bytes after invalid saves and stale revision rejection. `EventLinkWorkflowChecks.swift` covers
+editor draft/Cancel/Save/reload, stale owner/value rejection, browser failure through an injected
+opener and failed persistence retaining durable data plus the draft. These checks do not launch
+an actual external browser.
+
+`./verify.sh desktop-capture <marked-directory>` includes link layout coverage in the existing
+desktop runtime: domain fallback, shared desktop/mini rendering, invalid-address inline error,
+Save gating and unchanged JSON after Cancel. Mini-panel checks cover the collapsed default,
+heading/count horizontal alignment, repeated disclosure, hidden-row removal from the registered
+interactive hierarchy, unchanged event bytes and retained state on ordinary hide/show. Desktop checks cover zero/positive link indicators in favorite/grid/feed,
+coexistence with checklist/files and containment in the existing summary host. Detail checks
+assert trailing counts and value/symbol alignment for tasks, attachments and links. Twelve
+`desktop-links-*`, `desktop-material-headings-*`, `editor-links-error-*`, `mini-links-*` and
+`mini-links-collapsed-*` captures use
+isolated Light/Dark windows. For an already built bundle, launch it
+through LaunchServices with `--ui-smoke-desktop --ui-smoke-event-links` and a fresh marked smoke
+home to run this scope alone; preserve executable SHA256, manifest, logs and source provenance.
+Native field insertion is in-process evidence, not physical keyboard input. Do not infer reliable
+reopen/Save delivery from this registry: diagnostic attempts observed retained/stale editor controls
+and completion callbacks despite successful disk writes. Ordinary interactions below are the
+acceptance authority for those transitions; no production lifecycle assertion was relaxed.
+
+External case `testEventLinksEditorSaveCancelValidationAndRelaunch` uses ordinary Add/trash and
+native text entry in the mini-panel: Save gating, durable address, Cancel, actual relaunch and
+removing the last link. `testDesktopEventLinkCancelReopenAndSave` separately exercises desktop
+name editing, Cancel/reopen with original text and Save with durable changed text.
+`testMiniLinksDisclosureAtZeroOneAndTenPreservesData` checks 0/1/10 saved links, collapsed row
+absence, ordinary header and trailing-count clicks, expand/collapse reversal and unchanged JSON.
+Record these
+runs independently, not as a combined all-green suite. Actual browser-page content, macOS 13 and
+VoiceOver require their own evidence. The 2026-10-27 manual handoff launched Safari but browser
+inspection was stopped by the computer-use URL policy; page content was not certified.
+
+Build provenance matters for visual review: Xcode's current SDK-27 Debug bundle adopts different
+system control styling than the SwiftPM build. `vtool -show-build` observed SDK 27.0 versus 13.0
+for the reviewed Debug and ordinary Release executables. Use the ordinary `build.sh` path with
+the project's SDKROOT for current-product screenshots; do not treat Debug styling as a requested
+redesign. Apple documents automatic native-control changes on a new-Xcode rebuild in
+[Adopting Liquid Glass](https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass).
+
+The final 2026-10-27 closure passed the complete native desktop campaign **28/28** and a single
+fresh external links campaign **3/3** (113.760 seconds). Before the final ABC run, a separate
+Russian-layout attempt delivered punctuation instead of Latin address letters and failed 1/3;
+that attempt is retained separately. CoreChecks/UIChecks additionally reject removed and expired
+link clicks before the cached rendering day refreshes. The native summary sequence now asserts
+value-before-symbol ordering and a shared trailing icon column for tasks/files/links.
+
+The prior 15-scenario stop was a test-registration defect: a dynamically replaced desktop event
+control used the appearance/change callback registration path and was missing/unusable in the
+registry despite a saved visible favorite. Desktop event controls now use the existing native
+representable registration path, which refreshes identity, action and enabled state coherently.
+No product persistence/lifecycle assertions were skipped. See
+[completion evidence](images/v1.18.1/event-links-unreleased/completion/PROVENANCE.md).
 
 ### Attachment evidence
 
@@ -1209,3 +1344,13 @@ controls, stable neighboring UUIDs/text/completion, focus and scrolling, live Re
 Save/Cancel boundaries. A focused external XCUITest types into newly added rows, deletes a middle
 row and verifies the retained neighbors after Save. Settled geometry and motion-policy checks do
 not establish perceived intermediate smoothness.
+
+
+### Panel pending-show acknowledgement regression
+
+`PanelPresentationChecks.swift` covers pending-show/visible acknowledgement, late hidden/visible
+observations, reset on explicit hide and 200 rapid request sequences. These are pure request-state
+checks, not physical Space acceptance. The existing full desktop status-hide→compact flow retains
+its strict visible-panel assertion without adding a settlement wait. A real failure at scenario 10
+was traced to an occlusion callback hiding a newly requested panel before its visible acknowledgement;
+that run must not be labelled a false positive or combined with a subsequent passing campaign.

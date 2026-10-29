@@ -1,6 +1,34 @@
 import Foundation
 import CountdownCore
 
+/// A show request is not a presented panel until WindowServer reports visible occlusion state.
+package struct PanelPresentationState: Equatable {
+    package private(set) var requestedVisible = false
+    package private(set) var hasVisibleAcknowledgement = false
+
+    package init() {}
+
+    package mutating func requestShow() {
+        requestedVisible = true
+        hasVisibleAcknowledgement = false
+    }
+
+    package mutating func requestHide() {
+        requestedVisible = false
+        hasVisibleAcknowledgement = false
+    }
+
+    /// Returns whether an acknowledged presentation has become occluded and must be hidden.
+    package mutating func observeOcclusion(isVisible: Bool) -> Bool {
+        guard requestedVisible else { return false }
+        if isVisible {
+            hasVisibleAcknowledgement = true
+            return false
+        }
+        return hasVisibleAcknowledgement
+    }
+}
+
 package enum EventUIStrings {
     package static let addEvent = "Добавить событие"
     package static let newEvent = "Новое событие"
@@ -220,6 +248,7 @@ package func editorCanSave(
     date: Day,
     emoji: String,
     subtasks: [Subtask] = [],
+    links: [EventLink] = [],
     today: Day,
     savedNote: String? = nil,
     savedDate: Day? = nil
@@ -236,6 +265,7 @@ package func editorCanSave(
         && CountdownNote.isAllowed(note, savedNote: savedNote)
         && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
         && subtasksAreValid
+        && (try? EventLink.validate(links)) != nil
 }
 
 package enum EditorFocusTarget: Hashable {
@@ -303,6 +333,7 @@ package struct EventEditorDraft: Equatable {
     package var note: String
     package var emoji: String
     package var subtasks: [Subtask]
+    package var links: [EventLink]
     package var attachments: [EventAttachment]
     package var showsWeather: Bool
     package var keepsAfterDate: Bool
@@ -313,6 +344,7 @@ package struct EventEditorDraft: Equatable {
         note = item?.note ?? ""
         emoji = item?.emoji ?? ""
         subtasks = item?.subtasks ?? []
+        links = item?.links ?? []
         attachments = item?.attachments ?? []
         showsWeather = item?.showsWeather ?? false
         keepsAfterDate = item?.keepsAfterDate ?? false
@@ -325,6 +357,7 @@ package struct EventEditorDraft: Equatable {
         emoji = ""
         subtasks = []
         attachments = []
+        links = []
         showsWeather = true
         keepsAfterDate = false
         usesAutomaticTitle = true
@@ -377,7 +410,8 @@ package struct EventEditorDraft: Equatable {
             showsWeather: showsWeather,
             keepsAfterDate: keepsAfterDate,
             usesAutomaticTitle: usesAutomaticTitle,
-            attachments: attachments
+            attachments: attachments,
+            links: links
         )
     }
 }

@@ -1,0 +1,3 @@
+DesktopSmoke
+✓ native link rendering in desktop/mini Light/Dark, collapsed default, repeated disclosure and hidden-row removal, retained hide/show state, unchanged disclosure JSON, domain fallback, inline invalid-address Save guard and unchanged JSON after Cancel; ordinary Save/reopen/delete input is external XCUITest evidence
+PASS: 1/1

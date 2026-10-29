@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-28",
+  "product": "Countdown Manager",
+  "scope": "Executable reuse of existing native action families; inventory of other established families without a mass redesign.",
+  "authority_order": [
+    "Explicit current user decisions",
+    "docs/PRODUCT.md",
+    "DESIGN.md",
+    "Named existing native sibling and its implementation",
+    "This inventory records implementation and verification scope; it does not grant product approval"
+  ],
+  "constraints": [
+    "New controls reuse a named existing family or document an explicit, scoped deviation.",
+    "No global Button style override; each shared family applies only at its call sites.",
+    "Palette roles come from AuroraInstrument, including Light, Dark and Increase Contrast branches.",
+    "Save, Cancel, native text Undo/Redo and Return in multiline text retain their own semantics.",
+    "No addition Undo, addition status row, replacement toast, notification or timer is introduced.",
+    "SDK/build metadata and lexical source gates do not prove native visual or gesture equivalence."
+  ],
+  "families": [
+    {
+      "id": "primary-action",
+      "status": "shared-executable-component",
+      "authority": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "member": "AuroraPrimaryActionModifier"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "EditorView.editorActions Save"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "symbol": "auroraPrimaryAction"
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/Views.swift",
+          "member": "EditorView.editorActions Save",
+          "accessibility_id": "editor.save",
+          "reuse": "auroraPrimaryAction"
+        },
+        {
+          "file": "Sources/CountdownManager/TextAttachmentView.swift",
+          "member": "TextAttachmentComposer Create",
+          "accessibility_id": "materials.text.create",
+          "reuse": "auroraPrimaryAction"
+        },
+        {
+          "file": "Sources/CountdownManager/WhatsNew.swift",
+          "member": "WhatsNewView read-only dismissal",
+          "accessibility_id": "whatsnew.dismiss",
+          "reuse": "auroraPrimaryAction"
+        }
+      ],
+      "symbols": [],
+      "tokens": {
+        "button_style": "borderedProminent",
+        "control_size": "large",
+        "font": "system 12",
+        "tint": "AuroraInstrument.accent(for:highContrast:)",
+        "light_foreground": "Color.white",
+        "dark_foreground": "AuroraInstrument.canvas(for:)",
+        "disabled_focus_bezel": "Native SwiftUI/AppKit"
+      },
+      "behavior": [
+        "Action, validation, saving state, accessibility ID and shortcut belong to each caller.",
+        "Each existing caller places its small saving ProgressView inside the primary label."
+      ],
+      "verification": {
+        "source": [
+          "Both named button chains use auroraPrimaryAction.",
+          "Direct borderedProminent is defined only by AuroraPrimaryActionModifier in the current source scope."
+        ],
+        "native": "Compare Save and Create in Light/Dark/Increase Contrast, enabled/disabled/focused/saving, using the same build compatibility contract."
+      },
+      "explicit_deviations": [
+        "Save keeps defaultAction; Create deliberately has no defaultAction because Return in TextEditor must insert a newline."
+      ]
+    },
+    {
+      "id": "secondary-action",
+      "status": "shared-executable-component",
+      "authority": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "member": "AuroraSecondaryActionModifier"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "EditorView.editorActions Cancel"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "symbol": "auroraSecondaryAction"
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/Views.swift",
+          "member": "EditorView.editorActions Cancel",
+          "accessibility_id": "editor.cancel",
+          "reuse": "auroraSecondaryAction"
+        },
+        {
+          "file": "Sources/CountdownManager/TextAttachmentView.swift",
+          "member": "TextAttachmentComposer Cancel",
+          "accessibility_id": "materials.text.cancel",
+          "reuse": "auroraSecondaryAction"
+        }
+      ],
+      "symbols": [],
+      "tokens": {
+        "button_style": "bordered",
+        "control_size": "large",
+        "font": "system 12",
+        "tint": "AuroraInstrument.accent(for:highContrast:), made explicit from the existing editor inheritance",
+        "foreground_bezel_focus_disabled": "Native SwiftUI/AppKit; no custom foreground override"
+      },
+      "behavior": [
+        "Both callers retain cancelAction and their existing cancellation/cleanup boundary.",
+        "Disabled state belongs to the caller."
+      ],
+      "verification": {
+        "source": [
+          "Both named Cancel button chains use auroraSecondaryAction.",
+          "The family does not contain keyboard or cancellation logic."
+        ],
+        "native": "Compare the two Cancel controls beside their primary actions; verify editor draft and composer cancellation separately."
+      },
+      "explicit_deviations": [
+        "DesktopEventDetail.deletionConfirmation has separate regular bordered confirmation actions; it is not an editor-footer Cancel and is not refactored here."
+      ]
+    },
+    {
+      "id": "desktop-toolbar-creation",
+      "status": "shared-executable-native-component-pending-native-acceptance",
+      "authority": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "member": "AuroraToolbarActionModifier"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Desktop/DesktopViews.swift",
+        "member": "Existing neutral Event Button in DesktopRootView.desktopCommandBar"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "symbol": "auroraToolbarAction",
+        "label_symbol": "AuroraToolbarLabel",
+        "native_primitives": ["SwiftUI.Button bordered", "SwiftUI.Menu button style"]
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/Desktop/DesktopViews.swift",
+          "member": "DesktopRootView.desktopCommandBar Event",
+          "accessibility_id": "desktop.create",
+          "reuse": "auroraToolbarAction",
+          "label_reuse": "AuroraToolbarLabel",
+          "shows_menu_indicator": false
+        },
+        {
+          "file": "Sources/CountdownManager/Desktop/DesktopViews.swift",
+          "member": "DesktopRootView.desktopCommandBar Create-day",
+          "accessibility_id": "desktop.create-day",
+          "reuse": "auroraToolbarAction",
+          "label_reuse": "AuroraToolbarLabel",
+          "shows_menu_indicator": true
+        }
+      ],
+      "symbols": ["plus", "calendar.badge.plus", "chevron.down"],
+      "tokens": {
+        "button_and_menu_style": "Shared native bordered Button; Menu additionally uses menuStyle(button)",
+        "control_size": "regular",
+        "font": "system 13",
+        "foreground": "AuroraInstrument.ink(for:); existing neutral toolbar ink",
+        "inherited_tint": "DesktopRootView AuroraInstrument.accent(for:highContrast:)",
+        "container": "HStack spacing 12; horizontal padding 20; height 54",
+        "menu_geometry": "Framework indicator hidden; shared Label uses native chevron.down at system 9, HStack gap 6, inherited neutral ink and accessibilityHidden(true); existing fixedSize and native bezel retained"
+      },
+      "behavior": [
+        "Event retains Command-N and existing beginEditor action.",
+        "Menu retains Today, Tomorrow and Choose-date commands.",
+        "Both retain canMutate guards."
+      ],
+      "verification": {
+        "source": [
+          "Both named consumers use auroraToolbarAction with their existing symbols and action guards.",
+          "Both named labels use AuroraToolbarLabel with their existing title and primary SF Symbol.",
+          "Only the Menu uses menuStyle(button), menuIndicator(hidden) and the decorative native chevron.down; no primaryAction is added.",
+          "The shared family has no local tint, frame, background or overlay."
+        ],
+        "native": "Same-source linked-13/15.4 comparison found that SDK compatibility removed calendar tint but not the separate tinted menu-arrow cell. Fresh native captures also rejected button menuStyle plus bordered because the indicator square remained. The subsequent hidden-framework-indicator/shared-SF-label correction still requires fresh native capture acceptance; source gates or metadata alone are not visual evidence."
+      },
+      "explicit_deviations": [
+        "User-authorized correction makes Event and Create-day share a native bordered button bezel; only the Menu changes from automatic menu presentation to button menuStyle.",
+        "The confirmed framework indicator render defect is addressed by hiding that indicator and showing the standard SF chevron in the shared label; no hand-drawn arrow, replacement bezel or local tint is introduced.",
+        "Menu keeps its existing menu-only click behavior and actions; it does not become a split button with a new primary action."
+      ]
+    },
+    {
+      "id": "desktop-symbol-actions",
+      "status": "shared-executable-component",
+      "authority": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "member": "AuroraSymbolAction"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Desktop/DesktopEventDetail.swift",
+        "member": "DesktopEventDetail.header star/pencil/trash"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "symbol": "AuroraSymbolAction"
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/Desktop/DesktopEventDetail.swift",
+          "member": "DesktopEventDetail.header",
+          "reuse": "AuroraSymbolAction"
+        }
+      ],
+      "symbols": ["star", "star.fill", "pencil", "trash"],
+      "tokens": {
+        "target": "28 x 28; Rectangle contentShape",
+        "button_style": "Native borderless Button selected explicitly by AuroraSymbolAction.Surface.desktop",
+        "neutral_tone": "AuroraInstrument.ink(for:)",
+        "selected_star_tone": "AuroraInstrument.accent(for:highContrast:)",
+        "font": "Inherited existing header system 16 regular",
+        "container": "Existing spacing 8; horizontal padding 24; height 54"
+      },
+      "behavior": [
+        "Accessibility label is a required component parameter.",
+        "Optional ButtonRole preserves destructive trash role.",
+        "Caller retains help, accessibility IDs/value, uiSmoke actions, fixedSize and disabled guards.",
+        "Delete retains its existing explicit confirmation."
+      ],
+      "verification": {
+        "source": [
+          "Header contains three AuroraSymbolAction consumers with the existing symbols, tone mapping, labels, role and guards."
+        ],
+        "native": "Confirm geometry, focus and enabled/disabled states after extraction at matched build settings."
+      },
+      "explicit_deviations": [
+        "Shared control explicitly preserves desktop borderless and mini plain styles; it does not normalize their hover/focus behavior into a new style.",
+        "Editor attachment removal still uses minus.circle and link/subtask deletion uses trash at their existing 24-point targets; those are different row-action families and are not rewritten."
+      ]
+    },
+    {
+      "id": "mini-symbol-actions",
+      "status": "shared-executable-component",
+      "authority": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "member": "AuroraSymbolAction"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "ManagerView.eventActions"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/AuroraInstrument.swift",
+        "symbol": "AuroraSymbolAction"
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/Views.swift",
+          "member": "ManagerView.eventActions star/pencil",
+          "reuse": "AuroraSymbolAction"
+        }
+      ],
+      "symbols": ["star", "star.fill", "pencil"],
+      "tokens": {
+        "target": "28 x 28; Rectangle contentShape",
+        "button_style": "Native plain Button selected explicitly by AuroraSymbolAction.Surface.mini",
+        "neutral_tone": "AuroraInstrument.secondaryInk(for:)",
+        "selected_star_tone": "AuroraInstrument.accent(for:highContrast:)",
+        "font": "Existing inherited mini-panel font; not forced to desktop 16",
+        "container": "Existing HStack spacing 0 and fixedSize"
+      },
+      "behavior": [
+        "Caller retains full event-specific accessible labels, favorite value, help, IDs and uiSmoke actions.",
+        "Existing cross-surface editor guards remain outside the component."
+      ],
+      "verification": {
+        "source": [
+          "ManagerView.eventActions contains two AuroraSymbolAction consumers with existing tone and symbol mappings."
+        ],
+        "native": "Confirm ordinary and favorite mini cards keep the same action positions, target sizes and labels."
+      },
+      "explicit_deviations": [
+        "Mini neutral actions intentionally use secondaryInk while desktop neutral actions use ink.",
+        "Mini has no direct header trash action; deletion remains in its existing editor flow."
+      ]
+    },
+    {
+      "id": "desktop-material-heading",
+      "status": "existing-shared-component",
+      "authority": {
+        "file": "Sources/CountdownManager/EventLinkViews.swift",
+        "member": "SavedMaterialHeading"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/AttachmentViews.swift",
+        "member": "SavedAttachmentSection compact=false"
+      },
+      "implementation": {
+        "file": "Sources/CountdownManager/Desktop/DesktopEventViews.swift",
+        "symbol": "DesktopSummaryLabelStyle"
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/AttachmentViews.swift",
+          "member": "SavedAttachmentSection desktop heading",
+          "reuse": "SavedMaterialHeading"
+        },
+        {
+          "file": "Sources/CountdownManager/EventLinkViews.swift",
+          "member": "SavedLinkSection desktop heading",
+          "reuse": "SavedMaterialHeading"
+        },
+        {
+          "file": "Sources/CountdownManager/Desktop/DesktopEventDetail.swift",
+          "member": "DesktopEventDetail.checklist progress",
+          "reuse": "DesktopSummaryLabelStyle"
+        }
+      ],
+      "symbols": ["paperclip", "link", "checklist", "checkmark.circle.fill"],
+      "tokens": {
+        "heading": "system 12 semibold; AuroraInstrument.ink(for:)",
+        "summary": "system 11 medium; AuroraInstrument.secondaryInk(for:)",
+        "summary_order": "Value/progress then symbol; gap 6; symbol column 18; tabular digits",
+        "completed_tasks": "Existing todayColor(for:highContrast:) semantics"
+      },
+      "behavior": [
+        "Desktop sections remain expanded.",
+        "Zero saved attachments/links omit their section and summary placeholder."
+      ],
+      "verification": {
+        "source": ["Reuse existing heading/summary owners rather than a new count or icon layout."],
+        "native": "Compare zero, one and actual limit counts; check column alignment and long titles."
+      },
+      "explicit_deviations": ["Checklist completed-state color and checkmark are semantic, not a new neutral material style."]
+    },
+    {
+      "id": "mini-material-disclosure",
+      "status": "existing-family-with-separate-state-owners",
+      "authority": {
+        "file": "Sources/CountdownManager/AttachmentViews.swift",
+        "member": "SavedAttachmentSection compact=true"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "SubtaskChecklistView disclosure"
+      },
+      "implementation": {
+        "native_primitives": ["SwiftUI.Button with plain style", "Conditional content hierarchy"]
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/AttachmentViews.swift",
+          "member": "SavedAttachmentSection compact=true",
+          "reuse": "Existing mini disclosure family"
+        },
+        {
+          "file": "Sources/CountdownManager/EventLinkViews.swift",
+          "member": "SavedLinkSection panel",
+          "reuse": "Existing mini disclosure family"
+        }
+      ],
+      "symbols": ["chevron.right"],
+      "tokens": {
+        "chevron": "system 9 medium; fixed direction changes by 90-degree rotation",
+        "heading": "system 12 semibold; ink",
+        "count": "system 11; secondaryInk",
+        "heading_gap": "6 for attachments/links; existing checklist uses 5",
+        "target": "Full-width Rectangle; minimum height 22"
+      },
+      "behavior": [
+        "Saved attachments/links start collapsed; mounted hide/show retains local disclosure state.",
+        "Collapsed rows are absent from interaction and accessibility.",
+        "Zero saved attachments/links omit their section.",
+        "Drop does not introduce a new expansion rule."
+      ],
+      "verification": {
+        "source": ["Preserve existing conditional content and disclosure owners; no unapproved generic state merger."],
+        "native": "Compare 0/1/15 attachments and 0/1/10 links, header/count click target and hide/show retention."
+      },
+      "explicit_deviations": [
+        "Subtasks use persisted SubtaskDisclosureState and green completed progress; attachments/links use local mounted-session state.",
+        "Desktop headings intentionally have no disclosure."
+      ]
+    },
+    {
+      "id": "native-fields",
+      "status": "existing-native-field-family",
+      "authority": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "EditorView.titleField and noteControls"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/NoteEditor.swift",
+        "member": "NoteEditor native text ownership"
+      },
+      "implementation": {
+        "native_primitives": ["SwiftUI.TextField roundedBorder", "AppKit.NSTextView", "SwiftUI.TextEditor"]
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/TextAttachmentView.swift",
+          "member": "TextAttachmentComposer filename",
+          "accessibility_id": "materials.text.name",
+          "reuse": "TextField roundedBorder"
+        },
+        {
+          "file": "Sources/CountdownManager/TextAttachmentView.swift",
+          "member": "TextAttachmentComposer content",
+          "accessibility_id": "materials.text.content",
+          "reuse": "TextEditor with native text editing"
+        }
+      ],
+      "symbols": [],
+      "tokens": {
+        "text_body": "system 13",
+        "bezel_focus_selection_disabled": "Native platform roles; no second custom border or focus ring",
+        "labels": "Existing system 12 composer labels",
+        "validation": "Inline native readable explanation; errors remain actionable"
+      },
+      "behavior": [
+        "Text editing, selection, composition, clipboard commands and Undo/Redo remain native.",
+        "Return in the attachment TextEditor inserts a newline.",
+        "Text ownership remains in the retained composer draft."
+      ],
+      "verification": {
+        "source": ["No arbitrary global field style or input command override."],
+        "native": "Verify focus, ordinary paste, newline, native Undo/Redo, long multiline scroll and invalid-name explanation."
+      },
+      "explicit_deviations": [
+        "The existing note editor has a 150-grapheme contract and bounded growing geometry; attachment text deliberately uses a scrolling TextEditor without that note limit.",
+        "The separate emoji selector owns its established custom outline; it is not a text-field replacement."
+      ]
+    },
+    {
+      "id": "editor-action-footer",
+      "status": "existing-layout-family-shared-action-components",
+      "authority": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "EditorView.editorActions"
+      },
+      "named_sibling": {
+        "file": "Sources/CountdownManager/Views.swift",
+        "member": "EditorView.editorActions fixed bottom row"
+      },
+      "implementation": {
+        "native_primitives": ["SwiftUI.HStack", "auroraSecondaryAction", "auroraPrimaryAction"]
+      },
+      "consumers": [
+        {
+          "file": "Sources/CountdownManager/TextAttachmentView.swift",
+          "member": "TextAttachmentComposer bottom row",
+          "reuse": "Existing footer geometry and shared action modifiers"
+        }
+      ],
+      "symbols": [],
+      "tokens": {
+        "layout": "HStack spacing 9; Spacer(minLength:0), Cancel, primary",
+        "height": 58,
+        "horizontal_padding": 16,
+        "font": "system 12",
+        "separator": "Native Divider"
+      },
+      "behavior": ["Action row remains fixed while form content scrolls; ownership and Save/Cancel rules remain with the existing editor/composer."],
+      "verification": {
+        "source": ["Preserve matched footer geometry; primary and secondary controls call their shared modifiers."],
+        "native": "Compare desktop sheet and mini internal screen at actual sizes, including long labels and validation text."
+      },
+      "explicit_deviations": ["Event editor keeps its established Delete action before the Spacer; the text composer does not add a Delete action."]
+    }
+  ],
+  "deferred_findings": [
+    {
+      "id": "toolbar-native-parity",
+      "state": "native-family-correction-implemented-awaiting-fresh-captures",
+      "owner": "Native build parity and root verification work",
+      "requirement": "Compare the hidden framework indicator and shared SF-chevron label in actual output under the established build compatibility contract. The previous button-menu/bordered render was rejected. No guessed local tint, custom arrow drawing/bezel or source-only acceptance."
+    },
+    {
+      "id": "other-existing-control-families",
+      "state": "out-of-scope-for-mass-refactor",
+      "owners": [
+        "AuroraTimerPresetSelector in AuroraInstrument.swift",
+        "CountdownTimerStrip in CountdownTimer.swift",
+        "SettingsView in SettingsView.swift",
+        "ManagerView emptySecondaryAction",
+        "DesktopEventDetail.deletionConfirmation"
+      ],
+      "requirement": "Inventory findings do not authorize rewriting timer, settings, empty-state or destructive-confirmation families."
+    }
+  ]
+}

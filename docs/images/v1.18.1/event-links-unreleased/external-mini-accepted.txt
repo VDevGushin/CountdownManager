@@ -1,0 +1,5 @@
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' started.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testEventLinksEditorSaveCancelValidationAndRelaunch]' passed (53.274 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 53.274 (53.275) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 53.274 (53.277) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 53.274 (53.278) seconds

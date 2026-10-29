@@ -9,6 +9,13 @@ func testDesktopPresentation() throws {
     let preparation = try Subtask(text: "Проверить документы", isCompleted: true)
     let expired = Countdown(title: "Старое событие", date: yesterday, emoji: "")
     let first = Countdown(title: "Встреча", note: "Билеты и документы", date: today, emoji: "")
+    precondition(desktopEventAccessibilityLabel(first) == "Открыть событие: Встреча")
+    var materialEvent = first
+    materialEvent.links = (0..<10).map { EventLink(address: "https://example.com/\($0)") }
+    precondition(desktopEventAccessibilityLabel(materialEvent) == "Открыть событие: Встреча. Ссылки: 10")
+    materialEvent.attachments = [try EventAttachment(name: "Билет.pdf", byteCount: 42)]
+    precondition(desktopEventAccessibilityLabel(materialEvent) == "Открыть событие: Встреча. Вложения: 1. Ссылки: 10")
+
     let second = Countdown(title: "Поездка", note: "Сохранённая заметка", date: today, emoji: "🚗")
     let favorite = Countdown(
         title: "Отпуск", date: tomorrow, emoji: "🌴", subtasks: [preparation], showsWeather: true

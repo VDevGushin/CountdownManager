@@ -132,6 +132,12 @@ components:
 
 ## Overview
 
+The 1.19.0 read-only `Что нового` window reuses the Settings header (Georgia 21, 49-point
+height, 16-point insets), system 13-point explanatory text, existing `link`, `paperclip` and
+`doc.text` symbols, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
+58-point footer. Its 430×560 content scrolls between header and footer. Native title-bar close,
+Escape and Return retain normal window semantics. It introduces no new visual/action family.
+
 **Creative North Star: "Warm Calendar Leaves"**
 
 Countdown Manager uses warm paper and terracotta calendar leaves to make a small dated-event utility feel tangible. Georgia gives event names and dates an editorial character; compact native system text keeps actions, settings, and checklists legible. The warm dark appearance preserves the same hierarchy through related surfaces rather than applying a neutral black theme.
@@ -301,6 +307,15 @@ The shared editor keeps its full editable list and 36-point previews before Save
 reopening. Preview loading/failure does not change the row area or disable editing.
 Editor symbols occupy a fixed 18-point-wide column; filenames and size labels align across
 PDF, image, movie and other file types instead of following each SF Symbol's intrinsic width.
+Saved web links follow the same mini-panel disclosure family as attachments: a fixed-width
+chevron, 12-point semibold primary-ink heading, trailing neutral count and one full-width click
+target. Start collapsed; retain the mounted session's state on hide/show. Collapsed link rows are
+removed from interaction and accessibility. Desktop links remain an expanded detail section;
+no mini-panel disclosure is copied into the desktop. Its expanded heading has the same trailing
+neutral count and native link symbol as desktop attachments' count/paperclip. Checklist progress,
+attachment count and link count in details all use value then symbol in one trailing column. An empty saved links section is absent.
+The editor uses the existing SF Symbol `trash`, native rounded fields, and separated Add spacing.
+
 The mini-panel uses a collapsible attachments section inside the same event card. Its disclosure
 rotates one fixed chevron, as subtasks do; expanding or collapsing must not move the heading
 or count horizontally. Both surfaces
@@ -333,10 +348,35 @@ Desktop browser cards also show a neutral 11-point paperclip/count summary only 
 exist, separately from the user's emoji. Ordinary grid cards stack it below checklist progress
 inside the existing status host, so narrow cards can fit both. Feed cards and the featured favorite
 use one compact status row. Zero attachments add neither a visible symbol nor an accessible zero state.
+The saved-link indicator follows this same status family: system `link`, neutral 11-point medium
+count, no zero placeholder. Grid cards stack it below file count; feed and favorite include it in
+the same horizontal status row. It is a summary rather than another interactive control.
+All three desktop browser summaries use number/progress before the SF Symbol, tabular digits,
+a 6-point internal gap and an 18-point symbol column. In grid cards the symbol columns align at
+the right; favorite/feed retain the value-symbol order in their common status row. Detail section
+headers reuse the same value-symbol metadata style. Mini-panel disclosures keep their own treatment.
+
+
 
 The featured desktop favorite places date and forecast inline on their own full-width row
 below title/calendar identity. This preserves room for both in a narrow browser pane; ordinary
 collection-grid metadata keeps its existing layout.
+
+### Material intake
+
+Saved event drop targets use the existing 8-point event silhouette, accent tint and a stationary
+2-point accent outline only while targeted. They add no resting upload container or add button to
+saved material sections. Number/symbol summaries and mini disclosure state remain unchanged.
+The context menu adds `Вставить текст как вложение…` without changing the star/pencil/trash family.
+
+Text composition follows the shared editor: 21-point Georgia title in a 49-point header, 16-point
+insets, native rounded filename field, a scrolling 13-point system text editor and a fixed 58-point
+Save/Cancel-family action row. Its content has no note-length limit. Desktop reuses its native sheet;
+mini uses the retained 390 × 540 manager surface beneath the timer. The existing event editor stays
+mounted and inactive while its nested text composer is visible. Native text editing and Paste remain
+available. Saved-event additions add no status row, Undo button or replacement toast. The primary
+Create action and existing editor Save share `auroraPrimaryAction()` so native button style, size,
+Aurora tint, Increase Contrast branch, foreground and typography cannot drift between them.
 
 ### Navigation
 
@@ -388,3 +428,29 @@ A real month label sits in a terracotta strip above the Georgia day numeral, wit
 - **Don't** promote illustrative HTML previews in the sidecar into native control specifications.
 
 Documentation boundary: extracted from `AuroraInstrument.swift`, `Views.swift`, `SettingsView.swift`, `CountdownTimer.swift`, and the supporting presentation constants; `docs/PRODUCT.md` supplies the accepted native behavior. The approved imported HTML establishes visual authority, while current Swift source establishes token values. Native captures were reviewed by the implementation and independent review passes; this document pass does not claim a separate capture run. The sidecar's HTML/CSS are illustrative light-appearance translations for a design panel, not runtime evidence or pixel-equivalent AppKit rendering. No pre-existing defect is canonized here.
+
+
+## Executable native design contract
+
+The accepted app identity is `native-warm-calendar-v1`, independent of the application's release
+number. `Resources/NativeDesignContract.json` records deployment and linked compatibility plus the
+required native appearance matrix. `AuroraInstrument.swift` owns the actual colors/tokens and shared
+primary, secondary and symbol-action components. Use `auroraPrimaryAction()` for editor Save and
+text-attachment Create, `auroraSecondaryAction()` for their Cancel actions, and `AuroraSymbolAction`
+for the existing event star/pencil/trash family. Toolbar Event and Create-day use
+`auroraToolbarAction()` and `AuroraToolbarLabel`; the date menu explicitly uses native
+`menuStyle(.button)`, hides the framework indicator and places the standard neutral `chevron.down`
+in that shared label. It retains its existing today/tomorrow/date choices without a second action. Surface-specific native styles, targets and state
+semantics remain explicit; sharing a component is not authority to change a control's behavior.
+Existing material headings, summary labels, mini disclosures and native fields keep their current
+named owners. The inventory in `docs/qa/native-component-families-2026-10-28.json` maps these families.
+
+Builds explicitly retain the accepted linked-on-or-after compatibility metadata 13.0 instead of
+inheriting a different visual branch from `SDKROOT` or the toolchain. The actual compiler headers
+SDK may be newer and is recorded separately; this is not described as compiling with SDK13 headers.
+`build.sh` verifies contract/authority hashes, native load commands and signatures and embeds
+`NativeBuildProvenance.json`. A release version change does not change this design contract.
+
+Source/build gates catch component and provenance drift; they cannot approve a new product mechanic
+or certify rendered pixels. Changed native UI is reviewed against accepted siblings in Light/Dark
+and standard/Increase Contrast. A/B captures must name the actual build and rendering method.

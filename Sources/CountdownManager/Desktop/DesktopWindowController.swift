@@ -5,6 +5,7 @@ import SwiftUI
 final class DesktopWindowController: NSWindowController, NSWindowDelegate {
     private let hostingController: NSHostingController<DesktopRootView>
     private let editorSession: EventEditorSession
+    private var pasteAction: (() -> Void)?
 
     init(rootView: DesktopRootView, editorSession: EventEditorSession) {
         self.editorSession = editorSession
@@ -19,14 +20,20 @@ final class DesktopWindowController: NSWindowController, NSWindowDelegate {
         window.identifier = NSUserInterfaceItemIdentifier("desktop.window")
         window.contentMinSize = NSSize(width: 960, height: 640)
         window.isReleasedWhenClosed = false
-        window.contentViewController = hostingController
         super.init(window: window)
+        hostingController.rootView.registerPasteAction = { [weak self] action in self?.pasteAction = action }
+        window.contentViewController = hostingController
         window.delegate = self
         window.center()
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
+
+    @objc func paste(_ sender: Any?) {
+        guard window?.isKeyWindow == true, window?.attachedSheet == nil else { return }
+        pasteAction?()
+    }
 
     func show() {
         guard let window else { return }

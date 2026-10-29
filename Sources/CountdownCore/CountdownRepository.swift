@@ -59,6 +59,13 @@ public actor CountdownRepository {
         return attachment
     }
 
+    public func createTextAttachment(_ text: TextAttachment, draftID: UUID) throws -> EventAttachment {
+        guard attachmentDrafts[draftID] != nil else { throw EventAttachmentError.unknownDraft }
+        let attachment = try attachmentFiles.createText(text)
+        attachmentDrafts[draftID]?[attachment.id] = attachment
+        return attachment
+    }
+
     public func discardAttachmentDraft(_ draftID: UUID) throws {
         attachmentDrafts.removeValue(forKey: draftID)
         try cleanupAttachments()

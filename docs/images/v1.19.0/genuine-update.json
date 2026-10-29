@@ -1,0 +1,122 @@
+{
+  "phase": "genuine-update-passed",
+  "actual_update_verified": true,
+  "productionVersion": "1.19.0",
+  "productionBuild": "35",
+  "productionExecutableSHA256": "afa02e412d7e153f67194ad67ab278c9cee4cb8e1e298d21061b2564453a6ec4",
+  "unsignedProductionPayloadSHA256": "59ad024a8428534086ba3bfd0dec9993da9bca389b535e9d6e874bd4b56d2e3a",
+  "fixtures": [
+    {
+      "label": "older",
+      "app": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/older/Countdown Manager.app",
+      "build": "20035",
+      "unsignedPayloadSHA256": "59ad024a8428534086ba3bfd0dec9993da9bca389b535e9d6e874bd4b56d2e3a",
+      "signedExecutableSHA256": "e3cdb76429464e106899574a2c78f0c92a16d147b618f634a5bb0d76999129ce",
+      "nativeContract": {
+        "styleVersion": "native-warm-calendar-v1",
+        "compilerSDK": {
+          "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+          "version": "15.4",
+          "canonicalName": "macosx15.4"
+        },
+        "linkedCompatibility": "13.0",
+        "signatureIdentifier": "local.countdownmanager.update-test",
+        "renderedAppearanceVerified": false
+      }
+    },
+    {
+      "label": "newer",
+      "app": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/newer/Countdown Manager.app",
+      "build": "20036",
+      "unsignedPayloadSHA256": "59ad024a8428534086ba3bfd0dec9993da9bca389b535e9d6e874bd4b56d2e3a",
+      "signedExecutableSHA256": "588cfc6c63ac50e0cd8c61ff9b00cf9afbe85c6fb91bec6394bbbd1a864d81e8",
+      "nativeContract": {
+        "styleVersion": "native-warm-calendar-v1",
+        "compilerSDK": {
+          "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+          "version": "15.4",
+          "canonicalName": "macosx15.4"
+        },
+        "linkedCompatibility": "13.0",
+        "signatureIdentifier": "local.countdownmanager.update-test",
+        "renderedAppearanceVerified": false
+      }
+    }
+  ],
+  "boundary": "Both test-only metadata builds contain the final 1.19 production executable payload. Info update channel/home/key and versions remain synthetic; this verifies Sparkle protocol/data preservation, not an historical 1.18 binary migration.",
+  "home": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/test-home",
+  "oldBuild": 20035,
+  "newBuild": 20036,
+  "feedDirectory": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/feed-final-ui",
+  "cachePreparation": "standard generate_appcast cache access through scoped escalation; no HOME override used",
+  "beforeProcess": {
+    "pid": 35861,
+    "command": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/older/Countdown Manager.app/Contents/MacOS/CountdownManager"
+  },
+  "launchVerifiedAtEpoch": 1793200393.789325,
+  "updateDiscovery": "ordinary Sparkle automatic check found local signed update before manual check action could be certified",
+  "preInstallUIRequeryOpenedDesktop": true,
+  "uiInstallReadyObserved": true,
+  "installReadyAtEpoch": 1793200658.544446,
+  "beforePID": 35861,
+  "afterPID": 37270,
+  "afterBuild": "20036",
+  "afterVersion": "1.6.91",
+  "afterAppPath": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/older/Countdown Manager.app",
+  "manualReopenAfterInstallBeforeIndependentObservation": false,
+  "afterSignedExecutableSHA256": "588cfc6c63ac50e0cd8c61ff9b00cf9afbe85c6fb91bec6394bbbd1a864d81e8",
+  "dataFilesSHA256Before": {
+    "countdowns.json": "88a597e35828d4ba2a34161bef4ecbefdcfcb757a0f44b317387dd9e1f4ef203",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000011/.countdown-attachment-EEEEEEEE-0000-0000-0000-000000000011": "7925caf7f503b5bd872ea8892562b4654339d8895832fe05855cdcf5a34c7c76",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000011/UpdateFixture.txt": "03ee76dc9ef739894f331786f04667d216655c3fc9493ccb40cca6d1a873ea16",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000012/.countdown-attachment-EEEEEEEE-0000-0000-0000-000000000012": "f1c2b5348d2f307eb9b9200a7b72428123e484d78043043e8d6daaf9f69885d2",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000012/UpdateFixture.pdf": "e5b844d4baccb8151c7db2f9a8ede1fc80223011a1b38510754057f2329bed1c"
+  },
+  "dataFilesSHA256After": {
+    "countdowns.json": "88a597e35828d4ba2a34161bef4ecbefdcfcb757a0f44b317387dd9e1f4ef203",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000011/.countdown-attachment-EEEEEEEE-0000-0000-0000-000000000011": "7925caf7f503b5bd872ea8892562b4654339d8895832fe05855cdcf5a34c7c76",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000011/UpdateFixture.txt": "03ee76dc9ef739894f331786f04667d216655c3fc9493ccb40cca6d1a873ea16",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000012/.countdown-attachment-EEEEEEEE-0000-0000-0000-000000000012": "f1c2b5348d2f307eb9b9200a7b72428123e484d78043043e8d6daaf9f69885d2",
+    "Attachments/EEEEEEEE-0000-0000-0000-000000000012/UpdateFixture.pdf": "e5b844d4baccb8151c7db2f9a8ede1fc80223011a1b38510754057f2329bed1c"
+  },
+  "selectedProductPreferencesBefore": {
+    "appearance.selection": "dark",
+    "expandedSubtasksByEvent": {
+      "EEEEEEEE-0000-0000-0000-000000000001": false
+    },
+    "genuineUpdate.fixtureSentinel": "countdown-1.19-synthetic-only"
+  },
+  "selectedProductPreferencesAfter": {
+    "appearance.selection": "dark",
+    "expandedSubtasksByEvent": {
+      "EEEEEEEE-0000-0000-0000-000000000001": false
+    },
+    "genuineUpdate.fixtureSentinel": "countdown-1.19-synthetic-only"
+  },
+  "sourceOriginalsSHA256": {
+    "UpdateFixture.pdf": "e5b844d4baccb8151c7db2f9a8ede1fc80223011a1b38510754057f2329bed1c",
+    "UpdateFixture.txt": "03ee76dc9ef739894f331786f04667d216655c3fc9493ccb40cca6d1a873ea16"
+  },
+  "continuousObserverBoundary": "Original continuous observer expired near the final button; this independent post-install snapshot is taken before any UI re-query/reopen.",
+  "uiObserved": [
+    "Sparkle available 1.6.90→1.6.91",
+    "clicked Install Update",
+    "download/extract status",
+    "Ready to install",
+    "clicked Install and Relaunch"
+  ],
+  "independentRelaunchObservation": {
+    "beforePID": 35861,
+    "afterProcesses": [
+      {
+        "pid": 37270,
+        "command": "/private/tmp/countdown-update-1.19-final-jrzh0fxi/candidate-countdown-update-1.19-final-jrzh0fxi/older/Countdown Manager.app/Contents/MacOS/CountdownManager"
+      }
+    ],
+    "afterBuild": "20036",
+    "afterVersion": "1.6.91",
+    "observedAtEpoch": 1793200734.176445,
+    "manualReopenAfterInstall": false,
+    "observationBoundary": "Original continuous observer expired near the final button; this independent post-install snapshot is taken before any UI re-query/reopen."
+  }
+}

@@ -12,6 +12,8 @@ struct DesktopEventBrowser: View {
     let resetFilters: () -> Void
     let create: () -> Void
     let canCreate: Bool
+    @ObservedObject var editorSession: EventEditorSession
+    let showTextAttachment: (UUID, String) -> Void
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
@@ -128,12 +130,12 @@ struct DesktopEventBrowser: View {
                              selected: item.id == selectedID)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(item.attachments.isEmpty
-            ? "Открыть событие: \(item.title)"
-            : "Открыть событие: \(item.title). Вложения: \(item.attachments.count)")
+        .accessibilityLabel(desktopEventAccessibilityLabel(item))
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
+        .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
+                                      enabled: canCreate, showText: { showTextAttachment(item.id, $0) }))
     }
 }
 
@@ -340,10 +342,12 @@ private struct DesktopEventCard: View {
                 .uiSmokeControl(id: "desktop.favorite.metadata.\(item.id)")
             Text(presentation.remainingLabel).font(.custom("Georgia", size: 25))
                 .foregroundStyle(timeColor)
-            if presentation.completionLabel != nil || !item.attachments.isEmpty {
+            if presentation.completionLabel != nil || !item.attachments.isEmpty || !item.links.isEmpty {
                 HStack(alignment: .firstTextBaseline, spacing: 10) {
                     DesktopCompletionLabel(presentation: presentation)
+                        .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.tasks.\(item.id)"))
                     attachmentIndicator
+                    linkIndicator
                 }
             }
         }
@@ -367,8 +371,11 @@ private struct DesktopEventCard: View {
                 .clipped()
                 .uiSmokeControl(id: "desktop.card.metadata.\(item.id)")
             completionLayout {
-                DesktopCompletionLabel(presentation: presentation).transaction { $0.animation = nil }
+                DesktopCompletionLabel(presentation: presentation)
+                    .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.tasks.\(item.id)"))
+                    .transaction { $0.animation = nil }
                 attachmentIndicator.transaction { $0.animation = nil }
+                linkIndicator.transaction { $0.animation = nil }
             }
                 .clipped()
                 .uiSmokeControl(id: "desktop.card.completion.\(item.id)")
@@ -414,6 +421,7 @@ private struct DesktopEventCard: View {
     private var attachmentIndicator: some View {
         if !item.attachments.isEmpty {
             Label(String(item.attachments.count), systemImage: "paperclip")
+                .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.attachments.\(item.id)"))
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .lineLimit(1)
@@ -423,6 +431,22 @@ private struct DesktopEventCard: View {
                 .accessibilityIdentifier("desktop.attachments.indicator.\(item.id.uuidString)")
                 .uiSmokeControl(id: "desktop.attachments.indicator.\(item.id.uuidString)",
                                 value: { String(item.attachments.count) })
+        }
+    }
+
+    @ViewBuilder
+    private var linkIndicator: some View {
+        if !item.links.isEmpty {
+            Label(String(item.links.count), systemImage: "link")
+                .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.summary.links.\(item.id)"))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .lineLimit(1)
+                .fixedSize()
+                .accessibilityLabel("Ссылки: \(item.links.count)")
+                .help("Ссылки: \(item.links.count)")
+                .accessibilityIdentifier("desktop.links.indicator.\(item.id)")
+                .uiSmokeControl(id: "desktop.links.indicator.\(item.id)", value: { String(item.links.count) })
         }
     }
 
@@ -494,6 +518,20 @@ struct DesktopForecastSlot: View {
         .frame(height: 16, alignment: .leading)
         .accessibilityHidden(forecast == nil)
         .uiSmokeControl(id: "desktop.weather.\(role)", value: { forecast == nil ? "absent" : "available" })
+    }
+}
+
+struct DesktopSummaryLabelStyle: LabelStyle {
+    let controlID: String
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            configuration.title.monospacedDigit()
+                .uiSmokeControl(id: "\(controlID).value")
+            configuration.icon.frame(width: 18)
+                .accessibilityHidden(true)
+                .uiSmokeControl(id: "\(controlID).icon")
+        }
     }
 }
 

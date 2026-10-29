@@ -6,7 +6,67 @@ import Foundation
 func testRetentionWorkflows(in directory: URL) async throws {
     testRetainedPresentationAndEditorDrafts()
     try await testRetainedStoreMidnightAndAttachments(in: directory)
+    try await testRetainedLinksAndMaterialIntake(in: directory.appendingPathComponent("materials"))
     print("PASS retained UI state: desktop/month/past grouping and mini order; primary/no duplicates/search; Russian labels; draft Save/Cancel; midnight failure/retry, post-date edits, attachment access and failed-edit rollback/retry")
+}
+
+@MainActor
+private func testRetainedLinksAndMaterialIntake(in directory: URL) async throws {
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    let suite = "CountdownRetainedMaterials.\(UUID())"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    let today = retentionUIDay(2026, 10, 29)
+    var now = today.date()
+    var opened: [URL] = []
+    let json = directory.appendingPathComponent("countdowns.json")
+    let store = Store(fileURL: json, disclosureDefaults: defaults, now: { now },
+                      loginItemManagementIsAvailable: false, openWebURL: { opened.append($0); return true })
+    await waitForRetentionStore(store)
+    let link = EventLink(name: "Saved route", address: "https://example.com/route")
+    let kept = Countdown(title: "Retained materials", date: today, emoji: "", keepsAfterDate: true, links: [link])
+    let expired = Countdown(title: "Expired materials", date: today, emoji: "", links: [link])
+    let savedKept = await store.save(kept, primary: true)
+    let savedExpired = await store.save(expired, primary: false)
+    precondition(savedKept && savedExpired)
+    now = retentionUIDay(2026, 10, 30).date()
+    store.refresh()
+    await waitForRetentionStore(store)
+    precondition(store.data.items == [kept])
+    store.openLink(link, eventID: kept.id)
+    store.openLink(link, eventID: expired.id)
+    precondition(opened == [link.url!], "Only the retained event may still open its saved link")
+    let source = directory.appendingPathComponent("Original.txt")
+    let originalBytes = Data("Original material\n".utf8)
+    try originalBytes.write(to: source)
+    let addedLink = EventLink(name: " Booking ", address: " https://example.com/booking ")
+    let text = TextAttachment(name: "Notes.txt", text: "Paragraph one\n\nParagraph two 👋\n")
+    let added = await store.appendMaterials(EventMaterials(files: [source], links: [addedLink], textFile: text), to: kept.id)
+    precondition(added)
+    let result = store.data.items[0]
+    precondition(result.keepsAfterDate && result.date == kept.date && result.id == kept.id)
+    precondition(result.links == [link, addedLink.normalized()] && result.attachments.count == 2)
+    precondition(store.data.primaryID == kept.id)
+    for (attachment, expected) in zip(result.attachments, [originalBytes, Data(text.text.utf8)]) {
+        let copy = directory.appendingPathComponent("Attachments").appendingPathComponent(attachment.id.uuidString)
+            .appendingPathComponent(attachment.name)
+        let bytes = try Data(contentsOf: copy)
+        precondition(bytes == expected)
+    }
+    let draft = EventEditorDraft(item: result)
+    precondition(draft.countdown(id: result.id, date: result.date) == result,
+                 "Editor reopening must preserve both retention and all links/materials")
+    let before = try Data(contentsOf: json)
+    let invalid = await store.appendMaterials(EventMaterials(links: [EventLink(address: "file:///tmp/invalid")]), to: kept.id)
+    let stale = await store.appendMaterials(EventMaterials(files: [source]), to: expired.id)
+    precondition(!invalid && !stale && store.data.items == [result])
+    let after = try Data(contentsOf: json)
+    precondition(after == before)
+    let reloaded = try await CountdownRepository(fileURL: json).load()
+    precondition(reloaded == store.data)
+    let sourceAfter = try Data(contentsOf: source)
+    precondition(sourceAfter == originalBytes)
+    print("PASS retained materials: saved links open after midnight; copied files, web links and exact text append durably; editor/reload retain all fields; invalid and expired targets preserve bytes")
 }
 
 private func testRetainedPresentationAndEditorDrafts() {

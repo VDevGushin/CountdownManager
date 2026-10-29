@@ -15,8 +15,21 @@ struct AttachmentFiles {
         guard values.isRegularFile == true, values.isSymbolicLink != true, values.isPackage != true else {
             throw EventAttachmentError.unsupportedFile
         }
+        return try create(name: source.lastPathComponent) { destination in
+            try manager.copyItem(at: source, to: destination)
+        }
+    }
+
+    func createText(_ text: TextAttachment) throws -> EventAttachment {
+        try text.validate()
+        return try create(name: text.filename) { destination in
+            try Data(text.text.utf8).write(to: destination, options: .atomic)
+        }
+    }
+
+    private func create(name: String, write: (URL) throws -> Void) throws -> EventAttachment {
         try Task.checkCancellation()
-        var attachment = try EventAttachment(name: source.lastPathComponent, byteCount: 0)
+        var attachment = try EventAttachment(name: name, byteCount: 0)
         try ensureDirectory()
         let folder = directory.appendingPathComponent(attachment.id.uuidString, isDirectory: true)
         guard !manager.fileExists(atPath: folder.path) else { throw EventAttachmentError.unsafeStorage }
@@ -25,7 +38,7 @@ struct AttachmentFiles {
             // Write ownership before copying so an interrupted import can be collected at next load.
             try writeMarker(attachment, folder: folder)
             let destination = folder.appendingPathComponent(attachment.name)
-            try manager.copyItem(at: source, to: destination)
+            try write(destination)
             try Task.checkCancellation()
             let size = try regularFileSize(at: destination)
             attachment = try EventAttachment(id: attachment.id, name: attachment.name, byteCount: size)

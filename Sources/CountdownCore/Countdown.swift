@@ -127,6 +127,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var showsWeather: Bool
     public var keepsAfterDate: Bool
     public var usesAutomaticTitle: Bool
+    public var links: [EventLink]
     public var attachments: [EventAttachment]
 
     public init(
@@ -139,7 +140,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         showsWeather: Bool = false,
         keepsAfterDate: Bool = false,
         usesAutomaticTitle: Bool = false,
-        attachments: [EventAttachment] = []
+        attachments: [EventAttachment] = [],
+        links: [EventLink] = []
     ) {
         self.id = id
         self.title = title
@@ -151,10 +153,11 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.keepsAfterDate = keepsAfterDate
         self.usesAutomaticTitle = usesAutomaticTitle
         self.attachments = attachments
+        self.links = links
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, note, date, emoji, subtasks, showsWeather, keepsAfterDate, usesAutomaticTitle, attachments
+        case id, title, note, date, emoji, subtasks, showsWeather, keepsAfterDate, usesAutomaticTitle, attachments, links
     }
 
     public init(from decoder: Decoder) throws {
@@ -174,6 +177,8 @@ public struct Countdown: Identifiable, Codable, Equatable {
         guard Set(attachments.map(\.id)).count == attachments.count else {
             throw EventAttachmentError.invalidMetadata
         }
+        links = values.contains(.links) ? try values.decode([EventLink].self, forKey: .links) : []
+        try EventLink.validate(links)
         guard subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
     }
 
@@ -189,6 +194,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         if keepsAfterDate { try values.encode(true, forKey: .keepsAfterDate) }
         if usesAutomaticTitle { try values.encode(true, forKey: .usesAutomaticTitle) }
         if !attachments.isEmpty { try values.encode(attachments, forKey: .attachments) }
+        if !links.isEmpty { try values.encode(links, forKey: .links) }
     }
 
     public func isAvailable(on today: Day) -> Bool {
@@ -234,6 +240,7 @@ public struct CountdownData: Codable, Equatable {
 
     func validateSubtasksForPersistence() throws {
         for item in items {
+            try EventLink.validate(item.links)
             guard item.subtasks.count <= Subtask.maximumCount else { throw CountdownError.subtaskCount }
             for subtask in item.subtasks { try subtask.validateStoredValue() }
         }
@@ -248,6 +255,8 @@ public struct CountdownData: Codable, Equatable {
 
     public mutating func save(_ item: Countdown, primary: Bool, today: Day) throws {
         var cleaned = item
+        cleaned.links = item.links.map { $0.normalized() }
+        try EventLink.validate(cleaned.links)
         cleaned.title = item.usesAutomaticTitle
             ? automaticEventTitle(for: item.date) : item.title.trimmingCharacters(in: .whitespacesAndNewlines)
         cleaned.note = item.note?.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -48,6 +48,9 @@ if [[ -n "${COUNTDOWN_SWIFTPM_CACHE_PATH:-}" ]]; then
 fi
 
 run_fast_checks() {
+    echo "Verification: native design source and build contract"
+    python3 -B Tests/test_native_design_system.py
+    python3 -B Tests/test_native_design_contract.py
     echo "Verification: CoreChecks"
     "${fast_command[@]}" CoreChecks
     echo "Verification: UIChecks"
@@ -126,9 +129,8 @@ run_smoke() {
 
 build_ui_app() {
     echo "Verification: release build"
-    swift build --disable-sandbox -c release --scratch-path "$scratch_path"
-    local bin_path
-    bin_path=$(swift build --disable-sandbox -c release --scratch-path "$scratch_path" --show-bin-path)
+    # Use the same verified native build path as delivered apps; do not prebuild via a
+    # second toolchain/SDK route that may select different linked-on-or-after behavior.
     app_path="$verify_root/Countdown Manager.app"
     BUILD_DIR="$scratch_path" APP_OUTPUT_PATH="$app_path" COUNTDOWN_UPDATE_MODE=disabled \
         COUNTDOWN_UPDATE_FEED_URL= COUNTDOWN_UPDATE_PUBLIC_KEY= ./build.sh

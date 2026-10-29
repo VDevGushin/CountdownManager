@@ -208,8 +208,9 @@ private struct UISmokeControlModifier: ViewModifier {
     private var effectiveID: String { scope + id }
 
     private var usesNativeRegistration: Bool {
-        id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.")
-            || id.hasPrefix("desktop.attachments.indicator.")
+        id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.") || id.hasPrefix("desktop.event.")
+            || id.hasPrefix("editor.links") || id.hasPrefix("desktop.links.") || id.hasPrefix("panel.links.")
+            || id.hasPrefix("desktop.attachments.indicator.") || id.hasPrefix("desktop.summary.")
             || ["desktop.overview.header", "desktop.overview.date", "desktop.weather.overview"].contains(id)
     }
 
@@ -220,8 +221,8 @@ private struct UISmokeControlModifier: ViewModifier {
         default:
             // Custom Layout placement can leave geometry preferences stale after a retained card resizes.
             return ["desktop.card.", "desktop.favorite.identity.", "desktop.favorite.metadata.",
-                    "desktop.event.", "desktop.presentation.", "desktop.collection.remaining.",
-                    "desktop.date.browser.", "desktop.weather.browser.", "desktop.attachments.indicator.",
+                    "desktop.event.", "desktop.presentation.", "desktop.summary.", "desktop.collection.remaining.",
+                    "desktop.date.browser.", "desktop.weather.browser.", "desktop.attachments.indicator.", "desktop.links.indicator.",
                     "editor.attachment.thumbnail.", "editor.attachment.label.",
                     "desktop.attachment.thumbnail.", "panel.attachment.thumbnail.",
                     "desktop.attachment.preview-area.", "panel.attachment.preview-area.",

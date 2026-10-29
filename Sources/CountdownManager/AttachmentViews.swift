@@ -20,6 +20,7 @@ final class EditorAttachmentSession: ObservableObject {
     @MainActor func importFiles(
         in store: Store,
         currentAttachments: [EventAttachment],
+        sources: [URL]? = nil,
         completion: @escaping @MainActor ([EventAttachment]) -> Void
     ) {
         guard importTask == nil else { return }
@@ -32,12 +33,27 @@ final class EditorAttachmentSession: ObservableObject {
             guard !Task.isCancelled, self != nil else { return }
             let prepared = await store.beginAttachmentDraft(draftID)
             guard !Task.isCancelled, self != nil else { return }
-            let attachments = prepared
-                ? await store.chooseAttachments(draftID: draftID, currentAttachments: currentAttachments) : []
+            var attachments: [EventAttachment] = []
+            if prepared {
+                if let sources {
+                    attachments = await store.importAttachments(from: sources, draftID: draftID,
+                                                                 currentAttachments: currentAttachments)
+                } else {
+                    attachments = await store.chooseAttachments(draftID: draftID, currentAttachments: currentAttachments)
+                }
+            }
             guard !Task.isCancelled, self != nil else { return }
             self?.importTask = nil
             completion(attachments)
         }
+    }
+
+    @MainActor func prepare(in store: Store) async -> Bool {
+        if cleanup == nil {
+            let draftID = id
+            cleanup = { Task { @MainActor in await store.discardAttachmentDraft(draftID) } }
+        }
+        return await store.beginAttachmentDraft(id)
     }
 
     @MainActor func cancel() {
@@ -150,13 +166,8 @@ struct SavedAttachmentSection: View {
                     .uiSmokeControl(id: "panel.attachments.toggle.\(item.id.uuidString)",
                                     action: { expanded.toggle() }, value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    HStack {
-                        heading
-                        Spacer()
-                        Text(String(item.attachments.count))
-                            .font(.system(size: 11))
-                            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    }
+                    SavedMaterialHeading(title: "Вложения", count: item.attachments.count, symbolName: "paperclip",
+                                         controlPrefix: "desktop.attachments", eventID: item.id)
                 }
                 if !compact || expanded {
                     LazyVGrid(columns: shelfColumns, alignment: .leading, spacing: compact ? 8 : 10) {
