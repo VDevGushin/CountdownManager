@@ -327,6 +327,12 @@ Structure code so important behaviour can be exercised at the cheapest reliable 
 
 Prefer testing observable contracts and meaningful state transitions over private implementation shape.
 
+Before reusing or extending affected tests, check that their assertions and fixtures match the
+current contract and would detect the changed failure mode. Follow the test-relevance guidance
+in `.agents/skills/product-qa/SKILL.md`; that review does not require running product UI checks.
+Update obsolete expectations only for an accepted contract change, and retain useful old-bug
+regressions. Required completion gates remain in force.
+
 Do not expose internals, add production switches, introduce unnecessary protocols, or alter lifecycle behaviour merely to satisfy a test harness.
 
 When a bug can be represented reliably below a system-interaction boundary, add or update focused regression coverage at that level.

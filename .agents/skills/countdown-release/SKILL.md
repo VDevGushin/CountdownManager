@@ -47,7 +47,10 @@ version, homepage-image and local-reference checks. This does not establish visu
 
 ## Verify and freeze one package
 
-Select checks for the actual change from VERIFICATION; do not rerun unrelated suites by habit.
+Select checks for the actual change from VERIFICATION and apply the test-relevance guidance in
+`.agents/skills/product-qa/SKILL.md`: inspect affected assertions/fixtures against the current
+contract and identify the defect they would catch. Do not rerun unrelated or overlapping suites
+by habit, or treat passing old expectations as proof of new behaviour. Required gates still apply.
 Run UI drivers that need native focus sequentially. If one fails, retain its result and identify
 the failed step before changing production code. A targeted repeat is not a clean full run.
 

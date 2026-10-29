@@ -4,6 +4,27 @@ This file is the project-specific map of available verification commands, what t
 
 Product behaviour is defined by `docs/PRODUCT.md`. Tests are evidence for that contract, not a replacement for it.
 
+## Selection and command overlap
+
+Before selecting additional checks, review the affected assertions and fixtures against the current
+contract using the test-relevance guidance in `.agents/skills/product-qa/SKILL.md`. A passing suite
+does not establish coverage of a failure it cannot observe. Required SwiftLint/fast gates remain
+required; this guidance selects additional evidence rather than bypassing the baseline.
+
+The current wrappers overlap:
+
+- `ui` includes general mini-panel smoke, collapse, editor workflows and three continuity runs;
+  a separate `editor` run adds no new coverage when that same editor run is already valid.
+- `full` runs `fast` and `ui`; it does not include the focused desktop, attachments or weather
+  routes and is not evidence that every application surface passed.
+- `capture` runs the same `ui` checks before its separate panel-capture scenarios; do not also
+  run `ui` for the same unchanged candidate just to accumulate passes.
+
+Read the current wrapper when changing these routes. Separate a test's continued usefulness from
+its relevance to this task, and select reruns only for changed subjects, failed/interrupted runs
+or an actual evidence gap. A source-contract assertion and a rendered visual check protect
+different boundaries; apparent duplication is not enough reason to delete either.
+
 ## Commands
 
 | Surface | Command | Cost and scope |

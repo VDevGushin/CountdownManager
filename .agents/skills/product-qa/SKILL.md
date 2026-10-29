@@ -1,13 +1,13 @@
 ---
 name: product-qa
-description: Validate Countdown Manager product changes after automated checks pass, selecting project-specific test and manual surfaces without repeating valid evidence.
+description: Validate Countdown Manager product changes after automated checks pass and review whether affected regression tests protect the current contract, selecting useful evidence without redundant runs.
 ---
 
 # Product QA
 
-Use this skill for product acceptance of a feature, bug fix, or user-visible behaviour change. It acts as a focused human QA pass after the relevant automated regression checks are green.
+Use this skill for product acceptance after the relevant automated checks are green, or for an explicitly requested review of regression-test relevance.
 
-Do not use it for documentation-only, harness-only, or other changes with no product behaviour to accept.
+Documentation-only and harness-only changes do not need product acceptance or application UI checks. A test-relevance review uses the guidance below and the focused tooling checks from VERIFICATION; it does not require launching the app merely to review tests.
 
 ## Start from the project map
 
@@ -16,6 +16,36 @@ Read `docs/VERIFICATION.md` before choosing evidence. It defines the commands, c
 Identify the changed product contract and its credible failure modes. Then choose only the verification surfaces that can exercise those risks. Real UI verification is warranted only when the change actually affects SwiftUI, AppKit, application lifecycle, event routing, focus, accessibility, animation, or other runtime behaviour.
 
 Do not treat a configured property, code path, screenshot, or internal test action as proof of an external macOS interaction that the selected driver cannot faithfully deliver.
+
+## Check that the tests still protect the current contract
+
+Before selecting additional checks or accepting existing passes, inspect the affected test bodies,
+fixtures, assertions and driver limitations. A test name, historical PASS or a large suite count
+is not evidence that the changed behaviour is covered.
+
+For each important changed risk, connect the current PRODUCT/DESIGN contract or technical invariant
+to the test's trigger and observable failure. Keep this mapping briefly in work notes; do not create
+a separate permanent registry for every task. Identify which realistic defect would make the test
+fail. For example, a countdown-value assertion cannot establish that its emoji is not clipped.
+
+- Keep regressions for old bugs while their invariant still applies. Tests preventing removed UI
+  from returning can remain valid; an old version/date in a fixture alone does not make it obsolete.
+- When accepted behaviour changes, update the affected expectations, fixtures and meaningful
+  negative/boundary cases together. Verify the new expectation against the contract, not merely
+  the implementation's current output. Never weaken an assertion or change product behaviour
+  solely to obtain green results.
+- If no selected check can detect the changed failure mode, add focused coverage at the right
+  boundary or identify the concrete automation limitation and manual acceptance. For a new or
+  materially changed regression, demonstrate rejection of the reported defect when practical
+  through its pre-fix reproduction or a focused mutation; do not require broad mutation runs.
+- Replace or remove a test only after establishing that its protected requirement was retired,
+  or another retained test exercises the same failure with no lost boundary/platform coverage.
+  Distinguish a redundant test from a valid test that is simply unrelated to this task.
+
+Use the smallest sufficient combination of checks and reuse valid evidence. Required hook/static/
+fast gates still apply; relevance review is not permission to bypass them. Read verify.sh when
+combining commands: overlapping wrappers are not additional independent coverage. Do not call
+unchanged tests current merely because they passed; report the actual scope inspected.
 
 ## Regression coverage is the default
 
