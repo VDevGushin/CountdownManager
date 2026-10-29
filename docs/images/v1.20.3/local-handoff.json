@@ -1,0 +1,13 @@
+{
+  "previousVersion": "1.20.2",
+  "previousBuild": "38",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256": "833d5b6b66d8753a9c45935a7fea02aaea96ef09d3fdfe87cc069dcc709bb346",
+  "matchesPreviousPublishedArchive": true,
+  "strictDeepCodesignPassed": true,
+  "previousAppRunning": true,
+  "action": "Verified and retained already correct installation",
+  "newReleaseInstalled": false,
+  "ownerWillUpdatePersonally": true,
+  "productionDataUsedAsFixture": false
+}

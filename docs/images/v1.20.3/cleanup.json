@@ -1,0 +1,11 @@
+{
+  "status": "COMPLETE",
+  "movedEntries": 34,
+  "trashFolder": "/Users/vladislav.gushchin/.Trash/Countdown-release-1.20.3-20261030-012237",
+  "restoreManifest": "/Users/vladislav.gushchin/.Trash/Countdown-release-1.20.3-20261030-012237/restore-manifest.json",
+  "closedTestInstances": 1,
+  "productionDataUnchangedDuringCleanup": true,
+  "previousReleaseStillRunning": true,
+  "newReleaseInstalled": false,
+  "scope": "Only explicitly enumerated artifacts created by this release task; production and unrelated temporary data excluded"
+}

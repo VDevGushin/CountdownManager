@@ -19,7 +19,7 @@
   "mutatedSignatureRejected": true,
   "embeddedNotesAndMetadataVerified": true,
   "feedSignedBoundaryVerified": true,
-  "published": false,
+  "published": true,
   "installed": false,
   "exactPackagePanelPassed": "5/5",
   "exactPackageHelpPassed": "1/1",

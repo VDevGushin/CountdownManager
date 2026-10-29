@@ -1,0 +1,4 @@
+interface:
+  display_name: "Countdown Release"
+  short_description: "Publish and finish verified Countdown Manager releases"
+  default_prompt: "Use $countdown-release to prepare, publish and verify this Countdown Manager release, update the GitHub homepage and finish with the previous installed version."

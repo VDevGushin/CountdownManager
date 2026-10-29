@@ -34,3 +34,8 @@ for unaffected flows rather than called an exact final-executable run.
 [Final package audit](artifact-audit.json) records signed ZIP/feed hashes and public-key checks.
 Screenshots establish layout and these fixture scenarios; external keyboard, VoiceOver, every
 Quick Look provider and older macOS releases are not certified by them.
+
+[Publication](publication.json) confirms anonymous Latest/ZIP/feed delivery. The owner-facing
+installed version and recoverable task cleanup are recorded in [local handoff](local-handoff.json)
+and [cleanup](cleanup.json). Temporary paths in preparation evidence describe their original
+location; the public release is canonical and cleanup retains a restore manifest.

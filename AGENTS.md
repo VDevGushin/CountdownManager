@@ -4,6 +4,7 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 
 ## Router
 
+- Countdown Manager release preparation, publication, public verification and post-release handoff: read `.agents/skills/countdown-release/SKILL.md`. Use the established in-app browser publication workflow; authority still follows this file and the current chat.
 - Native macOS interface design, UX review, or desktop window/panel mockups: read `.agents/skills/macos-desktop-design/SKILL.md`. A concept alone does not change the accepted product contract or authorize implementation.
 - Reviewing whether a UI mockup or proposed interaction was accepted is also UX review, including read-only scope/consent reviews. Read that design skill, `DESIGN.md`, and `docs/PRODUCT.md` before concluding; a general request to implement does not accept an unsubmitted prototype option. This route does not apply to ordinary documentation or harness-only work.
 - Swift, SwiftUI, or AppKit implementation and non-trivial code review: read `.agents/skills/swift-code-quality/SKILL.md`.

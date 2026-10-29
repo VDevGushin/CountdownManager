@@ -2,13 +2,15 @@
 
 ## Current release
 
-Source candidate: **1.20.3 / build 39**, timer alarm clipping correction.
-Publication is not yet confirmed; the last confirmed published release is **1.20.2 / build 38**.
+Published as Latest: **1.20.3 / build 39**, timer alarm clipping correction.
+Anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
+The previous release is **1.20.2 / build 38**. [Publication receipt](images/v1.20.3/publication.json).
 [Release status](releases/v1.20.3.md) · [Notes](releases/v1.20.3-notes.md) ·
 [Package audit](images/v1.20.3/artifact-audit.json).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
+The project release skill is [countdown-release](../.agents/skills/countdown-release/SKILL.md).
 
 ## Stable identity
 

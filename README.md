@@ -5,11 +5,14 @@
 Учётная запись не нужна. События, файлы, ссылки и таймер доступны без интернета;
 опциональный прогноз погоды требует сети.
 
-**1.20.3 · сборка 39 · Apple Silicon · macOS 13+** — кандидат готовится к публикации.
+**Опубликована 1.20.3 · сборка 39 · Apple Silicon · macOS 13+.**
 Исправлено обрезание значка будильника у работающего и завершённого таймера.
 
 [Последний опубликованный релиз](https://github.com/VDevGushin/CountdownManager/releases/latest) ·
 [Проверки 1.20.3](docs/releases/v1.20.3.md) · [Что нового](docs/releases/v1.20.3-notes.md)
+
+[Скачать CountdownManager-1.20.3-39.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.3/CountdownManager-1.20.3-39.zip).
+Публичный ZIP и оба appcast проверены без авторизации: HTTP 200 и точные SHA-256.
 
 ## Как выглядит приложение
 
@@ -205,4 +208,5 @@ swiftlint lint --config .swiftlint.yml --strict --no-cache
 - [VERIFICATION](docs/VERIFICATION.md) — команды проверок и границы доказательств.
 - [UPDATES](docs/UPDATES.md) — подготовка и публикация подписанного обновления.
 - [AGENTS](AGENTS.md) — правила работы в репозитории и проектные навыки.
+- [Countdown Release](.agents/skills/countdown-release/SKILL.md) — единый порядок выпуска и завершения релиза.
 - [Agent evals](evals/README.md) — отдельные проверки поведения агента.
