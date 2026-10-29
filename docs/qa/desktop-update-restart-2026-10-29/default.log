@@ -1,0 +1,6 @@
+launched mode=default
+sheet=true defaultPrevents=true
+effectivePrevents=true
+requestTerminate
+terminateReturned delegateCalls=0
+blockedObserved

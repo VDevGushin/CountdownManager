@@ -1354,3 +1354,15 @@ checks, not physical Space acceptance. The existing full desktop status-hide→c
 its strict visible-panel assertion without adding a settlement wait. A real failure at scenario 10
 was traced to an occlusion callback hiding a newly requested panel before its visible acknowledgement;
 that run must not be labelled a false positive or combined with a subsequent passing campaign.
+
+
+### Desktop sheet update restart
+
+The desktop native route now includes31 scenarios. It checks actual read-only Settings/library/preview
+sheet termination policy, and retains protection on event editors before and after Settings.
+Standalone real SwiftUI-sheet Apple-event controls reproduce default native blocking before the
+application delegate. The2026-10-29 correction also passed a genuine isolated Sparkle update with
+desktop Settings attached: fixed-source build20120→20121 automatically relaunched without manual
+sheet closure or app reopening, preserving JSON, copied bytes and selected preferences.
+[Protocol and failed/successful evidence](qa/desktop-update-restart-2026-10-29.md).
+The initial native focus loss on a Space change is recorded separately from final31/31.

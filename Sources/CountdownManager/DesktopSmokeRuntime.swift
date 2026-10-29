@@ -903,6 +903,8 @@ final class DesktopSmokeRuntime {
 
         try await press("desktop.detail.edit")
         try await wait("desktop owns editor") { self.editorSession.desktopIsPresented && window.attachedSheet != nil }
+        try require(window.attachedSheet?.preventsApplicationTerminationWhenModal == true,
+                    "editable desktop draft lost its native termination protection")
         try await replaceFocusedText(control: "editor.title", text: "Черновик большого окна")
         let before = store.data
         try require(!controls.press("desktop.panel") && window.isVisible,
@@ -974,6 +976,8 @@ final class DesktopSmokeRuntime {
         }
         let sharedEditorSheet = try value(window.attachedSheet, "editor after settings")
         try require(sharedEditorSheet.sheetParent === window, "event editor detached from its desktop owner")
+        try require(sharedEditorSheet.preventsApplicationTerminationWhenModal,
+                    "opening an editor after read-only Settings retained the wrong quit policy")
         try await replaceFocusedText(control: "editor.title", text: "Черновик после настроек")
         try await captureEditorThemes(window: window)
         try await press("editor.cancel")
@@ -1009,6 +1013,7 @@ final class DesktopSmokeRuntime {
         try require(weather.forecast(for: store.today) == nil, "disabled shared weather still supplies a forecast")
         try capture("desktop-weather-off")
         passed.append("settings and editor attach native sheets to the retained desktop; settings close preserves selection/divider and nested diagnostic Cancel releases its guard")
+        passed.append("read-only desktop Settings opts out of native termination blocking while editable sheets retain protection")
         passed.append("desktop settings disable forecast supply through the shared weather owner")
         showPanel()
         try await press("settings.open")
@@ -1498,6 +1503,8 @@ final class DesktopSmokeRuntime {
         let content = try value(sheet.contentView, "native \(paneID) content")
         try require(content.bounds.width >= size.width - 1 && content.bounds.height >= size.height - 1,
                     "native sheet clips its required content size")
+        try require(!sheet.preventsApplicationTerminationWhenModal,
+                    "read-only \(paneID) sheet blocks application termination before the restart-safety delegate")
         return sheet
     }
 

@@ -1,0 +1,7 @@
+launched mode=default-appleevent
+sheet=true defaultPrevents=true
+effectivePrevents=true
+requestTerminate
+AppleQuitSent=true
+terminateReturned delegateCalls=0
+blockedObserved

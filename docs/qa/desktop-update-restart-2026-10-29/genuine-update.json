@@ -1,0 +1,80 @@
+{
+  "status": "PASS",
+  "oldPID": 69323,
+  "expectedNewBuild": "20121",
+  "executablePath": "/private/tmp/countdown-desktop-update-fix-20261029/older/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "startedAt": "2026-10-29T13:43:10.975596+00:00",
+  "observationOnly": true,
+  "initialLogLines": 30,
+  "productionDataUsed": false,
+  "automaticRelaunchObserved": true,
+  "events": [
+    {
+      "elapsedSeconds": 0.033,
+      "pids": [
+        69323
+      ],
+      "build": "20120",
+      "version": "1.6.90",
+      "newLaunchLogged": false,
+      "dataLoadedAfterNewLaunch": false
+    },
+    {
+      "elapsedSeconds": 19.814,
+      "pids": [],
+      "build": "20121",
+      "version": "1.6.91",
+      "newLaunchLogged": false,
+      "dataLoadedAfterNewLaunch": false
+    },
+    {
+      "elapsedSeconds": 20.059,
+      "pids": [
+        69549
+      ],
+      "build": "20121",
+      "version": "1.6.91",
+      "newLaunchLogged": true,
+      "dataLoadedAfterNewLaunch": false
+    },
+    {
+      "elapsedSeconds": 20.302,
+      "pids": [
+        69549
+      ],
+      "build": "20121",
+      "version": "1.6.91",
+      "newLaunchLogged": true,
+      "dataLoadedAfterNewLaunch": true
+    }
+  ],
+  "afterPID": 69549,
+  "afterBuild": "20121",
+  "afterVersion": "1.6.91",
+  "oldPIDExited": true,
+  "exactlyOneNewHost": true,
+  "newLaunchLogged": true,
+  "dataLoadedAfterNewLaunch": true,
+  "installerStartingLogged": true,
+  "oldTerminationLogged": true,
+  "noUIActionsPerformedByObserver": true,
+  "noLaunchOrReopenPerformedByObserver": true,
+  "manualReopenBeforeObservation": false,
+  "manualReopenAssurance": "Parent protocol forbids manual reopening after final click; observer performs read-only polling.",
+  "elapsedSeconds": 20.802,
+  "preservation": {
+    "jsonBytesPreserved": true,
+    "eventIdentitiesPreserved": true,
+    "primaryPreserved": true,
+    "ownedCopiesPreserved": true,
+    "ownershipMarkersPreserved": true,
+    "originalsPreserved": true,
+    "selectedPreferencesPreserved": true,
+    "selectedPreferenceKeys": [
+      "appearance.selection",
+      "whatsNew.lastPresentedRelease",
+      "timer.deadline",
+      "expandedSubtasksByEvent"
+    ]
+  }
+}

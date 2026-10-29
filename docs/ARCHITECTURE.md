@@ -170,8 +170,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.0`;
-the three current sections describe retention, past ordering and retained primary visibility. Manual menu entry bypasses only
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.1`;
+the current sections describe the desktop update-restart correction and preserved restart-safety guards. Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
 offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.
@@ -606,6 +606,12 @@ It stores Sparkle's native postponement continuation while blocked. Explicit Ins
 safety before consuming the continuation once. `willInstallUpdate` marks update termination;
 `applicationShouldTerminate` cancels it if activity appears in the remaining installation window.
 Explicit application Quit clears that update-specific flag before its normal termination request.
+
+`DesktopSheetTerminationPolicy` configures only the attached desktop sheet window. Read-only
+Settings and file sheets set `preventsApplicationTerminationWhenModal` to false, so Sparkle's quit
+event reaches `applicationShouldTerminate`. Editable event/text sheets retain true. The bridge
+applies on window attachment and context updates, without scanning windows or introducing an
+update-specific dismissal coordinator. Existing editor/persistence/timer/export safety remains authoritative.
 
 SwiftPM and the Xcode project link Sparkle; application bundles embed the complete framework.
 `build.sh` stages, configures and signs nested components inside-out before replacing its build

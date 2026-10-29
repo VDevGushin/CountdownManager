@@ -1,0 +1,6 @@
+launched mode=allow
+sheet=true defaultPrevents=true
+effectivePrevents=false
+requestTerminate
+applicationShouldTerminate
+applicationWillTerminate

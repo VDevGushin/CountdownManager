@@ -1,0 +1,30 @@
+{
+  "status": "PASS_WITH_RECORDED_INITIAL_FOCUS_FAILURE",
+  "released": false,
+  "installedByAgent": false,
+  "branch": "codex/desktop-update-restart",
+  "productionDataMutatedByTests": false,
+  "swiftlint": {
+    "violations": 0,
+    "files": 90
+  },
+  "fast": "PASS",
+  "nativeDesktop": {
+    "finalPassed": 31,
+    "finalTotal": 31,
+    "initialFailure": "after5 scenarios: active Space changed and native input sheet was not key"
+  },
+  "fixedExecutableSHA256": "70587daa5271cdaddf7569c2141330fae605feaaf802a947513ec6b15bd691b3",
+  "nativeBuildLabel": "unreleased correction, still labelled1.20.0/36",
+  "genuineUpdate": {
+    "status": "PASS",
+    "oldPID": 69323,
+    "newPID": 69549,
+    "oldBuild": 20120,
+    "newBuild": 20121,
+    "settingsManuallyClosedBeforeInstall": false,
+    "reopenedBeforeObservation": false,
+    "discovery": "Initial scheduled discovery, then ordinary Check for Updates from still-attached desktop Settings refocused the update UI; actual download/install followed",
+    "dataPreserved": true
+  }
+}

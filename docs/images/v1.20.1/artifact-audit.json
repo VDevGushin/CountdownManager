@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "version": "1.20.1",
+  "build": "37",
+  "publicKeyOnly": true,
+  "productionKeyFingerprint": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "signatureChecks": [
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "archive",
+      "validSignature": true
+    },
+    {
+      "modifiedMessageRejected": true,
+      "modifiedSignatureRejected": true,
+      "name": "feed",
+      "validSignature": true
+    }
+  ],
+  "feedTrailerExactlyBounded": true,
+  "releaseNotesEmbedded": true,
+  "extractedTreeEntries": 168,
+  "extractedBytesModesSymlinksEqual": true,
+  "strictDeepCodeSign": true,
+  "productionConfiguration": true,
+  "nativeBuildContractVerified": true,
+  "executableSHA256": "62caab62ffa12c44d9451e1c2b1554b37cf21693befe69ec6b15c449a07100ac",
+  "files": {
+    "CountdownManager-1.20.1-37.zip": {
+      "bytes": 6298067,
+      "sha256": "dec42d5f0880ad928d53f9b2bb48dfddae5d6a6b414aa50c7f66fb8a25da6a8c"
+    },
+    "appcast.xml": {
+      "bytes": 3845,
+      "sha256": "ae49d15707f63975cf9832a526babebd2bbb33412527882f1e1c391fb95ffaac"
+    }
+  }
+}

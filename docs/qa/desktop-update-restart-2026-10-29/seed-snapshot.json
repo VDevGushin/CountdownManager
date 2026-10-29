@@ -1,0 +1,53 @@
+{
+  "root": "/private/tmp/countdown-desktop-update-fix-20261029",
+  "isolatedHome": "/private/tmp/countdown-desktop-update-fix-20261029/test-home",
+  "defaultsDomain": "local.countdownmanager.ui-smoke.countdown-desktop-update-fix-20261029.test-home",
+  "productionDataUsed": false,
+  "localSeedDay": "2026-10-29",
+  "dataPath": "/private/tmp/countdown-desktop-update-fix-20261029/test-home/Application Support/CountdownManager/countdowns.json",
+  "jsonSHA256": "1f277a936bdfad2df0e23b21e5bdc9f79b0857c579cfdfa58fb23e2cc4a868d4",
+  "eventIDs": [
+    "11111111-1111-1111-1111-111111111111",
+    "22222222-2222-2222-2222-222222222222"
+  ],
+  "primaryID": "11111111-1111-1111-1111-111111111111",
+  "selectedPreferences": {
+    "appearance.selection": "dark",
+    "whatsNew.lastPresentedRelease": "1.20.0",
+    "timer.deadline": 1793281107.3575191,
+    "expandedSubtasksByEvent": {
+      "11111111-1111-1111-1111-111111111111": false,
+      "22222222-2222-2222-2222-222222222222": true
+    }
+  },
+  "attachments": [
+    {
+      "metadata": {
+        "id": "66666666-6666-6666-6666-666666666666",
+        "name": "Route.txt",
+        "byteCount": 90
+      },
+      "original": "/private/tmp/countdown-desktop-update-fix-20261029/Originals/Route.txt",
+      "copy": "/private/tmp/countdown-desktop-update-fix-20261029/test-home/Application Support/CountdownManager/Attachments/66666666-6666-6666-6666-666666666666/Route.txt",
+      "marker": "/private/tmp/countdown-desktop-update-fix-20261029/test-home/Application Support/CountdownManager/Attachments/66666666-6666-6666-6666-666666666666/.countdown-attachment-66666666-6666-6666-6666-666666666666",
+      "sha256": "ea4fd514c954b9adc17c84d92a7130364417aa8eab6b8cf18328e08711d008d7",
+      "markerSHA256": "a3721e2886ee0d7b143292f8b794591b42a0670fbb302a492df65b51ca83d8d3"
+    },
+    {
+      "metadata": {
+        "id": "77777777-7777-7777-7777-777777777777",
+        "name": "Booking.pdf",
+        "byteCount": 598
+      },
+      "original": "/private/tmp/countdown-desktop-update-fix-20261029/Originals/Booking.pdf",
+      "copy": "/private/tmp/countdown-desktop-update-fix-20261029/test-home/Application Support/CountdownManager/Attachments/77777777-7777-7777-7777-777777777777/Booking.pdf",
+      "marker": "/private/tmp/countdown-desktop-update-fix-20261029/test-home/Application Support/CountdownManager/Attachments/77777777-7777-7777-7777-777777777777/.countdown-attachment-77777777-7777-7777-7777-777777777777",
+      "sha256": "bfa534ac98f7518188a4970df8ed5f879a7190792efcab130ca48cf268b4b897",
+      "markerSHA256": "77474ddd1fc7eaf4965d677545c1a4eea306b3a0705035ee15a7cf9a0a0f87dd"
+    }
+  ],
+  "sparkleDefaultsDomain": "local.countdownmanager.update-test",
+  "sparkleAutomaticChecks": false,
+  "sparkleDefaultsPreviouslyExisted": true,
+  "sparkleDefaultsBackup": "/private/tmp/countdown-desktop-update-fix-20261029/sparkle-defaults-before.plist"
+}

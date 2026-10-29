@@ -1,0 +1,8 @@
+launched mode=allow-appleevent
+sheet=true defaultPrevents=true
+effectivePrevents=false
+requestTerminate
+applicationShouldTerminate
+AppleQuitSent=true
+terminateReturned delegateCalls=1
+applicationWillTerminate

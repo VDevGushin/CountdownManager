@@ -1,0 +1,18 @@
+{
+  "version": "1.20.1",
+  "build": "37",
+  "privateSeedDeleted": true,
+  "productionKeyFingerprintUnchanged": true,
+  "releaseNotesEmbedded": true,
+  "published": false,
+  "assets": {
+    "CountdownManager-1.20.1-37.zip": {
+      "bytes": 6298067,
+      "sha256": "dec42d5f0880ad928d53f9b2bb48dfddae5d6a6b414aa50c7f66fb8a25da6a8c"
+    },
+    "appcast.xml": {
+      "bytes": 3845,
+      "sha256": "ae49d15707f63975cf9832a526babebd2bbb33412527882f1e1c391fb95ffaac"
+    }
+  }
+}

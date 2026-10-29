@@ -1,5 +1,29 @@
 # Preparing signed updates
 
+## Preparing 1.20.1 / build 37
+
+Status: **READY_TO_PUBLISH**. Exact-package native acceptance **32/32**, full lint **0/90**,
+CoreChecks/UIChecks, source **7/7**, build-contract **18/18** and update-tool **12/12** checks passed.
+Signed ZIP/feed and independent public-key audit passed; anonymous publication/delivery is pending. This patch permits a safe update restart while read-only desktop Settings or
+attachment sheets are open. Editable event/text sheets keep native termination protection; the
+existing application restart-safety guard remains authoritative.
+
+Native release help uses ID `1.20.1` and explains the fix. The source correction's genuine isolated
+Sparkle run (build 20120 → 20121) is retained with its exact source and discovery qualifications in
+[the correction protocol](qa/desktop-update-restart-2026-10-29.md). It is not a claim that this exact
+public 1.20.1 package was installed over 1.20.0. Final local receipts are under `docs/images/v1.20.1/`; the native executable hash is unchanged
+across desktop/help runs. [Artifact audit](images/v1.20.1/artifact-audit.json) confirms 168 extracted
+entries, strict/deep codesign and the unchanged production key.
+
+[Patch status](releases/v1.20.1.md) · [Markdown instructions](releases/v1.20.1-notes.md) ·
+[HTML notes](releases/v1.20.1-notes.html). Embed the companion HTML in the final appcast before
+signing. The public ZIP must be `CountdownManager-1.20.1-37.zip` under tag `v1.20.1`; the stable
+feed URL, bundle ID and production key stay unchanged.
+
+For the first update from the affected 1.20.0, use mini-panel Settings or close desktop Settings
+before Install and Relaunch. The old host controls that installation. No local replacement in
+`/Applications` is part of this patch-release task.
+
 ## Published 1.20.0 / build 36
 
 Status: **Published as Latest** on 2026-10-29. Exact-package acceptance, signatures and anonymous
@@ -287,7 +311,7 @@ the seed contents. Running these commands does not create a permanent backup:
   COUNTDOWN_UPDATE_MODE=release \
   COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
   COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.18.1 COUNTDOWN_BUILD_NUMBER=34 \
+  COUNTDOWN_VERSION=1.20.1 COUNTDOWN_BUILD_NUMBER=37 \
   APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
 
   signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
@@ -297,15 +321,22 @@ the seed contents. Running these commands does not create a permanent backup:
   python3 -B scripts/update_tools.py release \
     --app "$work_dir/Countdown Manager.app" \
     --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.18.1/' \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/' \
     --output "$work_dir/release"
+  mv "$work_dir/release/appcast.xml" "$work_dir/appcast-without-notes.xml"
+  cp docs/releases/v1.20.1-notes.html "$work_dir/release/CountdownManager-1.20.1-37.html"
+  "$sparkle_tools/generate_appcast" --ed-key-file "$signing_dir/private-seed" \
+    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/' \
+    --maximum-deltas 0 --embed-release-notes "$work_dir/release"
+  "$sparkle_tools/sign_update" --verify --ed-key-file "$signing_dir/private-seed" \
+    "$work_dir/release/appcast.xml"
 )
 ```
 
-The numbers above reproduce preparation of published 1.18.1 / build 34; acceptance,
-signed-artifact and publication status are tracked in [releases/v1.18.1.md](releases/v1.18.1.md).
+The numbers above prepare candidate 1.20.1 / build 37, including embedded update instructions;
+acceptance, signed-artifact and publication status are tracked in [releases/v1.20.1.md](releases/v1.20.1.md).
 Commands alone do not establish acceptance or publication. The last confirmed distributed version
-is 1.19.0 / build 35. For subsequent releases,
+is 1.20.0 / build 36. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;

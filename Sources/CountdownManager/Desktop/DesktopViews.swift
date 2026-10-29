@@ -115,6 +115,7 @@ struct DesktopRootView: View {
                 .tint(AuroraInstrument.accent(for: colorScheme,
                                              highContrast: accessibilitySettings.prefersHighContrast))
                 .background(AuroraPanelCanvas())
+                .background(DesktopSheetTerminationPolicy(preventsTermination: showingEditor))
                 .interactiveDismissDisabled()
                 .disabled(sheetIsClosing)
                 .allowsHitTesting(!sheetIsClosing)

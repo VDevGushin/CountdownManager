@@ -13,8 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.20.0 updates the read-only `Что нового` screen with instructions for retaining events
-after their date, finding past events and keeping a retained primary visible. The release-help
+Release 1.20.1 updates the read-only `Что нового` screen with the desktop update-restart
+correction and the existing work-protection rules. Event retention and material/link behaviour
+introduced in earlier releases remain unchanged. The release-help
 window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
@@ -993,6 +994,10 @@ Before interactive update UI opens, the application hides its retained status pa
 controls remain accessible. Explicitly reopening the panel during an update returns to the same
 editor and running timer; its temporary ordinary window level allows later native update windows
 to appear above it. Ending the update session restores the normal panel level without reopening it.
+
+Read-only desktop Settings and attachment sheets must not silently prevent an otherwise safe
+update restart. The application restart-safety guard remains authoritative; editable sheets retain
+their existing native protection.
 
 An update restart waits while any event editor is open, event persistence is loading/writing/recovering,
 or the timer is running. Downloading does not authorize discarding a later-opened draft or interrupting
