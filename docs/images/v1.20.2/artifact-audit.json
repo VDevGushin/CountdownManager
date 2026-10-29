@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "version": "1.20.2",
+  "build": "38",
+  "productionPublicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "archiveAndFeedSignaturesVerifiedUsingPublicKeyOnly": true,
+  "mutatedMessagesAndSignaturesRejected": true,
+  "uniqueExactFeedTrailerAndNotesVerified": true,
+  "extractedTreeMatches": true,
+  "extractedEntries": 168,
+  "strictDeepCodesign": true,
+  "temporaryProductionSeedDeleted": true,
+  "files": {
+    "CountdownManager-1.20.2-38.zip": {
+      "bytes": 6303225,
+      "sha256": "2cf02355934e25ffc1c926ff7c42149aa3f0d0b4cf30a0bdfdd84d9bf642b3a7"
+    },
+    "appcast.xml": {
+      "bytes": 3586,
+      "sha256": "482da2327aa3cb4aad5171c51a824d1106ad981b575bec289d9026a184658ebb"
+    }
+  },
+  "executableSHA256": "833d5b6b66d8753a9c45935a7fea02aaea96ef09d3fdfe87cc069dcc709bb346"
+}

@@ -58,29 +58,34 @@ enum AuroraInstrument {
     }
 
     static func ink(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(red: 0.95, green: 0.9, blue: 0.83) : Color(red: 0.19, green: 0.15, blue: 0.13)
+        scheme == .dark ? Color(red: 236.0 / 255, green: 236.0 / 255, blue: 238.0 / 255)
+            : Color(red: 0.19, green: 0.15, blue: 0.13)
     }
 
     static func canvas(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(red: 0.13, green: 0.11, blue: 0.1) : Color(red: 0.98, green: 0.96, blue: 0.93)
+        scheme == .dark ? Color(red: 28.0 / 255, green: 29.0 / 255, blue: 31.0 / 255)
+            : Color(red: 0.98, green: 0.96, blue: 0.93)
     }
 
     static func surface(for scheme: ColorScheme, elevated: Bool, highContrast: Bool) -> Color {
         if scheme == .dark {
-            return elevated ? Color(red: 0.2, green: 0.16, blue: 0.13) : Color(red: 0.16, green: 0.13, blue: 0.11)
+            return elevated ? Color(red: 45.0 / 255, green: 46.0 / 255, blue: 49.0 / 255)
+                : Color(red: 36.0 / 255, green: 37.0 / 255, blue: 39.0 / 255)
         }
         return highContrast ? .white : Color(red: 1, green: 0.98, blue: 0.95)
     }
 
     static func timerSurface(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(red: 0.18, green: 0.15, blue: 0.12) : Color(red: 0.95, green: 0.92, blue: 0.87)
+        scheme == .dark ? Color(red: 41.0 / 255, green: 42.0 / 255, blue: 45.0 / 255)
+            : Color(red: 0.95, green: 0.92, blue: 0.87)
     }
 
     static func stroke(for scheme: ColorScheme, highContrast: Bool) -> Color {
         if highContrast {
-            return scheme == .dark ? Color(red: 0.75, green: 0.68, blue: 0.59) : Color(red: 0.36, green: 0.28, blue: 0.22)
+            return scheme == .dark ? Color(red: 177.0 / 255, green: 178.0 / 255, blue: 183.0 / 255)
+                : Color(red: 0.36, green: 0.28, blue: 0.22)
         }
-        return scheme == .dark ? Color(red: 0.49, green: 0.4, blue: 0.31).opacity(0.5)
+        return scheme == .dark ? Color(red: 139.0 / 255, green: 141.0 / 255, blue: 149.0 / 255).opacity(0.38)
             : Color(red: 0.68, green: 0.55, blue: 0.36).opacity(0.3)
     }
 
@@ -93,15 +98,16 @@ enum AuroraInstrument {
     }
 
     static func secondaryInk(for scheme: ColorScheme) -> Color {
-        scheme == .dark ? Color(red: 0.76, green: 0.69, blue: 0.6) : Color(red: 0.45, green: 0.36, blue: 0.29)
+        scheme == .dark ? Color(red: 177.0 / 255, green: 178.0 / 255, blue: 183.0 / 255)
+            : Color(red: 0.45, green: 0.36, blue: 0.29)
     }
 
     static func completedCheck(for scheme: ColorScheme, highContrast: Bool) -> Color {
         if highContrast {
-            return scheme == .dark ? Color(red: 0.53, green: 0.48, blue: 0.43)
+            return scheme == .dark ? Color(red: 152.0 / 255, green: 154.0 / 255, blue: 161.0 / 255)
                 : Color(red: 0.38, green: 0.35, blue: 0.32)
         }
-        return scheme == .dark ? Color(red: 0.5, green: 0.46, blue: 0.42)
+        return scheme == .dark ? Color(red: 126.0 / 255, green: 128.0 / 255, blue: 135.0 / 255)
             : Color(red: 0.48, green: 0.44, blue: 0.4)
     }
 

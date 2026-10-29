@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "styleVersion": "native-calendar-graphite-v2",
+  "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+  "sourceAuthoritySHA256": {
+    "docs/PRODUCT.md": "6d413499b51e9e80800884758f569353add16151467e8560922029cd8fa56f4b",
+    "DESIGN.md": "aba3a2aff5f31b9acd26aeb9d402120246128c9f7c13887a6b9c82f46f69970c",
+    "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+  },
+  "compilerSDK": {
+    "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+    "version": "15.4",
+    "canonicalName": "macosx15.4"
+  },
+  "swiftToolchain": {
+    "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+    "version": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx26.0\nswift-driver version: 1.168.6"
+  },
+  "linkedCompatibility": "13.0",
+  "deploymentTarget": "13.0",
+  "createdAtUTC": "2026-10-29T16:31:05.936291+00:00",
+  "application": {
+    "identifier": "local.countdownmanager.app",
+    "version": "1.20.1",
+    "build": "37",
+    "executable": "CountdownManager"
+  },
+  "linkedMachO": [
+    {
+      "architecture": "thin",
+      "command": "LC_BUILD_VERSION",
+      "platform": "1",
+      "minos": "13.0",
+      "sdk": "13.0"
+    }
+  ],
+  "renderedAppearanceVerified": false
+}

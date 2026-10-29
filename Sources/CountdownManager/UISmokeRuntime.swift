@@ -3506,7 +3506,11 @@ final class UISmokeRuntime {
         let finishedTimer = CountdownTimer(defaults: defaults)
         try require(finishedTimer.phase == .finished, "timer fixture is not finished")
 
-        let presenter = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
+        let appearanceSource = NSWindow(contentRect: .zero, styleMask: [], backing: .buffered, defer: false)
+        appearanceSource.appearance = NSAppearance(named: .aqua)
+        let presenter = TimerCompletionAlertPresenter(
+            accessibilitySettings: accessibilitySettings, appearanceSource: appearanceSource
+        )
         let originalKeyWindow = NSApp.keyWindow
         let originalActiveState = NSApp.isActive
         presenter.present()
@@ -3517,6 +3521,15 @@ final class UISmokeRuntime {
         try require(panel.isVisible && !panel.ignoresMouseEvents, "completion alert cannot receive a click")
         try require(NSApp.keyWindow === originalKeyWindow && NSApp.isActive == originalActiveState,
                     "presenting completion alert changed app focus")
+        for appearance in [NSAppearance.Name.darkAqua, .aqua, .darkAqua] {
+            appearanceSource.appearance = NSAppearance(named: appearance)
+            try await waitFor("completion alert follows the application's appearance source") {
+                panel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == appearance
+            }
+            try await settleLayout()
+            try requireCompletionAlertPalette(panel, scheme: appearance == .darkAqua ? .dark : .light,
+                                             highContrast: accessibilitySettings.prefersHighContrast)
+        }
         try await verifyCompletionAlertAppearances(presenter: presenter, panel: panel, captureImages: false)
         try await verifyCompletionIconLifecycle(presenter: presenter, panel: panel)
 

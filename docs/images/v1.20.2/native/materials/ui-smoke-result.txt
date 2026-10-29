@@ -1,0 +1,3 @@
+DesktopSmoke
+✓ file/link addition persists owned bytes and original; no addition undo/status controls on desktop or mini; fixed footer/panel and collapsed sections retained
+PASS: 1/1

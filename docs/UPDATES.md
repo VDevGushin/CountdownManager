@@ -1,6 +1,14 @@
 # Preparing signed updates
 
-## Published 1.20.1 / build 37
+## Candidate 1.20.2 / build 38
+
+The Graphite dark palette is prepared for release with the unchanged production signing key,
+identity and stable feed. Native system date/file windows may retain wallpaper tinting; this
+limitation is explicit in native help and the embedded release notes. Light colors, data and update
+restart guards are unchanged. Exact-package acceptance and signatures belong under
+`docs/images/v1.20.2/`; [release status](releases/v1.20.2.md). Publication is not yet confirmed.
+
+## Previous published 1.20.1 / build 37
 
 Status: **Published as Latest** on 2026-10-29. Exact-package native acceptance **32/32**, full lint **0/90**,
 CoreChecks/UIChecks, source **7/7**, build-contract **18/18** and update-tool **12/12** checks passed.

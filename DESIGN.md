@@ -7,21 +7,21 @@ colors:
   terracotta-contrast: "rgb(63% 17% 10%)"
   terracotta-dark-contrast: "rgb(100% 75% 63%)"
   ivory-canvas: "rgb(98% 96% 93%)"
-  warm-dark-canvas: "rgb(13% 11% 10%)"
+  graphite-canvas: "#1C1D1F"
   paper-surface: "rgb(100% 98% 95%)"
-  warm-dark-surface: "rgb(16% 13% 11%)"
-  warm-dark-elevated: "rgb(20% 16% 13%)"
+  graphite-surface: "#242527"
+  graphite-elevated: "#2D2E31"
   contrast-paper: "#ffffff"
   ink: "rgb(19% 15% 13%)"
-  ink-dark: "rgb(95% 90% 83%)"
+  ink-dark: "#ECECEE"
   secondary-ink: "rgb(45% 36% 29%)"
-  secondary-ink-dark: "rgb(76% 69% 60%)"
+  secondary-ink-dark: "#B1B2B7"
   timer-surface: "rgb(95% 92% 87%)"
-  timer-surface-dark: "rgb(18% 15% 12%)"
+  timer-surface-dark: "#292A2D"
   rule: "rgb(68% 55% 36% / 30%)"
-  rule-dark: "rgb(49% 40% 31% / 50%)"
+  rule-dark: "rgb(139 141 149 / 38%)"
   rule-contrast: "rgb(36% 28% 22%)"
-  rule-dark-contrast: "rgb(75% 68% 59%)"
+  rule-dark-contrast: "#B1B2B7"
   accent-ink: "rgb(70% 20% 12%)"
   accent-ink-contrast: "rgb(57% 20% 12%)"
   today: "rgb(0% 39% 23%)"
@@ -37,9 +37,9 @@ colors:
   warning-contrast: "rgb(40% 23% 5%)"
   warning-dark-contrast: "rgb(100% 84% 63%)"
   completed: "rgb(48% 44% 40%)"
-  completed-dark: "rgb(50% 46% 42%)"
+  completed-dark: "#7E8087"
   completed-contrast: "rgb(38% 35% 32%)"
-  completed-dark-contrast: "rgb(53% 48% 43%)"
+  completed-dark-contrast: "#989AA1"
 typography:
   display:
     fontFamily: "Georgia"
@@ -95,7 +95,7 @@ components:
     rounded: "{rounded.card}"
     padding: "{spacing.card-inset}"
   event-card-dark:
-    backgroundColor: "{colors.warm-dark-surface}"
+    backgroundColor: "{colors.graphite-surface}"
     textColor: "{colors.ink-dark}"
     rounded: "{rounded.card}"
     padding: "{spacing.card-inset}"
@@ -132,6 +132,8 @@ components:
 
 ## Overview
 
+Release 1.20.2 updates the release ID and help text for Graphite and explicitly names system-native tinting as a retained limitation.
+
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
 58-point footer. Its 430×560 content scrolls between header and footer. Native title-bar close,
@@ -140,19 +142,29 @@ instructions for the desktop update correction and preserved safety guards; the 
 
 **Creative North Star: "Warm Calendar Leaves"**
 
-Countdown Manager uses warm paper and terracotta calendar leaves to make a small dated-event utility feel tangible. Georgia gives event names and dates an editorial character; compact native system text keeps actions, settings, and checklists legible. The warm dark appearance preserves the same hierarchy through related surfaces rather than applying a neutral black theme.
+Countdown Manager uses warm paper and terracotta calendar leaves to make a small dated-event utility feel tangible. Georgia gives event names and dates an editorial character; compact native system text keeps actions, settings, and checklists legible. The dark appearance uses neutral graphite surfaces and neutral light text; terracotta calendar leaves preserve the warm identity.
 
 This is a record of the completed native macOS implementation, adapted from the user-approved imported HTML and corrected icon-field reference. It is not a seed or a web implementation specification. SwiftUI and AppKit remain authoritative for native controls, focus, accessibility, and platform metrics.
 
 **Key Characteristics:**
-- Warm ivory, terracotta, and related warm dark surfaces.
+- Warm ivory in Light, neutral graphite in Dark, and terracotta accents in both.
 - Georgia calendar numerals and event headings with native system controls.
 - A compact retained panel with a distinct timer strip and fixed service actions.
 - Calendar leaves provide the signature; quiet tonal surfaces group events and checklists.
 
+## Accepted dark appearance — 29 October 2026
+
+The Product Owner selected **Graphite** in the Lavish palette review and explicitly extended
+it to the mini-panel, dialogs and popups. This replaces the former brown/cream dark neutrals
+across all application surfaces. Light colors, layout, typography, calendar accents and semantic
+Today/finished/warning/error colors stay unchanged. Native controls retain AppKit drawing;
+HTML chrome/control colors were illustrative, not new production tokens. File contents keep their
+own colors. The timer completion alert and application-owned file/modal dialogs follow the app's
+selected appearance through their native appearance source, including when it differs from macOS.
+
 ## Colors
 
-A warm ivory and terracotta palette is paired with warm brown dark surfaces; green and ochre carry specific time states rather than a second decorative identity. Frontmatter preserves the exact normalized sRGB values used in Swift as CSS percentages, including stroke alpha. The light/dark and Increase Contrast branches are paired semantic roles, not a generated tonal scale.
+A warm ivory and terracotta palette is paired with neutral graphite dark surfaces; green and ochre carry specific time states rather than a second decorative identity. Frontmatter preserves the sRGB values used in Swift as CSS percentages or exact 8-bit HEX values, including stroke alpha. The light/dark and Increase Contrast branches are paired semantic roles, not a generated tonal scale.
 
 ### Primary
 
@@ -167,8 +179,8 @@ A warm ivory and terracotta palette is paired with warm brown dark surfaces; gre
 
 ### Neutral
 
-- **Ivory Canvas / Warm Dark Canvas:** panel background and fixed service footer.
-- **Paper Surface / Warm Dark Surface:** event cards, calendar leaves, idle timer, and the inline emoji catalog. Increase Contrast makes light surfaces white; elevated dark surfaces use the warmer raised tone.
+- **Ivory Canvas / Graphite Canvas:** panel background and fixed service footer.
+- **Paper Surface / Graphite Surface:** event cards, calendar leaves, idle timer, and the inline emoji catalog. Increase Contrast makes light surfaces white; elevated dark surfaces use the lighter graphite tone.
 - **Timer Surface:** running and finished timer strip, in both appearances.
 - **Ink / Secondary Ink:** primary content and supporting date, count, hint, and service text.
 - **Rule:** dividers and outlined controls. Increase Contrast uses opaque, stronger rules and adds explicit event-card outlines.
@@ -432,7 +444,7 @@ Documentation boundary: extracted from `AuroraInstrument.swift`, `Views.swift`, 
 
 ## Executable native design contract
 
-The accepted app identity is `native-warm-calendar-v1`, independent of the application's release
+The accepted app identity is `native-calendar-graphite-v2`, independent of the application's release
 number. `Resources/NativeDesignContract.json` records deployment and linked compatibility plus the
 required native appearance matrix. `AuroraInstrument.swift` owns the actual colors/tokens and shared
 primary, secondary and symbol-action components. Use `auroraPrimaryAction()` for editor Save and

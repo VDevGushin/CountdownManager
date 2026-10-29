@@ -117,7 +117,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var timerCompletionSubscription: AnyCancellable?
     private var weatherSubscription: AnyCancellable?
     private var weatherEnvironmentSubscriptions = Set<AnyCancellable>()
-    private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(accessibilitySettings: accessibilitySettings)
+    private lazy var timerCompletionAlert = TimerCompletionAlertPresenter(
+        accessibilitySettings: accessibilitySettings, appearanceSource: panel
+    )
     private var uiSmokeRuntime: UISmokeRuntime?
     private var desktopSmokeRuntime: DesktopSmokeRuntime?
     private var activeSpaceObserver: NSObjectProtocol?
@@ -246,6 +248,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         panel.collectionBehavior = [.moveToActiveSpace, .transient, .ignoresCycle, .fullScreenNone]
         panel.delegate = self
         panel.contentViewController = hostingController
+        store.dialogAppearanceSource = panel
+        updates.dialogAppearanceSource = panel
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.cornerRadius = 12
         hostingController.view.layer?.masksToBounds = true
@@ -253,6 +257,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             .sink { [weak self] selection, captureOverride in
                 let scheme = captureOverride ?? selection.colorScheme
                 let appearance = scheme.flatMap { NSAppearance(named: $0 == .dark ? .darkAqua : .aqua) }
+                NSApp.appearance = appearance
                 self?.panel.appearance = appearance
                 self?.desktopController?.window?.appearance = appearance
                 self?.whatsNewController.window?.appearance = appearance

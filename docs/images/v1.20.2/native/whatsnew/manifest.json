@@ -1,0 +1,57 @@
+{
+  "applicationBuild" : "38",
+  "applicationVersion" : "1.20.2",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "observationUptime" : 658580.89942700008,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "observationUptime" : 658581.0330110417,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "observationUptime" : 658581.15865762508,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "observationUptime" : 658581.28777483338,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    }
+  ],
+  "executableSHA256" : "833d5b6b66d8753a9c45935a7fea02aaea96ef09d3fdfe87cc069dcc709bb346",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

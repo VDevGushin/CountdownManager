@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "styleVersion": "native-warm-calendar-v1",
+  "styleVersion": "native-calendar-graphite-v2",
   "deploymentTarget": "13.0",
   "nativeLinkedCompatibility": "13.0",
   "sourceAuthority": {

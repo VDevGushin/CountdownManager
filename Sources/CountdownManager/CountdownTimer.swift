@@ -297,7 +297,7 @@ struct CountdownTimerStrip: View {
             } label: {
                 Image(systemName: "play.fill")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(colorScheme == .dark ? Color(red: 0.18, green: 0.14, blue: 0.11) : .white)
+                    .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
                     .frame(width: 32, height: 32)
                     .background(
                         RoundedRectangle(cornerRadius: 6)

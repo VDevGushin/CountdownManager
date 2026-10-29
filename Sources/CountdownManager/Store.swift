@@ -94,6 +94,7 @@ extension Store {
         }
         let host = NSApp.keyWindow
         let panel = NSOpenPanel()
+        panel.appearanceSource = host ?? dialogAppearanceSource
         panel.title = "Добавить вложения"
         panel.prompt = "Добавить"
         panel.canChooseFiles = true
@@ -250,6 +251,7 @@ package final class Store: ObservableObject {
     @Published package private(set) var isReceivingMaterials = false
     private var attachmentDrafts: Set<UUID> = []
     private var attachmentPicker: (draftID: UUID, panel: NSOpenPanel)?
+    package weak var dialogAppearanceSource: NSWindow?
     @Published private var attachmentOperationCount = 0
 
     package init(
@@ -675,6 +677,7 @@ package final class Store: ObservableObject {
         guard !isExportingDiagnostics else { return }
         isExportingDiagnostics = true
         let panel = NSSavePanel()
+        panel.appearanceSource = NSApp.keyWindow ?? dialogAppearanceSource
         panel.allowedContentTypes = [.zip]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = "Countdown-Diagnostics.zip"

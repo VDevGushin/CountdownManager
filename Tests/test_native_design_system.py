@@ -20,11 +20,11 @@ INVENTORY = "docs/qa/native-component-families-2026-10-28.json"
 AUTHORITY = "Sources/CountdownManager/AuroraInstrument.swift"
 PROMINENT = re.compile(r"\.buttonStyle\s*\(\s*\.borderedProminent\s*\)")
 STRING_START = re.compile(r'(#+)?("""|")')
-# Frozen from the actual AuroraInstrument enum in accepted baseline 14dc489. This covers named
+# Graphite accepted by the Product Owner on 2026-10-29 for every dark surface. This covers named
 # numeric/theme recipes and branches, not appended components or CFBundleVersion. Changing the
 # golden requires explicit design-scope/StyleVersion review; a green digest is not user approval.
-THEME_VERSION = "theme-v1"
-THEME_RECIPE_SHA256 = "87308dc30a8f47d7863d6bd88c7dd7d57d522a4ad5b9ac39c0d766a93eaf5f3b"
+THEME_VERSION = "theme-v2-graphite"
+THEME_RECIPE_SHA256 = "3bb516c4610b33f7517b74b23035989143974a2a74915daa7edcdab443dd3f69"
 # The current inventory has no direct prominent-style exception outside the primary authority.
 # A future exception needs an exact source path and named declaration; no whole-directory waiver.
 PROMINENT_EXCEPTIONS: dict[str, tuple[str, ...]] = {}
@@ -367,7 +367,7 @@ class NativeDesignSystemChecks(unittest.TestCase):
             self.assertEqual(text.count("red: 0.718, green: 0.278, blue: 0.173"), 1)
             path.write_text(text.replace("red: 0.718, green: 0.278, blue: 0.173",
                                          "red: 0.700, green: 0.278, blue: 0.173"))
-            self.assertIn("frozen theme recipe drift: theme-v1", validate_sources(root))
+            self.assertIn("frozen theme recipe drift: theme-v2-graphite", validate_sources(root))
 
     def test_comments_and_string_examples_do_not_create_false_source_controls(self):
         with tempfile.TemporaryDirectory() as directory:

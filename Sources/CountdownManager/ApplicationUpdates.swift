@@ -81,6 +81,7 @@ package final class ApplicationUpdates: NSObject, ObservableObject, SPUUpdaterDe
     @Published package private(set) var isInstallationDeferred = false
     package private(set) var isInstallingUpdate = false
     package private(set) var isPresentingUpdateUI = false
+    package weak var dialogAppearanceSource: NSWindow?
     private var controller: SPUStandardUpdaterController?
     private var subscriptions = Set<AnyCancellable>()
     private var installHandler: (() -> Void)?
@@ -232,6 +233,7 @@ package final class ApplicationUpdates: NSObject, ObservableObject, SPUUpdaterDe
     private func showDeferredInstallationAlert(reason: String) {
         prepareForUpdateUI(source: "deferred-modal")
         let alert = NSAlert()
+        alert.window.appearanceSource = dialogAppearanceSource
         alert.messageText = "Обновление готово. Перезапуск отложен."
         alert.informativeText = reason + " Затем в настройках нажмите «Обновление готово · установить…»."
         alert.addButton(withTitle: "Вернуться к работе")

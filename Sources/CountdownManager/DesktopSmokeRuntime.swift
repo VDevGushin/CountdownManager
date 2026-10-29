@@ -985,6 +985,9 @@ final class DesktopSmokeRuntime {
         try await wait("editor ownership released after settings") { !self.editorSession.hasActiveEditor }
         try require(store.data == settingsBeforeEdit, "settings/editor Cancel changed events")
         try await press("desktop.settings")
+        let diagnosticCaptureOverride = visualEnvironment.colorSchemeOverride
+        visualEnvironment.colorSchemeOverride = nil
+        appearanceSettings.setSelection(.dark)
         let diagnosticHost = try await requireNativeSheet(host: window, paneID: "desktop.settings.pane",
                                                          size: NSSize(width: 430, height: 560))
         try await wait("settings sheet becomes the diagnostic input host") {
@@ -993,6 +996,12 @@ final class DesktopSmokeRuntime {
         try await press("settings.diagnostics")
         try await wait("diagnostic Save dialog belongs to settings sheet") { diagnosticHost.attachedSheet is NSSavePanel }
         let diagnosticPanel = try value(diagnosticHost.attachedSheet as? NSSavePanel, "settings diagnostic Save dialog")
+        try await wait("diagnostic Save inherits the selected dark theme") {
+            diagnosticPanel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        }
+        try require(diagnosticPanel.appearanceSource === diagnosticHost,
+                    "diagnostic Save does not follow its settings host")
+        try capture("desktop-diagnostics-dialog-dark", window: diagnosticPanel)
         try require(window.attachedSheet === diagnosticHost && diagnosticHost.isVisible,
                     "diagnostic Save detached or hid its settings host")
         try await press("settings.close")
@@ -1005,6 +1014,7 @@ final class DesktopSmokeRuntime {
                 && window.attachedSheet === diagnosticHost && diagnosticHost.isVisible
         }
         try require(store.data == settingsBeforeEdit, "diagnostic Cancel changed event data")
+        visualEnvironment.colorSchemeOverride = diagnosticCaptureOverride
         try await press("settings.weather.enabled")
         try await wait("weather disabled in shared settings") { !self.weather.enabled }
         try await press("settings.close")
@@ -2783,14 +2793,18 @@ final class DesktopSmokeRuntime {
 
     private func checkSharedAppearance(window: NSWindow, divider: CGFloat) async throws {
         let originalOverride = visualEnvironment.colorSchemeOverride
+        let statusAppearance = statusButton()?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
         visualEnvironment.colorSchemeOverride = nil
         for selection in [ApplicationAppearanceSelection.dark, .light, .system] {
             appearanceSettings.setSelection(selection)
             try await expect("settings.appearance", selection.rawValue)
             try await wait("shared native appearance \(selection.rawValue)") {
                 let expected = self.appearanceSettings.nativeAppearance(overriding: nil)?.name
-                return window.appearance?.name == expected && self.panelWindow()?.appearance?.name == expected
+                return NSApp.appearance?.name == expected && window.appearance?.name == expected
+                    && self.panelWindow()?.appearance?.name == expected
             }
+            try require(statusButton()?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == statusAppearance,
+                        "application theme changed the system status-item appearance")
             try await requireDivider(divider, in: window, after: "appearance \(selection.rawValue)")
             let settingsSheet = try value(window.attachedSheet, "settings sheet for appearance capture")
             try require(settingsSheet.sheetParent === window && settingsSheet.isVisible,

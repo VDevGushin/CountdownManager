@@ -107,6 +107,17 @@ do not authorize a new identity. The script's `renderedAppearanceVerified=false`
 only separate native captures/acceptance can establish actual appearance. Review Light/Dark and
 standard/Increase Contrast against existing native siblings; a green source gate is not pixel proof.
 
+The accepted Graphite dark theme uses `native-calendar-graphite-v2`; the frozen source recipe was
+updated for the Product Owner's 2026-10-29 selection, not merely for a version bump. The desktop
+runtime checks app/window appearance propagation through Dark → Light → System while preserving
+the system status-item appearance, and a nested diagnostic Save dialog under a forced app Dark
+selection. Capture overrides are cleared for that preference-driven check. The general native
+runtime checks that a retained completion alert follows its source window through both themes,
+then exercises its existing palette/contrast, dismissal and focus invariants. `capture` supplies
+the mini/editor/settings/completion appearance set; material and attachment native fixtures cover
+the shared dialog/preview families. A native file-dialog capture establishes its drawing only
+when the system supplies visible pixels; an effective-appearance assertion alone is not a pixel test.
+
 ## CoreChecks
 
 `CoreChecks` covers behaviour without application UI:

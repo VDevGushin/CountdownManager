@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.20.1"
+    static let releaseID = "1.20.2"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,11 +38,11 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Обновление из большого окна", symbol: "arrow.triangle.2.circlepath",
-                            text: "Исправлена кнопка «Установить и перезапустить» при обновлении из настроек основного окна. Установка завершается без перехода в мини-панель и ручного закрытия настроек.")
-                    feature("Защита работы сохранена", symbol: "lock",
-                            text: "Открытый редактор, сохранение данных, работающий таймер и экспорт диагностики по-прежнему откладывают перезапуск. Сначала завершите работу, затем явно продолжите установку.")
-                    Text("Сохранение событий после даты, ссылки, файлы и текстовые вложения работают как в 1.20.")
+                    feature("Графитовая тёмная тема", symbol: "moon",
+                            text: "Нейтральные фоны и светлый текст без кремового оттенка — в большом окне, мини-панели, редакторе, настройках и материалах. Коралловые календари и цвета состояний сохранены.")
+                    feature("Общее оформление", symbol: "macwindow",
+                            text: "Уведомление таймера и нативные диалоги следуют выбранному режиму приложения. Календарь и файловые окна macOS могут сохранять системное тонирование цветами обоев.")
+                    Text("Светлая тема, компоновка, данные и защита перезапуска обновления не изменились.")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 }

@@ -196,13 +196,15 @@ private final class TimerCompletionAlertView: NSView {
 @MainActor
 final class TimerCompletionAlertPresenter {
     private let accessibilitySettings: AuroraAccessibilitySettings
+    private weak var appearanceSource: NSWindow?
     private var panel: NSPanel?
     private var sound: NSSound?
     private var dismissWorkItem: DispatchWorkItem?
     private var presentationGeneration = 0
 
-    init(accessibilitySettings: AuroraAccessibilitySettings) {
+    init(accessibilitySettings: AuroraAccessibilitySettings, appearanceSource: NSWindow? = nil) {
         self.accessibilitySettings = accessibilitySettings
+        self.appearanceSource = appearanceSource
     }
 
     func present() {
@@ -275,6 +277,7 @@ final class TimerCompletionAlertPresenter {
             defer: false
         )
         panel.identifier = NSUserInterfaceItemIdentifier("timer.completion.alert")
+        panel.appearanceSource = appearanceSource
         panel.isReleasedWhenClosed = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
