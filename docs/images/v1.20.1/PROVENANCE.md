@@ -1,6 +1,8 @@
-# Countdown Manager 1.20.1/37 — production candidate
+# Countdown Manager 1.20.1/37 — production release evidence
 
-Status: exact package accepted; publication pending.
+Status: published as Latest on 2026-10-29; exact-package acceptance and anonymous delivery passed.
+[Publication receipt](publication.json) records the source commit/tag and three HTTP 200 downloads
+matching the independently audited sizes and hashes.
 
 Seven fresh PNGs show the exact production app on isolated synthetic data. Native rendering uses
 NSView.cacheDisplay, not an external compositor recording. The manifest binds PNG hashes to the
@@ -27,3 +29,7 @@ Settings or close desktop Settings before Install. See the [bug protocol](../../
 No production installation is part of this release task. Existing /Applications app is left for the
 user to update. External XCTest was previously unavailable at automation initialization; this release
 does not claim a successful new XCTest run. See [release status](../../releases/v1.20.1.md).
+
+Temporary build/cache/signing helpers and the local candidate were moved to recoverable Trash after
+publication. [Cleanup receipt](cleanup.json) records the restore manifest. The installed app was not
+updated by the agent; its executable remained unchanged during cleanup.

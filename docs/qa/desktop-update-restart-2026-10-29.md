@@ -1,7 +1,9 @@
 # Desktop update restart — 2026-10-29
 
-Status: correction implemented and accepted; exact patch 1.20.1/build37 acceptance and signed
-artifact audit passed. Publication and anonymous delivery are pending; no local installation by this task.
+Status: correction included in published **1.20.1/build37**. Exact-package acceptance, signed
+artifact audit and anonymous delivery passed; no local installation by this task. The installed
+1.20.0/build36 is left untouched for the user to update.
+[Publication receipt](../images/v1.20.1/publication.json).
 Branch: `codex/desktop-update-restart`. See [patch status](../releases/v1.20.1.md).
 
 ## Report and observed production sequence

@@ -1,0 +1,11 @@
+{
+  "status": "COMPLETE",
+  "movedItems": 17,
+  "approxGiB": 0.59,
+  "restoreManifest": "/Users/vladislav.gushchin/.Trash/Countdown-test-cleanup-2026-10-29-patch-1.20.1/RESTORE-MANIFEST.json",
+  "installedByAgent": false,
+  "installedExecutableUnchanged": true,
+  "installedVersionObserved": "1.20.0",
+  "installedBuildObserved": "36",
+  "productionDataMoved": false
+}

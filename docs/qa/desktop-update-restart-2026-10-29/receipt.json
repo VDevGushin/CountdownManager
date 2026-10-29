@@ -26,5 +26,16 @@
     "reopenedBeforeObservation": false,
     "discovery": "Initial scheduled discovery, then ordinary Check for Updates from still-attached desktop Settings refocused the update UI; actual download/install followed",
     "dataPreserved": true
+  },
+  "evidenceScope": "Earlier development-stage correction; original executable label and released=false retained as recorded. Published patch evidence is separate below.",
+  "publishedPatchRelease": {
+    "version": "1.20.1",
+    "build": "37",
+    "published": true,
+    "publicationReceipt": "docs/images/v1.20.1/publication.json",
+    "sourceCommit": "def89de1491b76bae3128517606ec3793eda659e",
+    "exactPackageNativeReceipt": "docs/images/v1.20.1/native-production.json",
+    "artifactAudit": "docs/images/v1.20.1/artifact-audit.json",
+    "installedByAgent": false
   }
 }

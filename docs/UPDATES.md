@@ -1,10 +1,12 @@
 # Preparing signed updates
 
-## Preparing 1.20.1 / build 37
+## Published 1.20.1 / build 37
 
-Status: **READY_TO_PUBLISH**. Exact-package native acceptance **32/32**, full lint **0/90**,
+Status: **Published as Latest** on 2026-10-29. Exact-package native acceptance **32/32**, full lint **0/90**,
 CoreChecks/UIChecks, source **7/7**, build-contract **18/18** and update-tool **12/12** checks passed.
-Signed ZIP/feed and independent public-key audit passed; anonymous publication/delivery is pending. This patch permits a safe update restart while read-only desktop Settings or
+Signed ZIP/feed and independent public-key audit passed. Anonymous Latest, ZIP, version feed and
+stable feed returned HTTP 200 with exact audited hashes. [Publication receipt](images/v1.20.1/publication.json)
+records the immutable tag and source commit. This patch permits a safe update restart while read-only desktop Settings or
 attachment sheets are open. Editable event/text sheets keep native termination protection; the
 existing application restart-safety guard remains authoritative.
 
@@ -17,16 +19,16 @@ entries, strict/deep codesign and the unchanged production key.
 
 [Patch status](releases/v1.20.1.md) · [Markdown instructions](releases/v1.20.1-notes.md) ·
 [HTML notes](releases/v1.20.1-notes.html). Embed the companion HTML in the final appcast before
-signing. The public ZIP must be `CountdownManager-1.20.1-37.zip` under tag `v1.20.1`; the stable
+signing. The published ZIP is `CountdownManager-1.20.1-37.zip` under tag `v1.20.1`; the stable
 feed URL, bundle ID and production key stay unchanged.
 
 For the first update from the affected 1.20.0, use mini-panel Settings or close desktop Settings
 before Install and Relaunch. The old host controls that installation. No local replacement in
 `/Applications` is part of this patch-release task.
 
-## Published 1.20.0 / build 36
+## Previous published 1.20.0 / build 36
 
-Status: **Published as Latest** on 2026-10-29. Exact-package acceptance, signatures and anonymous
+Status: published as Latest on 2026-10-29 and superseded by 1.20.1. Exact-package acceptance, signatures and anonymous
 ZIP/version-feed/stable-feed delivery passed with HTTP 200 and exact SHA-256 values.
 [Publication receipt](images/v1.20.0/publication.json) records the source commit, immutable tag and
 anonymous Latest redirect. No installation in `/Applications` was performed by this release task.
@@ -247,9 +249,9 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The confirmed published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.0/CountdownManager-1.20.0-36.zip`.
-Tag `v1.20.0`, that archive and the version/stable appcasts were anonymously verified after
-publication; [the publication receipt](images/v1.20.0/publication.json) records their exact hashes.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/CountdownManager-1.20.1-37.zip`.
+Tag `v1.20.1`, that archive and the version/stable appcasts were anonymously verified after
+publication; [the publication receipt](images/v1.20.1/publication.json) records their exact hashes.
 Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
 with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
 Keep the canonical stable feed above unchanged for future releases.
@@ -333,10 +335,10 @@ the seed contents. Running these commands does not create a permanent backup:
 )
 ```
 
-The numbers above prepare candidate 1.20.1 / build 37, including embedded update instructions;
+The numbers above reproduce preparation of published 1.20.1 / build 37, including embedded update instructions;
 acceptance, signed-artifact and publication status are tracked in [releases/v1.20.1.md](releases/v1.20.1.md).
 Commands alone do not establish acceptance or publication. The last confirmed distributed version
-is 1.20.0 / build 36. For subsequent releases,
+is 1.20.1 / build 37. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
@@ -346,7 +348,7 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.19.0.md](releases/v1.19.0.md);
+Current published release status is recorded in [releases/v1.20.1.md](releases/v1.20.1.md);
 previous release evidence is retained in [releases/v1.18.1.md](releases/v1.18.1.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
