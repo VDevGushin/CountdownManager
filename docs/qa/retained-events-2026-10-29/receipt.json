@@ -52,6 +52,10 @@
     "nativeReceipt": "docs/images/v1.20.0/native-production.json",
     "artifactAudit": "docs/images/v1.20.0/artifact-audit.json",
     "nativeUniqueScenarios": 60,
-    "publicationConfirmed": false
+    "publicationConfirmed": true,
+    "publicationReceipt": "docs/images/v1.20.0/publication.json",
+    "publishedAt": "2026-10-29T11:23:17Z",
+    "sourceCommit": "80625258cf8af443a0b2171d5c4d18070c5b902d",
+    "installed": false
   }
 }

@@ -72,7 +72,9 @@ These results are separate from the pre-integration counts and hashes above. The
 executable, unchanged runtime hash, twelve fresh images, artifact signatures and compatibility
 boundaries are recorded in [release status](../releases/v1.20.0.md),
 [native receipt](../images/v1.20.0/native-production.json) and
-[artifact audit](../images/v1.20.0/artifact-audit.json). Anonymous publication remains pending.
+[artifact audit](../images/v1.20.0/artifact-audit.json). The release was published as Latest on
+2026-10-29; the [anonymous receipt](../images/v1.20.0/publication.json) confirms HTTP 200 and exact
+audited ZIP/version-feed/stable-feed hashes. No local installation was performed.
 A real 1.19.0 → 1.20.0 update/relaunch was not rerun, and the external XCTest limitation remains.
 
 ## Durable receipts and current images

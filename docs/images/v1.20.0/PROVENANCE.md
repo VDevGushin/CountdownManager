@@ -1,6 +1,6 @@
-# Countdown Manager 1.20.0/36 — production candidate evidence
+# Countdown Manager 1.20.0/36 — production release evidence
 
-Status: local acceptance passed; publication pending.
+Status: published as Latest on 2026-10-29; local acceptance and anonymous delivery passed.
 
 These are fresh native captures from the exact production bundle, using isolated synthetic events,
 preferences and copied files. Historical retention images from the 1.18.1 development base are not
@@ -22,4 +22,7 @@ results. The earlier external XCTest runner timed out before any test; the devel
 native UI fallback is separate evidence and does not replace external automated confirmation.
 A real 1.19.0 → 1.20.0 Sparkle installation has not been exercised by this release task.
 
-See [release status](../../releases/v1.20.0.md). Public delivery is recorded only after publication.
+The [anonymous publication receipt](publication.json) confirms HTTP 200 and exact audited hashes
+for the ZIP, version feed and stable feed, plus the Latest redirect to v1.20.0. It records source
+commit `80625258cf8af443a0b2171d5c4d18070c5b902d` and the immutable annotated tag.
+See [release status](../../releases/v1.20.0.md). No local installation was performed.

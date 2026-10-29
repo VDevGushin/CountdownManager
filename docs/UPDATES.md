@@ -1,8 +1,11 @@
 # Preparing signed updates
 
-## Preparing 1.20.0 / build 36
+## Published 1.20.0 / build 36
 
-Status: **READY_TO_PUBLISH**. Exact-package acceptance and signatures passed; anonymous delivery is pending.
+Status: **Published as Latest** on 2026-10-29. Exact-package acceptance, signatures and anonymous
+ZIP/version-feed/stable-feed delivery passed with HTTP 200 and exact SHA-256 values.
+[Publication receipt](images/v1.20.0/publication.json) records the source commit, immutable tag and
+anonymous Latest redirect. No installation in `/Applications` was performed by this release task.
 This release retains selected events after their date together with links, notes, tasks and owned
 file copies. The event editor’s third checkbox controls retention independently of the primary;
 ordinary past events follow future groups, while a retained primary stays above the list and in
@@ -29,11 +32,12 @@ XCUITests did not execute because automation mode timed out. No prior update or 
 result is relabelled as evidence for this payload.
 
 
-## Published 1.19.0 / build 35
+## Previous published 1.19.0 / build 35
 
 Release 1.19.0/35 adds saved links, material drag-and-drop, plain-text attachments and an
 in-app release-help window. The existing production identity, stable feed and signing key are
-unchanged. Published as Latest; anonymous ZIP/version feed/stable feed match the signed bytes.
+unchanged. It was published as Latest and is superseded by 1.20.0; its anonymous ZIP/version
+feed/stable feed checks matched the signed bytes.
 [Release status](releases/v1.19.0.md) · [publication receipt](images/v1.19.0/publication.json).
 The [Markdown notes](releases/v1.19.0-notes.md) explain actual user actions; the
 [HTML notes](releases/v1.19.0-notes.html) should be embedded in the signed appcast using Sparkle
@@ -219,9 +223,9 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The confirmed published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.19.0/CountdownManager-1.19.0-35.zip`.
-Tag `v1.19.0`, that archive and the version/stable appcasts were anonymously verified after
-publication; [the publication receipt](images/v1.19.0/publication.json) records their exact hashes.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.0/CountdownManager-1.20.0-36.zip`.
+Tag `v1.20.0`, that archive and the version/stable appcasts were anonymously verified after
+publication; [the publication receipt](images/v1.20.0/publication.json) records their exact hashes.
 Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
 with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
 Keep the canonical stable feed above unchanged for future releases.
