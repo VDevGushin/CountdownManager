@@ -72,9 +72,11 @@ do not substitute CLI/API authentication or a different browser just because it 
 If this route is unavailable, explain the actual limitation and agree on a fallback. Do not ask
 for another approval for an already authorized action merely because the tool changed.
 
-Under the authorizations in AGENTS, commit/tag/push the reviewed source and integrate it into the
-actual default branch. A release branch or tag alone does not update the GitHub homepage.
-Check branch ancestry/conflicts and preserve existing history and repository protections.
+The project releases from **main**, with an annotated version tag on the reviewed main commit.
+Under the authorizations in AGENTS, integrate the completed feature into main first, switch to
+the up-to-date clean main checkout, then freeze the release source and create/push its tag.
+A feature/release branch or tag alone does not update the GitHub homepage. Check ancestry/conflicts
+and preserve existing history and repository protections. Never move an already published tag.
 
 Select the pushed existing tag in the release form, use the reviewed notes, upload only the
 verified production ZIP and signed appcast, wait for both uploads, then publish as Latest.
@@ -99,7 +101,10 @@ After successful publication, the owner's normal handoff is:
    profiles, caches, downloaded tooling and seed exports; check running paths and retain necessary
    receipts before cleanup. Prefer Trash plus a restore manifest. Do not sweep pre-existing files,
    keys, production data or Git history into “trash.”
-3. Report the published link/version, public verification, documentation/main status, installed
+3. After the authorized feature integration and follow-up documentation commits, return the
+   clean working checkout to up-to-date **main**. Preserve unrelated work; do not reset, discard
+   changes or force a branch switch to satisfy this finish. Verify the branch and clean status.
+4. Report the published link/version, public verification, documentation/main status, installed
    previous version, cleanup result and material untested boundaries. Keep the report short.
 
 A skill supplies instructions, not permission. A future user can override this normal handoff;

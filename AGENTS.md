@@ -26,6 +26,7 @@ Product truth takes precedence over current code and tests. Accepted decisions c
 ## Working rules
 
 - Work only within the requested scope. Report unrelated findings without fixing them.
+- Releases come from `main` with an annotated version tag on the reviewed source commit. After a feature and its authorized integration are complete, return the clean working checkout to up-to-date `main`; preserve unrelated work and never reset/discard changes to force the switch. Existing approval boundaries still apply.
 - Do not ask the Product Owner to choose implementation details. Surface only genuinely unresolved product decisions.
 - Never mutate production Countdown Manager data as a test fixture.
 - Before completing every task, review `README.md` and update the descriptions, instructions, version references and links affected by the change. Keep it aligned with the sources of truth.

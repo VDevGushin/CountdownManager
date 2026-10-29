@@ -95,7 +95,12 @@ existing authenticated session and publish there. Do not replace it with CLI/API
 or credential discovery merely because another tool exists. If this path is unavailable, explain
 the actual limitation and agree on a fallback before changing the publication method.
 
-Use the reviewed source commit and annotated version tag. Upload only the audited ZIP and
+Integrate the reviewed feature into `main` under the existing authorizations, switch to clean,
+up-to-date `main`, then freeze the release source and create its annotated version tag there.
+Do not move an already published tag. After the feature, release and follow-up documentation
+are complete, leave the working checkout on up-to-date `main`, preserving unrelated changes.
+
+Use that reviewed main commit and version tag. Upload only the audited ZIP and
 signed `appcast.xml`; release notes are embedded. Confirm exact filenames, completed uploads,
 title/notes and the Latest setting before publishing. Keep permission boundaries in AGENTS;
 this procedure does not grant commit, push, main integration, publication or installation rights.
