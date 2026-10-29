@@ -5,9 +5,10 @@ Countdown Manager — нативное приложение macOS с основ�
 Учётная запись и разрешение на уведомления не требуются. События, подзадачи и таймер
 работают без интернета; опциональный прогноз погоды требует подключения к сети.
 
-Подготовлен выпуск **1.20.2, сборка 38**: графитовая тёмная палитра.
-Публикация ещё не подтверждена; последний опубликованный выпуск — [1.20.1](https://github.com/VDevGushin/CountdownManager/releases/tag/v1.20.1).
-[Статус подготовки](docs/releases/v1.20.2.md) · [Что нового](docs/releases/v1.20.2-notes.md).
+Опубликована **1.20.2, сборка 38**, как Latest: графитовая тёмная палитра.
+[Скачать релиз](https://github.com/VDevGushin/CountdownManager/releases/tag/v1.20.2).
+Анонимные ZIP, версионный и стабильный appcast проверены: HTTP 200 и точные SHA-256.
+[Статус выпуска](docs/releases/v1.20.2.md) · [Протокол публикации](docs/images/v1.20.2/publication.json) · [Что нового](docs/releases/v1.20.2-notes.md).
 
 ## Графитовая тёмная тема в 1.20.2
 
@@ -452,9 +453,9 @@ macOS задаётся отдельно от темы окон; это не дв
 ## Установка готового приложения
 
 Публичная сборка рассчитана на Mac с Apple Silicon и macOS 13 или новее.
-Текущий опубликованный выпуск — **1.20.1/37**.
-Откройте [выпуск 1.20.1](https://github.com/VDevGushin/CountdownManager/releases/tag/v1.20.1),
-скачайте [CountdownManager-1.20.1-37.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/CountdownManager-1.20.1-37.zip),
+Текущий опубликованный выпуск — **1.20.2/38**.
+Откройте [выпуск 1.20.2](https://github.com/VDevGushin/CountdownManager/releases/tag/v1.20.2),
+скачайте [CountdownManager-1.20.2-38.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.2/CountdownManager-1.20.2-38.zip),
 распакуйте и перенесите `Countdown Manager.app` в «Программы».
 Сборка подписана ad-hoc, без нотарификации Apple; при первом запуске может потребоваться
 разрешение в «Системные настройки → Конфиденциальность и безопасность».

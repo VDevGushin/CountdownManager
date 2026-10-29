@@ -1,12 +1,12 @@
 # Preparing signed updates
 
-## Candidate 1.20.2 / build 38
+## Published 1.20.2 / build 38
 
-The Graphite dark palette is prepared for release with the unchanged production signing key,
+The Graphite dark palette is published as Latest with the unchanged production signing key,
 identity and stable feed. Native system date/file windows may retain wallpaper tinting; this
 limitation is explicit in native help and the embedded release notes. Light colors, data and update
 restart guards are unchanged. Exact-package acceptance and signatures belong under
-`docs/images/v1.20.2/`; [release status](releases/v1.20.2.md). Publication is not yet confirmed.
+`docs/images/v1.20.2/`; [release status](releases/v1.20.2.md). Anonymous Latest, archive and both feeds passed HTTP 200 and exact audited hashes; see the [publication receipt](images/v1.20.2/publication.json).
 
 ## Previous published 1.20.1 / build 37
 
@@ -257,9 +257,9 @@ Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
 The selected stable feed is
 `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
 The confirmed published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/CountdownManager-1.20.1-37.zip`.
-Tag `v1.20.1`, that archive and the version/stable appcasts were anonymously verified after
-publication; [the publication receipt](images/v1.20.1/publication.json) records their exact hashes.
+`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.2/CountdownManager-1.20.2-38.zip`.
+Tag `v1.20.2`, that archive and the version/stable appcasts were anonymously verified after
+publication; [the publication receipt](images/v1.20.2/publication.json) records their exact hashes.
 Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
 with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
 Keep the canonical stable feed above unchanged for future releases.
@@ -346,7 +346,7 @@ the seed contents. Running these commands does not create a permanent backup:
 The numbers above reproduce preparation of published 1.20.1 / build 37, including embedded update instructions;
 acceptance, signed-artifact and publication status are tracked in [releases/v1.20.1.md](releases/v1.20.1.md).
 Commands alone do not establish acceptance or publication. The last confirmed distributed version
-is 1.20.1 / build 37. For subsequent releases,
+is 1.20.2 / build 38. For subsequent releases,
 change the version, build number and archive tag together, using a `CFBundleVersion` greater than
 the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
 The output directory must be empty. These commands stage a bundle and prepare local artifacts;
@@ -356,7 +356,7 @@ Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until 
 Account-free weather does not require an Apple Developer membership or a weather API key.
 First-install location permission, native AUTO location and VPN behaviour are separate acceptance
 surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.20.1.md](releases/v1.20.1.md);
+Current published release status is recorded in [releases/v1.20.2.md](releases/v1.20.2.md);
 previous release evidence is retained in [releases/v1.18.1.md](releases/v1.18.1.md).
 The original weather implementation and acceptance history remain in
 [releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
