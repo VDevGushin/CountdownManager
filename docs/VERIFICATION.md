@@ -892,6 +892,10 @@ Two additional static endpoint captures record the timer preset pill at `120` an
 Reduce Motion. These stills prove final layout states, not movement over time; focused UIChecks and
 Real UI Smoke cover the 180-millisecond motion policy, immediate reduced-motion policy, endpoint
 selection, rapid last-tap-wins behaviour and the final value consumed by Play.
+Running and finished timer captures also compare the alarm emoji's red pixel coverage with an
+unbounded SwiftUI reference rendered at the same backing scale on the same macOS runtime.
+At least 95% of the reference ink must remain visible. This catches the clipped 20-point glyph;
+it is a focused clipping guard, not a general pixel-equivalence or animation check.
 An isolated today-dated primary and short secondary event add a full-panel capture of the date and
 `Сегодня` badge. The fixture is removed before the other capture scenarios run.
 Three day-creation captures show the inline `Сегодня` / `Завтра` / `Выбрать дату` choices, the

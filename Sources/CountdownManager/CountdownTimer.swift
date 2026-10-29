@@ -276,6 +276,7 @@ struct CountdownTimerStrip: View {
         } else {
             Text("⏰")
                 .font(.system(size: 20))
+                .fixedSize()
                 .frame(width: 20)
                 .accessibilityHidden(true)
         }

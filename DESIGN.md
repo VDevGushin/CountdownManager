@@ -132,13 +132,15 @@ components:
 
 ## Overview
 
-Release 1.20.2 updates the release ID and help text for Graphite and explicitly names system-native tinting as a retained limitation.
+Release 1.20.3 preserves the complete timer alarm emoji at its natural size inside the existing
+20-point slot. The release-help window describes this correction. The accepted Graphite palette
+and retained system-native tinting limitation continue to apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
 58-point footer. Its 430×560 content scrolls between header and footer. Native title-bar close,
-Escape and Return retain normal window semantics. Release 1.20.1 changes only its release ID and
-instructions for the desktop update correction and preserved safety guards; the component introduces no new visual/action family.
+Escape and Return retain normal window semantics. Release-specific text uses the same component
+without introducing another visual/action family.
 
 **Creative North Star: "Warm Calendar Leaves"**
 

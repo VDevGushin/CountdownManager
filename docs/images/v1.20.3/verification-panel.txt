@@ -1,0 +1,7 @@
+UISmoke
+✓ existing-event editor capture deliberately has no text focus; six separate captures verify native focused fields
+✓ six native field focus captures cover subtask, title and note in both themes, with the other native fields unfocused
+✓ reduced-motion checklist closes noninteractive and reopens with completion groups intact
+✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast
+✓ real panel capture set records baseline and isolated accessibility states
+PASS: 5/5

@@ -1,0 +1,29 @@
+{
+  "version": "1.20.3",
+  "build": "39",
+  "executableSHA256": "e63028be6702cea4e6a0f140d7069a53fb352a60463caf8e5b2ede6247804abe",
+  "passed": "31/31",
+  "totalRuntimeCaptures": 131,
+  "retainedImages": [
+    {
+      "file": "desktop-feed-dark.png",
+      "sha256": "e63fbab36170ddfda846754adeff1c1d501ce34c1e04c06ec642ee5f27e8a530"
+    },
+    {
+      "file": "desktop-collection-light.png",
+      "sha256": "1a81de1ff8c7c4c23d0f6095ab4ab60f51908096e856f34f9f2ec6b8f6b5b5de"
+    },
+    {
+      "file": "retention-mini-list-dark.png",
+      "sha256": "6484780a16df8ec6b552eb590fe883bdfdc7d1da2de18762b9f90b35b1554e82"
+    },
+    {
+      "file": "retention-editor-light.png",
+      "sha256": "0d07bb99657c822a9d6cdf0ac1ead1d4f819ecefc5ba85163f872021973d5657"
+    },
+    {
+      "file": "desktop-settings-dark.png",
+      "sha256": "8e3b774505c7379b90c6e0f5ccdbe42bf00d9ac9583a47c90619ca1f2cb4fa37"
+    }
+  ]
+}

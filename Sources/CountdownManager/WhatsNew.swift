@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.20.2"
+    static let releaseID = "1.20.3"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,13 +38,8 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Графитовая тёмная тема", symbol: "moon",
-                            text: "Нейтральные фоны и светлый текст без кремового оттенка — в большом окне, мини-панели, редакторе, настройках и материалах. Коралловые календари и цвета состояний сохранены.")
-                    feature("Общее оформление", symbol: "macwindow",
-                            text: "Уведомление таймера и нативные диалоги следуют выбранному режиму приложения. Календарь и файловые окна macOS могут сохранять системное тонирование цветами обоев.")
-                    Text("Светлая тема, компоновка, данные и защита перезапуска обновления не изменились.")
-                        .font(.system(size: 11))
-                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    feature("Значок таймера целиком", symbol: "alarm",
+                            text: "Исправлено обрезание будильника рядом с отсчётом времени и надписью «Время вышло» в мини-панели.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

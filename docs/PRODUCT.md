@@ -13,8 +13,7 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.20.1 updates the read-only `Что нового` screen with the desktop update-restart
-correction and the existing work-protection rules. Event retention and material/link behaviour
+Release 1.20.3 updates the read-only `Что нового` screen with the timer alarm clipping fix. Event retention and material/link behaviour
 introduced in earlier releases remain unchanged. The release-help
 window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.

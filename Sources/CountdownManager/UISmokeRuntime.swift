@@ -1839,6 +1839,9 @@ final class UISmokeRuntime {
         }
         let bitmap = NSBitmapImageRep(cgImage: compositeImage)
         bitmap.size = bounds.size
+        if name == "03-timer-running" || name == "05-timer-finished" {
+            try requireCompleteTimerAlarm(bitmap: bitmap, scale: scale)
+        }
         let corners = [(0, 0), (width - 1, 0), (0, height - 1), (width - 1, height - 1)]
         let opaqueCorners = corners.allSatisfy { point in
             (bitmap.colorAt(x: point.0, y: point.1)?.alphaComponent ?? 0) >= 0.99
@@ -1868,6 +1871,32 @@ final class UISmokeRuntime {
             bitmapColorSpace: nil,
             colorProfileEmbedded: nil
         ))
+    }
+
+    private func requireCompleteTimerAlarm(bitmap: NSBitmapImageRep, scale: Double) throws {
+        let reference = ImageRenderer(content: Text("⏰").font(.system(size: 20)).fixedSize())
+        reference.scale = scale
+        let referenceImage = try requireValue(reference.cgImage, "timer alarm reference render")
+        let expected = NSBitmapImageRep(cgImage: referenceImage)
+        // Compare colored ink with the unbounded glyph rendered on this same macOS runtime.
+        // Timer text and the graphite background are neutral; a truncated emoji loses red ink.
+        func coloredPixels(_ image: NSBitmapImageRep, width: Int, height: Int) -> Int {
+            var count = 0
+            for y in 0..<height {
+                for x in 0..<width {
+                    guard let color = image.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB),
+                          color.alphaComponent > 0.5 else { continue }
+                    if color.redComponent - max(color.greenComponent, color.blueComponent) > 0.15 {
+                        count += 1
+                    }
+                }
+            }
+            return count
+        }
+        let expectedCount = coloredPixels(expected, width: expected.pixelsWide, height: expected.pixelsHigh)
+        let actualCount = coloredPixels(bitmap, width: Int(48 * scale), height: Int(60 * scale))
+        try require(expectedCount > 0 && Double(actualCount) >= Double(expectedCount) * 0.95,
+                    "timer alarm is clipped: \(actualCount) colored pixels, expected at least 95% of \(expectedCount)")
     }
 
     private func requireRetainedPanelCoverage(

@@ -1,0 +1,57 @@
+{
+  "applicationBuild" : "39",
+  "applicationVersion" : "1.20.3",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "observationUptime" : 675496.96683975006,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "observationUptime" : 675497.09634970839,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "observationUptime" : 675497.22277341667,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "observationUptime" : 675497.34784620837,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    }
+  ],
+  "executableSHA256" : "e63028be6702cea4e6a0f140d7069a53fb352a60463caf8e5b2ede6247804abe",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

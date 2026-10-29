@@ -170,8 +170,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.1`;
-the current sections describe the desktop update-restart correction and preserved restart-safety guards. Manual menu entry bypasses only
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.3`;
+the current section describes the whole timer alarm glyph in running and finished states. Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
 offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.

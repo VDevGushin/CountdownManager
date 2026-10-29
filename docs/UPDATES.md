@@ -1,414 +1,141 @@
-# Preparing signed updates
+# Signed releases and updates
 
-## Published 1.20.2 / build 38
+## Current release
 
-The Graphite dark palette is published as Latest with the unchanged production signing key,
-identity and stable feed. Native system date/file windows may retain wallpaper tinting; this
-limitation is explicit in native help and the embedded release notes. Light colors, data and update
-restart guards are unchanged. Exact-package acceptance and signatures belong under
-`docs/images/v1.20.2/`; [release status](releases/v1.20.2.md). Anonymous Latest, archive and both feeds passed HTTP 200 and exact audited hashes; see the [publication receipt](images/v1.20.2/publication.json).
+Source candidate: **1.20.3 / build 39**, timer alarm clipping correction.
+Publication is not yet confirmed; the last confirmed published release is **1.20.2 / build 38**.
+[Release status](releases/v1.20.3.md) · [Notes](releases/v1.20.3-notes.md) ·
+[Package audit](images/v1.20.3/artifact-audit.json).
 
-## Previous published 1.20.1 / build 37
+This document describes the current release procedure. Per-version reports under `releases/`
+and evidence linked by them are records of those runs, not alternate current instructions.
 
-Status: **Published as Latest** on 2026-10-29. Exact-package native acceptance **32/32**, full lint **0/90**,
-CoreChecks/UIChecks, source **7/7**, build-contract **18/18** and update-tool **12/12** checks passed.
-Signed ZIP/feed and independent public-key audit passed. Anonymous Latest, ZIP, version feed and
-stable feed returned HTTP 200 with exact audited hashes. [Publication receipt](images/v1.20.1/publication.json)
-records the immutable tag and source commit. This patch permits a safe update restart while read-only desktop Settings or
-attachment sheets are open. Editable event/text sheets keep native termination protection; the
-existing application restart-safety guard remains authoritative.
+## Stable identity
 
-Native release help uses ID `1.20.1` and explains the fix. The source correction's genuine isolated
-Sparkle run (build 20120 → 20121) is retained with its exact source and discovery qualifications in
-[the correction protocol](qa/desktop-update-restart-2026-10-29.md). It is not a claim that this exact
-public 1.20.1 package was installed over 1.20.0. Final local receipts are under `docs/images/v1.20.1/`; the native executable hash is unchanged
-across desktop/help runs. [Artifact audit](images/v1.20.1/artifact-audit.json) confirms 168 extracted
-entries, strict/deep codesign and the unchanged production key.
+- Bundle: `local.countdownmanager.app`.
+- Stable feed: `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
+- Archives: `https://github.com/VDevGushin/CountdownManager/releases/download/v<VERSION>/CountdownManager-<VERSION>-<BUILD>.zip`.
+- Existing production Keychain account: `local.countdownmanager.app.sparkle.production`;
+  service: `https://sparkle-project.org`.
+- Public-key fingerprint, SHA-256 of the decoded 32 bytes:
+  `327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2`.
 
-[Patch status](releases/v1.20.1.md) · [Markdown instructions](releases/v1.20.1-notes.md) ·
-[HTML notes](releases/v1.20.1-notes.html). Embed the companion HTML in the final appcast before
-signing. The published ZIP is `CountdownManager-1.20.1-37.zip` under tag `v1.20.1`; the stable
-feed URL, bundle ID and production key stay unchanged.
+Use this named account. Sparkle's default `ed25519` account is not the project's production key.
+`generate_keys --account <account> -p` reads only its existing public key; do not generate a
+replacement key or print/export the private key as part of routine release preparation.
+The current Sparkle tools can sign directly from the named Keychain account.
 
-For the first update from the affected 1.20.0, use mini-panel Settings or close desktop Settings
-before Install and Relaunch. The old host controls that installation. No local replacement in
-`/Applications` is part of this patch-release task.
+The default `build.sh` disables the updater. A release must explicitly configure the unchanged
+stable HTTPS feed and public key. The app requires signed feeds and archive verification before
+extraction, with signature-failure fallback disabled. No token, private seed or test preference
+profile belongs in the bundle or release assets.
 
-## Previous published 1.20.0 / build 36
+## Prepare one candidate
 
-Status: published as Latest on 2026-10-29 and superseded by 1.20.1. Exact-package acceptance, signatures and anonymous
-ZIP/version-feed/stable-feed delivery passed with HTTP 200 and exact SHA-256 values.
-[Publication receipt](images/v1.20.0/publication.json) records the source commit, immutable tag and
-anonymous Latest redirect. No installation in `/Applications` was performed by this release task.
-This release retains selected events after their date together with links, notes, tasks and owned
-file copies. The event editor’s third checkbox controls retention independently of the primary;
-ordinary past events follow future groups, while a retained primary stays above the list and in
-the menu bar. The native `Что нового` release ID and its three instructions are updated to 1.20.0.
+Check the actual GitHub default branch, release branch, remote heads and last published tag.
+A newer release branch does not update the README seen on GitHub's default `main` branch.
+Resolve the branch relationship under the authorizations in [AGENTS](../AGENTS.md); do not call
+an unmerged branch's documentation the current repository homepage.
 
-[Release status](releases/v1.20.0.md) · [Russian Markdown notes](releases/v1.20.0-notes.md) ·
-[HTML notes](releases/v1.20.0-notes.html). The HTML companion must match the final ZIP stem and be
-embedded with Sparkle `generate_appcast --embed-release-notes` before feed signing; verify the final
-signed feed after generation. No private key, fixture key or isolated profile belongs in assets.
+Read version/build from `Resources/Info.plist`. Update `WhatsNewView.releaseID`, its user-facing
+text, Markdown/HTML notes, README and current PRODUCT/ARCHITECTURE/DESIGN/UPDATES references.
+Current README screenshots must come from the candidate on isolated data, with provenance;
+remove obsolete galleries from the homepage instead of appending another release chronicle.
+Check local links and image references across maintained documentation.
 
-The production bundle ID, stable HTTPS feed and signing key remain unchanged. The canonical build
-continues to use headers SDK 15.4, linked compatibility/minimum macOS 13.0 and the independent
-`native-warm-calendar-v1` style contract. Exact 1.20.0/36 evidence belongs under `docs/images/v1.20.0/`.
-The 1.19.0 material/link workflows remain included; this release is based on that published line,
-not the older 1.18.1 checkout used for the first retention prototype.
+Use [VERIFICATION](VERIFICATION.md) for the changed failure mode. A timer-state test does not
+prove an emoji is whole; inspect the rendered result at native scale. Identify the running app
+by path, version and executable hash before attributing a screenshot to the candidate.
 
-The exact signed package passed **60/60 unique native scenarios** (desktop 30, mini 23, editor 5,
-materials 1, help 1), with unchanged executable, isolated data and no recorded main-thread stall.
-Final source gates are SwiftLint 0/89, CoreChecks/UIChecks, design-source 7/7, build-contract 18/18
-and update-tool checks 12/12. [Production receipt](images/v1.20.0/native-production.json) and
-[public-key-only audit](images/v1.20.0/artifact-audit.json) record the separate runtime and artifact
-boundaries. A real 1.19.0 → 1.20.0 Sparkle installation/relaunch was not rerun; the new external
-XCUITests did not execute because automation mode timed out. No prior update or external-test
-result is relabelled as evidence for this payload.
-
-
-## Previous published 1.19.0 / build 35
-
-Release 1.19.0/35 adds saved links, material drag-and-drop, plain-text attachments and an
-in-app release-help window. The existing production identity, stable feed and signing key are
-unchanged. It was published as Latest and is superseded by 1.20.0; its anonymous ZIP/version
-feed/stable feed checks matched the signed bytes.
-[Release status](releases/v1.19.0.md) · [publication receipt](images/v1.19.0/publication.json).
-The [Markdown notes](releases/v1.19.0-notes.md) explain actual user actions; the
-[HTML notes](releases/v1.19.0-notes.html) should be embedded in the signed appcast using Sparkle
-2.10.0 `generate_appcast --embed-release-notes` with a companion file matching the ZIP stem.
-Generate the final appcast after adding the notes, verify its signature again, and never edit
-the signed feed afterward. Upload only the audited production ZIP and feed; fixture keys,
-personal test profiles and temporary signing exports are not release assets.
-
-The release build uses the canonical `build.sh`, explicit headers SDK 15.4 and the independent
-`native-warm-calendar-v1` style contract (linked compatibility/minimum OS 13.0). A different
-headers SDK must not be presented as the previously inspected candidate. Exact-package captures
-and signature/hash receipts belong under `docs/images/v1.19.0/`.
-
-## Previous published 1.18.1 / build 34
-
-This patch adds Left/Right keyboard navigation to attachment quick preview in both surfaces
-and removes the middle dot between date and forecast in desktop details. The source bundle
-version is 1.18.1/34. Release 1.18.1/34 was published as Latest and is superseded by 1.19.0; anonymous ZIP, version appcast
-and stable appcast returned HTTP 200 with exact signed SHA-256 values.
-See [patch status](releases/v1.18.1.md) for focused verification and current screenshots.
-The [publication receipt](images/v1.18.1/publication.json) records the confirmed source commit
-and tag. This task did not replace the local installed app.
-The signed candidate ZIP and appcast passed the [public-key-only artifact audit](images/v1.18.1/artifact-audit.json).
-The production key, stable HTTPS feed and bundle identifier are unchanged.
-
-## Previous published 1.18.0 / build 33
-
-This minor release adds the attachment shelf, compact desktop details and embedded native
-quick preview. The production candidate uses the existing bundle ID, stable feed and signing key.
-Its exact executable is `e8c52b1af41e1e1cbb07e133a981caf04e107bd71627c9177a5fe1eee227b8e5`.
-Release 1.18.0/33 was published as Latest. Anonymous ZIP, version feed and stable feed returned HTTP 200 with exact signed SHA-256 values.
-[Release status](releases/v1.18.0.md) and [publication receipt](images/v1.18.0/publication.json).
-
-Fresh exact-candidate native desktop passed **27/27 in 53.080 seconds** (110 PNGs), and focused
-attachments passed **7/7 in 21.023 seconds** (42 PNGs), with unchanged executable hashes and no
-recorded stall/timeout. [Current receipts and images](images/v1.18.0/PROVENANCE.md) distinguish
-the exact-package checks from historical evidence.
-
-The signed local ZIP is **5,887,335 bytes**, SHA-256
-`2e27b1cc53d531153f8576bc97d46957b4efa8b0f99a10da0d47c1117c93eb91`;
-the 1,299-byte feed is `7f713dd1f1e0979952845bb0c2e31e3e0dc0a81e0831c21bf57d09c26c70c7b9`.
-An [independent public-key-only artifact audit](images/v1.18.0/artifact-audit.json) validated
-archive/feed signatures and rejection of altered messages/signatures, exactly bounded feed
-trailer, version/URL/length/hardware/minOS, strict/deep extracted codesign and the complete
-166-entry candidate/extracted bytes/modes/symlink tree. The production key matches the genuine
-1.17.0/32 baseline; no private key or Keychain was accessed by the auditor.
-
-All 67 exact-candidate native scenarios passed. External XCUITest passed 27/28 in the full
-ABC run; the only failed Diagnostic Save case passed a focused 1/1 repeat after fixing the test's
-GoToFolder text clearing. These are 28 unique successful scenarios, not one clean 28-case run.
-Final strict lint is 0/75 and CoreChecks/UIChecks exit 0. Genuine isolated 1.17.0/32 → 1.18.0/33
-Sparkle install and automatic relaunch preserved synthetic events/preferences and all 35 files.
-[Update receipt](images/v1.18.0/genuine-update.json). Anonymous public delivery passed after publication.
-
-## Previous 1.17.0 / build 32 — retained publication evidence
-
-Release **1.17.0 / build 32 was published as Latest; anonymous downloads were verified**. It unifies the static Dock
-icon with the menu Mars palette and adds one linear 12-second turn **only to idle Mars in the
-status bar** when the panel or desktop opens. Dock artwork stays static. Timer/favorite priority,
-Reduce Motion, event data and the existing signed-update protocol remain unchanged.
-
-The final production candidate executable is
-`7b50b24d55c1e3abab64ae87af46170619551fd445a5bd1b4e114cb4dcc00a2d`.
-Strict lint passed **0/73** and final CoreChecks/UIChecks passed exit 0. Fresh native menu checks
-passed **3/3** in **22.221 seconds** with 24 PNGs; desktop passed **27/27** in **50.843 seconds**
-with 110 PNGs. The early status-only completion attempt remains a failure; the accepted repeat
-exercises explicit end-of-cycle removal. The former animated-Dock prototype remains superseded.
-
-A fresh genuine isolated **1.16.0/31 → 1.17.0/32** Sparkle update passed: PID **32729** became
-one automatically relaunched PID **32940** before any UI re-query or manual reopening. Synthetic
-JSON bytes, checklist, favorite and Dark preference were preserved. The fixture used a disposable
-key and loopback HTTP, with unchanged unsigned candidate code; it does not establish public HTTPS.
-[Update receipt](images/v1.17.0/genuine-update-final.json) and
-[public-key-only artifact audit](images/v1.17.0/artifact-audit.json) record the separate boundaries.
-The signed ZIP is **5,659,203 bytes**, SHA-256
-`1902eff2cb8c4c93cd1974e2357989f864a95d537c8d82f4d192948fe9885986`;
-the 1,299-byte feed is `e6778714ccfb5f5e67c263de00a6596b0c050d7686307231032025c820bd9707`.
-[Current release status](releases/v1.17.0.md) and the [publication receipt](images/v1.17.0/publication.json)
-confirm anonymous ZIP, version feed and stable feed HTTP 200 with exact signed SHA-256 values.
-Source commit `f35a4a8a25b85c1548488064e8852fa18b963ebc` and annotated tag `v1.17.0` are pushed.
-
-At its publication, the confirmed channel was **1.17.0 / build 32**, verified by the browser badge
-and an anonymous HTTPS redirect. The production bundle ID, signing key and stable feed
-must remain unchanged.
-
-## Published 1.16.0 / build 31 — retained release evidence
-
-Release **1.16.0 / build 31 was published as Latest; anonymous ZIP and appcasts were verified**. It includes task-first
-ordering, a 15-file cap, 36-point mini previews and separate searchable file libraries.
-The current desktop library uses the same native SwiftUI sheet as Settings and the editor,
-with a right-side close button and parent-content outside-click dismissal. Mini Back matches Settings; both surfaces keep counts only in the footer.
-The current follow-up also removes duplicate saved-section editor links; the event header
-pencil is the sole editor entry. All three desktop routes share native sheet appearance and
-system animation; macOS owns timing and Reduce Motion. Route ownership persists until native
-onDismiss. Editor drafts still require Save/Cancel, and a nested diagnostic Save panel retains
-Settings. Shared editor rows now have 36-point previews before Save and after reopening; every
-format requests a best-effort native preview, with a fallback when unavailable. Mini attachment disclosure
-keeps heading/count positions fixed. Ordinary feed rows use top-aligned calendar/title,
-upper-right remaining time, date/weather in one line and horizontal checklist/file summaries;
-ordinary grid/details retain their layout. The featured favorite places date/weather inline
-on a full-width row below its title/calendar identity, preserving room in narrow panes.
-The exact `5f88a554429be8ff9aae44036ef377cd9623c7a0cd4c439eee3ab1745f716254` bundle passed
-native desktop **27/27** in **52.034 seconds**, exit 0, unchanged executable and no stall/timeout;
-strict lint reports **0/71** and final CoreChecks/UIChecks passed with exit 0.
-[Current native-sheet provenance](images/v1.16.0/native-sheets/PROVENANCE.md) identifies
-42 selected images from 110 native PNGs and the separate physical-click platform probe.
-These are not a new full mini/editor suite or a compositor-animation recording.
-A fresh genuine isolated **1.15.0/30 → final 1.16.0/31** Sparkle update passed Download,
-Install and Relaunch: old PID 19194 became automatically relaunched PID 19340 at the same
-application path, with unchanged synthetic JSON (two events, checklist and favorite) and
-preserved Dark preference. [Final update receipt](images/v1.16.0/native-sheets/genuine-update-final.json)
-and [payload isolation](images/v1.16.0/native-sheets/genuine-update-payload-isolation.json)
-identify separate test IDs, a marked isolated home and unchanged unsigned production code.
-The disposable test key and local HTTP are separate from production signing/public HTTPS;
-[local downloads](images/v1.16.0/native-sheets/genuine-update-local-downloads.json) match test artifacts.
-The [first attempt](images/v1.16.0/native-sheets/genuine-update-first-attempt-failure.json)
-remains FAIL because two host processes were observed; the cause is unresolved. The accepted
-repeat omitted all UI state reads or application reacquisition between the final Install click
-and independent relaunch observation and found one host process. This does not certify first
-installation, old macOS, Intel or public HTTPS availability.
-The previous `69c29794…` candidate passed native
-desktop **27/27** (55.659 seconds, exit 0, unchanged executable, no stall/timeout) and strict
-lint **0/70**; final CoreChecks/UIChecks also passed with exit 0.
-[Historical desktop-polish acceptance](images/v1.16.0/desktop-polish/acceptance.json) retains exact origins and limits.
-[Historical desktop-polish provenance](images/v1.16.0/desktop-polish/PROVENANCE.md) identifies
-54 selected/124 full native images and the [historical public-only artifact audit](images/v1.16.0/desktop-polish/artifact-audit.json).
-Cache-render observation times exceeded requested motion offsets; no new first-200-ms
-compositor-fluency or full mini/editor-suite claim is made for this executable.
-The preceding exact `5836d970…` candidate passed strict lint (0/70), CoreChecks/UIChecks, native desktop
-27/27, mini 23/23 and a public-key-only signed-artifact audit.
-[Previous overlay provenance](images/v1.16.0/attachment-overlay/PROVENANCE.md) records 17 new
-native images and exact bundle/artifact hashes. Scoped external CUA acceptance also passed
-inside/outside/cross/Escape dismissal and mini Back/search/clear on an isolated probe with
-identical unsigned code; it is recorded in the [overlay receipt](images/v1.16.0/attachment-overlay/acceptance.json).
-The preceding
-[priority/limit candidate](images/v1.16.0/priority-limit/PROVENANCE.md) remains historical evidence.
-
-Previous RC2 signing/archive audit and native routes are retained historical evidence;
-they do not certify the follow-up. RC2 desktop/mini/editor routes passed 27/27, 23/23 and 5/5. Genuine isolated
-1.15.0-to-1.16.0 RC1 install/relaunch passed with a disposable test key and local HTTP; that is
-reused pipeline evidence, not a new upgrade run for RC2 or production HTTPS publication.
-RC1 PDF/PNG opening in Preview, warm movie-row opening in QuickTime, playback and full restart
-passed; these unchanged storage/opening workflows are reused with their RC1 origin stated. Cold first-launch default-app opening
-remains explicitly uncertified. The [priority/limit acceptance receipt](images/v1.16.0/priority-limit/acceptance.json)
-separates fresh follow-up gates from reused RC1 workflows; the [RC2 receipt](images/v1.16.0/acceptance.json)
-remains historical evidence.
-Anonymous ZIP, version-specific appcast and stable Latest appcast returned HTTP 200 and
-match the signed local SHA-256 values. The stable feed contains 1.16.0/build 31 and the expected
-enclosure. Latest is confirmed by the anonymous public HTTPS redirect and browser badge;
-the anonymous API was rate-limited with 403. No authorization or cookies were used.
-[Publication receipt](images/v1.16.0/native-sheets/publication.json) identifies source commit
-`91b20285f2a1983021357b0bf624e6dd5bd787db` and tag `v1.16.0`.
-Preparation receipts below retain their original statuses and timestamps.
-Final artifact hashes and release status: [releases/v1.16.0.md](releases/v1.16.0.md).
-
-Previous release **1.15.0 / build 30 was published as Latest** and added the native desktop window alongside
-the menu-bar panel. Signed ZIP/feed, public-key-only audit, external input, diagnostic Save and
-genuine isolated older-to-newer updater acceptance passed. Anonymous archive, version-feed and
-stable-feed downloads returned HTTP 200 and match the signed artifacts.
-Published status: [releases/v1.15.0.md](releases/v1.15.0.md).
-
-Previous release **1.14.1 / build 29** was published as Latest with the existing production key and stable feed.
-Only the explicit favorite receives the large card. Calendar month strips fill the top edge;
-tilt remains, shadows are removed and outlines are inset. Publication status and final evidence
-are tracked in [releases/v1.14.1.md](releases/v1.14.1.md). Anonymous archive, version feed and
-Latest feed downloads returned HTTP 200 and matched the locally signed SHA-256 values.
-
-Previous release **1.14.0 / build 28** was published as Latest with the existing production key
-and stable feed. Anonymous archive/version-feed/Latest-feed downloads returned HTTP 200
-and matched the locally signed SHA-256 values. Automatic/custom event title mode now survives Save and restart; legacy events
-remain custom. The exact production bundle passed seven isolated native scenarios and produced
-six fresh editor captures. Core/UI regressions include negative reset/validation/deletion cases,
-768 seeded actions and eight overlapping-write outcomes. See [releases/v1.14.0.md](releases/v1.14.0.md).
-
-An earlier published release is **1.13.5 / build 27**. Its branded Default/Dark icon and
-terracotta menu stripe are retained. Evidence remains in [releases/v1.13.5.md](releases/v1.13.5.md).
-
-Previous release **1.13.4 / build 26** introduced the terracotta menu-bar stripe.
-Its evidence remains in [releases/v1.13.4.md](releases/v1.13.4.md).
-
-## Channel and signing key
-
-The selected stable feed is
-`https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-The confirmed published version-specific archive URL is
-`https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.2/CountdownManager-1.20.2-38.zip`.
-Tag `v1.20.2`, that archive and the version/stable appcasts were anonymously verified after
-publication; [the publication receipt](images/v1.20.2/publication.json) records their exact hashes.
-Publish the signed `appcast.xml` and ZIP together as Latest, then compare anonymous downloads
-with the locally signed SHA-256 values. Confirmed publication receipts are version-specific above.
-Keep the canonical stable feed above unchanged for future releases.
-Keep archive URLs tied to their version tags; keep the
-bundle's feed URL stable. GitHub Pages is an alternative host, not required for this chosen path.
-A private repository does not automatically provide anonymous downloads. Never embed access
-tokens or private-feed credentials in the application.
-
-According to the local key-setup receipt dated 2026-10-12, the production Ed25519 key was created
-in login Keychain under account **`local.countdownmanager.app.sparkle.production`**, service
-`https://sparkle-project.org`. Reuse this account for subsequent releases; do not generate a
-replacement key for each version or accidentally use Sparkle's default `ed25519` account.
-Its public-key fingerprint is SHA256 of the decoded 32-byte key:
-`327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2`.
-
-After resolving the pinned Sparkle dependency, retrieve only the existing public key:
+After a local build has resolved the pinned Sparkle package, preparation can follow this example:
 
 ```sh
-.build/artifacts/sparkle/Sparkle/bin/generate_keys \
-  --account local.countdownmanager.app.sparkle.production -p
+set -euo pipefail
+key_account='local.countdownmanager.app.sparkle.production'
+build_dir="$PWD/.build"
+sparkle_tools="$build_dir/artifacts/sparkle/Sparkle/bin"
+version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resources/Info.plist)
+build_number=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Resources/Info.plist)
+public_key=$("$sparkle_tools/generate_keys" --account "$key_account" -p)
+release_work=$(mktemp -d /private/tmp/countdown-release.XXXXXX)
+
+COUNTDOWN_UPDATE_MODE=release \
+COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
+COUNTDOWN_UPDATE_PUBLIC_KEY="$public_key" \
+BUILD_DIR="$build_dir" APP_OUTPUT_PATH="$release_work/Countdown Manager.app" ./build.sh
+
+mkdir "$release_work/assets"
+archive_stem="CountdownManager-$version-$build_number"
+/usr/bin/ditto -c -k --sequesterRsrc --keepParent \
+  "$release_work/Countdown Manager.app" "$release_work/assets/$archive_stem.zip"
+cp "docs/releases/v$version-notes.html" "$release_work/assets/$archive_stem.html"
+"$sparkle_tools/generate_appcast" --account "$key_account" \
+  --download-url-prefix "https://github.com/VDevGushin/CountdownManager/releases/download/v$version/" \
+  --maximum-deltas 0 --embed-release-notes "$release_work/assets"
 ```
 
-`-p` prints only the public key and fails if the named key is absent. Only that base64 32-byte
-public key belongs in the bundle. Never print, commit, upload or ship the private seed.
-The release tool currently accepts a protected seed file via `--private-key <file>` and checks
-that it matches the embedded public key. No Apple credentials are needed.
+The actual resolved artifact folder can differ in case; locate the single pinned Sparkle
+`bin` directory rather than creating another dependency checkout. Respect the native build
+contract and record actual SDK/link compatibility. A rebuilt or re-signed executable gets a
+new hash: do not relabel earlier screenshots or runtime results as exact-package evidence.
+Reuse checks whose subject is unchanged, and rerun the affected surface after a real change.
 
-The key-setup receipt records that **no permanent backup was created**. A future permanent backup
-must be a separate deliberate export
-to a protected location chosen by the user, outside the repository, release output and hosting
-server. Restrict its permissions to 0600 or stricter. These instructions are not evidence that
-a backup has been made.
+Verify the final ZIP and feed with the public key embedded in the app, including rejection of
+mutated payloads. Validate archive URL/length, version/build, minimum OS, hardware requirement,
+embedded notes and exact signed-feed byte boundary. Extract the ZIP and compare file bytes,
+modes and symlinks; run strict/deep codesign. Record the archive and feed hashes.
+Ad-hoc app signing is not Apple notarization or universal Gatekeeper acceptance.
 
-Ad-hoc signatures do not provide Apple notarization. First-install Gatekeeper trust remains
-separate from Sparkle's archive/feed authenticity. Both signed feeds and verification before
-archive extraction are required; signature-failure fallback expiration is disabled. Losing the
-production key will require a manually installed recovery version; do not promise automatic
-key rotation without a Developer ID trust path.
+## Publish through the in-app browser
 
-## Build and prepare a release
+The established user workflow is GitHub's release page in the **in-app browser**. Open the
+existing authenticated session and publish there. Do not replace it with CLI/API authentication
+or credential discovery merely because another tool exists. If this path is unavailable, explain
+the actual limitation and agree on a fallback before changing the publication method.
 
-The default `./build.sh` makes a development bundle with the updater disabled.
-To explicitly configure and prepare a release, reuse the named Keychain account. The following
-workflow uses Sparkle 2.10.0's verified `generate_keys --account … -p` and `-x <file>` options.
-`-x` requires a nonexistent destination file; it exports the existing key rather than creating
-a new one. The subshell's restrictive umask protects the temporary export from creation, and
-the exit trap deletes it after signing or on failure. Do not enable shell tracing or inspect
-the seed contents. Running these commands does not create a permanent backup:
+Use the reviewed source commit and annotated version tag. Upload only the audited ZIP and
+signed `appcast.xml`; release notes are embedded. Confirm exact filenames, completed uploads,
+title/notes and the Latest setting before publishing. Keep permission boundaries in AGENTS;
+this procedure does not grant commit, push, main integration, publication or installation rights.
 
-```sh
-(
-  set -euo pipefail
-  umask 077
-  sparkle_tools="$PWD/.build/artifacts/sparkle/Sparkle/bin"
-  key_account='local.countdownmanager.app.sparkle.production'
-  production_public_key="$("$sparkle_tools/generate_keys" --account "$key_account" -p)"
-  work_dir=$(mktemp -d /private/tmp/countdown-release-build.XXXXXX)
+After publication, check anonymously:
 
-  COUNTDOWN_UPDATE_MODE=release \
-  COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
-  COUNTDOWN_UPDATE_PUBLIC_KEY="$production_public_key" \
-  COUNTDOWN_VERSION=1.20.1 COUNTDOWN_BUILD_NUMBER=37 \
-  APP_OUTPUT_PATH="$work_dir/Countdown Manager.app" ./build.sh
+1. `/releases/latest` resolves to the intended version.
+2. The versioned ZIP and versioned appcast return HTTP 200 and exact local hashes.
+3. The stable appcast returns the same signed feed and names the intended archive/build.
+4. The tag points to the reviewed source, and the default-branch README displays the current
+   version, graphite design and working image/download links.
 
-  signing_dir=$(mktemp -d /private/tmp/countdown-release-signing.XXXXXX)
-  trap 'rm -f -- "$signing_dir/private-seed"; rmdir -- "$signing_dir"' EXIT
-  "$sparkle_tools/generate_keys" --account "$key_account" -x "$signing_dir/private-seed"
-  chmod 600 "$signing_dir/private-seed"
-  python3 -B scripts/update_tools.py release \
-    --app "$work_dir/Countdown Manager.app" \
-    --private-key "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/' \
-    --output "$work_dir/release"
-  mv "$work_dir/release/appcast.xml" "$work_dir/appcast-without-notes.xml"
-  cp docs/releases/v1.20.1-notes.html "$work_dir/release/CountdownManager-1.20.1-37.html"
-  "$sparkle_tools/generate_appcast" --ed-key-file "$signing_dir/private-seed" \
-    --download-url-prefix 'https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.1/' \
-    --maximum-deltas 0 --embed-release-notes "$work_dir/release"
-  "$sparkle_tools/sign_update" --verify --ed-key-file "$signing_dir/private-seed" \
-    "$work_dir/release/appcast.xml"
-)
-```
+Only then change status from candidate to published and save a publication receipt. Keep
+source commits and the immutable tag distinct from a later documentation receipt commit.
+A browser's “Publish” action or an authenticated download alone is not this verification.
 
-The numbers above reproduce preparation of published 1.20.1 / build 37, including embedded update instructions;
-acceptance, signed-artifact and publication status are tracked in [releases/v1.20.1.md](releases/v1.20.1.md).
-Commands alone do not establish acceptance or publication. The last confirmed distributed version
-is 1.20.2 / build 38. For subsequent releases,
-change the version, build number and archive tag together, using a `CFBundleVersion` greater than
-the latest distributed build. Keep `local.countdownmanager.app` and existing data locations unchanged.
-The output directory must be empty. These commands stage a bundle and prepare local artifacts;
-they do not install in `/Applications`, commit, upload, publish or modify production event data.
+## Finish on the owner's previous release
 
-Weather in 1.9.0 uses Open-Meteo independently of Sparkle and remains off until enabled by the user.
-Account-free weather does not require an Apple Developer membership or a weather API key.
-First-install location permission, native AUTO location and VPN behaviour are separate acceptance
-surfaces; a successful public forecast request for Moscow coordinates does not establish them.
-Current published release status is recorded in [releases/v1.20.2.md](releases/v1.20.2.md);
-previous release evidence is retained in [releases/v1.18.1.md](releases/v1.18.1.md).
-The original weather implementation and acceptance history remain in
-[releases/v1.9.0.md](releases/v1.9.0.md). Pirate Weather and 7Timer are excluded.
-An earlier 1.10.0 candidate returned decoded batches from all three services and a consensus
-for an isolated eligible event. That historical CLI result is not a live-service test of the
-1.12.0 transport/controller and does not establish GUI HTTP, AUTO location, another Mac,
-VPN or sustained availability.
+The owner's requested finish is to test the update personally. After successful publication,
+leave the **previous published release** installed and running, rather than installing the new
+release for them. Determine “previous” from the release actually being superseded, not a fixed
+version. If the installed app already matches that published package, verify and retain it.
+Otherwise verify the previous public ZIP/signature, preserve current user data/preferences and
+use a reversible replacement. Never reset or downgrade the data schema as part of this step.
 
-The bundle contains the complete Sparkle framework, copied with symlinks and permissions preserved.
-Nested XPC services, helper executable and Updater app are signed inside-out, preserving Downloader
-entitlements, then the framework and host app are ad-hoc signed and verified. ZIP creation uses
-`ditto --keepParent`; `generate_appcast` signs the feed and the archive. The release tool verifies
-both signatures and checks enclosure version, URL, length and signature. Delta updates are disabled
-for this initial release path. It writes `release-manifest.json` for provenance.
+Close only identified isolated candidate/test instances. Enumerate task-created bundles,
+profiles, build caches and temporary tooling. Clean them only after retaining the required
+release receipts and checking running process paths. Prefer recoverable Trash moves with a
+manifest. Preserve production data, keys, Git history, project skills and the published artifacts.
+Do not treat pre-existing unrelated temporary directories as this task's cleanup scope.
 
-Publish the verified archive and signed appcast as a separate authorized operation. Do not edit
-the appcast after signing; regenerate it if URLs/content change. Before distributing, verify public
-anonymous HTTPS access and run an actual update against two independent release-like builds.
+## Genuine update acceptance
 
-## Disposable local update test
+`python3 -B scripts/prepare_update_test.py --output /private/tmp/<fresh-directory>` prepares
+separate marked bundles and a loopback feed with a disposable test key. It neither uses the
+production Keychain key nor authorizes a production data fixture. Follow its emitted instructions
+and the acceptance matrix in [VERIFICATION](VERIFICATION.md).
 
-```sh
-python3 -B scripts/prepare_update_test.py --output /private/tmp/countdown-update-test-new
-/private/tmp/countdown-update-test-new/serve-feed.sh
-# In another terminal/session:
-/private/tmp/countdown-update-test-new/launch-older.sh
-```
+Preparation alone is not a successful download/install/relaunch. Match the evidence to the
+mechanism changed; do not claim a real public-version update from an in-process guard test.
+The owner's final manual update is separate from any synthetic mechanism test.
 
-The preparer makes separate older/newer bundles, increasing build numbers, a test-only Ed25519
-seed file outside the repository, signed artifacts, and a manifest. It never accesses production
-Keychain. Both bundles carry `local.countdownmanager.update-test` and a durable marked test home
-so that Sparkle's relaunch stays isolated without env/argv inheritance. Only explicit test bundles
-permit loopback HTTP. Keep test keys separate from production signing and delete the generated
-temporary fixture directory when no longer needed.
-
-Use ordinary update controls to exercise the full download, guarded install, replacement and
-relaunch. Prepared artifacts alone do not prove an update succeeded. The acceptance matrix and
-limitations are in [VERIFICATION.md](VERIFICATION.md).
-
-Before interactive updater UI, the host hides its retained panel and temporarily uses an ordinary
-window level. Explicit reopening preserves the editor and timer; later native updater windows can
-take focus. Ending the update session restores the panel level without reopening it. A deferred
-installation explains the blocker and offers `Вернуться к работе`; installation resumes only through
-another explicit ready-update action after a fresh safety check.
-
-Verification capabilities, the native acceptance matrix and platform limitations are maintained in
-[VERIFICATION.md](VERIFICATION.md). Keep build provenance and per-run acceptance receipts with the
-prepared artifacts. Local fixture acceptance does not establish public HTTPS availability, Gatekeeper
-first installation, Intel support or runtime compatibility on older macOS. After publication, verify
-that the signed feed and archive are anonymously accessible at their configured URLs.
-
-Primary framework references: [Sparkle setup](https://sparkle-project.org/documentation/),
+Primary framework references: [Sparkle](https://sparkle-project.org/documentation/),
 [customization](https://sparkle-project.org/documentation/customization/),
-[updater delegates](https://sparkle-project.org/documentation/api-reference/Protocols/SPUUpdaterDelegate.html),
-[signing nested components](https://sparkle-project.org/documentation/sandboxing/).
+[updater delegates](https://sparkle-project.org/documentation/api-reference/Protocols/SPUUpdaterDelegate.html).
