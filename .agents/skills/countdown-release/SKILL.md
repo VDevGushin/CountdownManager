@@ -15,6 +15,12 @@ Do not copy their full instructions here or invent a new release process each ti
 
 ## Establish the release
 
+Use [the Git workflow in AGENTS](../../../AGENTS.md#git-workflow). Product features/fixes use new
+branches from main; independent skills/harness/documentation maintenance works directly on main.
+Related feature tests/docs stay with the feature. Completing or merging a feature does not request
+a release: the owner decides separately. Without that instruction, do not bump release versions,
+create a release tag or publish; finish only the authorized feature or maintenance work.
+
 - Inspect actual worktree/branch/remote heads, GitHub default branch, last published version/tag,
   installed application path/version/hash and current candidate. Do not infer one from another.
 - Read version/build from `Resources/Info.plist`. Identify the change, reviewed source commit,
@@ -73,8 +79,9 @@ If this route is unavailable, explain the actual limitation and agree on a fallb
 for another approval for an already authorized action merely because the tool changed.
 
 The project releases from **main**, with an annotated version tag on the reviewed main commit.
-Under the authorizations in AGENTS, integrate the completed feature into main first, switch to
-the up-to-date clean main checkout, then freeze the release source and create/push its tag.
+Under the authorizations in AGENTS, integrate any pending reviewed feature into main first,
+then use the up-to-date clean main checkout for the final release source, build and verification.
+Create/push the annotated tag on that reviewed main commit only for the requested release.
 A feature/release branch or tag alone does not update the GitHub homepage. Check ancestry/conflicts
 and preserve existing history and repository protections. Never move an already published tag.
 

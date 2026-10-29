@@ -34,6 +34,11 @@ profile belongs in the bundle or release assets.
 
 ## Prepare one candidate
 
+Begin release preparation only on the owner's separate release instruction. Feature completion,
+merge and a push to `main` do not imply a version bump, release tag or publication. Product work
+uses feature branches; independent skills/harness/documentation maintenance uses `main`, as defined
+in [the Git workflow](../AGENTS.md#git-workflow).
+
 Check the actual GitHub default branch, release branch, remote heads and last published tag.
 A newer release branch does not update the README seen on GitHub's default `main` branch.
 Resolve the branch relationship under the authorizations in [AGENTS](../AGENTS.md); do not call
@@ -95,8 +100,9 @@ existing authenticated session and publish there. Do not replace it with CLI/API
 or credential discovery merely because another tool exists. If this path is unavailable, explain
 the actual limitation and agree on a fallback before changing the publication method.
 
-Integrate the reviewed feature into `main` under the existing authorizations, switch to clean,
-up-to-date `main`, then freeze the release source and create its annotated version tag there.
+If a reviewed feature is part of the requested release and not yet integrated, merge it into
+`main` under the existing authorizations. Use clean, up-to-date `main` for the final release source,
+build and verification, then create the annotated version tag on that reviewed main commit.
 Do not move an already published tag. After the feature, release and follow-up documentation
 are complete, leave the working checkout on up-to-date `main`, preserving unrelated changes.
 

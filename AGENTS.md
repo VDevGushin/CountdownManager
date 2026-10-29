@@ -23,10 +23,17 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 
 Product truth takes precedence over current code and tests. Accepted decisions constrain their scope but do not silently redefine product behaviour. Update only the source of truth whose contract actually changed.
 
+## Git workflow
+
+- Product features and application bug fixes: start a new `codex/<task>` branch from up-to-date `main`, implement and verify there, then merge into `main` under the current chat's authorizations. Keep the feature's related tests and documentation in that branch.
+- Independent maintenance of skills, agent harness, tooling and documentation: work directly on `main`. Classify by the actual change; a task that changes application behaviour follows the product branch workflow even if it also updates tooling or instructions.
+- Finishing a feature, merging it or pushing `main` does not start a release. The Product Owner decides separately whether and when to release. Do not bump release versions, create release tags or publish merely because a feature is complete.
+- For an explicitly requested release: use clean, up-to-date `main`, freeze and verify the release source, build the final package from that source and create an annotated `v<version>` tag on the reviewed main commit. Never move an already published tag.
+- After a feature and its authorized integration are complete, return the clean working checkout to up-to-date `main`. Preserve unrelated work; never reset/discard changes to force the switch. The branch choice does not replace the approval boundaries below.
+
 ## Working rules
 
 - Work only within the requested scope. Report unrelated findings without fixing them.
-- Releases come from `main` with an annotated version tag on the reviewed source commit. After a feature and its authorized integration are complete, return the clean working checkout to up-to-date `main`; preserve unrelated work and never reset/discard changes to force the switch. Existing approval boundaries still apply.
 - Do not ask the Product Owner to choose implementation details. Surface only genuinely unresolved product decisions.
 - Never mutate production Countdown Manager data as a test fixture.
 - Before completing every task, review `README.md` and update the descriptions, instructions, version references and links affected by the change. Keep it aligned with the sources of truth.
