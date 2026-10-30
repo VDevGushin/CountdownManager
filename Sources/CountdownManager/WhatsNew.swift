@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.20.4"
+    static let releaseID = "1.20.5"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,8 +38,8 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Скриншот сразу во вложения", symbol: "photo",
-                            text: "Свежую миниатюру скриншота macOS теперь можно перетащить на событие. Изображение сохраняется обычным локальным вложением.")
+                    feature("Длинный текст вставляется в заметку", symbol: "note.text",
+                            text: "Текст больше 150 символов теперь вставляется целиком. Красный счётчик показывает превышение; сократите заметку до лимита, чтобы сохранить событие.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

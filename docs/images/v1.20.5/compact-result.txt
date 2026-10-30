@@ -1,0 +1,9 @@
+UISmoke
+✓ NEW note149→150→151 retained; oversized paste remains whole, Save blocked until shortened; Unicode/IME replacement pass
+✓ legacy151/280 load whole; other-field/primary Save and progressive shortening preserve data
+✓ native note insertion/selection/paste/undo/IME/focus pass; empty=64.0 six-line=112.0 docWidth=346.0 viewport=346.0
+✓ featured full date contains one forecast+separator, today/no-weather and long-title−18 in Light/Dark
+✓ Today/Tomorrow/Through2 labels, exact date order and short/long/featured cards in Light/Dark with/without weather
+✓ native150/151, Unicode selection, whole paste, undo, over-limit IME, 3–6 lines/scroll and focus handoffs pass
+✓ native51pt short/long headers, real synthetic forecast symbols, full note, checkbox and emoji siblings captured
+PASS: 7/7

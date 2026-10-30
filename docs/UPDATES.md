@@ -8,6 +8,10 @@ The previous release is **1.20.3 / build 39**. [Publication receipt](images/v1.2
 [Release status](releases/v1.20.4.md) · [Notes](releases/v1.20.4-notes.md) ·
 [Package audit](images/v1.20.4/artifact-audit.json).
 
+Candidate **1.20.5 / build 41** fixes whole-text note insertion and has passed local checks.
+[Candidate status](releases/v1.20.5.md): Git integration and publication are authorized and in progress.
+The public Latest and stable feed remain 1.20.4 until publication is completed.
+
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
 The project release skill is [countdown-release](../.agents/skills/countdown-release/SKILL.md).

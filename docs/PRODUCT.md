@@ -98,10 +98,11 @@ form one visually separate block on a subtle surface, with space between events.
 
 Opening the internal editor or settings must not reset the list underneath it. The inactive list must not receive input or remain exposed as interactive content to accessibility. Use simple native state-change animation for primary selection and subtask completion; avoid custom panel motion and forced focus transitions, and respect system accessibility and Reduce Motion settings.
 
-New notes accept at most 150 Swift String graphemes, including emoji and newlines. A replacement
-that would exceed the limit is rejected as a whole, preserving the accepted text; no prefix clipping
-or partial-emoji truncation is allowed. Marked IME input is provisional, and committed edits, selection
-and Undo retain native text behavior. The same limit is enforced at Save, not just in the editor.
+New notes can save at most 150 Swift String graphemes, including emoji and newlines. Typing,
+paste, replacement and committed IME input remain whole in the draft even above this limit;
+there is no rejection or prefix clipping. The counter shows the actual N/150 in red when the
+current saved-note allowance is exceeded, and Save is disabled until the draft is shortened.
+Selection and Undo retain native text behavior. The same limit is enforced at Save, not just in the editor.
 Existing stored notes longer than 150 remain fully visible and load without truncation or migration.
 For an active existing event only, the permitted length is max(150, its currently saved note length).
 The note can stay that length or shrink while other fields, subtasks and primary selection remain

@@ -871,11 +871,11 @@ notes, with `Заметка · необязательно`, `Пара слов �
 There is no note disclosure state; its text stays in the existing retained draft. `NoteEditor.swift`
 is a narrow NSViewRepresentable boundary around an NSTextView and native bezel NSScrollView. It
 reserves 3 native lines, grows to 6 and then scrolls. AppKit owns selection/undo and marked text;
-committed replacements are checked before mutation, never truncated. The bridge only requests focus
+committed input stays whole in the draft, including above the save allowance. The bridge only requests focus
 on a distinct explicit note-focus request after releasing the SwiftUI field focus, and does not rewrite matching or marked native storage.
 `CountdownNote` in CountdownCore supplies the shared raw-grapheme allowance: 150 for a new note,
 or max(150, current saved active event note count) for an existing identity. `CountdownData.save`
-looks up that current record; `editorCanSave` and the native editor use the same rule. No schema
+looks up that current record; `editorCanSave` and the counter color use the same rule. No schema
 field, migration, legacy cap copy or second note owner is added. Unchanged saved notes are preserved
 exactly; changed/new notes keep existing outer trimming. No edits persist before Save.
 

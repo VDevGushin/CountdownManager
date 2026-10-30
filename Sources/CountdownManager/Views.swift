@@ -1148,8 +1148,7 @@ struct EditorView: View {
             Text("Заметка · необязательно")
                 .font(.caption)
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-            NoteEditor(text: $draft.note, maximumLength: CountdownNote.allowedLength(savedNote: savedNote),
-                       focusRequest: noteFocusRequest)
+            NoteEditor(text: $draft.note, focusRequest: noteFocusRequest)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("editor.note")
                 .uiSmokeControl(id: "editor.note", action: { focus(.note, id: "editor.note") }, value: { draft.note })
@@ -1162,7 +1161,8 @@ struct EditorView: View {
                 Spacer(minLength: 4)
                 Text("\(draft.note.count)/150")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(draft.note.count <= CountdownNote.allowedLength(savedNote: savedNote)
+                        ? AuroraInstrument.secondaryInk(for: colorScheme) : .red)
                     .accessibilityIdentifier("editor.note.count")
                     .uiSmokeControl(id: "editor.note.count", value: { "\(draft.note.count)/150" })
             }

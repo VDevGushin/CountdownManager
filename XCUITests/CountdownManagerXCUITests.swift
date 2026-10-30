@@ -63,11 +63,11 @@ final class CountdownManagerXCUITests: XCTestCase {
         defaultsSuiteName = nil
     }
 
-    func testNewNoteHardLimitAndNativeFocus() throws {
+    func testNewNoteOverflowAndNativeFocus() throws {
         try checkNewNoteLimit(titleText: "New limit")
     }
 
-    func testCyrillicNewNoteHardLimitAndNativeFocus() throws {
+    func testCyrillicNewNoteOverflowAndNativeFocus() throws {
         try checkNewNoteLimit(titleText: "Проверка лимита", noteTokens: ["а", "б", "в"],
                               titleSuffix: " заголовок")
     }
@@ -95,16 +95,19 @@ final class CountdownManagerXCUITests: XCTestCase {
         note.typeText(noteTokens[1])
         XCTAssertEqual((note.value as? String)?.count, 150)
         note.typeText(noteTokens[2])
-        XCTAssertEqual(note.value as? String, initialNote + noteTokens[1])
+        XCTAssertEqual(note.value as? String, initialNote + noteTokens[1] + noteTokens[2])
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
         title.click()
         title.typeText(titleSuffix)
         XCTAssertEqual(title.value as? String, titleText + titleSuffix)
         waitForInputSourceHUDToDisappear()
         note.click()
         note.typeKey(.delete, modifierFlags: [])
-        XCTAssertEqual((note.value as? String)?.count, 149)
-        note.typeKey(try currentLayoutUndoKey(), modifierFlags: .command)
         XCTAssertEqual((note.value as? String)?.count, 150)
+        XCTAssertTrue(app.buttons["editor.save"].isEnabled)
+        note.typeKey(try currentLayoutUndoKey(), modifierFlags: .command)
+        XCTAssertEqual((note.value as? String)?.count, 151)
+        XCTAssertFalse(app.buttons["editor.save"].isEnabled)
         app.buttons["editor.cancel"].click()
         XCTAssertEqual(try persistedItems().count, 1)
     }

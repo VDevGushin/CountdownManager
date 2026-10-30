@@ -44,7 +44,7 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
-| Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 26 isolated PNGs |
+| Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
 | Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
 | XCUITest | `./run-xcui-tests.sh` | External keyboard and normal button interaction through Xcode |
@@ -342,7 +342,7 @@ Run full lint and `./verify.sh fast`, then `./verify.sh compact-capture <marked-
 This focused isolated runtime seeds genuine 151/280 legacy JSON before load; it does not use
 production notes. Core/UI checks cover 150/151, Unicode graphemes/newlines, other-field/subtask/primary
 saves, unchanged legacy notes, successive shorter Saves, and expired/deleted identities. Native
-checks exercise NSTextView insert/selection replacement, a local pasteboard, undo, provisional/rejected
+checks exercise NSTextView insert/selection replacement, a local pasteboard, undo, provisional and over-limit
 IME commit, focus into title/subtask and back, and actual native scroll geometry for empty/7+ lines.
 They validate 51-point short/long headers and 28-point actions with synthetic weather, plus full-note
 read/write, emoji-catalog and checklist siblings. PNGs include Light/Dark, Increase Contrast,
@@ -352,8 +352,8 @@ The same capture mode also checks Today/Tomorrow/Through 2 days in featured, sho
 cards across Light/Dark and weather ON/OFF, with twelve `relative-day-*` PNGs. Secondary relative
 labels must follow the exact date on the metadata baseline. UI checks cover Russian day forms,
 a saved event crossing civil midnights/year boundaries and leap-day Tomorrow. The menu-bar formatter independently uses Today/Tomorrow, then numeric day forms; the underlying Core countdown formatter is unchanged. These text/layout checks do not require repeating external note entry.
-The focused XCUITests `testNewNoteHardLimitAndNativeFocus` and its Cyrillic variant target actual
-keyboard 149→150→151 rejection, title/note handoff and Undo in a NEW note. In the 2026-10-23
+The focused XCUITests `testNewNoteOverflowAndNativeFocus` and its Cyrillic variant target actual
+keyboard 149→150→151 retained input, Save disabling/re-enabling, title/note handoff and Undo in a NEW note. The 1.20.5 contract supersedes the prior input-rejection expectations. In the 2026-10-23
 campaign the Cyrillic route passed under the current Russian input source, but the Latin route
 sent a close-command path during XCTest text synthesis and was not accepted in that run. See the
 [campaign report](qa/desktop-regression-2026-10-23.md). The focused 2026-10-24 preflight on

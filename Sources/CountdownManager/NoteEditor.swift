@@ -1,10 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// Plain native text editing: limits are checked before a committed replacement, never by truncation.
+/// Native draft editing preserves complete input; length validation belongs to Save.
 struct NoteEditor: NSViewRepresentable {
     @Binding var text: String
-    let maximumLength: Int
     let focusRequest: Int
     @Environment(\.isEnabled) private var isEnabled
 
@@ -44,7 +43,6 @@ struct NoteEditor: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let editor = scroll.documentView as? NoteTextView else { return }
-        editor.maximumLength = maximumLength
         editor.isEditable = isEnabled
         editor.isSelectable = isEnabled
         editor.onChange = { text = $0 }
@@ -75,10 +73,8 @@ struct NoteEditor: NSViewRepresentable {
 
 final class NoteTextView: NSTextView {
     static let placeholder = "Пара слов о событии"
-    var maximumLength = 150
     var onChange: ((String) -> Void)?
     private var marking = false
-    private var composition: (replacedText: String, selection: NSRange)?
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
@@ -90,16 +86,6 @@ final class NoteTextView: NSTextView {
         }
     }
 
-    override func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
-        if !marking, let replacementString {
-            guard affectedCharRange.location <= (string as NSString).length,
-                  NSMaxRange(affectedCharRange) <= (string as NSString).length else { return false }
-            let candidate = (string as NSString).replacingCharacters(in: affectedCharRange, with: replacementString)
-            guard candidate.count <= maximumLength else { return false }
-        }
-        return super.shouldChangeText(in: affectedCharRange, replacementString: replacementString)
-    }
-
     override func didChangeText() {
         super.didChangeText()
         needsDisplay = true
@@ -107,48 +93,18 @@ final class NoteTextView: NSTextView {
     }
 
     override func setMarkedText(_ value: Any, selectedRange: NSRange, replacementRange: NSRange) {
-        if composition == nil {
-            let range = replacementRange.location == NSNotFound ? self.selectedRange() : replacementRange
-            composition = ((string as NSString).substring(with: range), self.selectedRange())
-        }
         marking = true
         super.setMarkedText(value, selectedRange: selectedRange, replacementRange: replacementRange)
         marking = false
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
-        if let composition, hasMarkedText() {
-            let value = (insertString as? NSAttributedString)?.string ?? (insertString as? String ?? "")
-            let range = replacementRange.location == NSNotFound ? markedRange() : replacementRange
-            let candidate = (string as NSString).replacingCharacters(in: range, with: value)
-            if candidate.count > maximumLength {
-                restoreComposition(composition)
-                return
-            }
-        }
         super.insertText(insertString, replacementRange: replacementRange)
-        if !hasMarkedText() { composition = nil }
+        if !marking, !hasMarkedText() { onChange?(string) }
     }
 
     override func unmarkText() {
-        if marking { super.unmarkText(); return }
-        if let composition, string.count > maximumLength {
-            restoreComposition(composition)
-            return
-        }
         super.unmarkText()
-        composition = nil
-        onChange?(string)
-    }
-
-    private func restoreComposition(_ original: (replacedText: String, selection: NSRange)) {
-        marking = true
-        composition = nil
-        super.insertText(original.replacedText, replacementRange: markedRange())
-        super.unmarkText()
-        marking = false
-        composition = nil
-        setSelectedRange(original.selection)
-        onChange?(string)
+        if !marking { onChange?(string) }
     }
 }

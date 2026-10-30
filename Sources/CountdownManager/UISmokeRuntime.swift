@@ -534,17 +534,29 @@ final class UISmokeRuntime {
         editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
         editor.insertText("🙂", replacementRange: editor.selectedRange())
         try await waitForValue("editor.note.count", equals: "150/150")
-        let accepted = editor.string
-        let selection = editor.selectedRange()
-        editor.insertText("x", replacementRange: selection)
-        try require(editor.string == accepted && editor.selectedRange() == selection, "new151 was not rejected")
+        editor.insertText("x", replacementRange: editor.selectedRange())
+        try await waitForValue("editor.note.count", equals: "151/150")
+        try await waitFor("over-limit Save disabled") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(editor.string.count == 151 && controls.entries["editor.save"]?.isEnabled == false,
+                    "over-limit typing must stay visible and block Save")
         let pasteboard = NSPasteboard(name: NSPasteboard.Name("new-note-\(UUID().uuidString)"))
         pasteboard.declareTypes([.string], owner: nil)
         pasteboard.setString(String(repeating: "я", count: 151), forType: .string)
         editor.selectAll(nil)
-        let all = editor.selectedRange()
         _ = editor.readSelection(from: pasteboard, type: .string)
-        try require(editor.string == accepted && editor.selectedRange() == all, "new oversized paste changed text/selection")
+        try await waitForValue("editor.note", equals: String(repeating: "я", count: 151))
+        try require(editor.string == String(repeating: "я", count: 151)
+                    && controls.entries["editor.save"]?.isEnabled == false, "oversized paste was lost or Save enabled")
+        for scheme in [ColorScheme.dark, .light] {
+            visualEnvironment.colorSchemeOverride = scheme
+            try await settleLayout()
+            try capture(name: "note-over-limit-\(scheme == .dark ? "dark" : "light")")
+        }
+        editor.setSelectedRange(NSRange(location: 150, length: 1))
+        editor.deleteBackward(nil)
+        try await waitForValue("editor.note.count", equals: "150/150")
+        try await waitFor("shortening enables Save") { self.controls.entries["editor.save"]?.isEnabled == true }
+        try await replaceEditorNote(with: String(repeating: "я", count: 149) + "🙂")
         editor.setSelectedRange(NSRange(location: 0, length: 1))
         editor.insertText("é", replacementRange: editor.selectedRange())
         try require(editor.string.count == 150 && editor.string.hasPrefix("é"), "new Unicode replacement split text")
@@ -583,7 +595,7 @@ final class UISmokeRuntime {
         try capture(name: "compact-new-note-limit")
         try await press("editor.cancel")
         try await waitFor("new limit draft cancelled") { self.controls.entries["editor.new"] == nil }
-        pass("NEW note149→150,151 rejected; oversized paste and grapheme replacement keep <=150 with stable selection")
+        pass("NEW note149→150→151 retained; oversized paste remains whole, Save blocked until shortened; Unicode/IME replacement pass")
     }
 
     private func runCompactCardsAndNotes() async throws {
@@ -615,9 +627,11 @@ final class UISmokeRuntime {
         try await waitForFirstResponder("editor.note")
         let editor = try requireValue(NSApp.keyWindow?.firstResponder as? NoteTextView, "native note view")
         editor.setSelectedRange(NSRange(location: (editor.string as NSString).length, length: 0))
-        let selection = editor.selectedRange()
-        editor.insertText("x", replacementRange: selection)
-        try require(editor.string.count == 150 && editor.selectedRange() == selection, "151st character changed text/selection")
+        editor.insertText("x", replacementRange: editor.selectedRange())
+        try await waitForValue("editor.note.count", equals: "151/150")
+        try await waitFor("over-limit Save disabled") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(editor.string.count == 151 && controls.entries["editor.save"]?.isEnabled == false,
+                    "existing note overflow was lost or Save enabled")
         let family = "👨‍👩‍👧‍👦"
         try await replaceEditorNote(with: String(repeating: family, count: 150))
         editor.undoManager?.removeAllActions()
@@ -635,21 +649,23 @@ final class UISmokeRuntime {
         pasteboard.setString(String(repeating: "я", count: 151), forType: .string)
         editor.selectAll(nil)
         _ = editor.readSelection(from: pasteboard, type: .string)
-        try require(editor.string == String(repeating: family, count: 150), "oversized paste changed accepted text")
+        try await waitForValue("editor.note.count", equals: "151/150")
+        try await waitFor("over-limit Save disabled") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(editor.string == String(repeating: "я", count: 151), "existing oversized paste lost text")
         try await replaceEditorNote(with: "")
         try await settleLayout()
         let emptyHeight = try requireValue(editor.enclosingScrollView, "native note scroll").frame.height
         let line = ceil((editor.font?.ascender ?? 0) - (editor.font?.descender ?? 0) + (editor.font?.leading ?? 0))
         try require(emptyHeight >= line * 3 && emptyHeight <= line * 3 + 20, "empty note does not reserve three native lines")
         editor.setSelectedRange(NSRange(location: 0, length: 0))
-        let beforeComposition = editor.selectedRange()
         editor.setMarkedText(String(repeating: "漢", count: 151), selectedRange: NSRange(location: 151, length: 0),
                              replacementRange: NSRange(location: NSNotFound, length: 0))
         try require(controls.value("editor.note")?.isEmpty == true, "marked text was prematurely committed")
         editor.insertText(String(repeating: "漢", count: 151), replacementRange: NSRange(location: NSNotFound, length: 0))
-        try require(editor.string.isEmpty && editor.selectedRange() == beforeComposition, "rejected IME commit lost selection/text")
-        editor.undoManager?.undo()
-        try require(editor.string.count <= 150, "undo restored over-limit composition")
+        try await waitForValue("editor.note.count", equals: "151/150")
+        try await waitFor("over-limit Save disabled") { self.controls.entries["editor.save"]?.isEnabled == false }
+        try require(editor.string == String(repeating: "漢", count: 151)
+                    && controls.entries["editor.save"]?.isEnabled == false, "IME overflow lost text or enabled Save")
         try await replaceEditorNote(with: "1\n2\n3\n4\n5\n6\n7\n8")
         try await settleLayout()
         let scroll = try requireValue(editor.enclosingScrollView, "scrolling note")
@@ -747,7 +763,7 @@ final class UISmokeRuntime {
         let finalData = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
         try require(finalData.items.first { $0.id == long.id }?.note == sample, "read/write note roundtrip changed text")
         try await captureRelativeDayLabels()
-        pass("native150/151, Unicode selection, paste, undo, rejected IME, 3–6 lines/scroll and focus handoffs pass")
+        pass("native150/151, Unicode selection, whole paste, undo, over-limit IME, 3–6 lines/scroll and focus handoffs pass")
         pass("native51pt short/long headers, real synthetic forecast symbols, full note, checkbox and emoji siblings captured")
     }
 
@@ -2095,7 +2111,7 @@ final class UISmokeRuntime {
         let isWeather = UISmokeConfiguration.weatherCaptureWasRequested
         let isEmptyState = UISmokeConfiguration.emptyStateCaptureWasRequested
         let isCompact = UISmokeConfiguration.compactCaptureWasRequested
-        let expectedCount = UISmokeConfiguration.automaticTitleCaptureWasRequested ? 6 : (UISmokeConfiguration.menuIdentityCaptureWasRequested ? 24 : (UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 26 : (isEmptyState ? 8 : (isWeather ? 10 : 31)))))
+        let expectedCount = UISmokeConfiguration.automaticTitleCaptureWasRequested ? 6 : (UISmokeConfiguration.menuIdentityCaptureWasRequested ? 24 : (UISmokeConfiguration.completedCaptureWasRequested ? 16 : (isCompact ? 28 : (isEmptyState ? 8 : (isWeather ? 10 : 31)))))
         try require(captures.count == expectedCount, "capture set is incomplete")
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]

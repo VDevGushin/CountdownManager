@@ -1,0 +1,42 @@
+[0/1] Planning build
+Building for production...
+[0/4] Write sources
+[1/4] Write swift-version--58304C5D6DBC2206.txt
+[3/5] Compiling CountdownManagerUI Application.swift
+[4/6] Compiling UIChecks AppearanceChecks.swift
+/Users/vladislav.gushchin/AI-Agents/Countdown/Tests/CountdownManagerUITests/CountdownManagerUITests.swift:10:9: warning: no 'async' operations occur within 'await' expression [#UnnecessaryEffectMarker]
+   8 |     static func main() async throws {
+   9 |         testPanelPresentationRequestLifecycle()
+  10 |         await testWhatsNewHistory()
+     |         `- warning: no 'async' operations occur within 'await' expression [#UnnecessaryEffectMarker]
+  11 |         let directory = FileManager.default.temporaryDirectory
+  12 |             .appendingPathComponent("CountdownManagerUIChecks-\(UUID().uuidString)", isDirectory: true)
+
+[#UnnecessaryEffectMarker]: <https://docs.swift.org/compiler/documentation/diagnostics/unnecessary-effect-marker>
+[4/6] Write Objects.LinkFileList
+[5/6] Linking UIChecks
+Build of product 'UIChecks' complete! (107.35s)
+CoreGraphics PDF has logged an error. Set environment variable "CG_PDF_VERBOSE" to learn more.
+PASS panel presentation: pending show, visible acknowledgement, late hidden/visible, explicit hide and 200 rapid request sequences
+PASS WhatsNewHistory: unseen reads/unpresented owner, explicit/idempotent mark, reopened owner, new release and isolated defaults; UI admission is separate evidence
+PASS materials delayed providers: admission lock, duplicate rejection, cancellation, late delivery, reservation handoff
+PASS image materials: data/file bytes, source names and aliases, lossless/file URL priority, staging cleanup, unsupported formats, durable copy, draft Cancel, late success/error cancellation and capacity cleanup
+PASS materials: provider priority, exact target, local copies, durable additions across edits, Unicode text, Cancel, caps, failed batch, stale owner
+PASS links opening: removed values and civil-day expiry reject stale clicks before rendering refresh
+PASS links workflows: draft/Cancel/Save/restart, invalid drafts, stale identity, browser rejection, failed write retains disk and draft
+PASS historical attachment limit: seventeen real copies survive load, unrelated Save and repository reload
+PASS attachment Store workflows: copy/Save/reload/removal, Cancel and active pins, failed Save retry, durable expiry cleanup, override refusal and fifteen-file batch limit
+Attachment Quick Look: txt → preview
+Attachment Quick Look: rtf → preview
+Attachment Quick Look: countdown-preview-test → fallback
+PASS attachment thumbnails: real PNG/MP4, PDF page zero, bounded raster, corrupt/missing/type fallback, pre-cancellation and unchanged file bytes
+PASS attachment preview: late/cancelled/same-ID resolution, missing copy, independent surfaces, owner/current-file removal and four seeded 180-command identity sequences
+PASS Mars opening turn: finite slow full circle, fixed center, linear phases and no repetition
+PASS Mars opening lifecycle: real layer start/restart/stop, other animation preservation and reduced motion
+PASS regression workflows: edited event reload/identity, rejected and failed edit retry, durable checklist preference cleanup, failed midnight normalization retry
+PASS editor draft regression: repeated remove/add and neighbor edits, empty-row Save validation, discard/reopen and durable Save; Thursday/Friday boundary titles and manual override
+PASS automatic titles: draft entry routes, identical/Unicode/manual/reset edits, two-way failed Save retry, Cancel and durable reload, expired/missing identity rejection; 8 overlapping-write outcomes; 4 reproducible seeds × 192 actions
+PASS retained materials: saved links open after midnight; copied files, web links and exact text append durably; editor/reload retain all fields; invalid and expired targets preserve bytes
+PASS retained UI state: desktop/month/past grouping and mini order; primary/no duplicates/search; Russian labels; draft Save/Cancel; midnight failure/retry, post-date edits, attachment access and failed-edit rollback/retry
+Async workflow regression checks passed (3 workflows)
+PASS UI state: Event terminology, human date/countdown, empty state, no 0/0, disclosure 2/5, grouping and completed state, editor focus/active-subtask/emoji isolation, quick CRUD/toggle/10-limit, collapse persistence, Today editor/save and midnight rejection, stable event order, menu-bar presentation and overlapping persistence outcomes; missing-event edit cannot recreate data; isolated mode cannot manage login items; today/tomorrow day defaults, seven Russian weekdays, civil-date boundaries and title override
