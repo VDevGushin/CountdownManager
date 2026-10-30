@@ -40,3 +40,6 @@ release, stable feed and current default-branch homepage. [Local handoff](local-
 1.20.3/39 installed and running for the owner; [cleanup](cleanup.json) records recoverable task-only
 Trash moves and preserved production bytes. Temporary preparation paths describe their original
 locations; published assets are canonical and the restore manifest preserves local recovery.
+
+The [published homepage browser view](homepage-browser.png) confirms version 1.20.4 and its current
+download link; all three rendered README images loaded at their original dimensions.

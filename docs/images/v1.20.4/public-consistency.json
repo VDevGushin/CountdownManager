@@ -2,14 +2,14 @@
   "version": "1.20.4",
   "build": "40",
   "documents": 116,
-  "localReferences": 457,
+  "localReferences": 462,
   "homepageImages": 3,
   "errors": [],
   "publicChecks": {
     "latest": {
       "status": 200,
-      "sha256": "ef9c851c665a33c6f83315da7d97e8fed86ae7035971d2bce0fb7cd15cd8a964",
-      "bytes": 154512
+      "sha256": "97640d92f43e4794ccc5a6a17e6989aec0b62ed42a4781ca1d924fd36a30f91b",
+      "bytes": 154741
     },
     "archive": {
       "status": 200,

@@ -39,5 +39,17 @@
   },
   "defaultBranch": "main",
   "browserProof": "publication-browser.png",
-  "sourceInputsUnchangedSinceBuild": true
+  "sourceInputsUnchangedSinceBuild": true,
+  "homepageVerification": {
+    "publishedVersion": "1.20.4",
+    "mainCommitObserved": "255799d2ed0247c6fc2762583d396252f7293383",
+    "readmeImagesComplete": 3,
+    "nativeImageWidths": [
+      1920,
+      1920,
+      780
+    ],
+    "browserProof": "homepage-browser.png",
+    "verifiedAtUTC": "2026-10-30T10:37:56.464485+00:00"
+  }
 }
