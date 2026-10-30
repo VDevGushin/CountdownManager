@@ -9,7 +9,7 @@
       "file" : "desktop-collection-dark.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717792.92691683338,
+      "observationUptime" : 718561.71460320835,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -21,7 +21,7 @@
       "file" : "desktop-collection-light.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717793.33140691672,
+      "observationUptime" : 718562.13234283333,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -33,7 +33,7 @@
       "file" : "desktop-feed-dark.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717793.77908533334,
+      "observationUptime" : 718562.60003212502,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -45,7 +45,7 @@
       "file" : "desktop-feed-light.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717794.15104987507,
+      "observationUptime" : 718563.0001595834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -57,7 +57,7 @@
       "file" : "desktop-mixed-checklist-dark.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717794.64297779172,
+      "observationUptime" : 718563.51093991671,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -69,7 +69,7 @@
       "file" : "desktop-mixed-checklist-light.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.00788845832,
+      "observationUptime" : 718563.8996280001,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -78,15 +78,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 83.642999990843236,
+      "elapsedMilliseconds" : 82.33087498228997,
       "file" : "desktop-checklist-complete-motion-0ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.09123754175,
+      "observationUptime" : 718563.98785475001,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -96,15 +96,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 154.19233334250748,
+      "elapsedMilliseconds" : 150.22558334749192,
       "file" : "desktop-checklist-complete-motion-40ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.16192112502,
+      "observationUptime" : 718564.05594575009,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 40,
       "scale" : 2,
@@ -114,15 +114,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 220.31104168854654,
+      "elapsedMilliseconds" : 213.7208750937134,
       "file" : "desktop-checklist-complete-motion-90ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.22801237507,
+      "observationUptime" : 718564.1194793334,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 90,
       "scale" : 2,
@@ -132,15 +132,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 276.22483333107084,
+      "elapsedMilliseconds" : 267.76129170320928,
       "file" : "desktop-checklist-complete-motion-180ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.28447137505,
+      "observationUptime" : 718564.17336754175,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 180,
       "scale" : 2,
@@ -150,15 +150,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 71.198041667230427,
+      "elapsedMilliseconds" : 68.252708413638175,
       "file" : "desktop-checklist-reopen-motion-0ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.35604195832,
+      "observationUptime" : 718564.24260454171,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -168,15 +168,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 136.92812505178154,
+      "elapsedMilliseconds" : 131.17070833686739,
       "file" : "desktop-checklist-reopen-motion-40ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.42092366668,
+      "observationUptime" : 718564.30545491667,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 40,
       "scale" : 2,
@@ -186,15 +186,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 199.3351667188108,
+      "elapsedMilliseconds" : 189.86829172354192,
       "file" : "desktop-checklist-reopen-motion-90ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.48341254168,
+      "observationUptime" : 718564.36407862499,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 90,
       "scale" : 2,
@@ -204,15 +204,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 251.0679584229365,
+      "elapsedMilliseconds" : 239.02220837771893,
       "file" : "desktop-checklist-reopen-motion-180ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.53530987503,
+      "observationUptime" : 718564.41344995843,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 180,
       "scale" : 2,
@@ -222,15 +222,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 75.43483329936862,
+      "elapsedMilliseconds" : 69.129624986089766,
       "file" : "desktop-checklist-reopen-reduced-0ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.66770458338,
+      "observationUptime" : 718564.5442322084,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -240,15 +240,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 387,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 416
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 387,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 416
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 141.9479165924713,
+      "elapsedMilliseconds" : 132.37845827825367,
       "file" : "desktop-checklist-reopen-reduced-30ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.73429308343,
+      "observationUptime" : 718564.60678224999,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 30,
       "scale" : 2,
@@ -258,15 +258,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 77.401374932378531,
+      "elapsedMilliseconds" : 72.350833332166076,
       "file" : "desktop-checklist-complete-reduced-0ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.81072875008,
+      "observationUptime" : 718564.67952020839,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -276,15 +276,15 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "checklistRowY" : {
-        "desktop.subtask.toggle.89B82E1F-0187-475C-857F-F93E9F4C9449" : 416,
-        "desktop.subtask.toggle.E843169E-8AA7-4E0E-984C-EDA5138C9AE4" : 387
+        "desktop.subtask.toggle.3ECB0354-F37D-4401-AC49-72ED3EB02365" : 416,
+        "desktop.subtask.toggle.9CF96DF5-7E0E-47C4-8D0B-362A9A899A1A" : 387
       },
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 146.48116659373045,
+      "elapsedMilliseconds" : 138.7174166738987,
       "file" : "desktop-checklist-complete-reduced-30ms.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717795.87987275003,
+      "observationUptime" : 718564.74587258336,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 30,
       "scale" : 2,
@@ -297,7 +297,7 @@
       "file" : "desktop-linked-panel.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717795.99711875001,
+      "observationUptime" : 718564.86364670843,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -309,7 +309,7 @@
       "file" : "desktop-unfavorited-dark.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717796.54136925004,
+      "observationUptime" : 718565.41574433341,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -321,7 +321,7 @@
       "file" : "desktop-unfavorited-light.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717796.93442549999,
+      "observationUptime" : 718565.84398600005,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -333,7 +333,7 @@
       "file" : "desktop-settings-dark.png",
       "height" : 1120,
       "highContrast" : false,
-      "observationUptime" : 717799.44014033338,
+      "observationUptime" : 718568.50135358342,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -345,7 +345,7 @@
       "file" : "desktop-settings-light.png",
       "height" : 1120,
       "highContrast" : false,
-      "observationUptime" : 717799.59677916672,
+      "observationUptime" : 718568.65856791672,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -357,7 +357,7 @@
       "file" : "desktop-settings-system.png",
       "height" : 1120,
       "highContrast" : false,
-      "observationUptime" : 717799.75360370835,
+      "observationUptime" : 718568.82485725009,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -369,7 +369,7 @@
       "file" : "desktop-editor-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717800.70097291667,
+      "observationUptime" : 718569.84025708342,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -381,7 +381,7 @@
       "file" : "desktop-editor-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717800.82754258334,
+      "observationUptime" : 718569.9686447084,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -393,7 +393,7 @@
       "file" : "desktop-diagnostics-dialog-dark.png",
       "height" : 452,
       "highContrast" : false,
-      "observationUptime" : 717802.3014246251,
+      "observationUptime" : 718571.44272066676,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 828
@@ -405,7 +405,7 @@
       "file" : "desktop-weather-off.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717803.0716602084,
+      "observationUptime" : 718572.26554133336,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -417,7 +417,7 @@
       "file" : "desktop-no-timer-running.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717803.26721591665,
+      "observationUptime" : 718572.44785012503,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -429,7 +429,7 @@
       "file" : "desktop-single-edit-empty-dark.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717807.11143629171,
+      "observationUptime" : 718576.46092575009,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -441,7 +441,7 @@
       "file" : "desktop-single-edit-empty-light.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717807.50805508334,
+      "observationUptime" : 718576.86301420839,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -453,7 +453,7 @@
       "file" : "desktop-links-light.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717809.01251808333,
+      "observationUptime" : 718578.3930737084,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -465,7 +465,7 @@
       "file" : "desktop-links-dark.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717809.19449462509,
+      "observationUptime" : 718578.58851975005,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -477,7 +477,7 @@
       "file" : "desktop-links-feed-light.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717809.60244054173,
+      "observationUptime" : 718578.94693329174,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -489,7 +489,7 @@
       "file" : "desktop-links-feed-dark.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717809.79360883334,
+      "observationUptime" : 718579.1412242084,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -501,7 +501,7 @@
       "file" : "desktop-material-headings-light.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717810.08060662507,
+      "observationUptime" : 718579.42423195834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -513,7 +513,7 @@
       "file" : "desktop-material-headings-dark.png",
       "height" : 1756,
       "highContrast" : false,
-      "observationUptime" : 717810.30598508334,
+      "observationUptime" : 718579.66389341676,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -525,7 +525,7 @@
       "file" : "mini-links-collapsed-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717810.48775762506,
+      "observationUptime" : 718579.83850425004,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -537,7 +537,7 @@
       "file" : "mini-links-collapsed-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717810.63556191674,
+      "observationUptime" : 718579.98681137501,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -549,7 +549,7 @@
       "file" : "mini-links-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717810.88892075,
+      "observationUptime" : 718580.24561208335,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -561,7 +561,7 @@
       "file" : "mini-links-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717811.03707129171,
+      "observationUptime" : 718580.39448045834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -573,7 +573,7 @@
       "file" : "editor-links-error-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717811.68412570842,
+      "observationUptime" : 718581.06129362504,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -585,7 +585,7 @@
       "file" : "editor-links-error-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717811.83040683332,
+      "observationUptime" : 718581.212317375,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -597,7 +597,7 @@
       "file" : "desktop-attachment-indicators-collection-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717813.05962866673,
+      "observationUptime" : 718582.45642625005,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -609,7 +609,7 @@
       "file" : "desktop-attachment-indicators-collection-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717813.43963362509,
+      "observationUptime" : 718582.87335620832,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -621,7 +621,7 @@
       "file" : "desktop-attachment-indicators-feed-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717814.08521879173,
+      "observationUptime" : 718583.54981808341,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -633,7 +633,7 @@
       "file" : "desktop-attachment-indicators-feed-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717814.46774154168,
+      "observationUptime" : 718583.9701403334,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -645,7 +645,7 @@
       "file" : "desktop-feed-inline-narrow-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717814.86370962509,
+      "observationUptime" : 718584.39020675002,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -657,7 +657,7 @@
       "file" : "desktop-feed-inline-narrow-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717815.2603036667,
+      "observationUptime" : 718584.78910262499,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -669,7 +669,7 @@
       "file" : "desktop-feed-inline-wide-dark.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717815.68257479172,
+      "observationUptime" : 718585.24317816668,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -681,7 +681,7 @@
       "file" : "desktop-feed-inline-wide-light.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717816.09538658336,
+      "observationUptime" : 718585.67481083341,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -693,7 +693,7 @@
       "file" : "desktop-attachments-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717817.04704979167,
+      "observationUptime" : 718586.62247154175,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -705,7 +705,7 @@
       "file" : "desktop-attachments-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717817.44260779175,
+      "observationUptime" : 718587.04204587499,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -717,7 +717,7 @@
       "file" : "desktop-attachments-editor-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717818.05614704173,
+      "observationUptime" : 718587.6733950834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -729,7 +729,7 @@
       "file" : "desktop-attachments-editor-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717818.23443245841,
+      "observationUptime" : 718587.85170870833,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -741,7 +741,7 @@
       "file" : "mini-attachments-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717819.3634034167,
+      "observationUptime" : 718589.04202258342,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -753,7 +753,7 @@
       "file" : "mini-attachments-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717819.53755362506,
+      "observationUptime" : 718589.23059925006,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -765,7 +765,7 @@
       "file" : "desktop-single-edit-filled-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717821.50961800001,
+      "observationUptime" : 718591.231635125,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -777,7 +777,7 @@
       "file" : "desktop-single-edit-filled-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717821.92025237507,
+      "observationUptime" : 718591.67067975004,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -789,7 +789,7 @@
       "file" : "desktop-attachment-previews-four-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717823.38496670837,
+      "observationUptime" : 718593.1637470834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -801,7 +801,7 @@
       "file" : "desktop-attachment-previews-four-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717823.78326883342,
+      "observationUptime" : 718593.60291979171,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -813,7 +813,7 @@
       "file" : "desktop-attachment-library-all-dark.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717824.36315962509,
+      "observationUptime" : 718594.20308775001,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -825,7 +825,7 @@
       "file" : "desktop-attachment-library-all-light.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717824.54384208343,
+      "observationUptime" : 718594.38408637501,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -837,7 +837,7 @@
       "file" : "desktop-attachment-library-search-dark.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717824.78297654167,
+      "observationUptime" : 718594.62996179168,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -849,7 +849,7 @@
       "file" : "desktop-attachment-library-search-light.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717824.9583471251,
+      "observationUptime" : 718594.81006966671,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -861,7 +861,7 @@
       "file" : "desktop-attachment-preview-missing-dark.png",
       "height" : 1120,
       "highContrast" : false,
-      "observationUptime" : 717825.19821841666,
+      "observationUptime" : 718595.04739104176,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1280
@@ -873,7 +873,7 @@
       "file" : "desktop-attachment-preview-missing-light.png",
       "height" : 1120,
       "highContrast" : false,
-      "observationUptime" : 717825.37619654171,
+      "observationUptime" : 718595.22830125003,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1280
@@ -885,7 +885,7 @@
       "file" : "desktop-attachment-library-empty-dark.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717825.67808045843,
+      "observationUptime" : 718595.538470375,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -897,7 +897,7 @@
       "file" : "desktop-attachment-library-empty-light.png",
       "height" : 1080,
       "highContrast" : false,
-      "observationUptime" : 717825.85797158338,
+      "observationUptime" : 718595.71855645836,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1080
@@ -909,7 +909,7 @@
       "file" : "editor-attachment-limit-and-order-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717827.6448136667,
+      "observationUptime" : 718597.63432241674,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -921,7 +921,7 @@
       "file" : "editor-attachment-limit-and-order-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717827.82931108342,
+      "observationUptime" : 718597.81161495834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -933,7 +933,7 @@
       "file" : "editor-attachment-alignment-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717828.01139875001,
+      "observationUptime" : 718597.98852525,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -945,7 +945,7 @@
       "file" : "editor-attachment-alignment-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717828.19512075,
+      "observationUptime" : 718598.17085666675,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -957,7 +957,7 @@
       "file" : "editor-batch-overflow-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717828.5403461667,
+      "observationUptime" : 718598.52804574999,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -969,7 +969,7 @@
       "file" : "editor-batch-overflow-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717828.71637112508,
+      "observationUptime" : 718598.70783208334,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -981,7 +981,7 @@
       "file" : "desktop-saved-no-expiry-dark.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717829.48482920835,
+      "observationUptime" : 718599.52695504169,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -993,7 +993,7 @@
       "file" : "desktop-saved-no-expiry-light.png",
       "height" : 1576,
       "highContrast" : false,
-      "observationUptime" : 717829.89437012502,
+      "observationUptime" : 718599.96166704176,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1005,7 +1005,7 @@
       "file" : "mini-attachment-previews-three-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717830.11691729166,
+      "observationUptime" : 718600.1790632084,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1017,7 +1017,7 @@
       "file" : "mini-attachment-previews-three-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717830.31177433336,
+      "observationUptime" : 718600.3750524167,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1029,7 +1029,7 @@
       "file" : "mini-editor-attachment-previews-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717830.71109970834,
+      "observationUptime" : 718600.77087612508,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1041,7 +1041,7 @@
       "file" : "mini-editor-attachment-previews-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717830.88830166671,
+      "observationUptime" : 718600.95461629168,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1053,7 +1053,7 @@
       "file" : "panel-attachment-library-all-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717831.18859100004,
+      "observationUptime" : 718601.25858158339,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1065,7 +1065,7 @@
       "file" : "panel-attachment-library-all-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717831.36607716675,
+      "observationUptime" : 718601.44259745837,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1077,7 +1077,7 @@
       "file" : "panel-attachment-library-search-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717831.62819520838,
+      "observationUptime" : 718601.70968766673,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1089,7 +1089,7 @@
       "file" : "panel-attachment-library-search-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717831.80581237504,
+      "observationUptime" : 718601.89376795839,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1101,7 +1101,7 @@
       "file" : "panel-attachment-library-empty-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717832.03860862507,
+      "observationUptime" : 718602.13185200002,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1113,7 +1113,7 @@
       "file" : "panel-attachment-library-empty-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717832.20702216669,
+      "observationUptime" : 718602.3141157917,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1125,7 +1125,7 @@
       "file" : "desktop-no-timer-finished.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717833.956473,
+      "observationUptime" : 718604.10759791674,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1137,7 +1137,7 @@
       "file" : "desktop-checklist-before-write.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717834.00230495841,
+      "observationUptime" : 718604.1535702917,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1149,7 +1149,7 @@
       "file" : "desktop-checklist-write-held.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717834.19780275004,
+      "observationUptime" : 718604.363560125,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1161,7 +1161,7 @@
       "file" : "desktop-delete-header.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717835.64929641667,
+      "observationUptime" : 718605.95124595833,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1173,7 +1173,7 @@
       "file" : "desktop-delete-confirmation-dark.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717835.91497258341,
+      "observationUptime" : 718606.22713958332,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1185,7 +1185,7 @@
       "file" : "desktop-delete-confirmation-light.png",
       "height" : 1336,
       "highContrast" : false,
-      "observationUptime" : 717836.1266265834,
+      "observationUptime" : 718606.4385722084,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1197,7 +1197,7 @@
       "file" : "desktop-monthly-collection-dark.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717837.43784783338,
+      "observationUptime" : 718607.83107683342,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1209,7 +1209,7 @@
       "file" : "desktop-monthly-collection-light.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717837.83383837505,
+      "observationUptime" : 718608.2485390834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1218,11 +1218,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 84.670958342030644,
+      "elapsedMilliseconds" : 79.898416646756232,
       "file" : "desktop-mode-to-feed-0ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717837.95438295836,
+      "observationUptime" : 718608.36963887501,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -1232,11 +1232,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 156.5243334043771,
+      "elapsedMilliseconds" : 149.15162499528378,
       "file" : "desktop-mode-to-feed-100ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717838.02623633342,
+      "observationUptime" : 718608.43889208336,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 100,
       "scale" : 2,
@@ -1246,11 +1246,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 281.28925000783056,
+      "elapsedMilliseconds" : 279.84475006815046,
       "file" : "desktop-mode-to-feed-240ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717838.15100125002,
+      "observationUptime" : 718608.56958520843,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 240,
       "scale" : 2,
@@ -1263,7 +1263,7 @@
       "file" : "desktop-monthly-feed-dark.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717838.53792720835,
+      "observationUptime" : 718608.98533391673,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1275,7 +1275,7 @@
       "file" : "desktop-monthly-feed-light.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717838.93791850004,
+      "observationUptime" : 718609.41099358338,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1284,11 +1284,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 59.615041711367667,
+      "elapsedMilliseconds" : 61.896624974906445,
       "file" : "desktop-mode-to-collection-0ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.10485812509,
+      "observationUptime" : 718609.58593529172,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -1298,11 +1298,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 138.66425002925098,
+      "elapsedMilliseconds" : 137.32462492771447,
       "file" : "desktop-mode-to-collection-100ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.18390733341,
+      "observationUptime" : 718609.66136329167,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 100,
       "scale" : 2,
@@ -1312,11 +1312,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 281.50124999228865,
+      "elapsedMilliseconds" : 284.32245831936598,
       "file" : "desktop-mode-to-collection-240ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.32674433338,
+      "observationUptime" : 718609.80836112506,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 240,
       "scale" : 2,
@@ -1329,7 +1329,7 @@
       "file" : "desktop-mode-rapid-last-feed.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.64541400003,
+      "observationUptime" : 718610.12768583337,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1338,11 +1338,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 85.560000035911798,
+      "elapsedMilliseconds" : 85.591708309948444,
       "file" : "desktop-mode-reduced-0ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.76634658338,
+      "observationUptime" : 718610.24807883333,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -1352,11 +1352,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 161.6492917528376,
+      "elapsedMilliseconds" : 160.12595838401467,
       "file" : "desktop-mode-reduced-100ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.84243587509,
+      "observationUptime" : 718610.32261308341,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 100,
       "scale" : 2,
@@ -1366,11 +1366,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 277.80716668348759,
+      "elapsedMilliseconds" : 282.43433334864676,
       "file" : "desktop-mode-reduced-240ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717839.95859375002,
+      "observationUptime" : 718610.44492145837,
       "reduceMotion" : true,
       "requestedOffsetMilliseconds" : 240,
       "scale" : 2,
@@ -1383,7 +1383,7 @@
       "file" : "desktop-mode-live-before-reduced.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717840.07794070838,
+      "observationUptime" : 718610.56222004176,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1395,7 +1395,7 @@
       "file" : "desktop-mode-live-after-reduced.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717840.16184012499,
+      "observationUptime" : 718610.64314829174,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 2400
@@ -1407,7 +1407,7 @@
       "file" : "desktop-mode-live-reduced-35ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717840.26877279172,
+      "observationUptime" : 718610.7481397501,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 2400
@@ -1419,7 +1419,7 @@
       "file" : "desktop-mode-live-reduced.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717840.3966555834,
+      "observationUptime" : 718610.87533545843,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 2400
@@ -1431,7 +1431,7 @@
       "file" : "desktop-monthly-search-empty.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717840.65279354167,
+      "observationUptime" : 718611.15157870832,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 2400
@@ -1443,7 +1443,7 @@
       "file" : "desktop-monthly-long-end-collection.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717842.27211937506,
+      "observationUptime" : 718612.53376954165,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 2400
@@ -1452,11 +1452,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 198.77441658172756,
+      "elapsedMilliseconds" : 160.93562496826053,
       "file" : "desktop-mode-long-to-feed-0ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717842.50674824999,
+      "observationUptime" : 718612.73483608337,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 0,
       "scale" : 2,
@@ -1466,11 +1466,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 291.45479167345911,
+      "elapsedMilliseconds" : 250.40170829743147,
       "file" : "desktop-mode-long-to-feed-100ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717842.59942862508,
+      "observationUptime" : 718612.8243021667,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 100,
       "scale" : 2,
@@ -1480,11 +1480,11 @@
       "appearanceName" : "NSAppearanceNameAqua",
       "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
       "colorSchemeOverride" : "light",
-      "elapsedMilliseconds" : 420.20308331120759,
+      "elapsedMilliseconds" : 371.50499993003905,
       "file" : "desktop-mode-long-to-feed-240ms.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717842.72817691672,
+      "observationUptime" : 718612.94540545833,
       "reduceMotion" : false,
       "requestedOffsetMilliseconds" : 240,
       "scale" : 2,
@@ -1497,7 +1497,7 @@
       "file" : "desktop-monthly-long-end-feed.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717842.98649591673,
+      "observationUptime" : 718613.21014954173,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1509,7 +1509,7 @@
       "file" : "desktop-weather-pending.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717844.49042454176,
+      "observationUptime" : 718614.63466691668,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1521,7 +1521,7 @@
       "file" : "desktop-weather-loaded.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717844.66480016673,
+      "observationUptime" : 718614.81884795835,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1533,7 +1533,7 @@
       "file" : "desktop-weather-stable-collection-34.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717845.47393804172,
+      "observationUptime" : 718615.64683566673,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1545,7 +1545,7 @@
       "file" : "desktop-weather-stable-feed-34.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717846.2674118334,
+      "observationUptime" : 718616.46803479176,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1557,7 +1557,7 @@
       "file" : "desktop-weather-stable-collection-66.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717847.12285787507,
+      "observationUptime" : 718617.3526515417,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1569,7 +1569,7 @@
       "file" : "desktop-weather-stable-feed-66.png",
       "height" : 1656,
       "highContrast" : false,
-      "observationUptime" : 717847.98979950009,
+      "observationUptime" : 718618.23694979167,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 1920
@@ -1581,7 +1581,7 @@
       "file" : "retention-desktop-collection-dark.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717848.53155183338,
+      "observationUptime" : 718618.79654520843,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1593,7 +1593,7 @@
       "file" : "retention-desktop-collection-light.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717848.81887850002,
+      "observationUptime" : 718619.09353016666,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1605,7 +1605,7 @@
       "file" : "retention-desktop-feed-dark.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717849.38306858332,
+      "observationUptime" : 718619.67098195839,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1617,7 +1617,7 @@
       "file" : "retention-desktop-feed-light.png",
       "height" : 1856,
       "highContrast" : false,
-      "observationUptime" : 717849.615249375,
+      "observationUptime" : 718619.91122754174,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -1629,7 +1629,7 @@
       "file" : "retention-mini-list-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717849.81665033335,
+      "observationUptime" : 718620.1163035417,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1641,7 +1641,7 @@
       "file" : "retention-mini-list-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717850.00012370839,
+      "observationUptime" : 718620.29691658332,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -1653,7 +1653,7 @@
       "file" : "retention-editor-dark.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717851.36945291667,
+      "observationUptime" : 718621.7223227917,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -1665,13 +1665,13 @@
       "file" : "retention-editor-light.png",
       "height" : 1200,
       "highContrast" : false,
-      "observationUptime" : 717851.56168895843,
+      "observationUptime" : 718621.8985665834,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
     }
   ],
-  "executableSHA256" : "e68b32216c33b071402b7d762730e9c2916bc6d8caf59a2cac5059eeb1b112f4",
+  "executableSHA256" : "5fd3d0a683c5687147e05044c1c192030f2ff0a14958e4569ea68ac941274db7",
   "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
   "syntheticData" : true
 }

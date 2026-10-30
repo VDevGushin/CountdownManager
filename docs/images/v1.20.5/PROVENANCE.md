@@ -1,10 +1,14 @@
 # 1.20.5 / build 41 native candidate evidence
 
-Status: locally verified candidate; commit/main integration/push/tag were explicitly approved by
-the owner after the initial automatic approval-review rejection. This package is not published and was built from the
-uncommitted feature checkout, based on main `64be6a8320a6aa4d4ef39eabf40a062c7440659e`.
-[Exact application input hashes](candidate-inputs.json) identify the actual frozen source; the base
-commit alone does not contain this fix. The final release must follow clean-main source/tag rules.
+Status: final clean-main package verified; publication pending. The owner explicitly approved
+commit, main integration, push and the annotated version tag. Application source was frozen on
+clean main `5cee33bbcf0b37c0044db69b5072d7a05bfa44d0` before the final build. Later evidence-only commits do not change
+these application inputs.
+
+The initial feature-checkout candidate and its [input hashes](candidate-inputs.json) remain historical
+evidence in the feature commit. The [comparison](main-candidate-comparison.json) detected a changed
+executable after the final main build, so native notes, desktop, release-help scenarios and captures
+were all repeated on the exact final package rather than relabelled.
 
 ## Package and native evidence
 
@@ -13,7 +17,7 @@ and signature rejection, exact signed-feed framing, embedded notes/metadata, ext
 symlinks, strict/deep codesign and SDK compatibility. Named production Sparkle signing account,
 bundle identity and stable feed are unchanged. Ad-hoc app signature; no Apple notarization claimed.
 
-Executable SHA-256: `e68b32216c33b071402b7d762730e9c2916bc6d8caf59a2cac5059eeb1b112f4`.
+Executable SHA-256: `5fd3d0a683c5687147e05044c1c192030f2ff0a14958e4569ea68ac941274db7`.
 Headers SDK 15.4, linked compatibility 13.0, Apple Silicon, minimum macOS 13.0.
 
 The exact signed executable passed [compact 7/7](compact-result.txt), [desktop 31/31](desktop-result.txt)
@@ -23,7 +27,7 @@ The compact runtime records 28 PNGs, including whole over-limit local-pasteboard
 and committed over-limit IME, title/subtask focus, native scrolling, legacy 151/280 and durable Save.
 
 Manifests: [compact](compact-manifest.json), [desktop](desktop-manifest.json),
-[release help](whatsnew-manifest.json). Retained homepage PNGs show the actual native candidate on
+[release help](whatsnew-manifest.json). Retained homepage PNGs show the actual final native package on
 isolated demonstration data: desktop feed Dark, desktop collection Light and note overflow Dark.
 The matching Light overflow image is retained too. All four were opened and visually inspected.
 The counter is red in both themes; the complete pasted text remains and Save is visibly disabled.
@@ -51,4 +55,4 @@ a real download/install/relaunch was not rerun. General attachment/Spaces campai
 [Local handoff](local-handoff.json): the installed/running previous 1.20.4/40 matches the anonymously
 retrieved public archive in bytes/modes/symlinks and passes strict/deep codesign. It was retained for
 the owner's manual update. Native candidate processes exited; production data was never a fixture.
-Task-created candidate artifacts are retained through final main packaging and publication.
+Task-created temporary artifacts are retained through publication, then moved recoverably with a restore manifest.

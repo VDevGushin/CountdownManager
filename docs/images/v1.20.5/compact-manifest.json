@@ -349,7 +349,7 @@
       "windowIdentifier" : "main.panel"
     }
   ],
-  "executableSHA256" : "e68b32216c33b071402b7d762730e9c2916bc6d8caf59a2cac5059eeb1b112f4",
+  "executableSHA256" : "5fd3d0a683c5687147e05044c1c192030f2ff0a14958e4569ea68ac941274db7",
   "version" : 5,
   "weatherForecastSource" : "Synthetic +14°C today\/day+2, −18°C tomorrow; no HTTP\/geolocation"
 }

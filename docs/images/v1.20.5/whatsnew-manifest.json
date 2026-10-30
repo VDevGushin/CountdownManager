@@ -9,7 +9,7 @@
       "file" : "whats-new-light.png",
       "height" : 1176,
       "highContrast" : false,
-      "observationUptime" : 717853.71917004173,
+      "observationUptime" : 718624.14434058336,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -21,7 +21,7 @@
       "file" : "whats-new-dark.png",
       "height" : 1176,
       "highContrast" : false,
-      "observationUptime" : 717853.84301404166,
+      "observationUptime" : 718624.27658387506,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -33,7 +33,7 @@
       "file" : "whats-new-light-contrast.png",
       "height" : 1176,
       "highContrast" : true,
-      "observationUptime" : 717853.96614279167,
+      "observationUptime" : 718624.41239625006,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -45,13 +45,13 @@
       "file" : "whats-new-dark-contrast.png",
       "height" : 1176,
       "highContrast" : true,
-      "observationUptime" : 717854.09202287509,
+      "observationUptime" : 718624.54464054166,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
     }
   ],
-  "executableSHA256" : "e68b32216c33b071402b7d762730e9c2916bc6d8caf59a2cac5059eeb1b112f4",
+  "executableSHA256" : "5fd3d0a683c5687147e05044c1c192030f2ff0a14958e4569ea68ac941274db7",
   "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
   "syntheticData" : true
 }
