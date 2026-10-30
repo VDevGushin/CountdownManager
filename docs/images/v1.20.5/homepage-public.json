@@ -1,0 +1,22 @@
+{
+  "main": {
+    "status": 200,
+    "matchesLocal": false,
+    "sha256": "0b8d3e9999534beeea64aa95d1e53408d68fb0439d731bd02ba2927aea431f1d",
+    "opening": "**Кандидат 1.20.5 · сборка 41 · Apple Silicon · macOS 13+.**"
+  },
+  "mainFresh": {
+    "status": 200,
+    "matchesLocal": false,
+    "sha256": "0b8d3e9999534beeea64aa95d1e53408d68fb0439d731bd02ba2927aea431f1d",
+    "opening": "**Кандидат 1.20.5 · сборка 41 · Apple Silicon · macOS 13+.**"
+  },
+  "commit": {
+    "status": 200,
+    "matchesLocal": true,
+    "sha256": "7cf471b278edb683783360b63dd662f47a14447670d27e17c3021bde7daf3994",
+    "opening": "**Опубликована 1.20.5 · сборка 41 · Apple Silicon · macOS 13+.**"
+  },
+  "mainCommit": "09d49d8927b0dfb87f7fbe6cccbef6d3a36f3a5e",
+  "localSHA256": "7cf471b278edb683783360b63dd662f47a14447670d27e17c3021bde7daf3994"
+}

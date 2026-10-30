@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "ref": "main",
+  "path": "README.md",
+  "gitBlobSHA": "18ca8061d546e95e95dbd3dd1422ffd974c9dfdf",
+  "localGitBlobSHA": "18ca8061d546e95e95dbd3dd1422ffd974c9dfdf",
+  "matchesLocal": true,
+  "sha256": "7cf471b278edb683783360b63dd662f47a14447670d27e17c3021bde7daf3994",
+  "opening": "**Опубликована 1.20.5 · сборка 41 · Apple Silicon · macOS 13+.**",
+  "browserPublishedREADMEConfirmed": true,
+  "browserImagesLoaded": 3,
+  "canonicalRawMainStaleCandidateObserved": true
+}

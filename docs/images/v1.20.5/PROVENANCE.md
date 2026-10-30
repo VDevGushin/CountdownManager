@@ -60,3 +60,14 @@ the owner's manual update. Native candidate processes exited; production data wa
 [Public receipt](publication.json) confirms Latest, ZIP, versioned/stable appcast HTTP 200 and exact
 package hashes. The annotated tag targets `f4d894d5df2005c14aa606c25591cac730a4b548`; default main
 receives the final publication documentation separately. [Browser proof](publication-browser.png).
+
+## Final homepage verification
+
+The post-publication [raw-response check](raw-readme-stale-check.json) passed all asset hashes but
+failed README equality because raw main still returned the earlier candidate text. The [three raw
+responses](homepage-public.json) preserve this discrepancy; a request for the exact publication
+commit already matched the current local README. The final [main Contents API/blob check](homepage-current.json)
+returned the published README with the exact local Git blob and SHA-256. The real GitHub main page
+also displayed published 1.20.5, the correct ZIP link and all three loaded native images. This
+resolves current default-branch content independently of that stale raw response; the failed
+checker is retained as a failure, not relabelled as a pass.
