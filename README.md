@@ -5,14 +5,14 @@
 Учётная запись не нужна. События, файлы, ссылки и таймер доступны без интернета;
 опциональный прогноз погоды требует сети.
 
-**Готовится 1.20.4 · сборка 40 · Apple Silicon · macOS 13+.**
+**Опубликована 1.20.4 · сборка 40 · Apple Silicon · macOS 13+.**
 Свежую миниатюру скриншота macOS можно перетащить на событие и сохранить во вложениях.
 
 [Последний опубликованный релиз](https://github.com/VDevGushin/CountdownManager/releases/latest) ·
 [Проверки 1.20.4](docs/releases/v1.20.4.md) · [Что нового](docs/releases/v1.20.4-notes.md)
 
 [Скачать CountdownManager-1.20.4-40.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.4/CountdownManager-1.20.4-40.zip).
-ZIP и канал обновлений подписаны прежним ключом Sparkle; публикация подготавливается.
+Публичный ZIP и оба appcast проверены без авторизации: HTTP 200 и точные SHA-256.
 
 ## Как выглядит приложение
 

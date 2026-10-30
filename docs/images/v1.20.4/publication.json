@@ -1,0 +1,43 @@
+{
+  "version": "1.20.4",
+  "build": "40",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.20.4",
+  "latest": true,
+  "verifiedAtUTC": "2026-10-30T10:29:48.383488+00:00",
+  "publicationWorkflow": "Authenticated GitHub release form in existing in-app browser",
+  "anonymousPublicChecks": {
+    "latest": {
+      "status": 200,
+      "sha256": "ef9c851c665a33c6f83315da7d97e8fed86ae7035971d2bce0fb7cd15cd8a964",
+      "bytes": 154512
+    },
+    "archive": {
+      "status": 200,
+      "sha256": "f7c1e5c6d3b40d76faca47265529f55b1ec41a8378e3356de8e483eb4bd0f66a",
+      "bytes": 6318233
+    },
+    "versionFeed": {
+      "status": 200,
+      "sha256": "9d727fb2f29538378ba78a3f919da9f5415f896ef9a0ff32d3590470d671c9a3",
+      "bytes": 2295
+    },
+    "stableFeed": {
+      "status": 200,
+      "sha256": "9d727fb2f29538378ba78a3f919da9f5415f896ef9a0ff32d3590470d671c9a3",
+      "bytes": 2295
+    }
+  },
+  "tag": {
+    "tag": "v1.20.4",
+    "annotated": true,
+    "tagObjectSHA": "8299d0e5df4eab320e430ae20f0fdff471a25932",
+    "commitSHA": "2b87a9f0277d6b057bb4c33c360feb0f4bd8053e",
+    "defaultBranch": "main",
+    "verifiedAnonymously": true,
+    "transport": "Public Git smart HTTP with credential helper and prompts disabled",
+    "apiAttempt": "GitHub REST tag endpoint returned rate limit 403; public Git verification succeeded"
+  },
+  "defaultBranch": "main",
+  "browserProof": "publication-browser.png",
+  "sourceInputsUnchangedSinceBuild": true
+}

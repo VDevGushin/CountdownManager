@@ -34,3 +34,9 @@ no accessible window; it is not counted as a failed import or a passing automate
 Mini/editor thumbnail targets were not individually observed in external manual acceptance.
 VoiceOver, older-macOS runtime coverage, arbitrary Mail/Photos promises and a genuine public-version
 Sparkle installation were not newly exercised. The owner performs the final installed-version update.
+
+[Publication](publication.json) and [anonymous delivery](public-consistency.json) verify the public
+release, stable feed and current default-branch homepage. [Local handoff](local-handoff.json) leaves
+1.20.3/39 installed and running for the owner; [cleanup](cleanup.json) records recoverable task-only
+Trash moves and preserved production bytes. Temporary preparation paths describe their original
+locations; published assets are canonical and the restore manifest preserves local recovery.

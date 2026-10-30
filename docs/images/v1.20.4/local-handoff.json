@@ -1,0 +1,27 @@
+{
+  "previousVersion": "1.20.3",
+  "previousBuild": "39",
+  "anonymousHTTPStatus": 200,
+  "archiveSHA256": "bcf010244ff042e6e680d23951e0733544533dae99bebf6e03b65d5eab478037",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256": "e63028be6702cea4e6a0f140d7069a53fb352a60463caf8e5b2ede6247804abe",
+  "matchesPreviousPublishedArchive": true,
+  "strictDeepCodesignPassed": true,
+  "newReleaseInstalled": false,
+  "previousAppRunning": true,
+  "action": "Verified and retained already correct 1.20.3 installation",
+  "ownerWillUpdatePersonally": true,
+  "productionDataUsedAsFixture": false,
+  "closedIsolatedProcesses": [
+    {
+      "pid": 2675,
+      "path": "/private/tmp/CountdownDropProbe.app/Contents/MacOS/CountdownDropProbe"
+    },
+    {
+      "pid": 7715,
+      "path": "/private/tmp/countdown-screenshot-review/Countdown Manager.app/Contents/MacOS/CountdownManager"
+    }
+  ],
+  "cleanupEntries": 26,
+  "productionOwnedTreePreservedDuringCleanup": true
+}
