@@ -9,10 +9,10 @@
 Свежую миниатюру скриншота macOS можно перетащить на событие и сохранить во вложениях.
 
 [Последний опубликованный релиз](https://github.com/VDevGushin/CountdownManager/releases/latest) ·
-[Проверки 1.20.3](docs/releases/v1.20.3.md) · [Что нового](docs/releases/v1.20.3-notes.md)
+[Проверки 1.20.4](docs/releases/v1.20.4.md) · [Что нового](docs/releases/v1.20.4-notes.md)
 
-[Скачать CountdownManager-1.20.3-39.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.3/CountdownManager-1.20.3-39.zip).
-Публичный ZIP и оба appcast проверены без авторизации: HTTP 200 и точные SHA-256.
+[Скачать CountdownManager-1.20.4-40.zip](https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.4/CountdownManager-1.20.4-40.zip).
+ZIP и канал обновлений подписаны прежним ключом Sparkle; публикация подготавливается.
 
 ## Как выглядит приложение
 
@@ -22,17 +22,13 @@
 движения учитываются отдельно. Календарь и файловые диалоги macOS могут сохранять
 системное тонирование цветами обоев.
 
-Нативные снимки **1.20.3/39**, полученные на изолированных демонстрационных данных:
+Нативные снимки **1.20.4/40**, полученные на изолированных демонстрационных данных:
 
-<img src="docs/images/v1.20.3/desktop-feed-dark.png" alt="1.20.3: графитовая тема, лента событий и детали" width="960">
-<img src="docs/images/v1.20.3/desktop-collection-light.png" alt="1.20.3: светлая тема и сетка событий" width="960">
-<img src="docs/images/v1.20.3/retention-mini-list-dark.png" alt="1.20.3: мини-панель с сохранёнными прошедшими событиями" width="390">
+<img src="docs/images/v1.20.4/desktop-feed-dark.png" alt="1.20.4: графитовая тема, лента событий и детали" width="960">
+<img src="docs/images/v1.20.4/desktop-collection-light.png" alt="1.20.4: светлая тема и сетка событий" width="960">
+<img src="docs/images/v1.20.4/retention-mini-list-dark.png" alt="1.20.4: мини-панель с сохранёнными прошедшими событиями" width="390">
 
-Исправленный таймер:
-
-<img src="docs/images/v1.20.3/timer-running-strip.png" alt="1.20.3: будильник целиком рядом с отсчётом" width="390">
-
-[Происхождение снимков и границы проверок](docs/images/v1.20.3/PROVENANCE.md).
+[Происхождение снимков и границы проверок](docs/images/v1.20.4/PROVENANCE.md).
 
 ## Установка и обновления
 

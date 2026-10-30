@@ -1,0 +1,202 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun /tmp/countdown-release-1.20.4/xcui/Build/Products/CountdownManagerExactRelease.xctestrun -destination platform=macOS -resultBundlePath /tmp/countdown-release-1.20.4/finder-exact-result.xcresult "-only-testing:CountdownManagerXCUITests/CountdownManagerXCUITests/testFinderImageDropPreservesFilenameAndBytes" -test-timeouts-enabled YES -default-test-execution-time-allowance 45 -maximum-test-execution-time-allowance 45 test-without-building
+
+Writing result bundle at path:
+	/tmp/countdown-release-1.20.4/finder-exact-result.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64e, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:Mac Catalyst, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:x86_64, variant:Mac Catalyst, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:DriverKit, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:Designed for [iPad,iPhone], id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00006020-00160026147B401E, name:My Mac }
+2026-10-30 13:18:02.476577+0300 CountdownManagerXCUITests-Runner[11031:12513457] [Default] Running tests...
+Test Suite 'Selected tests' started at 2026-10-30 13:18:02.541.
+Test Suite 'CountdownManagerXCUITests.xctest' started at 2026-10-30 13:18:02.541.
+Test Suite 'CountdownManagerXCUITests' started at 2026-10-30 13:18:02.541.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testFinderImageDropPreservesFilenameAndBytes]' started.
+    t =     0.00s Start Test at 2026-10-30 13:18:02.542
+    t =     0.15s Set Up
+    t =     0.16s Open local.countdownmanager.app
+    t =     0.16s     Launch local.countdownmanager.app
+2026-10-30 13:18:02.898 xcodebuild[11028:12513248] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-10-30 13:18:02.899 xcodebuild[11028:12513248] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     1.14s         Wait for accessibility to load
+    t =     1.20s         Setting up automation session
+    t =     1.21s         Wait for local.countdownmanager.app to idle
+    t =     1.22s Waiting 5.0s for "desktop.open" Button to exist
+    t =     2.26s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.open" Button`
+    t =     2.26s         Checking existence of `"desktop.open" Button`
+    t =     2.37s Click "desktop.open" Button
+    t =     2.37s     Wait for local.countdownmanager.app to idle
+    t =     2.37s     Find the "desktop.open" Button
+    t =     2.47s     Check for interrupting elements affecting "desktop.open" Button
+    t =     2.49s     Synthesize event
+    t =     3.15s     Wait for local.countdownmanager.app to idle
+    t =     3.16s Open local.countdownmanager.app
+    t =     3.17s     Activate local.countdownmanager.app
+    t =     3.18s         Wait for local.countdownmanager.app to idle
+    t =     3.18s Waiting 5.0s for "Окно" MenuBarItem to exist
+    t =     4.22s     Checking `Expect predicate `existsNoRetry == 1` for object "Окно" MenuBarItem`
+    t =     4.22s         Checking existence of `"Окно" MenuBarItem`
+    t =     4.30s Click "Окно" MenuBarItem
+    t =     4.30s     Wait for local.countdownmanager.app to idle
+    t =     4.30s     Find the "Окно" MenuBarItem
+    t =     4.34s     Check for interrupting elements affecting "Окно" MenuBarItem
+    t =     4.35s     Synthesize event
+    t =     4.83s     Wait for local.countdownmanager.app to idle
+    t =     4.84s Waiting 3.0s for "Переместить и изменить размер" MenuItem to exist
+    t =     5.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Переместить и изменить размер" MenuItem`
+    t =     5.87s         Checking existence of `"Переместить и изменить размер" MenuItem`
+    t =     5.94s Hover over "Переместить и изменить размер" MenuItem
+    t =     5.94s     Wait for local.countdownmanager.app to idle
+    t =     5.94s     Find the "Переместить и изменить размер" MenuItem
+    t =     5.99s     Check for interrupting elements affecting "Переместить и изменить размер" MenuItem
+    t =     5.99s     Synthesize event
+    t =     5.99s         Checking existence of `"Переместить и изменить размер" MenuItem`
+    t =     6.02s         Hover menu item 'Переместить и изменить размер'
+    t =     6.02s             Wait for local.countdownmanager.app to idle
+    t =     6.02s             Find the "Переместить и изменить размер" MenuItem
+    t =     6.06s             Check for interrupting elements affecting "Переместить и изменить размер" MenuItem
+    t =     6.06s             Synthesize event
+    t =     6.28s             Wait for local.countdownmanager.app to idle
+    t =     6.29s         Find the "Переместить и изменить размер" MenuItem
+    t =     6.45s     Wait for local.countdownmanager.app to idle
+    t =     6.46s Waiting 3.0s for MenuItem (First Match) to exist
+    t =     7.49s     Checking `Expect predicate `existsNoRetry == 1` for object MenuItem (First Match)`
+    t =     7.50s         Checking existence of `MenuItem (First Match)`
+    t =     7.54s Click MenuItem (First Match)
+    t =     7.55s     Wait for local.countdownmanager.app to idle
+    t =     7.55s     Find the MenuItem (First Match)
+    t =     7.59s     Check for interrupting elements affecting "_zoomRight:" MenuItem
+    t =     7.59s     Synthesize event
+    t =     7.60s         Checking existence of `"_zoomRight:" MenuItem`
+    t =     7.63s         Hover menu item 'Справа'
+    t =     7.63s             Wait for local.countdownmanager.app to idle
+    t =     7.63s             Find the "_zoomRight:" MenuItem
+    t =     7.67s             Check for interrupting elements affecting "_zoomRight:" MenuItem
+    t =     7.67s             Synthesize event
+    t =     7.88s             Wait for local.countdownmanager.app to idle
+    t =     7.89s         Find the "_zoomRight:" MenuItem
+    t =     8.78s     Wait for local.countdownmanager.app to idle
+    t =     8.79s Waiting 5.0s for "desktop.event.77777777-7777-7777-7777-777777777777" Button to exist
+    t =     9.83s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.event.77777777-7777-7777-7777-777777777777" Button`
+    t =     9.83s         Checking existence of `"desktop.event.77777777-7777-7777-7777-777777777777" Button`
+    t =     9.89s Find the "desktop.event.11111111-1111-1111-1111-111111111111" Button
+    t =    10.02s Open com.apple.finder
+    t =    10.03s     Activate com.apple.finder
+    t =    10.03s         Wait for com.apple.finder to idle
+    t =    10.34s Waiting 5.0s for "DragFixture-3ACC343C-6BE5-44D4-8404-D82CB20DB155" Window to exist
+    t =    11.39s     Checking `Expect predicate `existsNoRetry == 1` for object "DragFixture-3ACC343C-6BE5-44D4-8404-D82CB20DB155" Window`
+    t =    11.39s         Checking existence of `"DragFixture-3ACC343C-6BE5-44D4-8404-D82CB20DB155" Window`
+    t =    11.68s Open com.apple.finder
+    t =    11.68s     Activate com.apple.finder
+    t =    11.69s         Wait for com.apple.finder to idle
+    t =    11.70s Waiting 5.0s for "Окно" MenuBarItem to exist
+    t =    12.74s     Checking `Expect predicate `existsNoRetry == 1` for object "Окно" MenuBarItem`
+    t =    12.74s         Checking existence of `"Окно" MenuBarItem`
+    t =    12.84s Click "Окно" MenuBarItem
+    t =    12.84s     Wait for com.apple.finder to idle
+    t =    12.85s     Find the "Окно" MenuBarItem
+    t =    12.92s     Check for interrupting elements affecting "Окно" MenuBarItem
+    t =    12.92s     Synthesize event
+    t =    13.39s     Wait for com.apple.finder to idle
+    t =    13.40s Waiting 3.0s for "Переместить и изменить размер" MenuItem to exist
+    t =    14.43s     Checking `Expect predicate `existsNoRetry == 1` for object "Переместить и изменить размер" MenuItem`
+    t =    14.43s         Checking existence of `"Переместить и изменить размер" MenuItem`
+    t =    14.53s Hover over "Переместить и изменить размер" MenuItem
+    t =    14.53s     Wait for com.apple.finder to idle
+    t =    14.53s     Find the "Переместить и изменить размер" MenuItem
+    t =    14.60s     Check for interrupting elements affecting "Переместить и изменить размер" MenuItem
+    t =    14.60s     Synthesize event
+    t =    14.61s         Checking existence of `"Переместить и изменить размер" MenuItem`
+    t =    14.66s         Hover menu item 'Переместить и изменить размер'
+    t =    14.66s             Wait for com.apple.finder to idle
+    t =    14.67s             Find the "Переместить и изменить размер" MenuItem
+    t =    14.73s             Check for interrupting elements affecting "Переместить и изменить размер" MenuItem
+    t =    14.73s             Synthesize event
+    t =    14.95s             Wait for com.apple.finder to idle
+    t =    14.95s         Find the "Переместить и изменить размер" MenuItem
+    t =    15.22s     Wait for com.apple.finder to idle
+    t =    15.22s Waiting 3.0s for MenuItem (First Match) to exist
+    t =    16.26s     Checking `Expect predicate `existsNoRetry == 1` for object MenuItem (First Match)`
+    t =    16.26s         Checking existence of `MenuItem (First Match)`
+    t =    16.32s Click MenuItem (First Match)
+    t =    16.32s     Wait for com.apple.finder to idle
+    t =    16.33s     Find the MenuItem (First Match)
+    t =    16.38s     Check for interrupting elements affecting "_zoomLeft:" MenuItem
+    t =    16.39s     Synthesize event
+    t =    16.40s         Checking existence of `"_zoomLeft:" MenuItem`
+    t =    16.45s         Hover menu item 'Слева'
+    t =    16.45s             Wait for com.apple.finder to idle
+    t =    16.45s             Find the "_zoomLeft:" MenuItem
+    t =    16.52s             Check for interrupting elements affecting "_zoomLeft:" MenuItem
+    t =    16.52s             Synthesize event
+    t =    16.75s             Wait for com.apple.finder to idle
+    t =    16.76s         Find the "_zoomLeft:" MenuItem
+    t =    17.64s     Wait for com.apple.finder to idle
+    t =    17.65s Waiting 5.0s for Any (First Match) to exist
+    t =    18.68s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =    18.68s         Checking existence of `Any (First Match)`
+    t =    18.72s Find the Any (First Match)
+    t =    18.77s Find the "Original screenshot.png" Image
+    t =    18.81s Click "Original screenshot.png" Image for 0.6 seconds, drag to "desktop.event.77777777-7777-7777-7777-777777777777" Button with velocity of 500.00 pixels per second, and then hold for 0.0 seconds
+    t =    18.81s     Wait for com.apple.finder to idle
+    t =    18.81s     Find the "Original screenshot.png" Image
+    t =    18.83s     Check for interrupting elements affecting "Original screenshot.png" Image
+    t =    18.85s     Synthesize event
+    t =    18.85s         Find the "desktop.event.77777777-7777-7777-7777-777777777777" Button
+    t =    22.09s     Wait for com.apple.finder to idle
+    t =    23.14s Open local.countdownmanager.app
+    t =    23.14s     Activate local.countdownmanager.app
+    t =    23.16s         Wait for local.countdownmanager.app to idle
+    t =    23.20s Find the "desktop.event.11111111-1111-1111-1111-111111111111" Button
+    t =    23.27s Find the Target Application 'local.countdownmanager.app'
+2026-10-30 13:18:25.841708+0300 CountdownManagerXCUITests-Runner[11031:12513457] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    23.41s Added attachment named 'Actual Finder drop into unselected event'
+    t =    23.41s Checking existence of `"materials.undo" Button`
+    t =    23.44s Checking existence of `"materials.status" StaticText`
+    t =    23.48s Terminate local.countdownmanager.app:11033
+    t =    24.54s Open local.countdownmanager.app
+    t =    24.54s     Launch local.countdownmanager.app
+2026-10-30 13:18:27.083 xcodebuild[11028:12513248] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-10-30 13:18:27.083 xcodebuild[11028:12513248] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    24.90s         Wait for accessibility to load
+    t =    24.92s         Setting up automation session
+    t =    24.93s         Wait for local.countdownmanager.app to idle
+    t =    24.93s Checking existence of `"DragFixture-3ACC343C-6BE5-44D4-8404-D82CB20DB155" Window`
+    t =    25.05s Checking existence of `"_XCUI:CloseWindow" Button`
+    t =    25.14s Click "_XCUI:CloseWindow" Button
+    t =    25.14s     Wait for com.apple.finder to idle
+    t =    25.14s     Find the "_XCUI:CloseWindow" Button
+    t =    25.24s     Check for interrupting elements affecting "_XCUI:CloseWindow" Button
+    t =    25.28s     Synthesize event
+    t =    25.81s     Wait for com.apple.finder to idle
+    t =    25.82s Tear Down
+    t =    25.82s     Find the Target Application 'local.countdownmanager.app'
+2026-10-30 13:18:28.481502+0300 CountdownManagerXCUITests-Runner[11031:12513457] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    26.10s     Added attachment named 'Failed user scenario'
+    t =    26.10s     Terminate local.countdownmanager.app:11055
+    t =    27.17s     Added attachment named 'Failed scenario lifecycle'
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testFinderImageDropPreservesFilenameAndBytes]' passed (27.519 seconds).
+Test Suite 'CountdownManagerXCUITests' passed at 2026-10-30 13:18:30.062.
+	 Executed 1 test, with 0 failures (0 unexpected) in 27.519 (27.521) seconds
+Test Suite 'CountdownManagerXCUITests.xctest' passed at 2026-10-30 13:18:30.063.
+	 Executed 1 test, with 0 failures (0 unexpected) in 27.519 (27.522) seconds
+Test Suite 'Selected tests' passed at 2026-10-30 13:18:30.064.
+	 Executed 1 test, with 0 failures (0 unexpected) in 27.519 (27.523) seconds
+2026-10-30 13:18:30.356 xcodebuild[11028:12513248] [MT] IDETestOperationsObserverDebug: 29.122 elapsed -- Testing started completed.
+2026-10-30 13:18:30.356 xcodebuild[11028:12513248] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-10-30 13:18:30.356 xcodebuild[11028:12513248] [MT] IDETestOperationsObserverDebug: 29.122 sec, +29.122 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/countdown-release-1.20.4/finder-exact-result.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

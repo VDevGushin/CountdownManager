@@ -1,0 +1,7 @@
+{
+  "exitCode": 0,
+  "targetApp": "/tmp/countdown-release-1.20.4/Countdown Manager.app",
+  "targetExecutableSHA256": "898b9f84be02e93807f2a4ae8bf2a36f2bab77a2464c162f84cd227e88ec5ce3",
+  "test": "testFinderImageDropPreservesFilenameAndBytes",
+  "xctestrunOverride": "UITargetAppPath and dependent app path point at final production-configured bundle"
+}

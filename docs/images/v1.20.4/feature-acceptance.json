@@ -1,0 +1,16 @@
+{
+  "scope": "Feature-source acceptance before release-version/help change; not exact final package",
+  "manualFloatingScreenshotThumbnail": {
+    "ownerConfirmed": true,
+    "testEvents": 2,
+    "ownedPNGCount": 8,
+    "allPNGChunkCRCsAndDimensionsValid": true,
+    "metadataSizesMatch": true,
+    "stagingDirectoriesRemainingAfterImports": 0
+  },
+  "featureTesterExecutableSHA256": "99e46a8cef125680cd9c943cdab0451f5c884874404096e20254487d81ada669",
+  "finderPNGExternal": "1/1 passed; unselected receiving event, source filename/bytes/original and restart persistence",
+  "screenshotAutomationLimit": "Stopped before drag: screencaptureui exposed no accessible thumbnail window",
+  "miniEditorRealThumbnailTargetsIndividuallyObserved": false,
+  "productionDataUsedAsFixture": false
+}

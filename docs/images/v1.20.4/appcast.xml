@@ -1,0 +1,26 @@
+<?xml version="1.0" standalone="yes"?><!-- sparkle-sign-warning:
+IMPORTANT: This file was signed by Sparkle. Any modifications to this file requires re-signing this file with generate_appcast or sign_update! The signed signature will be embedded at the end of this file.
+--><rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Countdown Manager</title>
+        <item>
+            <title>1.20.4</title>
+            <pubDate>Fri, 30 Oct 2026 13:16:20 +0300</pubDate>
+            <sparkle:version>40</sparkle:version>
+            <sparkle:shortVersionString>1.20.4</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description><![CDATA[<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="color-scheme" content="light dark"><title>Countdown Manager 1.20.4 — скриншот сразу во вложения</title><style>body{font:14px/1.5 -apple-system,BlinkMacSystemFont,sans-serif;margin:24px}h1{font-size:21px}</style></head><body>
+<h1>Скриншот сразу во вложения</h1>
+<p>Свежую миниатюру скриншота macOS теперь можно перетащить на событие — изображение сохраняется обычным локальным вложением. Исправлена ошибка при таком добавлении.</p>
+<p>Обновление: <strong>Настройки → Проверить обновления…</strong>.</p>
+<p>1.20.4 · сборка 40 · Apple Silicon · macOS 13+. Ручная установка: CountdownManager-1.20.4-40.zip.</p></body></html>
+]]></description>
+            <enclosure url="https://github.com/VDevGushin/CountdownManager/releases/download/v1.20.4/CountdownManager-1.20.4-40.zip" length="6318233" type="application/octet-stream" sparkle:edSignature="N63CQV74RZZ9R8M5aI0fp/38GYPZ1uiYc1X+/iqA1dY3qGga7rLX2xQveG4ADlOVV+0Muw0YrJJo7lSPCd23BA=="></enclosure>
+        </item>
+    </channel>
+</rss><!-- sparkle-signatures:
+edSignature: VrD3cr+fKFs85sfNyU9Tn7lh6cz1T7P5MB2W3oF6xDTF5Lp8z4hQa73L9RvCOCd/8cZ0Cam2HPYyzIosUuosDA==
+length: 2151
+-->
