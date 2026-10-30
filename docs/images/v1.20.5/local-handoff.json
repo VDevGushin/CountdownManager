@@ -5,5 +5,7 @@
   "matchesAnonymousPreviousArchive": true,
   "executableSHA256": "898b9f84be02e93807f2a4ae8bf2a36f2bab77a2464c162f84cd227e88ec5ce3",
   "strictDeepCodesign": true,
-  "newReleaseInstalled": false
+  "newReleaseInstalled": false,
+  "running": true,
+  "cleanupComplete": true
 }

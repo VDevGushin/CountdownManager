@@ -38,12 +38,13 @@
     "signatureIdentifier": "local.countdownmanager.app",
     "renderedAppearanceVerified": false
   },
-  "published": false,
+  "published": true,
   "installed": false,
   "exactPackageRuntimeVerified": true,
   "sourceCommit": "5cee33bbcf0b37c0044db69b5072d7a05bfa44d0",
   "sourceCommitProvidedByOrchestrator": true,
   "exactPackageCompactPassed": "7/7",
   "exactPackageDesktopPassed": "31/31",
-  "exactPackageHelpPassed": "1/1"
+  "exactPackageHelpPassed": "1/1",
+  "taggedMainCommit": "f4d894d5df2005c14aa606c25591cac730a4b548"
 }

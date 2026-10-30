@@ -1,0 +1,79 @@
+{
+  "version": "1.20.5",
+  "trashRoot": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d",
+  "preserved": [
+    "/Applications/Countdown Manager.app",
+    "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.20.4",
+    "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/releases/1.20.5"
+  ],
+  "moves": [
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/CACHEDIR.TAG",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/00-CACHEDIR.TAG",
+      "kilobytes": 4
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/arm64-apple-macosx",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/01-arm64-apple-macosx",
+      "kilobytes": 480128
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/artifacts",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/02-artifacts",
+      "kilobytes": 26964
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/build.db",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/03-build.db",
+      "kilobytes": 896
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/checkouts",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/04-checkouts",
+      "kilobytes": 23840
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/plugin-tools.yaml",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/05-plugin-tools.yaml",
+      "kilobytes": 112
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/release",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/06-release",
+      "kilobytes": 0
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/release.yaml",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/07-release.yaml",
+      "kilobytes": 112
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/repositories",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/08-repositories",
+      "kilobytes": 51896
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/swift-module-cache",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/09-swift-module-cache",
+      "kilobytes": 95072
+    },
+    {
+      "original": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/workspace-state.json",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/10-workspace-state.json",
+      "kilobytes": 4
+    },
+    {
+      "original": "/private/tmp/countdown-paste-review",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/11-countdown-paste-review",
+      "kilobytes": 120056
+    },
+    {
+      "original": "/private/tmp/countdown-release-1.20.5",
+      "trash": "/Users/vladislav.gushchin/.Trash/CountdownManager-1.20.5-20261030-669f002d/12-countdown-release-1.20.5",
+      "kilobytes": 27644
+    }
+  ],
+  "movedCount": 13,
+  "kilobytes": 826728,
+  "productionDataTouched": false
+}

@@ -2,15 +2,11 @@
 
 ## Current release
 
-Published as Latest: **1.20.4 / build 40**, screenshot-thumbnail intake as local attachments.
+Published as Latest: **1.20.5 / build 41**, whole-text note insertion with visible length validation.
 Anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
-The previous release is **1.20.3 / build 39**. [Publication receipt](images/v1.20.4/publication.json).
-[Release status](releases/v1.20.4.md) · [Notes](releases/v1.20.4-notes.md) ·
-[Package audit](images/v1.20.4/artifact-audit.json).
-
-Candidate **1.20.5 / build 41** fixes whole-text note insertion and has passed local checks.
-[Candidate status](releases/v1.20.5.md): Git integration and publication are authorized and in progress.
-The public Latest and stable feed remain 1.20.4 until publication is completed.
+The previous release is **1.20.4 / build 40**. [Publication receipt](images/v1.20.5/publication.json).
+[Release status](releases/v1.20.5.md) · [Notes](releases/v1.20.5-notes.md) ·
+[Package audit](images/v1.20.5/artifact-audit.json).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

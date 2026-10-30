@@ -1,6 +1,6 @@
-# 1.20.5 / build 41 native candidate evidence
+# 1.20.5 / build 41 release evidence
 
-Status: final clean-main package verified; publication pending. The owner explicitly approved
+Status: final clean-main package published as Latest and anonymously verified. The owner explicitly approved
 commit, main integration, push and the annotated version tag. Application source was frozen on
 clean main `5cee33bbcf0b37c0044db69b5072d7a05bfa44d0` before the final build. Later evidence-only commits do not change
 these application inputs.
@@ -55,4 +55,8 @@ a real download/install/relaunch was not rerun. General attachment/Spaces campai
 [Local handoff](local-handoff.json): the installed/running previous 1.20.4/40 matches the anonymously
 retrieved public archive in bytes/modes/symlinks and passes strict/deep codesign. It was retained for
 the owner's manual update. Native candidate processes exited; production data was never a fixture.
-Task-created temporary artifacts are retained through publication, then moved recoverably with a restore manifest.
+[Cleanup](cleanup.json): 13 task-created entries (826,728 KiB) were moved recoverably to Trash with a restore manifest. Final ZIP/feed and receipts remain in `.build/releases/1.20.5/`; unrelated historical releases and production data were preserved.
+
+[Public receipt](publication.json) confirms Latest, ZIP, versioned/stable appcast HTTP 200 and exact
+package hashes. The annotated tag targets `f4d894d5df2005c14aa606c25591cac730a4b548`; default main
+receives the final publication documentation separately. [Browser proof](publication-browser.png).
