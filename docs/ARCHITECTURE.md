@@ -170,8 +170,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.3`;
-the current section describes the whole timer alarm glyph in running and finished states. Manual menu entry bypasses only
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.4`;
+the current section describes dragging a fresh macOS screenshot thumbnail into a local attachment. Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
 offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.
@@ -1054,10 +1054,19 @@ Verification selection and command details belong in `docs/VERIFICATION.md`.
 
 ## Material intake
 
-`MaterialDropZone` resolves NSItemProvider representations in file/web/text priority and cancels
+`MaterialDropZone` resolves NSItemProvider representations in file/image/web/text priority and cancels
 late delivery when its target disappears. `EventMaterialTarget` binds the receiving event identity
 and checks the shared editor gate before applying an asynchronous result. It shares the existing
 Store/repository; there is no second persistence or clipboard-monitoring owner.
+
+`MaterialImageImport` receives an advertised encoded image using `loadFileRepresentation` and
+copies its short-lived file synchronously inside the provider callback. `StagedMaterialFile` owns
+only its newly created temporary folder. `EventMaterials` carries that owner alongside the file URL;
+Store and EditorAttachmentSession retain it through asynchronous import. Releasing the last owner
+cleans staging on success, rejected delivery, cancellation or failure. The repository still owns all
+durable attachment copies and their existing draft/commit cleanup. Provider Progress cancellation
+is coordinated across cancellation before or after request installation. This is an image intake
+boundary, not a general AppKit file-promise receiver.
 
 Store owns pending quick additions and their admission locks. It imports into a temporary repository
 draft, revalidates the current event and capacities after awaits, merges only new materials into the

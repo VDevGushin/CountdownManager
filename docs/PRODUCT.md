@@ -13,8 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.20.3 updates the read-only `Что нового` screen with the timer alarm clipping fix. Event retention and material/link behaviour
-introduced in earlier releases remain unchanged. The release-help
+Release 1.20.4 updates the read-only `Что нового` screen with floating screenshot-thumbnail
+intake as a local attachment. Existing event retention, attachment limits and editor Save/Cancel
+behaviour remain unchanged. The release-help
 window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
@@ -484,8 +485,14 @@ A saved event accepts ordinary local files and HTTP/HTTPS links on its desktop b
 desktop details or mini-panel card. The target is the receiving event, including an unselected
 card; dropping does not change another event. Hover adds a stationary accent outline/tint without
 changing the card geometry or disclosure state. One preferred representation is used per dropped
-item: a file URL has priority over a web URL, followed by plain text. Unsupported schemes, folders,
-packages and symbolic links are rejected. File promises from Mail/Photos are not advertised.
+item: a file URL has priority over an encoded image representation, then a web URL and plain text.
+Images offered without a file URL are received as files and copied into the existing attachment
+storage without application-side decoding or re-encoding. When several encoded image alternatives
+are available, PNG/TIFF take priority over lossy alternatives. The same intake applies to the editor
+draft, and image drags can reveal the mini-panel through the status icon. Unsupported representations
+produce an actionable error rather than an attempt to load unadvertised plain text. Unsupported
+schemes, folders, packages and symbolic links remain rejected. Arbitrary file promises from
+Mail/Photos are not advertised; image representations exposed through NSItemProvider are supported.
 
 A successful saved-event addition commits immediately. There is no addition-Undo action,
 receipt or status/progress/success row on either surface, and no replacement toast or notification.

@@ -14,6 +14,7 @@ func testMaterialIntake(in directory: URL) async throws {
     for _ in 0..<2_000 where store.isLoading { try await Task.sleep(nanoseconds: 1_000_000) }
     precondition(!store.isLoading)
     try await testDelayedMaterialProvider(store: store)
+    try await testImageMaterialIntake(in: directory.appendingPathComponent("images"))
     let first = Countdown(title: "Первое", date: Day(Date()), emoji: "")
     let second = Countdown(title: "Получатель", date: Day(Date()), emoji: "")
     let savedFirst = await store.save(first, primary: true)

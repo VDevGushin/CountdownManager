@@ -776,6 +776,7 @@ extension Store {
     @discardableResult
     private func appendReservedMaterials(_ materials: EventMaterials, to eventID: UUID,
                                          original: Countdown) async -> Bool {
+        defer { withExtendedLifetime(materials.stagedFiles) {} }
         defer { isReceivingMaterials = false }
         let draftID = UUID()
         guard await beginAttachmentDraft(draftID) else { return false }

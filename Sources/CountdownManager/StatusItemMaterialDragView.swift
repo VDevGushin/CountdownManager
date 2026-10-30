@@ -7,7 +7,7 @@ final class StatusItemMaterialDragView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        registerForDraggedTypes([.fileURL, .URL, .string])
+        registerForDraggedTypes(materialDropTypes.map { NSPasteboard.PasteboardType($0.identifier) })
         setAccessibilityElement(false)
     }
 

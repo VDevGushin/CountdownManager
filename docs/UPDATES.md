@@ -1,5 +1,11 @@
 # Signed releases and updates
 
+## Release in preparation
+
+**1.20.4 / build 40** adds fresh screenshot-thumbnail intake as local attachments.
+[Candidate status](releases/v1.20.4.md) · [Notes](releases/v1.20.4-notes.md).
+The published channel below remains authoritative until anonymous publication verification.
+
 ## Current release
 
 Published as Latest: **1.20.3 / build 39**, timer alarm clipping correction.

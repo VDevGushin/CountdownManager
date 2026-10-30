@@ -486,6 +486,16 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     func testFinderFileDropTargetsUnselectedEventAndPersists() throws {
+        try checkFinderFileDrop(name: "DropSample.txt", bytes: Data("Original drag fixture\n\nPreserve paragraphs.\n".utf8))
+    }
+
+    func testFinderImageDropPreservesFilenameAndBytes() throws {
+        let bytes = try XCTUnwrap(Data(base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII="))
+        try checkFinderFileDrop(name: "Original screenshot.png", bytes: bytes)
+    }
+
+    private func checkFinderFileDrop(name filename: String, bytes: Data) throws {
         let recipientID = "77777777-7777-7777-7777-777777777777"
         var fixture = try persistedItems()
         var recipient = fixture[0]
@@ -496,8 +506,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         try writeItems(fixture, primaryID: nil)
         let folder = testHome.appendingPathComponent("DragFixture-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent("DropSample.txt")
-        let bytes = Data("Original drag fixture\n\nPreserve paragraphs.\n".utf8)
+        let file = folder.appendingPathComponent(filename)
         try bytes.write(to: file)
         app.launch()
         XCTAssertTrue(app.buttons["desktop.open"].waitForExistence(timeout: 5))
@@ -535,6 +544,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         let attachment = try XCTUnwrap(attachments.first)
         let identity = try XCTUnwrap(attachment["id"] as? String)
         let name = try XCTUnwrap(attachment["name"] as? String)
+        XCTAssertEqual(name, filename, "An existing Finder file must retain its original name")
         let copy = dataURL.deletingLastPathComponent().appendingPathComponent("Attachments/\(identity)/\(name)")
         XCTAssertEqual(try Data(contentsOf: copy), bytes)
         XCTAssertEqual(try Data(contentsOf: file), bytes)

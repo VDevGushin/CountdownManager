@@ -1858,7 +1858,8 @@ struct EditorView: View {
         catch { store.error = error.localizedDescription; return }
         if materials.files.isEmpty { draft.links += materials.links; return }
         isImportingAttachments = true
-        attachmentSession.importFiles(in: store, currentAttachments: draft.attachments, sources: materials.files) { imported in
+        attachmentSession.importFiles(in: store, currentAttachments: draft.attachments, sources: materials.files,
+                                      retaining: materials.stagedFiles) { imported in
             draft.attachments += imported
             if imported.count == materials.files.count { draft.links += materials.links }
             isImportingAttachments = false

@@ -21,6 +21,7 @@ final class EditorAttachmentSession: ObservableObject {
         in store: Store,
         currentAttachments: [EventAttachment],
         sources: [URL]? = nil,
+        retaining stagedFiles: [StagedMaterialFile] = [],
         completion: @escaping @MainActor ([EventAttachment]) -> Void
     ) {
         guard importTask == nil else { return }
@@ -30,6 +31,7 @@ final class EditorAttachmentSession: ObservableObject {
         }
         let draftID = id
         importTask = Task { @MainActor [weak self] in
+            defer { withExtendedLifetime(stagedFiles) {} }
             guard !Task.isCancelled, self != nil else { return }
             let prepared = await store.beginAttachmentDraft(draftID)
             guard !Task.isCancelled, self != nil else { return }

@@ -8,6 +8,7 @@ package struct EventMaterials {
     package var links: [EventLink] = []
     package var text: String?
     package var textFile: TextAttachment?
+    package var stagedFiles: [StagedMaterialFile] = []
 
     package init(files: [URL] = [], links: [EventLink] = [], text: String? = nil,
                  textFile: TextAttachment? = nil) {
@@ -50,9 +51,19 @@ package func resolveEventMaterials(_ providers: [NSItemProvider]) async throws -
         try Task.checkCancellation()
         let type: UTType
         if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) { type = .fileURL }
+        else if let imageType = materialImageType(for: provider) {
+            let file: StagedMaterialFile
+            do { file = try await loadMaterialImage(provider, type: imageType) }
+            catch { try Task.checkCancellation(); throw error }
+            try Task.checkCancellation()
+            result.files.append(file.url)
+            result.stagedFiles.append(file)
+            continue
+        }
         else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) { type = .url }
         else if provider.hasItemConformingToTypeIdentifier(UTType.utf8PlainText.identifier) { type = .utf8PlainText }
-        else { type = .plainText }
+        else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) { type = .plainText }
+        else { throw MaterialIntakeError.message("Перетащите обычный файл, изображение, HTTP/HTTPS-ссылку или текст.") }
         let value: NSSecureCoding = try await withCheckedThrowingContinuation { continuation in
             provider.loadItem(forTypeIdentifier: type.identifier, options: nil) { item, error in
                 if let error { continuation.resume(throwing: error) }
@@ -147,7 +158,7 @@ struct MaterialDropZone: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onDrop(of: [.fileURL, .url, .utf8PlainText, .plainText], isTargeted: $targeted) { providers in
+            .onDrop(of: materialDropTypes, isTargeted: $targeted) { providers in
                 guard enabled else { return false }
                 return session.receive(providers, begin: beginReceiving, finish: finishReceiving,
                                        completion: receive, reportError: reportError)

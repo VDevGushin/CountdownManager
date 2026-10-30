@@ -133,7 +133,8 @@ components:
 ## Overview
 
 Release 1.20.3 preserves the complete timer alarm emoji at its natural size inside the existing
-20-point slot. The release-help window describes this correction. The accepted Graphite palette
+20-point slot. Release 1.20.4 uses the existing release-help section with the native `photo` symbol
+to describe screenshot-thumbnail intake. The accepted Graphite palette
 and retained system-native tinting limitation continue to apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point

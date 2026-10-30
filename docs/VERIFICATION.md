@@ -412,6 +412,28 @@ cleanup and civil-day expiry. A deliberately delayed provider checks admission l
 rejection, cancellation and late results not clearing a newer reservation. The same Store API checks
 that scheduling reserves its operation synchronously before creating its task.
 
+`ImageMaterialIntakeChecks.swift` additionally exercises PNG data/file representations, exact
+encoded bytes, temporary-file lifetime and cleanup, original-file preservation, file-URL priority,
+unsupported-format errors, durable copies after staging removal, draft Cancel, whole-batch rejection
+at 14 + 2 attachments, and a cancelled delayed image provider. These use actual NSItemProvider APIs;
+they do not prove SwiftUI's negotiation with an external source or the system screenshot thumbnail.
+The delayed late-success/late-error cases also protect exactly-once continuation completion:
+provider Progress cancellation can be followed by another source completion.
+
+External acceptance for image intake must drag a fresh floating screenshot thumbnail onto desktop
+details, an unselected desktop card, a mini-panel event after status-icon hover, and the editor of an
+isolated app. Check one attachment per drop, usable preview, Save/Cancel, and no mutation of another
+event. Also drag an existing named PNG from Finder and check its filename and original encoded bytes:
+provider-level file-URL priority alone cannot establish which representation SwiftUI exposes.
+
+On 2026-10-30 the Product Owner confirmed real floating-thumbnail intake in the isolated native
+desktop tester. Inspection found eight owned PNG files across two test events, with matching
+metadata sizes, nonzero dimensions and valid CRCs for every PNG chunk. This is manual source
+acceptance paired with filesystem evidence; it does not assert every desktop/mini/editor drop
+target was individually observed. The attempted exact-thumbnail XCUITest stopped before dragging:
+the system exposed screencaptureui as a disabled application without accessible thumbnail windows.
+That exploratory probe was excluded from the regression suite rather than retained as a flaky driver.
+
 The focused native route `--ui-smoke-desktop --ui-smoke-material-intake` uses a fresh marked
 smoke home. It checks persisted file/link content and both surfaces' absence of `materials.undo`
 and `materials.status`, unchanged footer position, 390×600 mini dimensions and existing collapsed
@@ -423,11 +445,16 @@ NSHostingView from hitTest while a sheet is attached; the oracle accepts only ni
 rejects any divider/control hit and additionally requires background actions to be disabled.
 This does not substitute a view hitTest query for a real outside click.
 
-Focused external cases are `testFinderFileDropTargetsUnselectedEventAndPersists` and
-`testSafariLinkDropCreatesOnlyWebLink`. They use their own marked test home, synthetic source file
-and local HTML link; they do not use production events. Their 2026-10-28 build-for-testing passed,
-but the runtime attempt stopped before test execution because system automation mode timed out.
-Do not count a successfully compiled test as a successful external interaction.
+Focused external cases are `testFinderFileDropTargetsUnselectedEventAndPersists`,
+`testFinderImageDropPreservesFilenameAndBytes` and `testSafariLinkDropCreatesOnlyWebLink`.
+They use their own marked test home, synthetic source file and local HTML link; they do not use
+production events. The original file/link cases built on 2026-10-28, but that runtime attempt
+stopped before execution because system automation mode timed out. On 2026-10-30 the focused
+Finder PNG case passed 1/1: actual external drag to an unselected event, original filename and
+byte comparison, and persistence across app restart. That run used a temporary Xcode project copy
+registering the pre-existing DesktopSheetTerminationPolicy.swift missing from the checked-in
+project; application sources were unchanged by the workaround. It does not establish screenshot
+thumbnail negotiation or the other source applications. Compilation alone is never interaction proof.
 
 Actual cross-app drags, status hover/cancel, source-app representations and ordinary Paste routing
 require external input or explicit manual acceptance on an isolated tester. Never infer them from
