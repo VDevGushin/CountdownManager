@@ -64,5 +64,6 @@ are not established by this selected evidence set.
 [public-assets.json](public-assets.json) records publication at 2026-11-05T09:34:54Z through the
 in-app browser, anonymous HTTP 200 for Latest/ZIP/versioned feed/stable feed and exact audited
 payload hashes. The annotated-tag object and reviewed source were checked through the read-only
-connected GitHub API after anonymous API rate limiting. Public homepage verification follows the
-documentation push and is not yet claimed by this archive.
+connected GitHub API after anonymous API rate limiting. The later [homepage receipt](homepage.json)
+records anonymous HTTP 200 and matching default-main README/three image bytes, followed by
+browser inspection of the actual page and displayed native images.

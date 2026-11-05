@@ -1,0 +1,30 @@
+{
+  "verifiedAtUTC": "2026-11-05T09:43:21.703753+00:00",
+  "defaultBranch": "main",
+  "defaultBranchSource": "Read-only connected GitHub API",
+  "anonymousDefaultREADMEAndImagesMatch": true,
+  "checks": {
+    "README.md": {
+      "status": 200,
+      "bytes": 22337,
+      "sha256": "180d6d7b5844c01dab3ad5609a5ebac584c99492e9bab28a504c0edfe0aa9320"
+    },
+    "docs/images/v1.21.0/week-desktop-result-dark.png": {
+      "status": 200,
+      "bytes": 278209,
+      "sha256": "f854372fa3f9c1a2db221101424e30039fcf941979ba8d30ca39730e57a56d36"
+    },
+    "docs/images/v1.21.0/week-mini-action-light.png": {
+      "status": 200,
+      "bytes": 100633,
+      "sha256": "b243e5132f1eed2d969de961e4629ace19793f337fe2fc6dc849c7c95edc63de"
+    },
+    "docs/images/v1.21.0/week-sunday-mini-preview-dark.png": {
+      "status": 200,
+      "bytes": 140227,
+      "sha256": "c928aa79fd9916c7257f25788c03e5c92b55d6d86a12f38b6e73256573a6de7c"
+    }
+  },
+  "browserAppearanceInspected": true,
+  "browserReview": "Actual default-main README: current download/version; all three native images loaded, desktop rendered at 838px available width and both mini images at 360px."
+}

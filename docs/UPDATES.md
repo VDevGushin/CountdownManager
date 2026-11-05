@@ -10,8 +10,9 @@ The anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exac
 [Package audit](images/v1.21.0/artifact-audit.json) · [Native provenance](images/v1.21.0/PROVENANCE.md).
 The annotated tag targets reviewed main `42e50c61e37476cff028ba52c6e647a85edba46e`.
 
-The superseded published release is **1.20.5 / build 41**. Public homepage verification follows
-the documentation push and is not yet recorded. The previous release remains installed on disk;
+The superseded published release is **1.20.5 / build 41**. The [homepage receipt](images/v1.21.0/homepage.json)
+records anonymous HTTP 200 and matching default-main README/three image bytes, plus browser review.
+The previous release remains installed on disk;
 the working feature instance is retained to avoid an older writer discarding new day-origin data.
 No updater installation or data downgrade is claimed by that preservation exception.
 
