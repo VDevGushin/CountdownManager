@@ -1,0 +1,17 @@
+{
+  "verifiedAtUTC": "2026-11-05T10:06:37.035699+00:00",
+  "version": "1.21.0",
+  "build": "42",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "installedAndRunning": true,
+  "normalProductionProfile": true,
+  "eventAndAttachmentBytesMatchPreinstallBackup": true,
+  "freshBackupRetained": true,
+  "previousBundleRecoverable": true,
+  "taskTemporaryArtifactsMovedToTrash": true,
+  "trashEmptied": false,
+  "productionDataResetOrMigrated": false,
+  "installationMethod": "Direct installation of verified published ZIP at explicit owner request",
+  "sparkleInstallRelaunchExercised": false
+}

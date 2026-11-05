@@ -12,9 +12,11 @@ The annotated tag targets reviewed main `42e50c61e37476cff028ba52c6e647a85edba46
 
 The superseded published release is **1.20.5 / build 41**. The [homepage receipt](images/v1.21.0/homepage.json)
 records anonymous HTTP 200 and matching default-main README/three image bytes, plus browser review.
-The previous release remains installed on disk;
-the working feature instance is retained to avoid an older writer discarding new day-origin data.
-No updater installation or data downgrade is claimed by that preservation exception.
+On the owner's subsequent explicit installation request, the exact published 1.21.0/42 bundle was
+installed in `/Applications` and launched with existing data. Event and attachment bytes matched
+the fresh backup; task bundles/caches were moved to Trash recoverably.
+[Installation handoff receipt](images/v1.21.0/installation.json). This was direct package installation,
+not a Sparkle download/install/relaunch acceptance run.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
