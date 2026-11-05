@@ -1,0 +1,24 @@
+{
+  "executableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "productionDataUnchanged": true,
+  "scenarios": [
+    {
+      "scenario": "week",
+      "result": "DesktopSmoke\n✓ week thursday: empty/inline entry, 3-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat; renamed-day skip and failed-write retry\n✓ week saturday: empty/inline entry, 1-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat\n✓ week sunday: empty/inline entry, 7-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat\n✓ week cold Sunday→Monday confirmation writes nothing, shows six-day re-review notice, then explicit second confirmation persists Tuesday–Sunday\nPASS: 4/4",
+      "home": "/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/release-1.21.0-prep/exact-week",
+      "executableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003"
+    },
+    {
+      "scenario": "editor",
+      "result": "DesktopSmoke\n✓ ordinary editor open/Cancel twice per theme preserves opaque card/title RGB, native geometry, disabled background, twelve-event JSON and four owned synthetic files; GAP: native AX baseline unsupported; separate external AX acceptance required\nPASS: 1/1",
+      "home": "/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/release-1.21.0-prep/exact-editor",
+      "executableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003"
+    },
+    {
+      "scenario": "whats-new",
+      "result": "DesktopSmoke\n✓ native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures\nPASS: 1/1",
+      "home": "/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/release-1.21.0-prep/exact-whats-new",
+      "executableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003"
+    }
+  ]
+}

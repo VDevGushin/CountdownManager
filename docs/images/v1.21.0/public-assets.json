@@ -1,0 +1,38 @@
+{
+  "verifiedAtUTC": "2026-11-05T09:36:30.420608+00:00",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.21.0",
+  "anonymousAssetsPassed": true,
+  "checks": {
+    "latest": {
+      "status": 200,
+      "resolvedURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.21.0",
+      "bytes": 155383,
+      "sha256": "b2fe8c859da37c773d1125afe3770482bd7446b8930c5f7570bd76fd3e99c411"
+    },
+    "archive": {
+      "status": 200,
+      "bytes": 6524924,
+      "sha256": "f7e397c6f4c95d7b519c867896ee7757642d04c620b89ce8beedbb7010d25aee"
+    },
+    "versionFeed": {
+      "status": 200,
+      "bytes": 3847,
+      "sha256": "f25af4e96b225d7cfd8c6f9a82bfbdb9546e2d6a17e3cfb43561ea3616c60f50"
+    },
+    "stableFeed": {
+      "status": 200,
+      "bytes": 3847,
+      "sha256": "f25af4e96b225d7cfd8c6f9a82bfbdb9546e2d6a17e3cfb43561ea3616c60f50"
+    }
+  },
+  "anonymousAPILimitation": "GitHub unauthenticated API rate limit (HTTP 403); metadata verified separately through read-only connected GitHub tool",
+  "publishedAtUTC": "2026-11-05T09:34:54Z",
+  "tag": "v1.21.0",
+  "annotatedTagObject": "f37b96c8bf419a0e2156ae08890d5580e4fa3bed",
+  "sourceCommit": "42e50c61e37476cff028ba52c6e647a85edba46e",
+  "tagVerifiedWith": "Read-only connected GitHub API",
+  "uploadedAssetNames": [
+    "appcast.xml",
+    "CountdownManager-1.21.0-42.zip"
+  ]
+}

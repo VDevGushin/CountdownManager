@@ -1,0 +1,2426 @@
+[
+  {
+    "actionStartedAt" : 964390.33604033338,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 63.650208292528987,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964390.39968733338
+  },
+  {
+    "actionStartedAt" : 964390.33604033338,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 101.18766664527357,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964390.437225
+  },
+  {
+    "actionStartedAt" : 964390.33604033338,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 137.53554166760296,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964390.47357304173
+  },
+  {
+    "actionStartedAt" : 964390.33604033338,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 790.19641666673124,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.12623354176
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "modal",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.23011233343
+  },
+  {
+    "actionStartedAt" : 964391.38351137505,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 102.26045828312635,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.48576841678
+  },
+  {
+    "actionStartedAt" : 964391.38351137505,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 188.50104161538184,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.57200879173
+  },
+  {
+    "actionStartedAt" : 964391.38351137505,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 274.53466667793691,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.65804275009
+  },
+  {
+    "actionStartedAt" : 964391.38351137505,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 359.88366662058979,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964391.74339075002
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "after-cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964392.12010704167
+  },
+  {
+    "actionStartedAt" : 964392.23254125006,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 51.912583294324577,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964392.28445129178
+  },
+  {
+    "actionStartedAt" : 964392.23254125006,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 85.372458328492939,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964392.31791129173
+  },
+  {
+    "actionStartedAt" : 964392.23254125006,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 626.01845827884972,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964392.85855650005
+  },
+  {
+    "actionStartedAt" : 964392.23254125006,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 709.07199999783188,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964392.94161058334
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "modal",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.03571733343
+  },
+  {
+    "actionStartedAt" : 964393.03571991669,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 96.949000027962029,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.13266583334
+  },
+  {
+    "actionStartedAt" : 964393.03571991669,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 181.85566668398678,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.21757195843
+  },
+  {
+    "actionStartedAt" : 964393.03571991669,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 265.6547500519082,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.30137179175
+  },
+  {
+    "actionStartedAt" : 964393.03571991669,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 350.14754172880203,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.38586454175
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "after-cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "light",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 42,
+    "uptime" : 964393.74421204173
+  },
+  {
+    "actionStartedAt" : 964394.01988416677,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 52.784374915063381,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964394.07266541675
+  },
+  {
+    "actionStartedAt" : 964394.01988416677,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 85.889708250761032,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964394.10577066673
+  },
+  {
+    "actionStartedAt" : 964394.01988416677,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 618.75612498261034,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964394.63863704167
+  },
+  {
+    "actionStartedAt" : 964394.01988416677,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 702.74274994153529,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964394.72262354172
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "modal",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964394.81759854173
+  },
+  {
+    "actionStartedAt" : 964394.98154883343,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 97.874499973841012,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.07942004176
+  },
+  {
+    "actionStartedAt" : 964394.98154883343,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 181.29074992612004,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.16283620836
+  },
+  {
+    "actionStartedAt" : 964394.98154883343,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 264.54787491820753,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.24609329167
+  },
+  {
+    "actionStartedAt" : 964394.98154883343,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "elapsedMilliseconds" : 348.18162501323968,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.32972679171
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 1,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "after-cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.69293908344
+  },
+  {
+    "actionStartedAt" : 964395.80484487501,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 53.856458398513496,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.85869833338
+  },
+  {
+    "actionStartedAt" : 964395.80484487501,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 87.983125005848706,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964395.89282433339
+  },
+  {
+    "actionStartedAt" : 964395.80484487501,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 627.70270835608244,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.43254433339
+  },
+  {
+    "actionStartedAt" : 964395.80484487501,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 711.48287504911423,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "open",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.51632520836
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "modal",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.61339766672
+  },
+  {
+    "actionStartedAt" : 964396.61340029177,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 98.496749997138977,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 0,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.71189375001
+  },
+  {
+    "actionStartedAt" : 964396.61340029177,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 181.90733331721276,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 33,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.79530450003
+  },
+  {
+    "actionStartedAt" : 964396.61340029177,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 265.27141663245857,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 100,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.87866858335
+  },
+  {
+    "actionStartedAt" : 964396.61340029177,
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "elapsedMilliseconds" : 348.45937497448176,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : true,
+    "opaqueFraction" : 1,
+    "phase" : "cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : 240,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964396.96185654169
+  },
+  {
+    "cardMeanRGBDeltaBytes" : 0,
+    "cycle" : 2,
+    "geometry" : {
+      "card" : [
+        24,
+        117,
+        212,
+        202
+      ],
+      "clip" : [
+        0,
+        80,
+        932.5,
+        540
+      ],
+      "pane.0" : [
+        0,
+        0,
+        932.5,
+        540
+      ],
+      "pane.1" : [
+        933.5,
+        0,
+        466.5,
+        540
+      ],
+      "root" : [
+        0,
+        0,
+        1400,
+        640
+      ],
+      "title" : [
+        40,
+        204,
+        180,
+        19
+      ],
+      "window" : [
+        264,
+        312,
+        1400,
+        668
+      ]
+    },
+    "nativeAXBaselineInspectable" : false,
+    "nativeSheetVisible" : false,
+    "opaqueFraction" : 1,
+    "phase" : "after-cancel",
+    "pixelSamples" : 9500,
+    "requestedMilliseconds" : -1,
+    "rootIsFlipped" : true,
+    "theme" : "dark",
+    "titleInkMeanRGBDeltaBytes" : 0,
+    "titleInkSamples" : 51,
+    "uptime" : 964397.31954587507
+  }
+]

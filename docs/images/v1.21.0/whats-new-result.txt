@@ -1,0 +1,3 @@
+DesktopSmoke
+✓ native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures
+PASS: 1/1

@@ -1,0 +1,65 @@
+{
+  "applicationBuild" : "42",
+  "applicationVersion" : "1.21.0",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964398.27278150001,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark.png",
+      "height" : 1176,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964398.40162300004,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "whats-new-light-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 964398.53451575001,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "whats-new-dark-contrast.png",
+      "height" : 1176,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 964398.66296616674,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    }
+  ],
+  "executableSHA256" : "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData" : true
+}

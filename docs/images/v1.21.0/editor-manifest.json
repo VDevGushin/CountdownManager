@@ -1,0 +1,135 @@
+{
+  "applicationBuild" : "42",
+  "applicationVersion" : "1.21.0",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "editor-stability-baseline-light.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964390.29119150003,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "editor-stability-with-sheet-light.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : false,
+      "observationUptime" : 964391.35554641671,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "editor-stability-after-cancel-light.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964392.16087125009,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "editor-stability-baseline-dark.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964393.98974604171,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "editor-stability-with-sheet-dark.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : false,
+      "observationUptime" : 964394.95424191677,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "editor-stability-after-cancel-dark.png",
+      "fixture" : {
+        "dataset" : "12 generic nonfavorite events; four generated PNG\/PDF materials; no working data",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "ordinary-editor-stability"
+      },
+      "height" : 1336,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 964395.73138837505,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2800
+    }
+  ],
+  "editorStability" : {
+    "accessibility" : "GAP: native NSAccessibilityProtocol baseline card is unsupported; external AX acceptance is required, not passed here",
+    "browserOffset" : "80pt",
+    "comparison" : "Actual root cacheDisplay opaque card interior and baseline known-title-ink mask; mean RGB delta at most one byte",
+    "dividerFraction" : "2\/3",
+    "geometry" : "Native window, split panes, browser clip, card and title remain within 0.5pt",
+    "referenceDay" : "2026-11-05",
+    "renderLimit" : "NSView.cacheDisplay excludes WindowServer-wide modal dimming; samples establish local card drawing, not compositor timing or perception",
+    "transitions" : "Two ordinary editor open\/Cancel cycles in Light and Dark; requested 0\/33\/100\/240ms samples plus attached-modal peak",
+    "windowContentSize" : "1400x640"
+  },
+  "editorStabilityNativeAXValidated" : false,
+  "executableSHA256" : "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "scope" : "Isolated ordinary desktop editor appearance stability; twelve generic events and generated materials",
+  "syntheticData" : true
+}

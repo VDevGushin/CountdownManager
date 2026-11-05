@@ -1,0 +1,9 @@
+{
+  "executableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "traceSamples": 40,
+  "maximumWholeCardMeanRGBDeltaBytes": 0,
+  "maximumTitleInkMeanRGBDeltaBytes": 0,
+  "maximumGeometryDeltaPoints": 0,
+  "nativeAXBaselineValidated": false,
+  "scope": "Derived from exact-package trace; original manifests and trace unchanged."
+}

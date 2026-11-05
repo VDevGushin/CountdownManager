@@ -2,15 +2,18 @@
 
 ## Current release
 
-Release preparation target: **1.21.0 / build 42**, week-day creation and the desktop card-style fix.
-[Candidate status](releases/v1.21.0.md) · [Notes](releases/v1.21.0-notes.md).
-The reviewed main source, exact release package, fresh 1.21.0 screenshots, signing audit and
-public verification have not yet been recorded; the candidate is not published.
+Published as Latest: **1.21.0 / build 42**, week-day creation and the desktop card-style fix,
+2026-11-05. [Release status](releases/v1.21.0.md) · [Notes](releases/v1.21.0-notes.md).
+The exact package passed focused native week 4/4, editor stability 1/1 and release help 1/1.
+The anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
+[Public assets and tag receipt](images/v1.21.0/public-assets.json) ·
+[Package audit](images/v1.21.0/artifact-audit.json) · [Native provenance](images/v1.21.0/PROVENANCE.md).
+The annotated tag targets reviewed main `42e50c61e37476cff028ba52c6e647a85edba46e`.
 
-Latest remains **1.20.5 / build 41**, the release that 1.21.0 will supersede.
-Its anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
-[Publication receipt](images/v1.20.5/publication.json) · [Published status](releases/v1.20.5.md) ·
-[Package audit](images/v1.20.5/artifact-audit.json). These are evidence for 1.20.5, not the new candidate.
+The superseded published release is **1.20.5 / build 41**. Public homepage verification follows
+the documentation push and is not yet recorded. The previous release remains installed on disk;
+the working feature instance is retained to avoid an older writer discarding new day-origin data.
+No updater installation or data downgrade is claimed by that preservation exception.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
