@@ -12,11 +12,13 @@ The annotated tag targets reviewed main `42e50c61e37476cff028ba52c6e647a85edba46
 
 The superseded published release is **1.20.5 / build 41**. The [homepage receipt](images/v1.21.0/homepage.json)
 records anonymous HTTP 200 and matching default-main README/three image bytes, plus browser review.
-On the owner's subsequent explicit installation request, the exact published 1.21.0/42 bundle was
-installed in `/Applications` and launched with existing data. Event and attachment bytes matched
-the fresh backup; task bundles/caches were moved to Trash recoverably.
-[Installation handoff receipt](images/v1.21.0/installation.json). This was direct package installation,
-not a Sparkle download/install/relaunch acceptance run.
+For the owner's manual update, the previous public 1.20.5/41 bundle was installed, verified and
+launched with current data; the native updater offered 1.21.0. The agent did not accept installation.
+The installed/running version subsequently changed to 1.21.0/42. The [final handoff receipt](images/v1.21.0/final-handoff.json)
+records this observed transition and completed permanent deletion of task backups, duplicate packages,
+test bundles and earlier Trash/archive copies. Current events, attachments, preferences and repository
+evidence were preserved. [Earlier direct-installation receipt](images/v1.21.0/installation.json) records
+an intermediate stage, not the final cleanup state.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
@@ -140,13 +142,17 @@ leave the **previous published release** installed and running, rather than inst
 release for them. Determine “previous” from the release actually being superseded, not a fixed
 version. If the installed app already matches that published package, verify and retain it.
 Otherwise verify the previous public ZIP/signature, preserve current user data/preferences and
-use a reversible replacement. Never reset or downgrade the data schema as part of this step.
+replace the bundle. Verify both installed and running identities before reporting the release
+finished. Do not trigger the update for the owner. Never reset or downgrade the data schema.
 
-Close only identified isolated candidate/test instances. Enumerate task-created bundles,
-profiles, build caches and temporary tooling. Clean them only after retaining the required
-release receipts and checking running process paths. Prefer recoverable Trash moves with a
-manifest. Preserve production data, keys, Git history, project skills and the published artifacts.
-Do not treat pre-existing unrelated temporary directories as this task's cleanup scope.
+After preservation is verified, permanently delete the enumerated task-created temporary bundles,
+profiles, build/probe caches, downloaded tooling, seed exports, duplicate ZIP/feed copies, temporary
+user-data backups and rollback bundles, including those staged earlier in Trash or scratch archives.
+Do not leave backup/archive folders in Documents or count a Trash move as completed cleanup.
+Keep required release evidence in the repository and published assets on GitHub. Preserve current
+production data/preferences, the installed handoff app, signing keys, Git history, tracked evidence,
+project skills and unrelated files; never empty unrelated Trash. Temporary safety copies used during
+replacement are not lasting deliverables. Follow the current chat's operation authorizations.
 
 ## Genuine update acceptance
 

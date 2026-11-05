@@ -98,16 +98,31 @@ actual default-branch README and its displayed images/download links. Only then 
 write the receipt and push publication documentation. The optional checker `--public` verifies
 these public bytes and default README equality; browser inspection still establishes appearance.
 
-After successful publication, the owner's normal handoff is:
+Complete the following handoff before reporting the release finished; do not leave it for an
+owner reminder. The owner wants to perform the update personally. Routine requests to finish the
+release or install the handoff build mean the previous public release; only an explicit request
+for the newly published version overrides this default. Report the installed source version and
+published target version separately.
+
+After successful publication:
 
 1. Leave the **previous published release** installed and running so the owner can update it
    personally. If already exact, verify and retain it; otherwise use the verified previous public
-   package and a reversible replacement with user data/preferences preserved. Do not install the
+   package and replace the installed bundle with user data/preferences preserved. Verify the
+   installed and running executable against that previous public package. Do not install the
    new release, silently downgrade newer user data, or trigger the owner's update yourself.
-2. Close only identified candidate/test processes. Enumerate task-created temporary bundles,
-   profiles, caches, downloaded tooling and seed exports; check running paths and retain necessary
-   receipts before cleanup. Prefer Trash plus a restore manifest. Do not sweep pre-existing files,
-   keys, production data or Git history into “trash.”
+   Any temporary safety copy needed during replacement must be removed after preservation is
+   verified; do not leave lasting user-data backups as a release deliverable.
+2. Close identified candidate/test processes and permanently remove the enumerated task-created
+   scratch bundles, profiles, build/probe caches, downloaded tooling, seed exports, duplicate ZIPs
+   and feeds, temporary user-data backups and rollback bundles after verifying the working data.
+   Remove these same task artifacts if an earlier step staged them in Trash or a temporary archive;
+   moving them elsewhere is not completed cleanup. Do not create lasting backup/archive folders in
+   Documents or leave restore manifests as substitutes for deletion. Retain required evidence in
+   the repository and the published assets on GitHub, not extra local copies. Preserve the working
+   production events, attachments, preferences, installed handoff app, signing keys, tracked release
+   history/evidence and unrelated files. Never empty unrelated Trash contents. Authority still follows
+   AGENTS and the current chat; a skill does not grant destructive-operation permission.
 3. After the authorized feature integration and follow-up documentation commits, return the
    clean working checkout to up-to-date **main**. Preserve unrelated work; do not reset, discard
    changes or force a branch switch to satisfy this finish. Verify the branch and clean status.

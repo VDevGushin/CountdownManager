@@ -1,0 +1,20 @@
+{
+  "verifiedAtUTC": "2026-11-05T10:27:50.805896+00:00",
+  "previousHandoffVersion": "1.20.5",
+  "previousHandoffBuild": "41",
+  "previousInstalledHashVerified": true,
+  "publishedTargetVersion": "1.21.0",
+  "updateOfferForPublishedTargetObserved": true,
+  "ownerUpdateNotTriggeredByAgent": true,
+  "versionChangedAfterHandoff": true,
+  "installedVersionAfterHandoff": "1.21.0",
+  "installedBuildAfterHandoff": "42",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256AfterHandoff": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "latestEventAndAttachmentBytesUnchangedByCleanup": true,
+  "temporaryBackupsAndArtifactsPermanentlyDeleted": true,
+  "removedPathCount": 7,
+  "removedLogicalBytes": 1737578733,
+  "unrelatedTrashEmptied": false,
+  "productionDataResetOrMigrated": false
+}
