@@ -210,6 +210,7 @@ private struct UISmokeControlModifier: ViewModifier {
     private var usesNativeRegistration: Bool {
         id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.") || id.hasPrefix("desktop.event.")
             || id.hasPrefix("editor.links") || id.hasPrefix("desktop.links.") || id.hasPrefix("panel.links.")
+            || ["creation.week.cancel", "creation.week.confirm"].contains(id)
             || id.hasPrefix("desktop.attachments.indicator.") || id.hasPrefix("desktop.summary.")
             || ["desktop.overview.header", "desktop.overview.date", "desktop.weather.overview"].contains(id)
     }

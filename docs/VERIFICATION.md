@@ -37,6 +37,8 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Attachment shelf and quick preview | `./verify.sh attachments` | Isolated native desktop/mini shelf boundaries, searchable-library return and embedded Quick Look workflows |
 | Attachment captures | `./verify.sh attachments-capture <marked-output-directory>` | The same focused attachment workflows with retained tested app, native PNGs and provenance manifest |
 | Editor workflows | `./verify.sh editor` | Focused native row deletion/subsequent input, field focus, Save/Cancel/reopen and weekday date changes; also included in `ui`/`full` |
+| Desktop editor appearance stability | `./verify.sh editor-stability` | Focused isolated ordinary-editor open/Cancel cycles against a dense generic desktop fixture; card drawing, native geometry, modal exclusion and saved-byte preservation |
+| Desktop editor stability captures | `./verify.sh editor-stability-capture <marked-output-directory>` | The same focused stability scenario with native PNGs, transition diagnostics, provenance manifest and retained tested app; failure evidence is kept separately |
 | Automatic-title captures | `./verify.sh automatic-title-capture <marked-output-directory>` | Editor workflows plus six native automatic/custom title screenshots in Light/Dark/Increase Contrast, manifest and retained tested app |
 | Menu identity captures | `./verify.sh menu-identity-capture <marked-output-directory>` | Focused native status-item image/title transitions, 24 isolated PNGs, packaged PDF/AppIcon checks, and retained tested bundle |
 | Real panel captures | `./verify.sh capture <marked-output-directory>` | Opt-in isolated PNG evidence copied only after the capture runtime passes |
@@ -44,6 +46,8 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Weather panel captures | `./verify.sh weather-capture <marked-output-directory>` | The focused weather/header scenarios plus ten synthetic PNGs; no general UI rerun |
 | Empty-state Real UI Smoke | `./verify.sh empty-state` | Focused day creation dates/weekday defaults, Save/Cancel, retained drafts, deletion/expiry and midnight |
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
+| Week-day creation | `./verify.sh week` | Focused isolated production mini-panel/desktop week preview, empty/nonempty entry, Save/Cancel, missing days and shared editing ownership |
+| Week-day captures | `./verify.sh week-capture <marked-output-directory>` | The focused week scenarios plus native PNGs and current-source bundle/executable provenance; no general UI rerun |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
 | Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
@@ -277,6 +281,119 @@ two literal-key Undo cases failed, were diagnosed as above, and then passed as t
 layout-aware two-case suite. Those earlier failures are not counted as PASS. Evidence for the
 three unchanged cases is retained rather than rerunning them after a test-driver-only change.
 That initial feature acceptance is historical: its preview captures retain 1.13.5/27. The 1.14.0 release has fresh exact-package native results and screenshots under docs/images/v1.14.0/.
+
+### Week-day creation
+
+The accepted contract is the [week-creation section of PRODUCT](PRODUCT.md#creating-days-through-the-end-of-the-week).
+Select strict SwiftLint and `fast`, then the focused `week` route; use `week-capture` instead when
+native images are required, since it includes the same focused week scenarios. These modes run
+only the week fixture, including its empty-list entry; they do not automatically run the existing
+single-day `empty-state`, general `ui` or general `desktop` scenarios. Existing single-day tests and
+assertions remain available unchanged through their own routes. Select additional sibling checks
+for an actual changed boundary, failure or evidence gap, and retain applicable earlier evidence
+with its source provenance. The required deterministic `fast` gate still protects existing contracts.
+Review the current assertions before crediting any individual boundary below. The presence of a
+mode or this checklist is not a completed acceptance result.
+
+Core `WeekCreationChecks.swift` covers all seven starting weekdays, including Thursday's three
+dates, Saturday's single Sunday and Sunday's following Monday–Sunday range. Calendar cases vary
+first-weekday preferences and UTC/New York/Moscow zones across month/year, leap-day and DST
+boundaries, and reject an unsupported year rather than returning a partial range. Identity cases
+distinguish ordinary events, weekday-looking legacy text, explicit automatic-title legacy metadata
+and renamed days. JSON cases exercise absent-origin fallback, explicit true/false, invalid types
+and repository restart; batch checks preserve existing content and favorite and make repetition
+a no-op.
+
+UIChecks `WeekCreationWorkflowChecks.swift` checks day-origin preservation through draft rename,
+date edits, automatic-title reset and reload, while an ordinary automatic-titled draft stays ordinary.
+Controlled Store writes cover the complete candidate in one persistence attempt, failure rollback,
+explicit retry, fresh Store/repository reload and unchanged bytes on repetition. A held continuation
+checks the pending-write guard and complete-snapshot publication; a controlled Sunday-to-Monday
+clock rejects the old preview without writing and admits only a newly reviewed range.
+
+The focused native route uses isolated demonstration data and the actual production SwiftUI
+controls for the mini-panel and desktop preview. Relevant acceptance includes empty/nonempty entry,
+preview without automatic Save, Create/Cancel, skipped dates, shared-editor ownership, stale-date
+refresh requiring another Create, and scrollable one/three/seven-date layouts with fixed actions.
+Inspect the new action against the existing inline day choices, desktop creation menu and empty-state
+secondary buttons, in Light/Dark and Increase Contrast. In-process actions and screenshots do not
+establish external keyboard delivery, VoiceOver speech, a physical midnight/wake transition, actual
+status-item input or Spaces behaviour. Native captures must identify the source revision, bundle
+version/build, executable and synthetic fixture dates. Unreleased feature captures based on 1.20.5/41
+remain separate from the historical published-release images.
+
+On 2026-11-04 the dedicated native fixture passed 4/4 on an unreleased 1.20.5/41 source build,
+with 22 manifest-listed captures, including the Sunday contrast pair and a seventh-row desktop
+scroll state. Its [development evidence and limits](images/v1.20.5/week-days/PROVENANCE.md)
+retain the exercised executable hash and separate earlier failures from that focused result.
+This does not establish a general application regression campaign.
+
+External `testDesktopWeekCreationNativeMenuCancelSaveAndRepeat` opens the real `Создать день`
+menu and clicks its native week item, checks the 430 × 560 sheet, displayed civil dates and
+explicit Cancel/Create, preserves ordinary same-date events and favorite, and rejects repeat
+creation after durable Save. Its expected range follows the host's current civil day and it fails
+if that day changes during the scenario. It does not supply all-weekday, controlled-midnight,
+failure/retry, mini-panel, VoiceOver or seven-row scrolling evidence; those boundaries need their
+separately selected checks. The selected test passed on 2026-11-04 for the actual Wednesday host
+date, creating four Thursday–Sunday days; its [accepted log and driver-diagnostic history](images/v1.20.5/week-days/PROVENANCE.md#earlier-attempts-and-remaining-checks)
+remain separate from the controlled-clock capture bundle and from a general regression campaign.
+The final strict-lint/fast gates also passed after the last driver changes; their accepted logs
+are archived with the same development evidence. Earlier failed attempts retain their own status.
+
+### Desktop editor appearance stability
+
+For a change to the card's native button style or ordinary editor presentation, run required
+strict SwiftLint and `fast`, then select `editor-stability`; use `editor-stability-capture` instead
+when images and transition diagnostics are needed. Both routes run the same focused scenario in
+one isolated build, rather than automatically repeating general desktop, mini-panel or attachment
+campaigns. A route's existence and assertions describe coverage, not a completed passing result.
+
+The fixture uses a separate Store, preferences and owned files: twelve generic nonfavorite events,
+an ordinary selected event with a multiline note and four generated PNG/PDF materials, and an
+injected 5 November 2026 clock. It does not use a user recording, working-event export or private
+backup as a fixture. The native desktop content is 1400 × 640 points, with the divider at two thirds
+and browser offset 80 points. The same retained native window opens and cancels the ordinary editor
+twice in each of Light and Dark, with native animation enabled.
+
+Actual root `NSView.cacheDisplay` pixels sample the opaque interior of an unaffected visible card
+and a fixed baseline title-ink mask. The mask admits baseline ink within 15 RGB bytes of the semantic
+token because solid baseline ink was observed about 12.3 bytes from that token; the cause of the
+offset is not established. This is only glyph selection. The separate
+before/during/after mean RGB-delta limit remains **one byte** for both the whole sampled interior
+and the retained title-ink pixels. The fixture requires enough opaque pixels and title samples
+before it can compare transitions. Failure to obtain that baseline is an instrumentation failure,
+not reproduction of the reported appearance defect.
+
+Open/Cancel sampling requests 0, 33, 100 and 240 ms offsets and records actual elapsed times,
+plus the attached-modal peak and fully dismissed state. Native window/root, split panes, browser
+clip, card and title geometry must differ from baseline by less than 0.5 point. Cancel must
+preserve the complete twelve-event JSON bytes and all four owned synthetic-file hashes. The
+background control registry must reject activation while the editor owns the session. Native
+`NSAccessibilityProtocol` inspection checks baseline card presence and absence beneath the modal
+editor when that platform tree is available; an unsupported baseline is explicitly reported as an
+AX evidence gap in the manifest rather than credited as a pass.
+
+These measurements establish local SwiftUI/AppKit card drawing and the inspected modal/data
+boundaries. `cacheDisplay` excludes WindowServer-wide modal dimming and does not measure compositor
+presentation timing or perceived smoothness. An in-process registered action is not a physical
+pointer or keyboard event. Native Button pointer admission, real keyboard focus/Space activation
+and VoiceOver delivery require separately recorded evidence. A host on which Tab/Option-Tab
+cannot focus any of the compared styles provides no keyboard-focus result for this change.
+Keep the background `disabled`, hit-testing, accessibility and shared-session restrictions intact
+when comparing `.plain` with `.borderless`; do not remove those guards to make an appearance test pass.
+
+The 2026-11-05 focused native run passed 1/1 on the retained SDK-15.4 build. All 40 recorded
+card/title mean RGB deltas and geometry deltas were zero across the two Light and two Dark cycles;
+the twelve-event JSON and four generated owned files were unchanged after Cancel. The original
+manifest explicitly retains a native AX-baseline inspection gap. The
+[current development evidence](images/v1.20.5/editor-stability/PROVENANCE.md) separates that native
+result, style probes, fresh same-executable week images, accepted lint/fast logs and external AX
+status. The separate whole-application XCUITest
+`testDesktopEditorHidesBackgroundCardsWithStableStyle` passed 1/1: baseline card present, hidden
+under the ordinary editor, restored with the same selected detail after Cancel, and unchanged
+isolated JSON bytes. This Debug SDK-27 input/AX result supplements the SDK-15.4 rendering fixture;
+the original in-process manifest still records its unsupported AX baseline. Neither result claims
+keyboard focus delivery, VoiceOver speech or compositor-level timing.
 
 ## Mars menu identity
 

@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.20.5"
+    static let releaseID = "1.21.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,8 +38,10 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Длинный текст вставляется в заметку", symbol: "note.text",
-                            text: "Текст больше 150 символов теперь вставляется целиком. Красный счётчик показывает превышение; сократите заметку до лимита, чтобы сохранить событие.")
+                    feature("Дни до конца недели", symbol: "calendar.badge.plus",
+                            text: "Создавайте дни с завтрашнего по воскресенье одним действием. В воскресенье можно подготовить всю следующую неделю. Уже созданные дни пропускаются.")
+                    feature("Стабильные карточки", symbol: "square.grid.2x2",
+                            text: "Убрано лишнее мерцание карточек большого окна при открытии и закрытии редактора события.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

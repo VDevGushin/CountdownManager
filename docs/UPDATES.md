@@ -2,11 +2,15 @@
 
 ## Current release
 
-Published as Latest: **1.20.5 / build 41**, whole-text note insertion with visible length validation.
-Anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
-The previous release is **1.20.4 / build 40**. [Publication receipt](images/v1.20.5/publication.json).
-[Release status](releases/v1.20.5.md) · [Notes](releases/v1.20.5-notes.md) ·
-[Package audit](images/v1.20.5/artifact-audit.json).
+Release preparation target: **1.21.0 / build 42**, week-day creation and the desktop card-style fix.
+[Candidate status](releases/v1.21.0.md) · [Notes](releases/v1.21.0-notes.md).
+The reviewed main source, exact release package, fresh 1.21.0 screenshots, signing audit and
+public verification have not yet been recorded; the candidate is not published.
+
+Latest remains **1.20.5 / build 41**, the release that 1.21.0 will supersede.
+Its anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
+[Publication receipt](images/v1.20.5/publication.json) · [Published status](releases/v1.20.5.md) ·
+[Package audit](images/v1.20.5/artifact-audit.json). These are evidence for 1.20.5, not the new candidate.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

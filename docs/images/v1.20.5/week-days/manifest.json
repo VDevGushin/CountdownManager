@@ -1,0 +1,483 @@
+{
+  "applicationBuild" : "41",
+  "applicationVersion" : "1.20.5",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-mini-empty-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914246.46927208337,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-mini-empty-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914246.63514775003,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-mini-action-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914246.99216525001,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-mini-action-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914247.17557225004,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-thursday-mini-preview-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914247.58341408335,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-thursday-mini-preview-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914247.7697482917,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-thursday-desktop-preview-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914248.38655816671,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-thursday-desktop-preview-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914248.56675004167,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-desktop-write-failure-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914248.68313125009,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-desktop-result-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1856,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914249.28896600008,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-desktop-result-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-05",
+        "scenario" : "thursday",
+        "targetDays" : "2026-11-06,2026-11-07,2026-11-08"
+      },
+      "height" : 1856,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914249.53601220844,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-saturday-mini-preview-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-07",
+        "scenario" : "saturday",
+        "targetDays" : "2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914250.63792754174,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-saturday-mini-preview-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-07",
+        "scenario" : "saturday",
+        "targetDays" : "2026-11-08"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914250.81479658338,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-sunday-mini-preview-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914253.0090635001,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-sunday-mini-preview-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914253.18972008338,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-sunday-mini-preview-contrast-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 914253.3735153334,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-sunday-mini-preview-contrast-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 914253.56020804169,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-sunday-desktop-preview-dark.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914254.51547445834,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-sunday-desktop-preview-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914254.70156720839,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-sunday-desktop-bottom-light.png",
+      "fixture" : {
+        "clock" : "local civil noon",
+        "panelFixture" : "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel",
+        "referenceDay" : "2026-11-08",
+        "scenario" : "sunday",
+        "targetDays" : "2026-11-09,2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1120,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914254.72167600004,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "week-midnight-review-dark.png",
+      "fixture" : {
+        "priorReferenceDay" : "2026-11-08",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "midnight",
+        "targetDays" : "2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914256.3231083334,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "week-midnight-review-light.png",
+      "fixture" : {
+        "priorReferenceDay" : "2026-11-08",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "midnight",
+        "targetDays" : "2026-11-10,2026-11-11,2026-11-12,2026-11-13,2026-11-14,2026-11-15"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 914256.50563020841,
+      "reduceMotion" : true,
+      "scale" : 2,
+      "width" : 780
+    }
+  ],
+  "executableSHA256" : "476701c09f00e60f0d0d30b864678b59d9235ff64a4c3576217d82745dcdf0f6",
+  "scope" : "Unreleased week-creation native mini-panel and desktop sheets; isolated in-process render and actions",
+  "syntheticData" : true,
+  "weekCreation" : {
+    "clockChanges" : "Injected Store clock only; system clock unchanged",
+    "lifecycleLimit" : "Retained NSWindow hide\/show is in process; no physical status-item, app-switch or Spaces claim",
+    "menuActionLimit" : "Desktop Menu header registry invokes the production action; physical menu selection belongs to separate XCUITest",
+    "miniPanelFixture" : "Isolated key-capable NSPanel at 390x600; same canBecomeKey override as production, not status-item lifecycle",
+    "scrolling" : "Native NSScrollView\/NSClipView reveal the seventh day while both footer controls remain fixed",
+    "sheetRetention" : "SwiftUI may retain hidden, detached sheet content and registry entries; dismissal checks native visibility, parent detachment and released editing ownership",
+    "syntheticReferenceDays" : [
+      "2026-11-05",
+      "2026-11-07",
+      "2026-11-08",
+      "2026-11-09"
+    ]
+  }
+}

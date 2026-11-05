@@ -1,0 +1,12 @@
+{
+  "traceSamples": 40,
+  "maximumWholeCardMeanRGBDeltaBytes": 0,
+  "maximumTitleInkMeanRGBDeltaBytes": 0,
+  "maximumGeometryDeltaPoints": 0,
+  "nativeAXBaselineInspectable": false,
+  "actualElapsedMillisecondsRecorded": true,
+  "externalWholeAppAXStatus": "passed in a separate Xcode Debug test; original native manifest retains its AX gap",
+  "externalAcceptanceLog": "ax-final.log",
+  "externalAcceptanceTest": "testDesktopEditorHidesBackgroundCardsWithStableStyle",
+  "externalAcceptanceSeconds": 15.627
+}

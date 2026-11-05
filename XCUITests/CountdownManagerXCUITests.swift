@@ -1242,6 +1242,171 @@ final class CountdownManagerXCUITests: XCTestCase {
         }
     }
 
+    func testDesktopEditorHidesBackgroundCardsWithStableStyle() throws {
+        let originalBytes = try Data(contentsOf: dataURL)
+        app.launch()
+        let openDesktop = app.buttons["desktop.open"]
+        XCTAssertTrue(openDesktop.waitForExistence(timeout: 3))
+        openDesktop.click()
+        let main = app.windows["desktop.window"]
+        XCTAssertTrue(main.waitForExistence(timeout: 3))
+        let card = app.buttons["desktop.event.\(eventID)"]
+        XCTAssertTrue(card.waitForExistence(timeout: 3), "Whole-application AX must expose the baseline desktop card")
+        let selectedDetail = main.descendants(matching: .any).matching(identifier: "desktop.detail.\(eventID)").firstMatch
+        XCTAssertTrue(selectedDetail.waitForExistence(timeout: 3))
+        let edit = main.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+        XCTAssertTrue(edit.isHittable)
+        edit.click()
+        let title = app.textFields["editor.title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.value as? String, "XCUITest Event")
+        XCTAssertTrue(waitForAbsence(card), "The whole-application AX query must hide background cards while the editor is active")
+        let modalAX = XCTAttachment(string: app.debugDescription)
+        modalAX.name = "Whole-application AX during ordinary desktop editing"
+        modalAX.lifetime = .keepAlways
+        add(modalAX)
+        let cancel = app.buttons["editor.cancel"]
+        XCTAssertTrue(cancel.isHittable)
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(title))
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+        XCTAssertTrue(selectedDetail.waitForExistence(timeout: 3), "Cancel must restore the same selected event")
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes)
+    }
+
+    func testDesktopWeekCreationNativeMenuCancelSaveAndRepeat() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .autoupdatingCurrent
+        let today = calendar.startOfDay(for: Date())
+        let weekday = calendar.component(.weekday, from: today)
+        let expectedCount = weekday == 1 ? 7 : 8 - weekday
+        let dates = try (1...expectedCount).map { offset in
+            try XCTUnwrap(calendar.date(byAdding: .day, value: offset, to: today))
+        }
+        let ordinaryID = "44444444-4444-4444-4444-444444444444"
+        var baseline = try persistedItems()
+        baseline.append([
+            "id": ordinaryID, "title": "Ordinary on week date", "note": "Preserve ordinary event",
+            "date": try weekDateFields(XCTUnwrap(dates.first), calendar: calendar),
+            "emoji": "", "subtasks": [], "isDay": false
+        ])
+        try writeItems(baseline, primaryID: eventID)
+        let originalBytes = try Data(contentsOf: dataURL)
+        let command = weekday == 1 ? "На следующую неделю…" : "До конца недели…"
+        let noun = expectedCount == 1 ? "день" : ((2...4).contains(expectedCount) ? "дня" : "дней")
+        app.launch()
+        let openDesktop = app.buttons["desktop.open"]
+        XCTAssertTrue(openDesktop.waitForExistence(timeout: 3))
+        openDesktop.click()
+        let main = app.windows["desktop.window"]
+        XCTAssertTrue(main.waitForExistence(timeout: 3))
+        let menu = main.descendants(matching: .any).matching(identifier: "desktop.create-day").firstMatch
+        XCTAssertTrue(menu.waitForExistence(timeout: 3))
+        XCTAssertTrue(menu.isHittable)
+        menu.click()
+        let weekItem = app.menuItems[command]
+        XCTAssertTrue(weekItem.waitForExistence(timeout: 3), "The actual native menu must expose the week command")
+        XCTAssertTrue(weekItem.isEnabled)
+        attachDesktopMotionSnapshot("Native Create day menu with week command")
+        weekItem.click()
+        let sheet = main.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 3))
+        XCTAssertEqual(sheet.frame.width, 430, accuracy: 2)
+        XCTAssertEqual(sheet.frame.height, 560, accuracy: 2)
+        let confirm = sheet.buttons["creation.week.confirm"]
+        let cancel = sheet.buttons["creation.week.cancel"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        XCTAssertTrue(cancel.waitForExistence(timeout: 3))
+        XCTAssertTrue(confirm.isHittable, "The native confirmation must be reachable in the settled sheet")
+        XCTAssertTrue(cancel.isHittable, "The native cancellation must be reachable in the settled sheet")
+        XCTAssertEqual(confirm.label, "Создать \(expectedCount) \(noun)")
+        XCTAssertTrue(confirm.isEnabled, "An ordinary event on the first date must not block creation of its day")
+        let dateFormatter = DateFormatter()
+        dateFormatter.calendar = calendar
+        dateFormatter.timeZone = calendar.timeZone
+        dateFormatter.locale = Locale(identifier: "ru_RU")
+        dateFormatter.dateFormat = "d MMMM yyyy"
+        let previewAccessibility = XCTAttachment(string: sheet.debugDescription)
+        previewAccessibility.name = "Native week preview accessibility before date assertions"
+        previewAccessibility.lifetime = .keepAlways
+        add(previewAccessibility)
+        for (index, date) in dates.enumerated() {
+            let row = sheet.descendants(matching: .any).matching(identifier: "creation.week.row.\(index)").firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 3))
+            let expectedDate = dateFormatter.string(from: date)
+            let actualValue = row.value as? String
+            let actualText = [row.label, actualValue ?? ""].filter { !$0.isEmpty }.joined(separator: "\n")
+            if index == 0 {
+                print("Week first-row AX: expectedDate=\(expectedDate.debugDescription) actualValue=\(actualValue.debugDescription) "
+                      + "actualLabel=\(row.label.debugDescription)\n\(row.debugDescription)")
+            }
+            XCTAssertTrue(actualText.contains(expectedDate),
+                          "Preview must show each actual civil date: expected=\(expectedDate.debugDescription) "
+                          + "actualValue=\(actualValue.debugDescription) actualText=\(actualText.debugDescription)\n\(row.debugDescription)")
+            XCTAssertTrue(actualText.contains("Будет создан"))
+        }
+        attachDesktopMotionSnapshot("Native week preview before explicit confirmation")
+        XCTAssertTrue(cancel.isHittable)
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(sheet))
+        XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes, "Cancel must leave the isolated durable bytes unchanged")
+        menu.click()
+        XCTAssertTrue(weekItem.waitForExistence(timeout: 3))
+        weekItem.click()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        XCTAssertTrue(confirm.isHittable)
+        XCTAssertTrue(cancel.isHittable)
+        confirm.click()
+        XCTAssertTrue(waitForAbsence(sheet), "A successful batch must close its native sheet")
+        let saved = try persistedItems()
+        XCTAssertEqual(saved.count, baseline.count + expectedCount)
+        XCTAssertEqual(Set(saved.compactMap { $0["id"] as? String }).count, saved.count)
+        for original in baseline {
+            var expected = original
+            expected["isDay"] = false
+            let actual = try XCTUnwrap(saved.first { $0["id"] as? String == original["id"] as? String })
+            XCTAssertEqual(NSDictionary(dictionary: actual), NSDictionary(dictionary: expected),
+                           "Creating days must preserve ordinary events and their existing content")
+        }
+        let originalIDs = Set(baseline.compactMap { $0["id"] as? String })
+        let created = saved.filter { !originalIDs.contains($0["id"] as? String ?? "") }
+        let weekdayTitles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+        for (item, date) in zip(created, dates) {
+            XCTAssertEqual(item["date"] as? [String: Int], try weekDateFields(date, calendar: calendar))
+            XCTAssertEqual(item["title"] as? String, weekdayTitles[calendar.component(.weekday, from: date) - 1])
+            XCTAssertEqual(item["isDay"] as? Bool, true)
+            XCTAssertEqual(item["usesAutomaticTitle"] as? Bool, true)
+            XCTAssertEqual(item["showsWeather"] as? Bool, true)
+            XCTAssertFalse(item["keepsAfterDate"] as? Bool ?? false)
+            XCTAssertEqual(item["emoji"] as? String, "")
+            XCTAssertNil(item["note"])
+            XCTAssertTrue((item["subtasks"] as? [[String: Any]] ?? []).isEmpty)
+            XCTAssertTrue((item["attachments"] as? [[String: Any]] ?? []).isEmpty)
+            XCTAssertTrue((item["links"] as? [[String: Any]] ?? []).isEmpty)
+        }
+        XCTAssertTrue(waitForFavorite(eventID), "Bulk creation must preserve the user's explicit favorite")
+        let savedBytes = try Data(contentsOf: dataURL)
+        menu.click()
+        XCTAssertTrue(weekItem.waitForExistence(timeout: 3))
+        weekItem.click()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        XCTAssertEqual(confirm.label, "Нет новых дней")
+        XCTAssertFalse(confirm.isEnabled, "Repeating the same native command must not create duplicate day cards")
+        XCTAssertTrue(cancel.isHittable)
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(sheet))
+        XCTAssertEqual(try Data(contentsOf: dataURL), savedBytes)
+        XCTAssertEqual(calendar.startOfDay(for: Date()), today,
+                       "The live-clock external scenario must stay on one civil day; midnight is covered by controlled native checks")
+    }
+
+    private func weekDateFields(_ date: Date, calendar: Calendar) throws -> [String: Int] {
+        let components = calendar.dateComponents([.year, .month, .day], from: date)
+        return ["year": try XCTUnwrap(components.year), "month": try XCTUnwrap(components.month),
+                "day": try XCTUnwrap(components.day)]
+    }
+
     func testWeatherCityMenuSupportsNativeSelection() throws {
         app.launch()
         app.buttons["settings.open"].click()

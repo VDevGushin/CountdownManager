@@ -1,0 +1,538 @@
+{
+  "dark" : {
+    "pairs" : {
+      "plain-to-borderless" : {
+        "calendarNumeral" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            32,
+            58,
+            67
+          ]
+        },
+        "date" : {
+          "changedFraction" : 0.030918155918155919,
+          "changedPixels" : 955,
+          "maximumRGBDelta255" : 88,
+          "meanRGBDelta255" : 1.0878550461883796,
+          "regionPoints" : [
+            16,
+            106,
+            302,
+            133
+          ]
+        },
+        "full" : {
+          "changedFraction" : 0.01080366984373987,
+          "changedPixels" : 2666,
+          "maximumRGBDelta255" : 107,
+          "meanRGBDelta255" : 0.47758893643692318,
+          "regionPoints" : [
+            0,
+            0,
+            318,
+            194
+          ]
+        },
+        "monthText" : {
+          "changedFraction" : 0.11197916666666667,
+          "changedPixels" : 301,
+          "maximumRGBDelta255" : 103,
+          "meanRGBDelta255" : 4.6261160714285712,
+          "regionPoints" : [
+            16,
+            16,
+            58,
+            32
+          ]
+        },
+        "progress" : {
+          "changedFraction" : 0.056183510638297872,
+          "changedPixels" : 169,
+          "maximumRGBDelta255" : 76,
+          "meanRGBDelta255" : 2.0861037234042552,
+          "regionPoints" : [
+            255,
+            16,
+            302,
+            32
+          ]
+        },
+        "remaining" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            152,
+            302,
+            180
+          ]
+        },
+        "title" : {
+          "changedFraction" : 0.041722700376546532,
+          "changedPixels" : 1241,
+          "maximumRGBDelta255" : 107,
+          "meanRGBDelta255" : 2.2035368477676172,
+          "regionPoints" : [
+            16,
+            78,
+            302,
+            104
+          ]
+        }
+      },
+      "plain-to-label" : {
+        "calendarNumeral" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            32,
+            58,
+            67
+          ]
+        },
+        "date" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            106,
+            302,
+            133
+          ]
+        },
+        "full" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            0,
+            0,
+            318,
+            194
+          ]
+        },
+        "monthText" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            16,
+            58,
+            32
+          ]
+        },
+        "progress" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            255,
+            16,
+            302,
+            32
+          ]
+        },
+        "remaining" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            152,
+            302,
+            180
+          ]
+        },
+        "title" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            78,
+            302,
+            104
+          ]
+        }
+      }
+    },
+    "titleInk" : {
+      "borderless" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 1993,
+            "rgb" : "236,236,238"
+          },
+          {
+            "pixels" : 80,
+            "rgb" : "224,224,226"
+          },
+          {
+            "pixels" : 67,
+            "rgb" : "156,157,158"
+          },
+          {
+            "pixels" : 41,
+            "rgb" : "144,144,146"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          333,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          185.5281101621415,
+          179.25488531514446
+        ]
+      },
+      "label" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 2000,
+            "rgb" : "236,236,238"
+          },
+          {
+            "pixels" : 75,
+            "rgb" : "123,124,126"
+          },
+          {
+            "pixels" : 67,
+            "rgb" : "156,157,158"
+          },
+          {
+            "pixels" : 38,
+            "rgb" : "196,196,199"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          333,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          184.97302339693184,
+          179.25328192602461
+        ]
+      },
+      "plain" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 2000,
+            "rgb" : "236,236,238"
+          },
+          {
+            "pixels" : 75,
+            "rgb" : "123,124,126"
+          },
+          {
+            "pixels" : 67,
+            "rgb" : "156,157,158"
+          },
+          {
+            "pixels" : 38,
+            "rgb" : "196,196,199"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          333,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          184.97302339693184,
+          179.25328192602461
+        ]
+      }
+    }
+  },
+  "light" : {
+    "pairs" : {
+      "plain-to-borderless" : {
+        "calendarNumeral" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            32,
+            58,
+            67
+          ]
+        },
+        "date" : {
+          "changedFraction" : 0.031436156436156437,
+          "changedPixels" : 971,
+          "maximumRGBDelta255" : 81,
+          "meanRGBDelta255" : 1.155767072433739,
+          "regionPoints" : [
+            16,
+            106,
+            302,
+            133
+          ]
+        },
+        "full" : {
+          "changedFraction" : 0.011010341697464825,
+          "changedPixels" : 2717,
+          "maximumRGBDelta255" : 114,
+          "meanRGBDelta255" : 0.50214776632302405,
+          "regionPoints" : [
+            0,
+            0,
+            318,
+            194
+          ]
+        },
+        "monthText" : {
+          "changedFraction" : 0.13020833333333334,
+          "changedPixels" : 350,
+          "maximumRGBDelta255" : 104,
+          "meanRGBDelta255" : 4.7810019841269842,
+          "regionPoints" : [
+            16,
+            16,
+            58,
+            32
+          ]
+        },
+        "progress" : {
+          "changedFraction" : 0.061502659574468085,
+          "changedPixels" : 185,
+          "maximumRGBDelta255" : 81,
+          "meanRGBDelta255" : 2.1786347517730498,
+          "regionPoints" : [
+            255,
+            16,
+            302,
+            32
+          ]
+        },
+        "remaining" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            152,
+            302,
+            180
+          ]
+        },
+        "title" : {
+          "changedFraction" : 0.040714093598708985,
+          "changedPixels" : 1211,
+          "maximumRGBDelta255" : 114,
+          "meanRGBDelta255" : 2.313407746100054,
+          "regionPoints" : [
+            16,
+            78,
+            302,
+            104
+          ]
+        }
+      },
+      "plain-to-label" : {
+        "calendarNumeral" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            32,
+            58,
+            67
+          ]
+        },
+        "date" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            106,
+            302,
+            133
+          ]
+        },
+        "full" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            0,
+            0,
+            318,
+            194
+          ]
+        },
+        "monthText" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            16,
+            58,
+            32
+          ]
+        },
+        "progress" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            255,
+            16,
+            302,
+            32
+          ]
+        },
+        "remaining" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            152,
+            302,
+            180
+          ]
+        },
+        "title" : {
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maximumRGBDelta255" : 0,
+          "meanRGBDelta255" : 0,
+          "regionPoints" : [
+            16,
+            78,
+            302,
+            104
+          ]
+        }
+      }
+    },
+    "titleInk" : {
+      "borderless" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 1872,
+            "rgb" : "46,38,34"
+          },
+          {
+            "pixels" : 76,
+            "rgb" : "85,77,72"
+          },
+          {
+            "pixels" : 65,
+            "rgb" : "180,175,168"
+          },
+          {
+            "pixels" : 43,
+            "rgb" : "166,161,155"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          333,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          185.27095055282749,
+          179.37490189549789
+        ]
+      },
+      "label" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 1890,
+            "rgb" : "46,38,34"
+          },
+          {
+            "pixels" : 75,
+            "rgb" : "188,183,177"
+          },
+          {
+            "pixels" : 68,
+            "rgb" : "180,175,168"
+          },
+          {
+            "pixels" : 37,
+            "rgb" : "113,105,100"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          332,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          184.77191886190784,
+          179.37729763844999
+        ]
+      },
+      "plain" : {
+        "dominantInkRGB" : [
+          {
+            "pixels" : 1890,
+            "rgb" : "46,38,34"
+          },
+          {
+            "pixels" : 75,
+            "rgb" : "188,183,177"
+          },
+          {
+            "pixels" : 68,
+            "rgb" : "180,175,168"
+          },
+          {
+            "pixels" : 37,
+            "rgb" : "113,105,100"
+          }
+        ],
+        "glyphBoundsPixels" : [
+          34,
+          166,
+          332,
+          192
+        ],
+        "weightedCentroidPixels" : [
+          184.77191886190784,
+          179.37729763844999
+        ]
+      }
+    }
+  }
+}

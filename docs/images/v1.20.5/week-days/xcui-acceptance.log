@@ -1,0 +1,326 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -project CountdownManager.xcodeproj -scheme CountdownManager -destination platform=macOS -derivedDataPath /private/tmp/countdown-week-xcui.e8sYSw -resultBundlePath /Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/week-native-evidence/xcui-acceptance.xcresult "-only-testing:CountdownManagerXCUITests/CountdownManagerXCUITests/testDesktopWeekCreationNativeMenuCancelSaveAndRepeat" test-without-building
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  Sparkle: https://github.com/sparkle-project/Sparkle @ 2.10.0
+
+Writing result bundle at path:
+	/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/week-native-evidence/xcui-acceptance.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:00006020-00160026147B401E, name:My Mac }
+{ platform:macOS, arch:x86_64, id:00006020-00160026147B401E, name:My Mac }
+2026-11-04 22:49:01.322798+0300 CountdownManagerXCUITests-Runner[54821:14831610] [Default] Running tests...
+Test Suite 'Selected tests' started at 2026-11-04 22:49:01.397.
+Test Suite 'CountdownManagerXCUITests.xctest' started at 2026-11-04 22:49:01.397.
+Test Suite 'CountdownManagerXCUITests' started at 2026-11-04 22:49:01.397.
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopWeekCreationNativeMenuCancelSaveAndRepeat]' started.
+    t =     0.00s Start Test at 2026-11-04 22:49:01.398
+    t =     0.10s Set Up
+    t =     0.11s Open local.countdownmanager.app
+    t =     0.11s     Launch local.countdownmanager.app
+2026-11-04 22:49:01.557 xcodebuild[54781:14831353] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-04 22:49:01.557 xcodebuild[54781:14831353] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.56s         Wait for accessibility to load
+    t =     0.59s         Setting up automation session
+    t =     0.60s         Wait for local.countdownmanager.app to idle
+    t =     0.60s Waiting 3.0s for "desktop.open" Button to exist
+    t =     1.64s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.open" Button`
+    t =     1.64s         Checking existence of `"desktop.open" Button`
+    t =     1.71s Click "desktop.open" Button
+    t =     1.71s     Wait for local.countdownmanager.app to idle
+    t =     1.71s     Find the "desktop.open" Button
+    t =     1.80s     Check for interrupting elements affecting "desktop.open" Button
+    t =     1.81s     Synthesize event
+    t =     2.43s     Wait for local.countdownmanager.app to idle
+    t =     2.43s Waiting 3.0s for "desktop.window" Window to exist
+    t =     3.43s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.window" Window`
+    t =     3.43s         Checking existence of `"desktop.window" Window`
+    t =     3.51s Waiting 3.0s for "desktop.create-day" Any to exist
+    t =     4.53s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.create-day" Any`
+    t =     4.53s         Checking existence of `"desktop.create-day" Any`
+    t =     4.57s Find the "desktop.create-day" Any
+    t =     4.60s Click "desktop.create-day" MenuButton
+    t =     4.60s     Wait for local.countdownmanager.app to idle
+    t =     4.61s     Find the "desktop.create-day" MenuButton
+    t =     4.62s     Check for interrupting elements affecting "desktop.create-day" MenuButton
+    t =     4.63s     Synthesize event
+    t =     5.08s     Wait for local.countdownmanager.app to idle
+    t =     5.09s Waiting 3.0s for "До конца недели…" MenuItem to exist
+    t =     6.11s     Checking `Expect predicate `existsNoRetry == 1` for object "До конца недели…" MenuItem`
+    t =     6.11s         Checking existence of `"До конца недели…" MenuItem`
+    t =     6.18s Find the "До конца недели…" MenuItem
+    t =     6.24s Find the Target Application 'local.countdownmanager.app'
+2026-11-04 22:49:07.672026+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =     6.54s Added attachment named 'Native Create day menu with week command'
+    t =     6.54s Click "desktop.create-week" MenuItem
+    t =     6.54s     Wait for local.countdownmanager.app to idle
+    t =     6.54s     Find the "desktop.create-week" MenuItem
+    t =     6.59s     Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =     6.59s     Synthesize event
+2026-11-04 22:49:07.991913+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =     6.60s         Checking existence of `"desktop.create-week" MenuItem`
+    t =     6.63s         Hover menu item 'До конца недели…'
+    t =     6.63s             Wait for local.countdownmanager.app to idle
+    t =     6.63s             Find the "desktop.create-week" MenuItem
+    t =     6.66s             Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =     6.66s             Synthesize event
+2026-11-04 22:49:08.058249+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =     6.88s             Wait for local.countdownmanager.app to idle
+    t =     6.89s         Find the "desktop.create-week" MenuItem
+    t =     7.77s     Wait for local.countdownmanager.app to idle
+    t =     7.80s Waiting 3.0s for Sheet (First Match) to exist
+    t =     8.83s     Checking `Expect predicate `existsNoRetry == 1` for object Sheet (First Match)`
+    t =     8.83s         Checking existence of `Sheet (First Match)`
+    t =     8.84s Find the Sheet (First Match)
+    t =     8.85s Find the Sheet at {{617.0, 192.0}, {430.0, 560.0}}
+    t =     8.86s Waiting 3.0s for "creation.week.confirm" Button to exist
+    t =     9.89s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.confirm" Button`
+    t =     9.89s         Checking existence of `"creation.week.confirm" Button`
+    t =     9.92s Waiting 3.0s for "creation.week.cancel" Button to exist
+    t =    10.93s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.cancel" Button`
+    t =    10.93s         Checking existence of `"creation.week.cancel" Button`
+    t =    10.95s Find the "creation.week.confirm" Button
+    t =    10.97s Find the "creation.week.cancel" Button
+    t =    11.00s Find the "creation.week.confirm" Button
+    t =    11.01s Find the "creation.week.confirm" Button
+    t =    11.02s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.08s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.11s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.11s Using snapshot previously cached by application
+    t =    11.12s Find: Descendants matching type Window
+    t =    11.12s Find: Elements matching predicate '"desktop.window" IN identifiers'
+    t =    11.12s Find: Descendants matching type Sheet
+    t =    11.12s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.12s Using snapshot previously cached by application
+    t =    11.12s Find: Descendants matching type Window
+    t =    11.12s Find: Elements matching predicate '"desktop.window" IN identifiers'
+    t =    11.12s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.12s Using snapshot previously cached by application
+    t =    11.12s Find: Descendants matching type Window
+    t =    11.13s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    11.13s Using snapshot previously cached by application
+    t =    11.13s Added attachment named 'Native week preview accessibility before date assertions'
+    t =    11.13s Waiting 3.0s for "creation.week.row.0" Any to exist
+    t =    12.16s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.row.0" Any`
+    t =    12.16s         Checking existence of `"creation.week.row.0" Any`
+    t =    12.18s Find the "creation.week.row.0" Any
+    t =    12.20s Find the "creation.week.row.0" StaticText
+    t =    12.21s Find the "creation.week.row.0" StaticText
+    t =    12.22s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.29s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.33s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.33s Using snapshot previously cached by application
+    t =    12.33s Find: Descendants matching type Any
+    t =    12.33s Find: Elements matching predicate '"creation.week.row.0" IN identifiers'
+    t =    12.34s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.34s Using snapshot previously cached by application
+    t =    12.34s Find: Descendants matching type Any
+    t =    12.34s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.34s Using snapshot previously cached by application
+    t =    12.35s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.35s Using snapshot previously cached by application
+    t =    12.35s Find: Descendants matching type Window
+    t =    12.35s Find: Elements matching predicate '"desktop.window" IN identifiers'
+    t =    12.35s Find: Descendants matching type Sheet
+    t =    12.35s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.35s Using snapshot previously cached by application
+    t =    12.35s Find: Descendants matching type Window
+    t =    12.35s Find: Elements matching predicate '"desktop.window" IN identifiers'
+    t =    12.35s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.35s Using snapshot previously cached by application
+    t =    12.35s Find: Descendants matching type Window
+    t =    12.36s Requesting snapshot of accessibility hierarchy for app with pid 54823
+    t =    12.36s Using snapshot previously cached by application
+Week first-row AX: expectedDate="5 ноября 2026" actualValue=Optional("Четверг, 5 ноября 2026, Будет создан") actualLabel=""
+Attributes: StaticText, 0x854084640, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+Element subtree:
+ →StaticText, 0x854084640, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+Path to element:
+ →Application, 0x8540852c0, pid: 54823, title: 'Countdown Manager', Disabled
+  ↳Window (Main), 0x8540861c0, {{352.0, 136.0}, {960.0, 672.0}}, identifier: 'desktop.window', title: 'Countdown Manager', Disabled
+   ↳Sheet, 0x854084dc0, {{617.0, 192.0}, {430.0, 560.0}}, Keyboard Focused, Disabled
+    ↳Group, 0x8540848c0, {{617.0, 192.0}, {430.0, 560.0}}, Disabled
+     ↳Group, 0x854084a00, {{617.0, 192.0}, {430.0, 560.0}}, identifier: 'creation.week.preview'
+      ↳ScrollView, 0x854084b40, {{617.0, 242.0}, {430.0, 451.0}}, Disabled
+       ↳StaticText, 0x854084640, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+Query chain:
+ →Find: Target Application 'local.countdownmanager.app'
+  Output: {
+    Application, 0x85409de00, pid: 54823, title: 'Countdown Manager', Disabled
+  }
+  ↪︎Find: Descendants matching type Window
+    Output: {
+      Window (Main), 0x85409dcc0, {{352.0, 136.0}, {960.0, 672.0}}, identifier: 'desktop.window', title: 'Countdown Manager', Disabled
+    }
+    ↪︎Find: Elements matching predicate '"desktop.window" IN identifiers'
+      Output: {
+        Window (Main), 0x85409dcc0, {{352.0, 136.0}, {960.0, 672.0}}, identifier: 'desktop.window', title: 'Countdown Manager', Disabled
+      }
+      ↪︎Find: Descendants matching type Sheet
+        Output: {
+          Sheet, 0x85409e940, {{617.0, 192.0}, {430.0, 560.0}}, Keyboard Focused, Disabled
+        }
+        ↪︎Find: First Match
+          Output: {
+            Sheet, 0x85409e940, {{617.0, 192.0}, {430.0, 560.0}}, Keyboard Focused, Disabled
+          }
+          ↪︎Find: Descendants matching type Any
+            Output: {
+              Group, 0x85409ea80, {{617.0, 192.0}, {430.0, 560.0}}, Disabled
+              Group, 0x85409ebc0, {{617.0, 192.0}, {430.0, 560.0}}, identifier: 'creation.week.preview'
+              StaticText, 0x85409ed00, {{633.0, 204.5}, {158.0, 24.0}}, identifier: 'creation.week.title', value: До конца недели
+              ScrollView, 0x85409ee40, {{617.0, 242.0}, {430.0, 451.0}}, Disabled
+              Button, 0x85409f700, {{826.0, 709.0}, {77.0, 28.0}}, identifier: 'creation.week.cancel', label: 'Отмена'
+              Button, 0x85409f840, {{913.0, 709.0}, {118.0, 28.0}}, identifier: 'creation.week.confirm', label: 'Создать 4 дня'
+              StaticText, 0x85409ef80, {{633.0, 258.0}, {189.0, 15.0}}, value: 5 ноября 2026 — 8 ...
+              StaticText, 0x85409f0c0, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+              StaticText, 0x85409f200, {{632.1, 366.3}, {398.9, 52.4}}, identifier: 'creation.week.row.1', value: Пятница, 6 ноября ...
+              StaticText, 0x85409f340, {{632.1, 438.3}, {398.9, 52.4}}, identifier: 'creation.week.row.2', value: Суббота, 7 ноября ...
+              StaticText, 0x85409f480, {{632.1, 510.3}, {398.9, 52.4}}, identifier: 'creation.week.row.3', value: Воскресенье, 8 ноя...
+              StaticText, 0x85409f5c0, {{633.0, 584.0}, {386.5, 28.0}}, value: Уже созданные дни ...
+            }
+            ↪︎Find: Elements matching predicate '"creation.week.row.0" IN identifiers'
+              Output: {
+                StaticText, 0x85409f0c0, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+              }
+              ↪︎Find: First Match
+                Output: {
+                  StaticText, 0x85409f0c0, {{632.1, 294.3}, {398.9, 52.4}}, identifier: 'creation.week.row.0', value: Четверг, 5 ноября ...
+                }
+
+    t =    12.37s Waiting 3.0s for "creation.week.row.1" Any to exist
+    t =    13.40s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.row.1" Any`
+    t =    13.40s         Checking existence of `"creation.week.row.1" Any`
+    t =    13.42s Find the "creation.week.row.1" Any
+    t =    13.53s Find the "creation.week.row.1" StaticText
+    t =    13.55s Waiting 3.0s for "creation.week.row.2" Any to exist
+    t =    14.55s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.row.2" Any`
+    t =    14.55s         Checking existence of `"creation.week.row.2" Any`
+    t =    14.58s Find the "creation.week.row.2" Any
+    t =    14.60s Find the "creation.week.row.2" StaticText
+    t =    14.61s Waiting 3.0s for "creation.week.row.3" Any to exist
+    t =    15.64s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.row.3" Any`
+    t =    15.64s         Checking existence of `"creation.week.row.3" Any`
+    t =    15.66s Find the "creation.week.row.3" Any
+    t =    15.67s Find the "creation.week.row.3" StaticText
+    t =    15.68s Find the Target Application 'local.countdownmanager.app'
+2026-11-04 22:49:17.106393+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    15.98s Added attachment named 'Native week preview before explicit confirmation'
+    t =    15.98s Find the "creation.week.cancel" Button
+    t =    16.00s Click "creation.week.cancel" Button
+    t =    16.00s     Wait for local.countdownmanager.app to idle
+    t =    16.00s     Find the "creation.week.cancel" Button
+    t =    16.01s     Check for interrupting elements affecting "creation.week.cancel" Button
+    t =    16.02s     Synthesize event
+2026-11-04 22:49:17.414803+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    16.48s     Wait for local.countdownmanager.app to idle
+    t =    17.80s Checking `Expect predicate `exists == 0` for object Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    17.80s     Checking existence of `Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    17.85s Click "desktop.create-day" MenuButton
+    t =    17.85s     Wait for local.countdownmanager.app to idle
+    t =    17.85s     Find the "desktop.create-day" MenuButton
+    t =    17.88s     Check for interrupting elements affecting "desktop.create-day" MenuButton
+    t =    17.89s     Synthesize event
+2026-11-04 22:49:19.286776+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    18.30s     Wait for local.countdownmanager.app to idle
+    t =    18.31s Waiting 3.0s for "desktop.create-week" MenuItem to exist
+    t =    19.33s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.create-week" MenuItem`
+    t =    19.33s         Checking existence of `"desktop.create-week" MenuItem`
+    t =    19.50s Click "desktop.create-week" MenuItem
+    t =    19.50s     Wait for local.countdownmanager.app to idle
+    t =    19.50s     Find the "desktop.create-week" MenuItem
+    t =    19.66s     Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =    19.66s     Synthesize event
+2026-11-04 22:49:21.058348+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    19.67s         Checking existence of `"desktop.create-week" MenuItem`
+    t =    19.71s         Hover menu item 'До конца недели…'
+    t =    19.71s             Wait for local.countdownmanager.app to idle
+    t =    19.72s             Find the "desktop.create-week" MenuItem
+    t =    19.87s             Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =    19.87s             Synthesize event
+2026-11-04 22:49:21.267114+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    20.09s             Wait for local.countdownmanager.app to idle
+    t =    20.10s         Find the "desktop.create-week" MenuItem
+    t =    20.96s     Wait for local.countdownmanager.app to idle
+    t =    21.00s Waiting 3.0s for "creation.week.confirm" Button to exist
+    t =    22.02s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.confirm" Button`
+    t =    22.02s         Checking existence of `"creation.week.confirm" Button`
+    t =    22.04s Find the "creation.week.confirm" Button
+    t =    22.07s Find the "creation.week.cancel" Button
+    t =    22.09s Click "creation.week.confirm" Button
+    t =    22.09s     Wait for local.countdownmanager.app to idle
+    t =    22.09s     Find the "creation.week.confirm" Button
+    t =    22.10s     Check for interrupting elements affecting "creation.week.confirm" Button
+    t =    22.11s     Synthesize event
+2026-11-04 22:49:23.504862+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    22.57s     Wait for local.countdownmanager.app to idle
+    t =    23.64s Checking `Expect predicate `exists == 0` for object Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    23.64s     Checking existence of `Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    24.72s Click "desktop.create-day" MenuButton
+    t =    24.72s     Wait for local.countdownmanager.app to idle
+    t =    24.73s     Find the "desktop.create-day" MenuButton
+    t =    24.77s     Check for interrupting elements affecting "desktop.create-day" MenuButton
+    t =    24.79s     Synthesize event
+2026-11-04 22:49:26.184018+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    25.26s     Wait for local.countdownmanager.app to idle
+    t =    25.27s Waiting 3.0s for "desktop.create-week" MenuItem to exist
+    t =    26.27s     Checking `Expect predicate `existsNoRetry == 1` for object "desktop.create-week" MenuItem`
+    t =    26.27s         Checking existence of `"desktop.create-week" MenuItem`
+    t =    26.34s Click "desktop.create-week" MenuItem
+    t =    26.34s     Wait for local.countdownmanager.app to idle
+    t =    26.35s     Find the "desktop.create-week" MenuItem
+    t =    26.40s     Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =    26.40s     Synthesize event
+2026-11-04 22:49:27.800625+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    26.52s         Checking existence of `"desktop.create-week" MenuItem`
+    t =    26.56s         Hover menu item 'До конца недели…'
+    t =    26.56s             Wait for local.countdownmanager.app to idle
+    t =    26.57s             Find the "desktop.create-week" MenuItem
+    t =    26.61s             Check for interrupting elements affecting "desktop.create-week" MenuItem
+    t =    26.61s             Synthesize event
+2026-11-04 22:49:28.008982+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    26.83s             Wait for local.countdownmanager.app to idle
+    t =    26.83s         Find the "desktop.create-week" MenuItem
+    t =    27.67s     Wait for local.countdownmanager.app to idle
+    t =    27.70s Waiting 3.0s for "creation.week.confirm" Button to exist
+    t =    28.73s     Checking `Expect predicate `existsNoRetry == 1` for object "creation.week.confirm" Button`
+    t =    28.73s         Checking existence of `"creation.week.confirm" Button`
+    t =    28.75s Find the "creation.week.confirm" Button
+    t =    28.76s Find the "creation.week.confirm" Button
+    t =    28.77s Find the "creation.week.cancel" Button
+    t =    28.80s Click "creation.week.cancel" Button
+    t =    28.80s     Wait for local.countdownmanager.app to idle
+    t =    28.80s     Find the "creation.week.cancel" Button
+    t =    28.81s     Check for interrupting elements affecting "creation.week.cancel" Button
+    t =    28.82s     Synthesize event
+2026-11-04 22:49:30.221355+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    29.33s     Wait for local.countdownmanager.app to idle
+    t =    30.63s Checking `Expect predicate `exists == 0` for object Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    30.63s     Checking existence of `Sheet at {{617.0, 192.0}, {430.0, 560.0}}`
+    t =    30.69s Tear Down
+    t =    30.69s     Find the Target Application 'local.countdownmanager.app'
+2026-11-04 22:49:32.123420+0300 CountdownManagerXCUITests-Runner[54821:14831610] [DisplayManager] Could not find any displays containing rect (inf, inf, 0.0, 0.0)
+    t =    30.99s     Added attachment named 'Failed user scenario'
+    t =    30.99s     Terminate local.countdownmanager.app:54823
+    t =    32.07s     Added attachment named 'Failed scenario lifecycle'
+Test Case '-[CountdownManagerXCUITests.CountdownManagerXCUITests testDesktopWeekCreationNativeMenuCancelSaveAndRepeat]' passed (32.259 seconds).
+Test Suite 'CountdownManagerXCUITests' passed at 2026-11-04 22:49:33.657.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.259 (32.260) seconds
+Test Suite 'CountdownManagerXCUITests.xctest' passed at 2026-11-04 22:49:33.658.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.259 (32.261) seconds
+Test Suite 'Selected tests' passed at 2026-11-04 22:49:33.659.
+	 Executed 1 test, with 0 failures (0 unexpected) in 32.259 (32.262) seconds
+2026-11-04 22:49:33.937 xcodebuild[54781:14831353] [MT] IDETestOperationsObserverDebug: 33.006 elapsed -- Testing started completed.
+2026-11-04 22:49:33.937 xcodebuild[54781:14831353] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-04 22:49:33.937 xcodebuild[54781:14831353] [MT] IDETestOperationsObserverDebug: 33.006 sec, +33.006 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/week-native-evidence/xcui-acceptance.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

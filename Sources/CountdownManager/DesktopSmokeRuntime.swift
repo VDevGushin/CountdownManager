@@ -4,17 +4,35 @@ import CryptoKit
 import QuickLookUI
 import SwiftUI
 
+private final class WeekSmokePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
+private struct EditorStabilityRender {
+    let rgb: [Double]
+    let inkSamples: [Int]
+    let geometry: [String: CGRect]
+    let opaqueFraction: Double
+    let rootIsFlipped: Bool
+    let diagnostic: [String: Any]
+    let bitmap: NSBitmapImageRep
+    let pixelROI: CGRect
+}
+
 private actor DesktopSmokeWriteGate {
     private let repository: CountdownRepository
     private var holdsNextWrite = false
     private var blockedWrite: CheckedContinuation<Void, Error>?
     private var blockedWaiters: [CheckedContinuation<Void, Never>] = []
+    private var writes = 0
 
     init(fileURL: URL) { repository = CountdownRepository(fileURL: fileURL) }
 
     func holdNextWrite() { holdsNextWrite = true }
+    func writeCount() -> Int { writes }
 
     func save(_ data: CountdownData, revision: Int) async throws -> Bool {
+        writes += 1
         if holdsNextWrite {
             holdsNextWrite = false
             try await withCheckedThrowingContinuation { continuation in
@@ -79,6 +97,8 @@ final class DesktopSmokeRuntime {
     private let showWhatsNew: () -> Void
     private var captures: [[String: Any]] = []
     private var passed: [String] = []
+    private var captureFixture: [String: String]?
+    private var editorStabilityAXInspectable: Bool?
     private var controls: UISmokeControlRegistry { .shared }
 
     init(configuration: UISmokeConfiguration, store: Store, timer: CountdownTimer,
@@ -128,6 +148,10 @@ final class DesktopSmokeRuntime {
                     showDesktop()
                     try await wait("link desktop shown") { self.desktopWindow()?.isVisible == true }
                     try await verifyEventLinks()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
+                    try await verifyWeekCreation()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-editor-stability") {
+                    try await verifyEditorStability()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
                     try await runAttachmentFocusedChecks()
                 } else {
@@ -141,6 +165,681 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyEditorStability() async throws {
+        try await wait("editor stability bootstrap loaded") { !self.store.isLoading }
+        try require(store.active.isEmpty, "editor stability requires an isolated bootstrap")
+        showDesktop()
+        try await wait("editor stability parent window") { self.desktopWindow()?.isVisible == true }
+        let retained = try value(desktopWindow(), "editor stability parent")
+        let directory = configuration.homeURL.appendingPathComponent("EditorStability", isDirectory: true)
+        let fileURL = directory.appendingPathComponent("events.json")
+        let suite = "CountdownEditorStability.\(UUID().uuidString)"
+        let defaults = try value(UserDefaults(suiteName: suite), "editor stability preferences")
+        let now = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 5, hour: 12)), "stability clock")
+        let fixture = Store(fileURL: fileURL, disclosureDefaults: defaults, now: { now }, loginItemManagementIsAvailable: false)
+        try await wait("synthetic stability store loaded") { !fixture.hasPendingPersistence }
+        let sources = try UISmokeAttachmentMedia.make(in: directory.appendingPathComponent("SyntheticSources"))
+        let sourceImage = try value(sources.first, "synthetic PNG")
+        var materialSources = [sourceImage, sources[1]]
+        for number in 2...3 {
+            let copy = directory.appendingPathComponent("SyntheticSources/Иллюстрация \(number).png")
+            try FileManager.default.copyItem(at: sourceImage, to: copy)
+            materialSources.append(copy)
+        }
+        let token = UUID()
+        let prepared = await fixture.beginAttachmentDraft(token)
+        try require(prepared, "cannot prepare synthetic stability materials")
+        var attachments: [EventAttachment] = []
+        for source in materialSources {
+            attachments.append(try value(await fixture.importAttachment(from: source, draftID: token), "synthetic material import"))
+        }
+        var events: [Countdown] = []
+        for index in 0..<12 {
+            let day = Day(try value(Day.calendar.date(byAdding: .day, value: index, to: now), "stability event date"))
+            let item = Countdown(title: String(format: "День %02d", index + 1),
+                                 note: index == 10 ? "Первая строка плана\nВторая строка плана\nТретья строка плана\nЧетвёртая строка плана" : nil,
+                                 date: day, emoji: "", attachments: index == 10 ? attachments : [])
+            let saved = await fixture.save(item, primary: false)
+            try require(saved, "cannot seed synthetic stability event")
+            events.append(item)
+        }
+        await fixture.discardAttachmentDraft(token)
+        let selected = events[10]
+        let observed = events[0]
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let prefix = "stability."
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: prefix
+        ), editorSession: session)
+        let window = try value(controller.window, "stability native desktop")
+        window.setContentSize(NSSize(width: 1400, height: 640))
+        let oldScheme = visualEnvironment.colorSchemeOverride
+        let oldContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let oldMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        var trace: [[String: Any]] = []
+        var brightnessFailures: [String] = []
+        editorStabilityAXInspectable = true
+        retained.orderOut(nil)
+        controller.show()
+        defer {
+            try? writeEditorStabilityTrace(trace)
+            window.close()
+            visualEnvironment.colorSchemeOverride = oldScheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: oldContrast, reduceMotion: oldMotion)
+            captureFixture = nil
+            defaults.removePersistentDomain(forName: suite)
+            retained.makeKeyAndOrderFront(nil)
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        captureFixture = ["scenario": "ordinary-editor-stability", "referenceDay": "2026-11-05",
+                          "dataset": "12 generic nonfavorite events; four generated PNG/PDF materials; no working data"]
+        try await press(prefix + "desktop.event.\(selected.id)")
+        try await expect(prefix + "desktop.inspector", selected.id.uuidString)
+        let root = try value(window.contentView, "stability root")
+        let split = try value(nativeSplit(in: root), "stability native split")
+        _ = try await positionDivider(in: window, fraction: 2.0 / 3.0, controlScope: prefix)
+        let browser = try value(split.arrangedSubviews.first, "stability browser pane")
+        let scroll = try value(nativeScroll(in: browser), "stability browser scroll")
+        scroll.contentView.scroll(to: NSPoint(x: 0, y: 80))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try await wait("stability browser offset") { abs(scroll.contentView.bounds.minY - 80) < 1 }
+        let baselineBytes = try Data(contentsOf: fileURL)
+        let materialHashes = try await editorStabilityMaterialHashes(attachments, eventID: selected.id, store: fixture)
+        for scheme in [ColorScheme.light, .dark] {
+            visualEnvironment.colorSchemeOverride = scheme
+            window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
+            try await Task.sleep(nanoseconds: 150_000_000)
+            let theme = scheme == .dark ? "dark" : "light"
+            for cycle in 1...2 {
+                let baseline = try editorStabilityRender(window: window, scroll: scroll, eventID: observed.id,
+                                                         scope: prefix, scheme: scheme)
+                if cycle == 1 { try capture("editor-stability-baseline-\(theme)", window: window) }
+                try writeEditorStabilityBaseline(baseline, theme: theme, cycle: cycle)
+                try require(baseline.opaqueFraction > 0.99 && baseline.inkSamples.count >= 12 && baseline.rgb.count >= 6_000,
+                            "stability ROI is empty, translucent or lacks known title ink")
+                var visited: Set<ObjectIdentifier> = []
+                let baselineAX = editorStabilityAXIdentifiers(window, visited: &visited)
+                let baselineAXInspectable = baselineAX.contains("desktop.event.\(observed.id)")
+                if !baselineAXInspectable { editorStabilityAXInspectable = false }
+                let openedAt = ProcessInfo.processInfo.systemUptime
+                try await press(prefix + "desktop.detail.edit")
+                try await sampleEditorStabilityTransition("open", start: openedAt, baseline: baseline, window: window,
+                                                         scroll: scroll, eventID: observed.id, scope: prefix, scheme: scheme,
+                                                         cycle: cycle, trace: &trace, failures: &brightnessFailures)
+                try await wait("ordinary stability editor attached") {
+                    window.attachedSheet?.isVisible == true && session.desktopIsPresented
+                }
+                let sheet = try value(window.attachedSheet, "ordinary stability sheet")
+                try await expect(prefix + "editor.attachments", "4")
+                try require(controls.entries[prefix + "desktop.event.\(observed.id)"]?.isEnabled == false,
+                            "modal card became enabled while preserving its appearance")
+                try require(!controls.press(prefix + "desktop.event.\(observed.id)") && fixture.data.primaryID == nil
+                            && controls.value(prefix + "desktop.inspector") == selected.id.uuidString,
+                            "disabled card accepted a mutation under the editor")
+                visited.removeAll()
+                let modalAX = editorStabilityAXIdentifiers(window, visited: &visited)
+                if baselineAXInspectable {
+                    try require(!modalAX.contains("desktop.event.\(observed.id)"), "modal background card remains exposed in native AX")
+                }
+                let peak = try editorStabilityRender(window: window, scroll: scroll, eventID: observed.id, scope: prefix, scheme: scheme)
+                try recordEditorStabilitySample("modal", baseline: baseline, current: peak, scheme: theme, cycle: cycle,
+                                                 offset: -1, window: window, trace: &trace, failures: &brightnessFailures)
+                if cycle == 1 { try capture("editor-stability-with-sheet-\(theme)", window: window) }
+                let cancelledAt = ProcessInfo.processInfo.systemUptime
+                try await press(prefix + "editor.cancel")
+                try await sampleEditorStabilityTransition("cancel", start: cancelledAt, baseline: baseline, window: window,
+                                                         scroll: scroll, eventID: observed.id, scope: prefix, scheme: scheme,
+                                                         cycle: cycle, trace: &trace, failures: &brightnessFailures)
+                try await wait("ordinary stability Cancel closes native presentation") {
+                    window.attachedSheet == nil && sheet.sheetParent == nil && !sheet.isVisible && !session.hasActiveEditor
+                        && !fixture.hasPendingPersistence
+                }
+                let after = try editorStabilityRender(window: window, scroll: scroll, eventID: observed.id, scope: prefix, scheme: scheme)
+                try recordEditorStabilitySample("after-cancel", baseline: baseline, current: after, scheme: theme, cycle: cycle,
+                                                 offset: -1, window: window, trace: &trace, failures: &brightnessFailures)
+                if cycle == 1 { try capture("editor-stability-after-cancel-\(theme)", window: window) }
+                let currentBytes = try Data(contentsOf: fileURL)
+                let currentHashes = try await editorStabilityMaterialHashes(attachments, eventID: selected.id, store: fixture)
+                try require(currentBytes == baselineBytes && currentHashes == materialHashes,
+                            "ordinary editor Cancel changed event bytes or owned synthetic files")
+            }
+        }
+        try require(brightnessFailures.isEmpty, "ordinary editor changed background card/title RGB: " + brightnessFailures.joined(separator: "; "))
+        let axScope = editorStabilityAXInspectable == true
+            ? "native AX baseline present and modal background hidden"
+            : "GAP: native AX baseline unsupported; separate external AX acceptance required"
+        passed.append("ordinary editor open/Cancel twice per theme preserves opaque card/title RGB, native geometry, disabled background, twelve-event JSON and four owned synthetic files; \(axScope)")
+    }
+
+    private func editorStabilityRender(window: NSWindow, scroll: NSScrollView, eventID: UUID,
+                                       scope: String, scheme: ColorScheme) throws -> EditorStabilityRender {
+        let root = try value(window.contentView, "stability render root")
+        root.layoutSubtreeIfNeeded()
+        root.display()
+        let bitmap = try value(root.bitmapImageRepForCachingDisplay(in: root.bounds), "stability root bitmap")
+        root.cacheDisplay(in: root.bounds, to: bitmap)
+        let card = try value(controls.frame(scope + "desktop.event.\(eventID)"), "stability card frame")
+        let title = try value(controls.frame(scope + "desktop.card.title.\(eventID)"), "stability title frame")
+        let roi = card.insetBy(dx: 6, dy: 6)
+        let viewport = scroll.contentView.convert(scroll.contentView.bounds, to: root)
+        try require(viewport.insetBy(dx: -1, dy: -1).contains(roi) && roi.contains(title), "stability card/title ROI is clipped")
+        let ink = try value(NSColor(AuroraInstrument.ink(for: scheme)).usingColorSpace(.sRGB), "stability expected title ink")
+        let scaleX = CGFloat(bitmap.pixelsWide) / root.bounds.width
+        let scaleY = CGFloat(bitmap.pixelsHigh) / root.bounds.height
+        let imageROI = root.isFlipped ? roi : CGRect(x: roi.minX, y: root.bounds.maxY - roi.maxY, width: roi.width, height: roi.height)
+        let imageTitle = root.isFlipped ? title : CGRect(x: title.minX, y: root.bounds.maxY - title.maxY,
+                                                        width: title.width, height: title.height)
+        let minX = max(0, Int(ceil(imageROI.minX * scaleX)))
+        let maxX = min(bitmap.pixelsWide, Int(floor(imageROI.maxX * scaleX)))
+        let minY = max(0, Int(ceil(imageROI.minY * scaleY)))
+        let maxY = min(bitmap.pixelsHigh, Int(floor(imageROI.maxY * scaleY)))
+        let step = max(1, Int(window.backingScaleFactor * 2))
+        var rgb: [Double] = []
+        var inkSamples: [Int] = []
+        var opaque = 0
+        for y in stride(from: minY, to: maxY, by: step) {
+            for x in stride(from: minX, to: maxX, by: step) {
+                let color = try value(bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB), "stability pixel")
+                let index = rgb.count / 3
+                rgb.append(Double(color.redComponent * 255))
+                rgb.append(Double(color.greenComponent * 255))
+                rgb.append(Double(color.blueComponent * 255))
+                if color.alphaComponent > 0.99 { opaque += 1 }
+                let point = CGPoint(x: CGFloat(x) / scaleX, y: CGFloat(y) / scaleY)
+                let distance = max(abs(color.redComponent - ink.redComponent), abs(color.greenComponent - ink.greenComponent),
+                                   abs(color.blueComponent - ink.blueComponent))
+                // The observed color-managed solid ink is 12.3 bytes from the semantic token.
+                // This bounds baseline glyph selection only; before/after RGB tolerance stays one byte.
+                if imageTitle.contains(point), distance <= 15.0 / 255.0, color.alphaComponent > 0.99 { inkSamples.append(index) }
+            }
+        }
+        let split = try value(nativeSplit(in: root), "stability split geometry")
+        var geometry: [String: CGRect] = [:]
+        geometry["window"] = window.frame
+        geometry["root"] = root.bounds
+        geometry["card"] = card
+        geometry["title"] = title
+        geometry["clip"] = scroll.contentView.bounds
+        for (index, pane) in split.arrangedSubviews.enumerated() { geometry["pane.\(index)"] = pane.frame }
+        let count = rgb.count / 3
+        let opaqueFraction = count == 0 ? 0 : Double(opaque) / Double(count)
+        let pixelROI = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
+        let rect = { (value: CGRect) in [value.minX, value.minY, value.width, value.height] }
+        var diagnostic: [String: Any] = [:]
+        diagnostic["rgbCount"] = rgb.count
+        diagnostic["opaqueFraction"] = opaqueFraction
+        diagnostic["inkCount"] = inkSamples.count
+        diagnostic["expectedInkRGBABytes"] = [ink.redComponent * 255, ink.greenComponent * 255, ink.blueComponent * 255, ink.alphaComponent * 255]
+        diagnostic["baselineKnownInkToleranceBytes"] = 15
+        diagnostic["beforeAfterMeanRGBToleranceBytes"] = 1
+        diagnostic["rootIsFlipped"] = root.isFlipped
+        diagnostic["rootClass"] = String(describing: type(of: root))
+        diagnostic["bitmapDimensions"] = [bitmap.pixelsWide, bitmap.pixelsHigh]
+        diagnostic["bitmapBitsPerSample"] = bitmap.bitsPerSample
+        diagnostic["bitmapSamplesPerPixel"] = bitmap.samplesPerPixel
+        diagnostic["sampleStepPixels"] = step
+        diagnostic["viewROI"] = rect(roi)
+        diagnostic["imageROI"] = rect(imageROI)
+        diagnostic["pixelROI"] = rect(pixelROI)
+        diagnostic["viewTitle"] = rect(title)
+        diagnostic["imageTitle"] = rect(imageTitle)
+        diagnostic["viewport"] = rect(viewport)
+        diagnostic["geometry"] = geometry.mapValues(rect)
+        diagnostic["rgbMinimum"] = rgb.min() ?? -1
+        diagnostic["rgbMaximum"] = rgb.max() ?? -1
+        diagnostic["windowVisible"] = window.isVisible
+        diagnostic["windowKey"] = window.isKeyWindow
+        return EditorStabilityRender(rgb: rgb, inkSamples: inkSamples, geometry: geometry,
+                                     opaqueFraction: opaqueFraction, rootIsFlipped: root.isFlipped,
+                                     diagnostic: diagnostic, bitmap: bitmap, pixelROI: pixelROI)
+    }
+
+    private func writeEditorStabilityBaseline(_ sample: EditorStabilityRender, theme: String, cycle: Int) throws {
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let name = "editor-stability-baseline-\(theme)-\(cycle)"
+        try JSONSerialization.data(withJSONObject: sample.diagnostic, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent(name + "-diagnostic.json"))
+        if let image = sample.bitmap.cgImage?.cropping(to: sample.pixelROI),
+           let png = NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]) {
+            try png.write(to: directory.appendingPathComponent(name + "-roi.png"))
+        }
+    }
+
+    private func sampleEditorStabilityTransition(_ phase: String, start: TimeInterval, baseline: EditorStabilityRender,
+                                                 window: NSWindow, scroll: NSScrollView, eventID: UUID, scope: String,
+                                                 scheme: ColorScheme, cycle: Int, trace: inout [[String: Any]],
+                                                 failures: inout [String]) async throws {
+        for milliseconds in [0, 33, 100, 240] {
+            let delay = start + Double(milliseconds) / 1_000 - ProcessInfo.processInfo.systemUptime
+            if delay > 0 { try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000)) }
+            let current = try editorStabilityRender(window: window, scroll: scroll, eventID: eventID, scope: scope, scheme: scheme)
+            try recordEditorStabilitySample(phase, baseline: baseline, current: current,
+                                             scheme: scheme == .dark ? "dark" : "light", cycle: cycle, offset: milliseconds,
+                                             window: window, trace: &trace, failures: &failures)
+            trace[trace.count - 1]["actionStartedAt"] = start
+            trace[trace.count - 1]["elapsedMilliseconds"] = (ProcessInfo.processInfo.systemUptime - start) * 1_000
+        }
+    }
+
+    private func recordEditorStabilitySample(_ phase: String, baseline: EditorStabilityRender, current: EditorStabilityRender,
+                                             scheme: String, cycle: Int, offset: Int, window: NSWindow,
+                                             trace: inout [[String: Any]], failures: inout [String]) throws {
+        try require(current.rgb.count == baseline.rgb.count && current.opaqueFraction > 0.99, "stability opaque sample bounds changed")
+        for (key, expected) in baseline.geometry {
+            let actual = try value(current.geometry[key], "stability geometry \(key)")
+            let displacement = max(abs(actual.minX - expected.minX), abs(actual.minY - expected.minY),
+                                   abs(actual.width - expected.width), abs(actual.height - expected.height))
+            try require(displacement < 0.5, "ordinary editor moved \(key): \(expected) → \(actual)")
+        }
+        var difference = 0.0
+        for index in baseline.rgb.indices { difference += abs(current.rgb[index] - baseline.rgb[index]) }
+        let mean = difference / Double(max(1, baseline.rgb.count))
+        var inkDifference = 0.0
+        for pixel in baseline.inkSamples {
+            for channel in 0..<3 { inkDifference += abs(current.rgb[pixel * 3 + channel] - baseline.rgb[pixel * 3 + channel]) }
+        }
+        let inkMean = inkDifference / Double(max(1, baseline.inkSamples.count * 3))
+        var record: [String: Any] = [:]
+        record["phase"] = phase
+        record["theme"] = scheme
+        record["cycle"] = cycle
+        record["requestedMilliseconds"] = offset
+        record["uptime"] = ProcessInfo.processInfo.systemUptime
+        record["cardMeanRGBDeltaBytes"] = mean
+        record["titleInkMeanRGBDeltaBytes"] = inkMean
+        record["opaqueFraction"] = current.opaqueFraction
+        record["pixelSamples"] = current.rgb.count / 3
+        record["titleInkSamples"] = baseline.inkSamples.count
+        record["rootIsFlipped"] = current.rootIsFlipped
+        record["nativeAXBaselineInspectable"] = editorStabilityAXInspectable ?? false
+        record["nativeSheetVisible"] = window.attachedSheet?.isVisible ?? false
+        record["geometry"] = current.geometry.mapValues { [$0.minX, $0.minY, $0.width, $0.height] }
+        trace.append(record)
+        if mean > 1 || inkMean > 1 {
+            failures.append("\(scheme)/\(cycle)/\(phase)/\(offset)ms card=\(String(format: "%.3f", mean)) ink=\(String(format: "%.3f", inkMean))")
+        }
+    }
+
+    private func editorStabilityMaterialHashes(_ attachments: [EventAttachment], eventID: UUID, store: Store) async throws -> [String] {
+        var hashes: [String] = []
+        for attachment in attachments {
+            let url = try value(await store.attachmentThumbnailURL(attachment, eventID: eventID), "synthetic owned file")
+            hashes.append(SHA256.hash(data: try Data(contentsOf: url)).map { String(format: "%02x", $0) }.joined())
+        }
+        return hashes
+    }
+
+    private func editorStabilityAXIdentifiers(_ element: Any, visited: inout Set<ObjectIdentifier>) -> Set<String> {
+        guard let node = element as? NSAccessibilityProtocol else { return [] }
+        let identifier = ObjectIdentifier(node)
+        guard visited.insert(identifier).inserted, visited.count < 5_000, !node.isAccessibilityHidden() else { return [] }
+        var identifiers: Set<String> = []
+        if let value = node.accessibilityIdentifier() { identifiers.insert(value) }
+        for child in node.accessibilityChildren() ?? [] {
+            identifiers.formUnion(editorStabilityAXIdentifiers(child, visited: &visited))
+        }
+        return identifiers
+    }
+
+    private func writeEditorStabilityTrace(_ trace: [[String: Any]]) throws {
+        let directory = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try JSONSerialization.data(withJSONObject: trace, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appendingPathComponent("editor-stability-trace.json"))
+    }
+
+    private func verifyWeekCreation() async throws {
+        try await wait("loaded isolated week store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "week route must start without production events")
+        showDesktop()
+        try await wait("week fixture parent window") { self.desktopWindow()?.isVisible == true }
+        let retained = try value(desktopWindow(), "week parent window")
+        let previousScheme = visualEnvironment.colorSchemeOverride
+        let previousContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let previousMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        retained.orderOut(nil)
+        defer {
+            visualEnvironment.colorSchemeOverride = previousScheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: previousContrast, reduceMotion: previousMotion)
+            captureFixture = nil
+            retained.makeKeyAndOrderFront(nil)
+        }
+        for (day, count, name) in [(5, 3, "thursday"), (7, 1, "saturday"), (8, 7, "sunday")] {
+            try await verifyWeekFixture(dayNumber: day, expectedCount: count, name: name)
+        }
+        try await verifyWeekFixture(dayNumber: 8, expectedCount: 7, name: "midnight", crossesMidnight: true)
+    }
+
+    private func verifyWeekFixture(dayNumber: Int, expectedCount: Int, name: String,
+                                   crossesMidnight: Bool = false) async throws {
+        let directory = configuration.homeURL.appendingPathComponent("Week-\(name)", isDirectory: true)
+        let fileURL = directory.appendingPathComponent("events.json")
+        let repository = CountdownRepository(fileURL: fileURL)
+        _ = try await repository.save(CountdownData(), revision: 0)
+        let suite = "CountdownWeekSmoke.\(UUID().uuidString)"
+        let defaults = try value(UserDefaults(suiteName: suite), "week preferences")
+        var clock = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: dayNumber, hour: 12)),
+                              "week controlled clock")
+        let referenceDay = Day(clock)
+        let week = try value(DayCreationWeek(today: referenceDay), "week civil dates")
+        let gate = DesktopSmokeWriteGate(fileURL: fileURL)
+        let fixture = Store(fileURL: fileURL, disclosureDefaults: defaults,
+                            persistenceSaveOverride: { data, revision in try await gate.save(data, revision: revision) },
+                            now: { clock }, loginItemManagementIsAvailable: false)
+        try await wait("\(name) fixture loaded") { !fixture.hasPendingPersistence }
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let appearance = ApplicationAppearance(defaults: defaults)
+        let prefix = "week-\(name)."
+        let miniPrefix = "week-\(name)-mini."
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: appearance, showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: prefix
+        ), editorSession: session)
+        let window = try value(controller.window, "\(name) desktop window")
+        window.setContentSize(NSSize(width: 1200, height: 900))
+        let mini = WeekSmokePanel(contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
+                                  styleMask: [.borderless], backing: .buffered, defer: false)
+        mini.isReleasedWhenClosed = false
+        mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
+            timer: timer, store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: appearance
+        ).uiSmokeControlScope(miniPrefix))
+        controller.show()
+        mini.makeKeyAndOrderFront(nil)
+        var scenarioCompleted = false
+        defer {
+            if !scenarioCompleted {
+                try? capture("week-\(name)-failure", window: window.attachedSheet ?? (mini.isVisible ? mini : window))
+            }
+            mini.close()
+            window.close()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        captureFixture = ["scenario": name, "referenceDay": weekDateKey(referenceDay), "clock": "local civil noon",
+                          "targetDays": week.days.map { weekDateKey($0) }.joined(separator: ","),
+                          "panelFixture": "Isolated 390x600 NSPanel; same canBecomeKey override as production status panel"]
+        try require(mini.canBecomeKey, "isolated week mini-panel must preserve the production panel's key capability")
+        try await wait("isolated week mini-panel becomes key") { mini.isKeyWindow && NSApp.keyWindow === mini }
+        try await wait("\(name) empty week action") { self.controls.entries[miniPrefix + "event.empty.week"]?.isEnabled == true }
+        let emptyBytes = try Data(contentsOf: fileURL)
+        if name == "thursday" { try await captureWindowThemes("week-mini-empty", window: mini) }
+        try await press(miniPrefix + "event.empty.week")
+        try await expect(miniPrefix + "creation.week.count", String(expectedCount))
+        try await expect(miniPrefix + "creation.week.title", week.isNextWeek ? "На следующую неделю" : "До конца недели")
+        try require(session.isPresented && !session.desktopIsPresented, "mini preview must reserve the shared editor session")
+        try await requireWeekRows(week, scope: miniPrefix)
+        _ = try await requireWeekFooter(scope: miniPrefix, expectedSize: NSSize(width: 390, height: 540))
+        if name == "sunday" { try await requireWeekScrolling(week: week, scope: miniPrefix, window: mini) }
+        try require(fixture.data.items.isEmpty, "opening preview created events before confirmation")
+        let previewWrites = await gate.writeCount()
+        try require(previewWrites == 0, "opening preview performed persistence")
+        if name == "saturday" || name == "sunday" {
+            try await captureWindowThemes("week-\(name)-mini-preview", window: mini)
+        }
+        if name == "sunday" {
+            let footerBefore = try await requireWeekFooter(scope: miniPrefix, expectedSize: NSSize(width: 390, height: 540))
+            let priorContrast = accessibilitySettings.isolatedCaptureOverrideValue
+            let priorMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: true)
+            defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: priorContrast, reduceMotion: priorMotion) }
+            try await captureWindowThemes("week-sunday-mini-preview-contrast", window: mini)
+            let footerAfter = try await requireWeekFooter(scope: miniPrefix, expectedSize: NSSize(width: 390, height: 540))
+            try require(footerBefore.0 == footerAfter.0 && footerBefore.1 == footerAfter.1,
+                        "Increase Contrast moved or clipped the seven-day preview footer")
+        }
+        if crossesMidnight {
+            clock = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 9, hour: 12)),
+                              "week Monday clock")
+            try await press(miniPrefix + "creation.week.confirm")
+            try await expect(miniPrefix + "creation.week.count", "6")
+            try await expect(miniPrefix + "creation.week.notice", EventUIStrings.weekDateChanged)
+            let writesAfterMidnight = await gate.writeCount()
+            let bytesAfterMidnight = try Data(contentsOf: fileURL)
+            try require(writesAfterMidnight == 0 && fixture.data.items.isEmpty && bytesAfterMidnight == emptyBytes,
+                        "cold stale Sunday confirmation persisted or silently changed its range")
+            let reviewedWeek = try value(DayCreationWeek(today: Day(clock)), "reviewed Monday week")
+            captureFixture = ["scenario": name, "referenceDay": "2026-11-09", "priorReferenceDay": "2026-11-08",
+                              "targetDays": reviewedWeek.days.map { weekDateKey($0) }.joined(separator: ",")]
+            try await captureWindowThemes("week-midnight-review", window: mini)
+            try await press(miniPrefix + "creation.week.confirm")
+            try await wait("explicit Monday confirmation") { !session.hasActiveEditor && !fixture.hasPendingPersistence }
+            let durable = try await CountdownRepository(fileURL: fileURL).load()
+            try require(durable.items.count == 6 && durable.items.map(\.date) == DayCreationWeek(today: Day(clock))?.days,
+                        "reviewed Monday confirmation must create Tuesday through Sunday")
+            passed.append("week cold Sunday→Monday confirmation writes nothing, shows six-day re-review notice, then explicit second confirmation persists Tuesday–Sunday")
+            scenarioCompleted = true
+            return
+        }
+        try await press(miniPrefix + "creation.week.cancel")
+        try await wait("empty preview Cancel releases session") { !session.hasActiveEditor }
+        let cancelledBytes = try Data(contentsOf: fileURL)
+        try require(fixture.data.items.isEmpty && cancelledBytes == emptyBytes, "Cancel changed the empty snapshot")
+
+        let firstDate = try value(week.days.first, "first target date")
+        let ordinary = Countdown(title: "Стоматолог", note: "Обычное событие на этой же дате", date: firstDate, emoji: "")
+        let ordinarySaved = await fixture.save(ordinary, primary: true)
+        try require(ordinarySaved, "cannot seed same-date ordinary event")
+        try await press(miniPrefix + "day.add")
+        try await wait("inline week choice") { self.controls.entries[miniPrefix + "creation.day.week"]?.isEnabled == true }
+        if name == "thursday" { try await captureWindowThemes("week-mini-action", window: mini) }
+        try await press(miniPrefix + "creation.day.week")
+        try await expect(miniPrefix + "creation.week.count", String(expectedCount))
+        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + "|new")
+        try await press(miniPrefix + "creation.week.cancel")
+        try await wait("ordinary preview Cancel") { !session.hasActiveEditor }
+        var missingCount = expectedCount
+        if name == "thursday" {
+            var renamed = EventEditorDraft(day: firstDate)
+            renamed.setTitle("Подготовиться к выходным")
+            renamed.note = "Не менять заметку созданного дня"
+            renamed.subtasks = [try Subtask(text: "Сохранить выполненное дело", isCompleted: true)]
+            let seeded = await fixture.save(renamed.countdown(id: UUID(), date: firstDate), primary: false)
+            try require(seeded, "cannot seed renamed day")
+            missingCount -= 1
+        }
+        let baseline = fixture.data
+        let baselineBytes = try Data(contentsOf: fileURL)
+        try await press(miniPrefix + "day.add")
+        try await press(miniPrefix + "creation.day.week")
+        try await expect(miniPrefix + "creation.week.count", String(missingCount))
+        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + (name == "thursday" ? "|existing" : "|new"))
+        try await wait("desktop locked by mini week preview") { self.controls.entries[prefix + "desktop.create-week"]?.isEnabled == false }
+        try require(!controls.press(prefix + "desktop.create-week"), "desktop replaced a live mini preview")
+        let retainedRoot = try value(controls.value(miniPrefix + "root.window"), "retained week mini root identity")
+        mini.orderOut(nil)
+        mini.makeKeyAndOrderFront(nil)
+        try await wait("retained week mini-panel returns as key") { mini.isKeyWindow && NSApp.keyWindow === mini }
+        try await expect(miniPrefix + "creation.week.count", String(missingCount))
+        try require(controls.value(miniPrefix + "root.window") == retainedRoot && fixture.data == baseline,
+                    "mini hide/show replaced the preview or changed event data")
+        if name == "thursday" { try await captureWindowThemes("week-thursday-mini-preview", window: mini) }
+        try await press(miniPrefix + "creation.week.cancel")
+        try await wait("mini review Cancel releases session") { !session.hasActiveEditor }
+        mini.orderOut(nil)
+        window.makeKeyAndOrderFront(nil)
+        try await press(prefix + "desktop.create-week")
+        try await wait("native week sheet attaches") { window.attachedSheet?.isVisible == true && session.desktopIsPresented }
+        try await expect(prefix + "creation.week.count", String(missingCount))
+        let sheet = try value(window.attachedSheet, "native week sheet")
+        _ = try await requireWeekFooter(scope: prefix, expectedSize: NSSize(width: 430, height: 560))
+        try await wait("mini creation locked by desktop preview") { self.controls.entries[miniPrefix + "event.add"]?.isEnabled == false }
+        try require(!controls.press(miniPrefix + "event.add"), "mini creation interrupted desktop week preview")
+        if name == "thursday" || name == "sunday" {
+            try await captureWindowThemes("week-\(name)-desktop-preview", window: sheet)
+        }
+        if name == "sunday" {
+            try await requireWeekScrolling(week: week, scope: prefix, window: sheet,
+                                          captureName: "week-sunday-desktop-bottom-light")
+        }
+        if name == "thursday" {
+            await gate.holdNextWrite()
+            try await press(prefix + "creation.week.confirm")
+            await gate.waitUntilBlocked()
+            try await wait("pending batch disables confirmation and Cancel") {
+                self.controls.entries[prefix + "creation.week.confirm"]?.isEnabled == false
+                    && self.controls.entries[prefix + "creation.week.cancel"]?.isEnabled == false
+            }
+            try require(!controls.press(prefix + "creation.week.confirm") && !controls.press(prefix + "creation.week.cancel"),
+                        "pending batch accepted a repeated confirmation or cancellation")
+            await gate.release(failing: true)
+            try await wait("failed batch rolls back and retains preview") {
+                !fixture.hasPendingPersistence && fixture.data == baseline
+                    && self.controls.entries[prefix + "creation.week.confirm"]?.isEnabled == true
+                    && self.controls.frame(prefix + "desktop.error") != nil
+            }
+            let failedBytes = try Data(contentsOf: fileURL)
+            try require(failedBytes == baselineBytes && window.attachedSheet === sheet,
+                        "failed batch changed durable bytes or dismissed the review")
+            try capture("week-desktop-write-failure-light", window: sheet)
+            try await press(prefix + "desktop.error.dismiss")
+        }
+        let writesBeforeConfirm = await gate.writeCount()
+        try await press(prefix + "creation.week.confirm")
+        try await requireWeekSheetDismissal(sheet, host: window, session: session, ownerStore: fixture,
+                                            scope: prefix, description: "week confirmation")
+        let durable = try await CountdownRepository(fileURL: fileURL).load()
+        let writesAfterConfirm = await gate.writeCount()
+        try require(writesAfterConfirm == writesBeforeConfirm + 1 && durable == fixture.data,
+                    "batch must persist in one complete write")
+        try require(Array(durable.items.prefix(baseline.items.count)) == baseline.items && durable.primaryID == ordinary.id,
+                    "week creation changed original events, renamed day or favorite")
+        try require(durable.items.filter(\.isDay).map(\.date).sorted() == week.days,
+                    "week creation must add exactly the missing dates")
+        try require(durable.items.suffix(missingCount).allSatisfy {
+            $0.isDay && $0.usesAutomaticTitle && $0.showsWeather && !$0.keepsAfterDate
+                && $0.subtasks.isEmpty && $0.attachments.isEmpty && $0.links.isEmpty
+        }, "new days do not match ordinary day defaults")
+        if name == "thursday" { try await captureWindowThemes("week-desktop-result", window: window) }
+        let completeBytes = try Data(contentsOf: fileURL)
+        try await press(prefix + "desktop.create-week")
+        try await wait("completed week review attaches a visible native sheet") {
+            window.attachedSheet?.isVisible == true && window.attachedSheet?.sheetParent === window
+                && session.desktopIsPresented
+        }
+        let completedSheet = try value(window.attachedSheet, "completed week review sheet")
+        try await expect(prefix + "creation.week.count", "0")
+        try require(controls.entries[prefix + "creation.week.confirm"]?.isEnabled == false,
+                    "an already-created week offered duplicate creation")
+        try await press(prefix + "creation.week.cancel")
+        try await requireWeekSheetDismissal(completedSheet, host: window, session: session, ownerStore: fixture,
+                                            scope: prefix, description: "completed week review Cancel")
+        let finalBytes = try Data(contentsOf: fileURL)
+        let finalWrites = await gate.writeCount()
+        try require(finalBytes == completeBytes && finalWrites == writesAfterConfirm,
+                    "reviewing or cancelling an existing week changed event data")
+        passed.append("week \(name): empty/inline entry, \(expectedCount)-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat\(name == "thursday" ? "; renamed-day skip and failed-write retry" : "")")
+        scenarioCompleted = true
+    }
+
+    private func requireWeekRows(_ week: DayCreationWeek, scope: String) async throws {
+        for (index, day) in week.days.enumerated() {
+            try await expect(scope + "creation.week.row.\(index)", weekDateKey(day) + "|new")
+        }
+    }
+
+    private func weekDateKey(_ day: Day) -> String {
+        String(format: "%04d-%02d-%02d", day.year, day.month, day.day)
+    }
+
+    private func requireWeekSheetDismissal(_ sheet: NSWindow, host: NSWindow, session: EventEditorSession,
+                                           ownerStore: Store, scope: String, description: String) async throws {
+        let previewID = scope + "creation.week.preview"
+        let cancelID = scope + "creation.week.cancel"
+        let confirmID = scope + "creation.week.confirm"
+        let createID = scope + "desktop.create-week"
+        do {
+            try await wait(description + " releases native presentation and editing ownership") {
+                guard host.attachedSheet == nil, sheet.sheetParent == nil, !sheet.isVisible, host.isVisible else { return false }
+                guard !session.hasActiveEditor, !ownerStore.hasPendingPersistence else { return false }
+                return self.controls.entries[createID]?.isEnabled == true
+            }
+        } catch {
+            let entry = controls.entries[cancelID]
+            let cancelOwner: String
+            if let ownerID = entry?.ownerID { cancelOwner = String(describing: ownerID) }
+            else { cancelOwner = "nil" }
+            let attachedSheetNumber = host.attachedSheet?.windowNumber ?? -1
+            var diagnostic: [String: Any] = [:]
+            diagnostic["description"] = description
+            diagnostic["scope"] = scope
+            diagnostic["retainedSheetNumber"] = sheet.windowNumber
+            diagnostic["attachedSheetNumber"] = attachedSheetNumber
+            diagnostic["retainedSheetVisible"] = sheet.isVisible
+            diagnostic["retainedSheetHasParent"] = sheet.sheetParent != nil
+            diagnostic["hostVisible"] = host.isVisible
+            diagnostic["session"] = String(describing: session.surface)
+            diagnostic["persistencePending"] = ownerStore.hasPendingPersistence
+            diagnostic["previewRegistered"] = controls.entries[previewID] != nil
+            diagnostic["cancelRegistered"] = entry != nil
+            diagnostic["cancelEnabled"] = entry?.isEnabled ?? false
+            diagnostic["cancelOwner"] = cancelOwner
+            diagnostic["confirmRegistered"] = controls.entries[confirmID] != nil
+            try? JSONSerialization.data(withJSONObject: diagnostic, options: [.prettyPrinted, .sortedKeys])
+                .write(to: configuration.homeURL.appendingPathComponent("week-sheet-dismissal-\(sheet.windowNumber).json"))
+            throw error
+        }
+    }
+
+    private func requireWeekFooter(scope: String, expectedSize: NSSize) async throws -> (CGRect, CGRect) {
+        try await wait("week review footer geometry") {
+            guard let preview = self.controls.frame(scope + "creation.week.preview"),
+                  let confirm = self.controls.frame(scope + "creation.week.confirm"),
+                  let cancel = self.controls.frame(scope + "creation.week.cancel") else { return false }
+            return preview.width > 0 && preview.height > 0 && confirm.width > 0 && confirm.height > 0
+                && cancel.width > 0 && cancel.height > 0
+        }
+        let preview = try value(controls.frame(scope + "creation.week.preview"), "week preview frame")
+        let confirm = try value(controls.frame(scope + "creation.week.confirm"), "week confirmation frame")
+        let cancel = try value(controls.frame(scope + "creation.week.cancel"), "week cancellation frame")
+        try require(abs(preview.width - expectedSize.width) < 1 && abs(preview.height - expectedSize.height) < 1,
+                    "week preview escaped its established surface size: \(preview), expected=\(expectedSize)")
+        try require(preview.insetBy(dx: -1, dy: -1).contains(confirm) && preview.insetBy(dx: -1, dy: -1).contains(cancel)
+                    && !confirm.intersects(cancel), "week footer clips or overlaps its confirmation and Cancel controls")
+        return (confirm, cancel)
+    }
+
+    private func requireWeekScrolling(week: DayCreationWeek, scope: String, window: NSWindow,
+                                      captureName: String? = nil) async throws {
+        let root = try value(window.contentView, "week scrolling root")
+        let scroll = try value(nativeScroll(in: root), "native week preview scroll")
+        let document = try value(scroll.documentView, "week preview scroll document")
+        try await wait("seven-day review exceeds its actual native clip") {
+            document.bounds.height > scroll.contentView.bounds.height + 20
+        }
+        let confirmBefore = try value(controls.frame(scope + "creation.week.confirm"), "week footer before scroll")
+        let cancelBefore = try value(controls.frame(scope + "creation.week.cancel"), "week Cancel before scroll")
+        let clip = scroll.contentView
+        let originalOrigin = clip.bounds.origin
+        let maximum = max(0, document.bounds.height - clip.bounds.height)
+        clip.scroll(to: NSPoint(x: clip.bounds.minX, y: maximum))
+        scroll.reflectScrolledClipView(clip)
+        let lastRowID = scope + "creation.week.row.\(week.days.count - 1)"
+        try await wait("last week day is visibly inside its native clip after scrolling") {
+            guard let row = self.controls.frame(lastRowID) else { return false }
+            return clip.convert(clip.bounds, to: root).insetBy(dx: -1, dy: -1).contains(row)
+        }
+        let confirmAfter = try value(controls.frame(scope + "creation.week.confirm"), "week footer after scroll")
+        let cancelAfter = try value(controls.frame(scope + "creation.week.cancel"), "week Cancel after scroll")
+        try require(confirmBefore == confirmAfter && cancelBefore == cancelAfter,
+                    "scrolling the seven-day list moved its fixed confirmation footer")
+        if let captureName { try capture(captureName, window: window) }
+        clip.scroll(to: originalOrigin)
+        scroll.reflectScrolledClipView(clip)
+        try await wait("week scroll returns to its original position") { abs(clip.bounds.minY - originalOrigin.y) < 1 }
     }
 
     private func verifyWhatsNew() async throws {
@@ -1951,6 +2650,10 @@ final class DesktopSmokeRuntime {
             visualEnvironment.colorSchemeOverride = scheme
             window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
             try await Task.sleep(nanoseconds: 150_000_000)
+            if window is WeekSmokePanel {
+                try require(window.canBecomeKey && window.isKeyWindow && NSApp.keyWindow === window,
+                            "week mini capture is not the key-capable active panel")
+            }
             try capture("\(name)-\(scheme == .dark ? "dark" : "light")", window: window)
         }
     }
@@ -3310,27 +4013,56 @@ final class DesktopSmokeRuntime {
         let destination = configuration.homeURL.appendingPathComponent("Captures", isDirectory: true)
         try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
         try png.write(to: destination.appendingPathComponent("\(name).png"), options: .atomic)
-        captures.append([
+        var record: [String: Any] = [
             "file": "\(name).png", "width": bitmap.pixelsWide, "height": bitmap.pixelsHigh,
             "scale": window.backingScaleFactor,
+            "isKeyWindow": window.isKeyWindow, "canBecomeKey": window.canBecomeKey,
             "appearanceName": window.effectiveAppearance.name.rawValue,
             "colorSchemeOverride": visualEnvironment.colorSchemeOverride == .dark ? "dark" : "light",
             "highContrast": accessibilitySettings.prefersHighContrast,
             "reduceMotion": accessibilitySettings.prefersReducedMotion,
             "observationUptime": observedAt,
             "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture"
-        ])
+        ]
+        if let captureFixture { record["fixture"] = captureFixture }
+        captures.append(record)
     }
 
     private func writeManifest() throws {
         let executable = try value(Bundle.main.executableURL, "capture executable")
         let digest = SHA256.hash(data: try Data(contentsOf: executable)).map { String(format: "%02x", $0) }.joined()
-        let manifest: [String: Any] = [
+        var manifest: [String: Any] = [
             "applicationVersion": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
             "applicationBuild": Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown",
             "executableSHA256": digest, "captures": captures, "syntheticData": true,
             "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture"
         ]
+        if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
+            manifest["scope"] = "Unreleased week-creation native mini-panel and desktop sheets; isolated in-process render and actions"
+            manifest["weekCreation"] = [
+                "syntheticReferenceDays": ["2026-11-05", "2026-11-07", "2026-11-08", "2026-11-09"],
+                "clockChanges": "Injected Store clock only; system clock unchanged",
+                "miniPanelFixture": "Isolated key-capable NSPanel at 390x600; same canBecomeKey override as production, not status-item lifecycle",
+                "menuActionLimit": "Desktop Menu header registry invokes the production action; physical menu selection belongs to separate XCUITest",
+                "scrolling": "Native NSScrollView/NSClipView reveal the seventh day while both footer controls remain fixed",
+                "sheetRetention": "SwiftUI may retain hidden, detached sheet content and registry entries; dismissal checks native visibility, parent detachment and released editing ownership",
+                "lifecycleLimit": "Retained NSWindow hide/show is in process; no physical status-item, app-switch or Spaces claim"
+            ]
+        }
+        if ProcessInfo.processInfo.arguments.contains("--ui-smoke-editor-stability") {
+            manifest["scope"] = "Isolated ordinary desktop editor appearance stability; twelve generic events and generated materials"
+            manifest["editorStability"] = [
+                "referenceDay": "2026-11-05", "windowContentSize": "1400x640", "dividerFraction": "2/3", "browserOffset": "80pt",
+                "comparison": "Actual root cacheDisplay opaque card interior and baseline known-title-ink mask; mean RGB delta at most one byte",
+                "geometry": "Native window, split panes, browser clip, card and title remain within 0.5pt",
+                "transitions": "Two ordinary editor open/Cancel cycles in Light and Dark; requested 0/33/100/240ms samples plus attached-modal peak",
+                "accessibility": editorStabilityAXInspectable == true
+                    ? "Native NSAccessibilityProtocol baseline card identifier is present, absent under modal editor; no VoiceOver or keyboard-delivery claim"
+                    : "GAP: native NSAccessibilityProtocol baseline card is unsupported; external AX acceptance is required, not passed here",
+                "renderLimit": "NSView.cacheDisplay excludes WindowServer-wide modal dimming; samples establish local card drawing, not compositor timing or perception"
+            ]
+            manifest["editorStabilityNativeAXValidated"] = editorStabilityAXInspectable == true
+        }
         let destination = configuration.homeURL.appendingPathComponent("Captures/manifest.json")
         try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys]).write(to: destination)
     }

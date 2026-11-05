@@ -1,0 +1,106 @@
+{
+  "baselineKnownInkToleranceBytes" : 15,
+  "beforeAfterMeanRGBToleranceBytes" : 1,
+  "bitmapBitsPerSample" : 8,
+  "bitmapDimensions" : [
+    2800,
+    1280
+  ],
+  "bitmapSamplesPerPixel" : 4,
+  "expectedInkRGBABytes" : [
+    236.00000113248825,
+    236.00000113248825,
+    238.00000101327896,
+    255
+  ],
+  "geometry" : {
+    "card" : [
+      24,
+      117,
+      212,
+      202
+    ],
+    "clip" : [
+      0,
+      80,
+      932.5,
+      540
+    ],
+    "pane.0" : [
+      0,
+      0,
+      932.5,
+      540
+    ],
+    "pane.1" : [
+      933.5,
+      0,
+      466.5,
+      540
+    ],
+    "root" : [
+      0,
+      0,
+      1400,
+      640
+    ],
+    "title" : [
+      40,
+      204,
+      180,
+      19
+    ],
+    "window" : [
+      264,
+      312,
+      1400,
+      668
+    ]
+  },
+  "imageROI" : [
+    30,
+    123,
+    200,
+    190
+  ],
+  "imageTitle" : [
+    40,
+    204,
+    180,
+    19
+  ],
+  "inkCount" : 51,
+  "opaqueFraction" : 1,
+  "pixelROI" : [
+    60,
+    246,
+    400,
+    380
+  ],
+  "rgbCount" : 28500,
+  "rgbMaximum" : 241.43854290246964,
+  "rgbMinimum" : 37.259957045316696,
+  "rootClass" : "NSHostingView<DesktopRootView>",
+  "rootIsFlipped" : true,
+  "sampleStepPixels" : 4,
+  "viewport" : [
+    0,
+    55,
+    932.5,
+    540
+  ],
+  "viewROI" : [
+    30,
+    123,
+    200,
+    190
+  ],
+  "viewTitle" : [
+    40,
+    204,
+    180,
+    19
+  ],
+  "windowKey" : true,
+  "windowVisible" : true
+}

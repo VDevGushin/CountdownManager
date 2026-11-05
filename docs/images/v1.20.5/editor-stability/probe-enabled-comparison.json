@@ -1,0 +1,149 @@
+{
+  "comparisons" : {
+    "dark" : {
+      "bestInteriorMeanRGBDelta255" : 0.58950413498732823,
+      "bestInteriorTranslationPixels" : [
+        0,
+        0
+      ],
+      "borderlessFrame" : {
+        "height" : 194,
+        "width" : 318,
+        "x" : 708,
+        "y" : 115
+      },
+      "frameSizeUnchanged" : true,
+      "plainFrame" : {
+        "height" : 194,
+        "width" : 318,
+        "x" : 24,
+        "y" : 115
+      },
+      "regions" : {
+        "calendarAndTextInterior" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.014385306051972718,
+          "changedPixels" : 2666,
+          "maxRGBChannelDelta255" : 107,
+          "meanAbsoluteRGBChannelDelta255" : 0.63591937897493456,
+          "pixels" : 185328
+        },
+        "full" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.01080366984373987,
+          "changedPixels" : 2666,
+          "maxRGBChannelDelta255" : 107,
+          "meanAbsoluteRGBChannelDelta255" : 0.47758893643692318,
+          "pixels" : 246768
+        },
+        "interiorInset12pt" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.013335334133653461,
+          "changedPixels" : 2666,
+          "maxRGBChannelDelta255" : 107,
+          "meanAbsoluteRGBChannelDelta255" : 0.58950413498732823,
+          "pixels" : 199920
+        },
+        "outer2pt" : {
+          "changedBoundingBoxPixels" : [
+
+          ],
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maxRGBChannelDelta255" : 0,
+          "meanAbsoluteRGBChannelDelta255" : 0,
+          "pixels" : 8128
+        }
+      }
+    },
+    "light" : {
+      "bestInteriorMeanRGBDelta255" : 0.61981792717086837,
+      "bestInteriorTranslationPixels" : [
+        0,
+        0
+      ],
+      "borderlessFrame" : {
+        "height" : 194,
+        "width" : 318,
+        "x" : 708,
+        "y" : 115
+      },
+      "frameSizeUnchanged" : true,
+      "plainFrame" : {
+        "height" : 194,
+        "width" : 318,
+        "x" : 24,
+        "y" : 115
+      },
+      "regions" : {
+        "calendarAndTextInterior" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.014660493827160493,
+          "changedPixels" : 2717,
+          "maxRGBChannelDelta255" : 114,
+          "meanAbsoluteRGBChannelDelta255" : 0.66861996028662696,
+          "pixels" : 185328
+        },
+        "full" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.011010341697464825,
+          "changedPixels" : 2717,
+          "maxRGBChannelDelta255" : 114,
+          "meanAbsoluteRGBChannelDelta255" : 0.50214776632302405,
+          "pixels" : 246768
+        },
+        "interiorInset12pt" : {
+          "changedBoundingBoxPixels" : [
+            46,
+            37,
+            602,
+            245
+          ],
+          "changedFraction" : 0.013590436174469788,
+          "changedPixels" : 2717,
+          "maxRGBChannelDelta255" : 114,
+          "meanAbsoluteRGBChannelDelta255" : 0.61981792717086837,
+          "pixels" : 199920
+        },
+        "outer2pt" : {
+          "changedBoundingBoxPixels" : [
+
+          ],
+          "changedFraction" : 0,
+          "changedPixels" : 0,
+          "maxRGBChannelDelta255" : 0,
+          "meanAbsoluteRGBChannelDelta255" : 0,
+          "pixels" : 8128
+        }
+      }
+    }
+  },
+  "method" : "Within each existing native enabled PNG, normalized equal318x194point card frames; no image changes or new UI run.",
+  "scale" : 2,
+  "scopeNote" : "Probe outer outline uses centered stroke; actual DesktopEventCard uses inset strokeBorder. Border overflow clipping is therefore not production active-label parity evidence."
+}

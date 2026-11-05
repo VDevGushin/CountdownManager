@@ -21,6 +21,7 @@ struct ManagerView: View {
     @State private var attachmentLibraryIsSource = false
     @StateObject private var attachmentPreview = AttachmentPreviewSession()
     @State private var dayPreset: DayCreationPreset?
+    @State private var weekCreation: DayCreationWeek?
     @State private var selectDayDate = false
     @State private var rootIdentity = UUID()
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
@@ -72,7 +73,16 @@ struct ManagerView: View {
                             return saved
                         }, cancel: finishEditor)
                 }
-                if showingEditor, textAttachmentRequest == nil {
+                if showingEditor, let weekCreation {
+                    WeekDayCreationView(store: store, week: weekCreation, didCreate: { events in
+                        if NSApp.isActive, let event = events.first {
+                            weather.didSaveEvent(event, activeEvents: store.active)
+                        } else {
+                            weather.updateEvents(store.active)
+                        }
+                    }, cancel: finishEditor)
+                }
+                if showingEditor, textAttachmentRequest == nil, weekCreation == nil {
                     EditorView(
                         store: store,
                         item: editing,
@@ -180,6 +190,9 @@ struct ManagerView: View {
                         createDay(preset: .tomorrow(after: store.today), selectDate: true)
                     }
                 }
+                emptySecondaryAction(weekCreationTitle(for: store.today) + "…", id: "event.empty.week",
+                                     action: createWeekDays)
+                    .foregroundStyle(plannerAccent)
             }
             .frame(width: 260)
             .buttonStyle(.plain)
@@ -246,21 +259,31 @@ struct ManagerView: View {
     }
 
     private var dayChoices: some View {
-        HStack {
-            Text(EventUIStrings.createDay).font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                .uiSmokeControl(id: "creation.day.label")
-            Spacer()
-            Button("Сегодня") { createDay(preset: .today(store.today)) }
-                .accessibilityIdentifier("creation.day.today")
-                .uiSmokeControl(id: "creation.day.today", action: { createDay(preset: .today(store.today)) })
-            Button("Завтра") { createDay(preset: .tomorrow(after: store.today)) }
-                .accessibilityIdentifier("creation.day.tomorrow")
-                .uiSmokeControl(id: "creation.day.tomorrow", action: { createDay(preset: .tomorrow(after: store.today)) })
-            Button("Выбрать дату") { createDay(preset: .tomorrow(after: store.today), selectDate: true) }
-                .accessibilityIdentifier("creation.day.chooseDate")
-                .uiSmokeControl(id: "creation.day.chooseDate", action: {
-                    createDay(preset: .tomorrow(after: store.today), selectDate: true)
-                })
+        VStack(spacing: 8) {
+            HStack {
+                Text(EventUIStrings.createDay).font(.caption).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .uiSmokeControl(id: "creation.day.label")
+                Spacer()
+                Button("Сегодня") { createDay(preset: .today(store.today)) }
+                    .accessibilityIdentifier("creation.day.today")
+                    .uiSmokeControl(id: "creation.day.today", action: { createDay(preset: .today(store.today)) })
+                Button("Завтра") { createDay(preset: .tomorrow(after: store.today)) }
+                    .accessibilityIdentifier("creation.day.tomorrow")
+                    .uiSmokeControl(id: "creation.day.tomorrow", action: { createDay(preset: .tomorrow(after: store.today)) })
+                Button("Выбрать дату") { createDay(preset: .tomorrow(after: store.today), selectDate: true) }
+                    .accessibilityIdentifier("creation.day.chooseDate")
+                    .uiSmokeControl(id: "creation.day.chooseDate", action: {
+                        createDay(preset: .tomorrow(after: store.today), selectDate: true)
+                    })
+            }
+            Button(action: createWeekDays) {
+                Text(weekCreationTitle(for: store.today) + "…")
+                    .font(.system(size: 12))
+                    .frame(maxWidth: .infinity)
+                    .foregroundStyle(plannerAccent)
+            }
+                .accessibilityIdentifier("creation.day.week")
+                .uiSmokeControl(id: "creation.day.week", action: createWeekDays)
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
@@ -637,6 +660,7 @@ struct ManagerView: View {
 
     private func finishEditor() {
         textAttachmentRequest = nil
+        weekCreation = nil
         editorSession.endPanelEditor()
         editing = nil
         dayPreset = nil
@@ -672,6 +696,17 @@ struct ManagerView: View {
         editing = nil
         dayPreset = preset
         selectDayDate = selectDate
+        showingDayChoices = false
+    }
+
+    private func createWeekDays() {
+        guard !showingSettings, attachmentListEventID == nil,
+              !store.hasPendingPersistence, store.eventCreationIsAvailable,
+              let week = DayCreationWeek(today: store.today), editorSession.beginPanelEditor() else { return }
+        editing = nil
+        dayPreset = nil
+        selectDayDate = false
+        weekCreation = week
         showingDayChoices = false
     }
 

@@ -1,0 +1,31 @@
+{
+  "recordedAtUTC": "2026-11-04T19:45:13.844036+00:00",
+  "sha256": {
+    "NativeBuildProvenance.json": "483a911c81cd0539027e8c49345b0cfe5d8ebb8cbcb1002a6a5e4c33b69161b6",
+    "NativeDesignContract.json": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "manifest.json": "e5ce46f8bb84c88ecfdf34ad1d10c17c58509cc5c139c13b1bf9f9a524c60761",
+    "ui-smoke-result.txt": "75eda701e22b8b598692dbc699d1ae6a1defb4139b8047d7589eb4ef84d8b91f",
+    "week-desktop-result-dark.png": "d69e53b24a3dc5d27649cb0e477fcba36cc4b7bd72c43b1c1ebffa0d38a41c9b",
+    "week-desktop-result-light.png": "dfe098230d335d146dc1451b4e215318dd5cb2f642d311c9fbd00df1ea28007e",
+    "week-desktop-write-failure-light.png": "6b9569b3c433562ccae7894daff6424adbe3d3d258e86d5adc7a453648fc464c",
+    "week-midnight-review-dark.png": "4165219776bf251002ebc0c4719e6887ce9a1272ca7ae9d07633a7be294bb5a8",
+    "week-midnight-review-light.png": "1519cbe7f230c41c931041de25d384cd989af0c4cbe418c46f4943505f4134db",
+    "week-mini-action-dark.png": "edf403539376d6a91f1c2b4d18d392c27c32b940a1330b166349852a8fd5c5ab",
+    "week-mini-action-light.png": "b243e5132f1eed2d969de961e4629ace19793f337fe2fc6dc849c7c95edc63de",
+    "week-mini-empty-dark.png": "cbf1524b2f214a914dce4f47d0ca37eed40687e70619c2f5525b0604fafecb42",
+    "week-mini-empty-light.png": "7b29de587037d8bfeacb0d181dd2e9584003cf618e30377332f97be100935882",
+    "week-saturday-mini-preview-dark.png": "edd5c182700efa33cdb730f2dd1ade8ca6fb50f8727c6644b7de19ea4ce3b043",
+    "week-saturday-mini-preview-light.png": "c86283bc70280c9f6e8ed139f01a9ab8785ab62ffef4718fd30671a23294e382",
+    "week-sunday-desktop-bottom-light.png": "21691a3f35ba2d0ca11172ed0beebc99889f6bb3a2f173e91b170eb35c153bff",
+    "week-sunday-desktop-preview-dark.png": "f6ff4e0766f4afc0a47b9ff73fb69823d2d7c6f4f2cc889dc6c74f44fb7820c7",
+    "week-sunday-desktop-preview-light.png": "4687fdeadc274ba2a4f5631f187ea4865054ceede4670e35896dab6076176868",
+    "week-sunday-mini-preview-contrast-dark.png": "11a383d51e8a4a66c691601873172de6efe0c134e5ebb448f0cf414b64d41b90",
+    "week-sunday-mini-preview-contrast-light.png": "fad02c224743296f36ba8f8bf8441e46c7cdf09fac1cc1c8bed60fa789cec0f5",
+    "week-sunday-mini-preview-dark.png": "c928aa79fd9916c7257f25788c03e5c92b55d6d86a12f38b6e73256573a6de7c",
+    "week-sunday-mini-preview-light.png": "0b66f23428d17dfc218fc2dae7aea7a7a8c89bc3df8898dce834a01d0f97eacf",
+    "week-thursday-desktop-preview-dark.png": "61598f680c3e5ae9e68b757972b813092d3d31a3278135a2566d7eff79773b72",
+    "week-thursday-desktop-preview-light.png": "0ca7d13dbd2a2e6292493c723ec02c522ce5e7374b6ec1d061f4deaa352bfe18",
+    "week-thursday-mini-preview-dark.png": "73115a2fdffba7e9842ff2dc041e4a9459d8cb97f5fbf6d93e7ce89bb270ce81",
+    "week-thursday-mini-preview-light.png": "ebf82b49bdac506e6b3c959b8e9e61acef8abf21748e5dfc51248fddc74296e9"
+  }
+}

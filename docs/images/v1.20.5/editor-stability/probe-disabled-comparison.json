@@ -1,0 +1,85 @@
+{
+  "comparisons" : {
+    "dark" : {
+      "borderless" : {
+        "changedPixelFraction" : 0,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 708,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 0,
+        "meanAbsoluteRGBChannelDelta255" : 0,
+        "sameNativeFrame" : true
+      },
+      "label" : {
+        "changedPixelFraction" : 0,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 366,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 0,
+        "meanAbsoluteRGBChannelDelta255" : 0,
+        "sameNativeFrame" : true
+      },
+      "plain" : {
+        "changedPixelFraction" : 0.99990110759493667,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 24,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 102,
+        "meanAbsoluteRGBChannelDelta255" : 6.6399327531645573,
+        "sameNativeFrame" : true
+      }
+    },
+    "light" : {
+      "borderless" : {
+        "changedPixelFraction" : 0,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 708,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 0,
+        "meanAbsoluteRGBChannelDelta255" : 0,
+        "sameNativeFrame" : true
+      },
+      "label" : {
+        "changedPixelFraction" : 0,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 366,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 0,
+        "meanAbsoluteRGBChannelDelta255" : 0,
+        "sameNativeFrame" : true
+      },
+      "plain" : {
+        "changedPixelFraction" : 0.99990110759493667,
+        "frame" : {
+          "height" : 194,
+          "width" : 318,
+          "x" : 24,
+          "y" : 346
+        },
+        "maxRGBChannelDelta255" : 105,
+        "meanAbsoluteRGBChannelDelta255" : 5.2366412842827001,
+        "sameNativeFrame" : true
+      }
+    }
+  },
+  "compilerHeadersSDK" : "15.4",
+  "initialActionCounts" : "All six counters zero; no physical input claim.",
+  "linkedCompatibility" : "13.0",
+  "method" : "Actual NSView.cacheDisplay native rasters; same inset crop of controlled cards; RGB8 channel comparison; no image modifications.",
+  "scale" : 2
+}

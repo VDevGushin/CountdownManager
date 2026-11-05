@@ -5,6 +5,7 @@ import SwiftUI
 struct DesktopRootView: View {
     private enum DesktopSheet: Equatable {
         case editor
+        case week
         case textAttachment
         case settings
         case attachments(UUID)
@@ -15,6 +16,7 @@ struct DesktopRootView: View {
         case toggleFavorite(eventID: UUID)
         case delete(eventID: UUID)
         case edit(itemID: UUID?, preset: DayCreationPreset?, selectDate: Bool)
+        case week(DayCreationWeek)
     }
 
     @ObservedObject var store: Store
@@ -44,6 +46,7 @@ struct DesktopRootView: View {
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
     @State private var dayPreset: DayCreationPreset?
+    @State private var weekCreation: DayCreationWeek?
     @State private var selectDayDate = false
     @State private var pendingActions: [PendingAction] = []
     @State private var isProcessingActions = false
@@ -64,7 +67,12 @@ struct DesktopRootView: View {
             && !hasQueuedEditor
     }
     private var hasQueuedEditor: Bool {
-        pendingActions.contains { if case .edit = $0 { return true }; return false }
+        pendingActions.contains {
+            switch $0 {
+            case .edit, .week: return true
+            default: return false
+            }
+        }
     }
     private var canDrainActions: Bool {
         attachmentsEventID == nil
@@ -81,7 +89,9 @@ struct DesktopRootView: View {
     private var attachmentLibraryItem: Countdown? {
         store.active.first { $0.id == attachmentsEventID && !$0.attachments.isEmpty }
     }
-    private var showingEditor: Bool { presentedSheet == .editor || presentedSheet == .textAttachment }
+    private var showingEditor: Bool {
+        presentedSheet == .editor || presentedSheet == .textAttachment || presentedSheet == .week
+    }
     private var showingSettings: Bool { presentedSheet == .settings }
     private var attachmentsEventID: UUID? {
         if case let .attachments(eventID) = presentedSheet { return eventID }
@@ -174,6 +184,15 @@ struct DesktopRootView: View {
                            didSave: eventSaved, done: dismissSheet)
             }
             .frame(width: 430, height: 600)
+        case .week:
+            if let weekCreation {
+                VStack(spacing: 0) {
+                    if let error = store.error { errorBanner(error) }
+                    WeekDayCreationView(store: store, week: weekCreation,
+                                        didCreate: weekCreated, cancel: dismissSheet)
+                }
+                .frame(width: 430, height: 560)
+            }
         case .textAttachment:
             if let request = textAttachmentRequest {
                 VStack(spacing: 0) {
@@ -347,6 +366,9 @@ struct DesktopRootView: View {
                 Button("Выбрать дату…") {
                     beginEditor(preset: .tomorrow(after: store.today), selectDate: true)
                 }
+                Divider()
+                Button(weekCreationTitle(for: store.today) + "…", action: beginWeekDays)
+                    .accessibilityIdentifier("desktop.create-week")
             } label: {
                 AuroraToolbarLabel(title: "Создать день", systemImage: "calendar.badge.plus", showsMenuIndicator: true)
             }
@@ -354,8 +376,10 @@ struct DesktopRootView: View {
             .menuIndicator(.hidden)
             .auroraToolbarAction()
             .fixedSize()
-            .disabled(!canMutate)
             .accessibilityIdentifier("desktop.create-day")
+            .uiSmokeControl(id: "desktop.create-week", action: beginWeekDays,
+                            value: { weekCreationTitle(for: store.today) })
+            .disabled(!canMutate)
         }
         .padding(.horizontal, 20)
         .frame(height: 54)
@@ -509,6 +533,7 @@ struct DesktopRootView: View {
         showWhatsNewAfterSettings = false
         presentedSheet = nil
         textAttachmentRequest = nil
+        weekCreation = nil
         attachmentPreview.close()
         attachmentLibraryIsSource = false
         attachmentPreviewWasPresented = false
@@ -538,6 +563,29 @@ struct DesktopRootView: View {
         guard canMutate, editorSession.beginDesktopEditor() else { return }
         pendingActions.append(.edit(itemID: item?.id, preset: preset, selectDate: selectDate))
         processPendingActions()
+    }
+
+    private func beginWeekDays() {
+        guard canMutate, let week = DayCreationWeek(today: store.today),
+              editorSession.beginDesktopEditor() else { return }
+        pendingActions.append(.week(week))
+        processPendingActions()
+    }
+
+    private func presentWeekDays(_ week: DayCreationWeek) -> Bool {
+        guard store.eventCreationIsAvailable, !store.hasPendingPersistence,
+              editorSession.desktopIsPresented, !showingSettings, !showingEditor else { return false }
+        weekCreation = week
+        presentedSheet = .week
+        return true
+    }
+
+    private func weekCreated(_ events: [Countdown]) {
+        resetFilters()
+        if let event = events.first {
+            selectedID = event.id
+            weather.didSaveEvent(event, activeEvents: store.active)
+        }
     }
 
     private func presentEditor(itemID: UUID?, preset: DayCreationPreset?, selectDate: Bool) -> Bool {
@@ -618,6 +666,8 @@ struct DesktopRootView: View {
                     deletingEventID = nil
                 case let .edit(itemID, preset, selectDate):
                     succeeded = presentEditor(itemID: itemID, preset: preset, selectDate: selectDate)
+                case let .week(week):
+                    succeeded = presentWeekDays(week)
                 }
                 if !succeeded {
                     reportPendingActionFailure()

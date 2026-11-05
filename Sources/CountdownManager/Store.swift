@@ -536,6 +536,25 @@ package final class Store: ObservableObject {
         return didSave
     }
 
+    package func createWeekDays(_ week: DayCreationWeek) async -> [Countdown]? {
+        guard !hasPendingPersistence, eventCreationIsAvailable else { return nil }
+        let currentDay = Day(now())
+        if currentDay != today { today = currentDay }
+        guard week.referenceDay == today else {
+            error = EventUIStrings.weekDateChanged
+            return nil
+        }
+        var updated = data
+        let created: [Countdown]
+        do { created = try updated.createMissingDays(in: week, today: today) }
+        catch {
+            self.error = error.localizedDescription
+            return nil
+        }
+        guard !created.isEmpty else { return [] }
+        return await commit(updated, reason: "countdown.create-week") ? created : nil
+    }
+
     func addSubtask(to eventID: UUID, text: String) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }

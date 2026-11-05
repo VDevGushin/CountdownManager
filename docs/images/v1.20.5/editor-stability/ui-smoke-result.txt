@@ -1,0 +1,3 @@
+DesktopSmoke
+✓ ordinary editor open/Cancel twice per theme preserves opaque card/title RGB, native geometry, disabled background, twelve-event JSON and four owned synthetic files; GAP: native AX baseline unsupported; separate external AX acceptance required
+PASS: 1/1

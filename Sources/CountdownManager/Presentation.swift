@@ -35,6 +35,7 @@ package enum EventUIStrings {
     package static let editEvent = "Редактировать событие"
     package static let createDay = "Создать день"
     package static let newDay = "Новый день"
+    package static let weekDateChanged = "Наступил новый день. Список обновлён — проверьте даты и нажмите «Создать» ещё раз."
     package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся."
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
@@ -338,6 +339,7 @@ package struct EventEditorDraft: Equatable {
     package var showsWeather: Bool
     package var keepsAfterDate: Bool
     package private(set) var usesAutomaticTitle: Bool
+    package private(set) var isDay: Bool
 
     package init(item: Countdown?) {
         title = item?.title ?? ""
@@ -349,6 +351,7 @@ package struct EventEditorDraft: Equatable {
         showsWeather = item?.showsWeather ?? false
         keepsAfterDate = item?.keepsAfterDate ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
+        isDay = item?.isDay ?? false
     }
 
     package init(day: Day) {
@@ -361,6 +364,7 @@ package struct EventEditorDraft: Equatable {
         showsWeather = true
         keepsAfterDate = false
         usesAutomaticTitle = true
+        isDay = true
     }
 
     package mutating func setTitle(_ title: String) {
@@ -410,6 +414,7 @@ package struct EventEditorDraft: Equatable {
             showsWeather: showsWeather,
             keepsAfterDate: keepsAfterDate,
             usesAutomaticTitle: usesAutomaticTitle,
+            isDay: isDay,
             attachments: attachments,
             links: links
         )

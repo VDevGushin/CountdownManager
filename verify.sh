@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state|editor|desktop|attachments) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture)
+    fast|ui|full|weather|empty-state|editor|desktop|attachments|week|editor-stability) ;;
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|editor-stability-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|editor-stability-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -86,9 +86,15 @@ run_smoke() {
     local stderr_path="$test_home/ui-smoke.stderr"
     local timeout_seconds=45
     local launch_arguments=("$launch_argument")
-    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then timeout_seconds=70; fi
+    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" ]]; then timeout_seconds=70; fi
     if [[ "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-attachment-preview)
+    fi
+    if [[ "$launch_argument" == "--ui-smoke-week-creation" ]]; then
+        launch_arguments=(--ui-smoke-desktop --ui-smoke-week-creation)
+    fi
+    if [[ "$launch_argument" == "--ui-smoke-editor-stability" ]]; then
+        launch_arguments=(--ui-smoke-desktop --ui-smoke-editor-stability)
     fi
     mkdir -p "$test_home"
     touch "$test_home/.countdown-ui-smoke-environment"
@@ -264,7 +270,49 @@ run_capture_checks() {
     copy_capture_evidence
 }
 
+copy_focused_desktop_evidence() {
+    local scenario=$1
+    local result_kind=$2
+    local source_dir="$verify_root/$3"
+    local destination_dir="$capture_output_dir/countdown-$scenario-$result_kind-$(/bin/date +%Y%m%d-%H%M%S)-$$"
+    local evidence_file
+    mkdir "$destination_dir"
+    for evidence_file in "$source_dir/Captures/"* "$source_dir/"*.json "$source_dir/ui-smoke-result.txt" \
+        "$source_dir/ui-smoke.stdout" "$source_dir/ui-smoke.stderr"; do
+        if [[ -f "$evidence_file" ]]; then cp "$evidence_file" "$destination_dir/"; fi
+    done
+    ditto "$app_path" "$destination_dir/Countdown Manager.app"
+    echo "$scenario $result_kind evidence: $destination_dir"
+}
+
 case "$mode" in
+    editor-stability|editor-stability-capture)
+        build_ui_app
+        if ! run_smoke editor-stability-smoke --ui-smoke-editor-stability; then
+            if [[ "$mode" == "editor-stability-capture" ]]; then
+                copy_focused_desktop_evidence editor-stability failed editor-stability-smoke
+            fi
+            exit 1
+        fi
+        if [[ "$mode" == "editor-stability-capture" ]]; then
+            test -s "$verify_root/editor-stability-smoke/Captures/manifest.json"
+            copy_focused_desktop_evidence editor-stability captures editor-stability-smoke
+        fi
+        echo "PASS: native editor transitions preserve card appearance, geometry and saved data"
+        ;;
+    week|week-capture)
+        build_ui_app
+        echo "Verification: native week creation workflows"
+        if ! run_smoke week-smoke --ui-smoke-week-creation; then
+            if [[ "$mode" == "week-capture" ]]; then copy_focused_desktop_evidence week failed week-smoke; fi
+            exit 1
+        fi
+        if [[ "$mode" == "week-capture" ]]; then
+            test -s "$verify_root/week-smoke/Captures/manifest.json"
+            copy_focused_desktop_evidence week captures week-smoke
+        fi
+        echo "PASS: focused native week creation in desktop and mini-panel"
+        ;;
     attachments|attachments-capture)
         build_ui_app
         run_smoke attachments-smoke --ui-smoke-attachment-preview

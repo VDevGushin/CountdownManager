@@ -1,0 +1,2 @@
+# Retain exact XCTest receipt bytes, including generated whitespace-only lines.
+docs/images/v1.20.5/editor-stability/ax-final.log whitespace=-blank-at-eol

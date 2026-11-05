@@ -1,0 +1,12 @@
+{
+  "log": "ax-final.log",
+  "logSHA256": "2ad134076703025870d2d33eecc9325f8b837a6b196fd90f31e9b26c4a126bba",
+  "test": "testDesktopEditorHidesBackgroundCardsWithStableStyle",
+  "result": "passed",
+  "executedTests": 1,
+  "failures": 0,
+  "durationSeconds": 15.627,
+  "driverPath": "XCUITests/CountdownManagerXCUITests.swift",
+  "driverSHA256": "3b0fa04722cc066ca37b308fa4c8df2244b7e956723c5c16cd42487f6f618d57",
+  "scope": "Separate Xcode Debug whole-application AX/input supplement; not capture appearance provenance."
+}

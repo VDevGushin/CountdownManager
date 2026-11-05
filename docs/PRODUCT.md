@@ -13,9 +13,11 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.20.4 updates the read-only `Что нового` screen with floating screenshot-thumbnail
-intake as a local attachment. Existing event retention, attachment limits and editor Save/Cancel
-behaviour remain unchanged. The release-help
+Release 1.21.0 uses the read-only `Что нового` screen to describe `Дни до конца недели` and
+`Стабильные карточки`: one-time creation of upcoming days, including the following week on Sunday
+and skipping existing days, plus removal of the additional desktop-card fade when opening or
+closing the ordinary event editor. The batch is not recurrence, a template or group-level Undo.
+Existing event retention, attachment limits and editor Save/Cancel behaviour remain unchanged. The release-help
 window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
@@ -398,7 +400,7 @@ Changes entered in the editor do not become event data until the user explicitly
 
 The header calendar control, labelled `Создать день`, reveals inline `Сегодня`, `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
 
-All day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
+The single-day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
 
 Day drafts start with automatic titles enabled. Changing the selected event date updates the Russian
 weekday title until a real manual text change switches the draft to a custom title. All ordinary
@@ -406,7 +408,49 @@ event fields remain editable. The title mode is saved with the event and restore
 
 Opening a day draft creates no persisted event. Save creates an ordinary event with the existing date, validation, primary-selection and expiry rules. Multiple events on the same date remain allowed. A repeated creation request while an editor is already open preserves that editor and its input rather than replacing it. Hiding and showing the panel also preserve the draft.
 
-This is a single-day creation shortcut; it does not create a week or store reusable templates.
+### Creating days through the end of the week
+
+The same creation family adds `До конца недели…`: from Monday through Saturday it prepares
+the civil dates from tomorrow through the nearest Sunday, inclusive. Thursday prepares Friday,
+Saturday and Sunday; Saturday prepares Sunday alone. On Sunday the action is labelled
+`На следующую неделю…` and prepares all seven dates from the next Monday through Sunday.
+The week ends on Sunday independently of locale preferences. This is an explicit one-time action,
+not recurrence, a reusable template or a persisted week group.
+
+The desktop adds the action after a separator inside `Создать день`. The mini-panel places it
+below the single-day choices and also offers it as the fourth creation action in a genuine empty
+list. Both open the same preview on their existing editing surfaces: internally beneath the timer
+in the mini-panel, and in the native desktop sheet. Opening or cancelling the preview creates no
+events. It reserves the shared editing session, so repeated creation requests and actions on the
+other surface cannot replace it or mutate its events. Panel hide/show preserves the preview;
+desktop close and compact-mode switching retain the existing active-editor protections.
+
+The preview lists each exact date and weekday, distinguishing days to create from days already
+present. `Создать N дней` commits only the missing days. When none are missing, creation is
+disabled. A saved day is an ordinary event with stable day-origin metadata; custom-titled ordinary
+events on the same date do not count as an existing day. Renaming a day or changing its title mode,
+weather, note, materials or retention does not remove its day identity. Moving that day changes
+the date represented by that identity. Multiple ordinary events and pre-existing duplicate days
+remain allowed; this action does not merge, modify or delete them.
+
+New single-day and week-created events carry day identity; ordinary `+` events do not, including
+when the user later selects `Название по дате`. For older records without explicit day identity,
+only the saved automatic-title flag supplies the compatibility fallback. A weekday-looking title
+alone never does. The origin of legacy custom-titled or previously renamed days without that flag
+cannot be recovered and is not guessed. Existing explicit true/false day identity wins over title
+mode and survives editing and restart.
+
+Every new day uses the single-day defaults: automatic weekday title, no additional emoji, empty
+note, subtasks, links and attachments, weather ON, retention OFF and favorite OFF. Existing events,
+their content and the explicit favorite stay unchanged. The complete missing set is validated and
+committed through one atomic event-data write. A failure creates no durable partial set and leaves
+the preview available for explicit retry or Cancel. Duplicate-day detection is checked again at
+the mutation boundary, rather than relying on the displayed count or disabled button alone.
+
+The preview is anchored to the civil day on which its range was prepared. Confirming after that
+day changes must not silently create a different range or save the former tomorrow as today's
+day. The preview refreshes its dates, explains the change and requires another explicit Create.
+No batch is written by that stale confirmation.
 
 ### Editing an event
 
@@ -452,8 +496,8 @@ reschedule it.
 `Показывать погоду для этого дня` is available in the editor for new and existing events. Save
 persists this choice; Cancel keeps the previously saved value. Changing a title or date does not
 infer or reset the choice. Existing events, including weekday-titled events, remain opted out
-unless the user explicitly changes them. No title-based migration or separate persisted day type
-is introduced.
+unless the user explicitly changes them. Day-origin metadata does not infer or change weather;
+there is no title-based weather migration or separate event storage for days.
 
 ### Today
 
@@ -902,7 +946,11 @@ A 260 × 34 accent `На сегодня` button is followed, 8 points below, by 
 additional emoji and checklist, weather ON, and favorite OFF. The initial dates are today, tomorrow
 and tomorrow respectively. The choose-date route uses the existing native editor date field, with a
 prompt to select a date. Date changes update the weekday title until its first manual edit; a custom
-title is then preserved. No new calendar, persisted data type or automatic Save is introduced.
+title is then preserved. No new calendar or automatic Save is introduced.
+
+A fourth secondary action, `До конца недели…` or `На следующую неделю…` on Sunday, opens the
+week preview described above. It uses the same 260-point width and 32-point secondary-button
+family. It does not open a single-day editor or save days before explicit confirmation.
 
 Today's expiry warning is conditional on retention being off; mutation-time midnight validation remains authoritative. Cancel creates no
 event; panel hide/show retains the draft. Hidden/repeated creation actions cannot replace an open
@@ -972,6 +1020,13 @@ Weather forecasts and automatic coordinates are not event data.
 The optional `usesAutomaticTitle` JSON boolean defaults to false when absent; true is encoded
 explicitly, false is omitted. The textual title is also retained for compatible older readers.
 Unsupported null or non-boolean mode values fail safely rather than guessing the user's intent.
+
+The `isDay` JSON boolean preserves day-origin identity independently of the title mode. Both true
+and false are encoded explicitly. When absent, decoding uses only the saved `usesAutomaticTitle`
+value as the legacy compatibility fallback; it never examines the title text. Unsupported null
+or non-boolean values fail safely. Loading does not trigger a separate rewrite or migration.
+Older writers that ignore this new field can lose the identity, especially for renamed days;
+reading older files is not a promise that downgrading and writing them preserves the new metadata.
 
 The optional `keepsAfterDate` JSON boolean defaults to false when absent; true is encoded explicitly,
 false is omitted. Null or non-boolean values fail safely. Older versions that do not understand

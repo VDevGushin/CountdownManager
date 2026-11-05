@@ -385,6 +385,7 @@ enum UIChecks {
         try await testClearingFavoritePersistsAndRollsBack(in: directory.appendingPathComponent("clear-favorite"))
         try await testRegressionWorkflows(in: directory.appendingPathComponent("regression-workflows"))
         try await testAutomaticTitleWorkflows(in: directory.appendingPathComponent("automatic-titles"))
+        try await testWeekCreationWorkflows(in: directory.appendingPathComponent("week-creation"))
         try await testRetentionWorkflows(in: directory.appendingPathComponent("retention"))
         await testAsyncWorkflowRegressions()
         await MainActor.run {

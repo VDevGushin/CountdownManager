@@ -1,0 +1,13 @@
+{
+  "recordedAtUTC": "2026-11-04T19:55:00.938976+00:00",
+  "logSHA256": {
+    "xcui-acceptance.log": "da0fa1bd7dae8000e3709e093b9e600c386e9c383d13fa92410d1f36a4eb5c8f",
+    "lint-acceptance.log": "2c11b934bf4ae0c03b1a96d282a10eb5e8632ca8437c386fd3426b3dbe8daa32",
+    "fast-acceptance.log": "49fedf3afcefb220f37bb060dea6564af6037a84647d9c36d20b90a0e79a776d"
+  },
+  "externalDriverSource": {
+    "path": "XCUITests/CountdownManagerXCUITests.swift",
+    "sha256": "4749edb0f9e6e59f37c6517edf0f8081d2da7d6500195beed6c718888e465b3d",
+    "scope": "External test driver at acceptance archival; separate from capture app source snapshot."
+  }
+}

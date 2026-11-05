@@ -170,8 +170,9 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.20.4`;
-the current section describes dragging a fresh macOS screenshot thumbnail into a local attachment. Manual menu entry bypasses only
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.21.0`;
+its two current sections describe one-time week-day creation with existing-day skipping and the
+desktop card appearance fix, using `calendar.badge.plus` and `square.grid.2x2` respectively. Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
 offer; the focused `--ui-smoke-desktop --ui-smoke-whats-new` route exercises ordinary admission.
@@ -306,7 +307,7 @@ selected attachment closes its preview to the surviving source.
 The renderer/window lifecycle rationale and observed platform limits are recorded in
 [the embedded quick-preview decision](decisions/attachment-quick-preview.md).
 `DesktopRootView` uses one SwiftUI `.sheet` for its optional `DesktopSheet` route: editor,
-Settings or an attachment-owning event ID. A closing request makes the presentation binding
+week preview, Settings or an attachment-owning event ID. A closing request makes the presentation binding
 false while retaining the route until native `onDismiss`; background guards and editor-session
 ownership therefore survive the system closing animation. There is no custom animation or
 guessed dismissal timer; macOS owns presentation timing and Reduce Motion.
@@ -316,6 +317,16 @@ that native sheet is attached. It ignores clicks inside the sheet, other windows
 activity. Diagnostics also disables Settings dismissal. Monitor lifetime ends on view detachment,
 representable dismantling or deallocation. Editor content has no outside-click bridge and retains
 its protected Save/Cancel policy. Removing or expiring a file owner requests native dismissal.
+
+`DesktopEventBrowser.eventButton` retains a native SwiftUI `Button` and uses the standard
+`.borderless` style for its already-painted `DesktopEventCard` label. The targeted style probe
+observed an additional enabled/disabled fade with `.plain`; the borderless selection avoids that
+extra card-drawing phase while keeping the card's opaque surface and semantic colors. It changes
+no card layout or split ownership and adds no gesture implementation, style-specific environment
+override or custom modal animation. `DesktopRootView` still disables the background, rejects hit
+testing and hides it from accessibility for the entire native sheet presentation/dismissal lifetime;
+the existing session and mutation guards remain authoritative. Style choice does not establish
+keyboard-focus delivery or VoiceOver acceptance without their separate runtime checks.
 
 The desktop overview beneath `Впереди` composes the current date and optional forecast for today
 in one metadata line, retaining its date position, height and following content geometry for
@@ -379,7 +390,14 @@ Represents a civil Gregorian date as year, month, and day rather than an absolut
 
 Persisted event model containing stable identity, title, optional note, date, emoji, subtasks, file-attachment metadata and
 the optional `showsWeather` choice. Absent JSON defaults to false; true is encoded, false is omitted.
-The flag is an event option, not a separate persisted day type.
+The weather flag is an event option and does not establish day identity. `Countdown.isDay` preserves
+day-origin identity independently of title, weather and retention; days remain ordinary `Countdown`
+records rather than a second event model or storage collection. New ordinary events default to false;
+single-day and week creation set true. Both true and false are encoded explicitly. Missing legacy
+metadata falls back only to the decoded `usesAutomaticTitle` flag, never to the textual title.
+Explicit false prevents an ordinary automatic-titled event from becoming a day after restart.
+Renaming/moving an existing day preserves its marker; legacy custom-titled origins cannot be inferred.
+Loading performs no separate migration or rewrite, and old writers can drop the new metadata.
 
 `Countdown.attachments` defaults to an empty collection for legacy JSON. The metadata carries no
 source path or file bytes; copying and cleanup belong to the repository boundary below.
@@ -426,6 +444,7 @@ It owns operations including:
 - normalization and expiry;
 - optional primary-selection normalization;
 - event save and validation;
+- atomic construction of missing days for a reviewed week range;
 - event deletion;
 - subtask CRUD and completion toggling.
 
@@ -437,6 +456,15 @@ in Core is the sole Russian Gregorian weekday authority. `CountdownData.save` de
 title from the selected civil date before committing the candidate snapshot, so title/date/mode
 share the existing atomic persistence/revision boundary. Reading arbitrary stored content does not
 silently rewrite it; an inconsistent automatic title is corrected on explicit Save.
+
+`DayCreationWeek` in `Sources/CountdownCore/DayCreationWeek.swift` is a transient value containing
+`referenceDay`, `days` and `isNextWeek`. Its failable initializer constructs the full tomorrow–Sunday
+range, or next Monday–Sunday on Sunday, through civil-calendar additions; it never returns a partial
+range. `CountdownData.createMissingDays(in:today:)` rejects a stale reference day, derives missing
+dates from `isDay` and exact `Day` equality, and builds one complete candidate through the existing
+validation rules before replacing its aggregate. Existing available events and `primaryID` are
+preserved; the ordinary expiry/normalization rules still apply.
+There is no persisted week identity, recurrence or duplicate consolidation.
 
 The timer deliberately does not belong to `CountdownData`: events use civil-day semantics, while the timer uses an absolute deadline.
 
@@ -491,6 +519,13 @@ It owns or exposes:
 - subtask disclosure state.
 
 `Store` also coordinates application-state revisions and durable snapshots around asynchronous repository writes.
+
+`Store.createWeekDays(_:)` refreshes the current civil day, revalidates the reviewed
+`DayCreationWeek.referenceDay` and applies `CountdownData.createMissingDays` to one candidate.
+It commits that candidate once through the existing revision/repository boundary, rather than
+performing one asynchronous Save per date. The returned created events distinguish successful
+creation or an empty no-op from failure; errors preserve the durable snapshot and preview for
+explicit retry. Pending persistence and unavailable creation admission remain authoritative.
 
 Its attachment operations coordinate the native multi-file picker, draft tokens, imports and
 explicit default-application opening. Attachment work participates in the existing pending-work
@@ -600,7 +635,8 @@ window, then the panel. The modal never retries itself.
 
 `AppDelegate` owns `EventEditorSession`, the single observable owner of the active editor surface shared with
 `ManagerView` and `DesktopRootView`. Draft fields remain owned by the `EditorView` on the admitted
-surface. The updater reads that session, the timer phase and `Store.hasPendingPersistence` through
+surface; the week preview reserves the same session while its reviewed range remains local to
+`WeekDayCreationView`. The updater reads that session, the timer phase and `Store.hasPendingPersistence` through
 an explicit main-actor safety closure.
 It stores Sparkle's native postponement continuation while blocked. Explicit Install rechecks
 safety before consuming the continuation once. `willInstallUpdate` marks update termination;
@@ -803,11 +839,12 @@ unlimited-height12-point block below the entire header at full content width; ch
 `eventCreationIsAvailable` (successful load/read, no persistence recovery). Recovery-state changes
 publish so the UI can leave the guarded state when recovery completes; no second empty-state owner
 or persisted preference is introduced. Empty content replaces the whole header/list area with the
-existing small calendar leaf, copy and three day-creation actions, centered above the
+existing small calendar leaf, copy, three single-day actions and the week action, centered above the
 unchanged footer. The timer remains outside ManagerView. The empty-state buttons reuse `createDay`
 and `dayPreset`, including weekday titles that follow the date until manual editing and weather ON.
-The ordinary plus route retains its blank title and weather OFF.
-Both use the retained internal editor and its normal draft/save boundary. The choose-date route
+The ordinary plus route retains its blank title and weather OFF. The fourth empty-state action
+opens the shared week preview with the same title/range as the nonempty creation family.
+Single-day routes use the retained internal editor and its normal draft/save boundary. The choose-date route
 reuses the native date field with a prompt; text fields keep only their system bezel/focus.
 
 An event surface groups the row and its checklist as one block. The full-width disclosure button
@@ -844,7 +881,8 @@ action with the existing explicit install entry point. Login approval and operat
 visible. There is no settings draft or Save/Cancel; accepted owner state is shown immediately.
 The timer strip stays outside this screen navigation at the top of the same 390 × 600 panel.
 
-The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices;
+The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices,
+followed by `До конца недели…` (`На следующую неделю…` on Sunday);
 the existing `+` still opens ordinary event creation directly. Day creation supplies today's date
 for `Сегодня`, tomorrow for the other routes, no additional emoji, an automatic Russian weekday
 title and empty note/subtasks. Ordinary creation initially selects tomorrow and a custom empty title.
@@ -853,7 +891,10 @@ its saved date. The core mutation boundary rejects new or changed past dates. To
 appears only with retention off. The third event checkbox edits `keepsAfterDate` in the draft; a
 past retained draft with retention turned off uses the existing inline deletion confirmation and
 Store deletion rather than an ordinary Save. Cancel and write failures retain the editing context.
-`EventEditorDraft` restores the persisted title mode. Its user-input setter disables automatic naming
+`EventEditorDraft` restores the persisted title mode and independent `isDay` origin. Its day
+initializer sets `isDay`; its ordinary initializer defaults false, and its existing-item initializer
+preserves the saved value through later title/date edits and `countdown(id:date:)` construction.
+Its user-input setter disables automatic naming
 only when text actually changes; date updates and the explicit `Название по дате` action mutate the
 draft directly. The action shares the title's label row, adding no second native field outline or
 additional owner. Automatic mode is displayed there as `По дате`.
@@ -861,8 +902,21 @@ Date changes regenerate automatic names for both new and existing events; manual
 untouched. The explicit reset changes no sibling event fields. Creation actions preserve an open
 editor, and the underlying list stays mounted. Successful Save persists the mode with other fields;
 Cancel or failed persistence preserves the prior durable snapshot. The Store continues checking
-the current civil day and existing identity at its mutation boundary. There is no separate day type,
-week state, title-guessing migration or template library.
+the current civil day and existing identity at its mutation boundary. There is no separate event type,
+persisted week state, title-guessing migration or template library.
+
+`WeekDayCreationView` in `Sources/CountdownManager/WeekDayCreationView.swift` owns only the transient
+reviewed `DayCreationWeek`, saving state and a date-change notice. Both surfaces reserve
+`EventEditorSession` before presenting it: mini uses its retained internal editing area, desktop
+uses the existing native sheet and editor intent ordering. The underlying list stays mounted and
+inactive. The preview derives existing/new rows from current Store data, calls `createWeekDays`
+only after explicit Create, and ends the reservation only after successful creation or Cancel.
+The desktop route is `DesktopSheet.week` at 430 × 560 points; its `PendingAction.week` reserves
+the session before earlier accepted local writes drain. Mini keeps `weekCreation` beside its
+existing editor presentation state and renders the common view inside the 390 × 540 manager area.
+If mutation-time validation detects a changed reference day, it refreshes the range and displays
+the notice without saving; another Create is required. This is not an independent persistence owner
+or a second event-editor session.
 
 The editor uses a 21-point Georgia heading in a 49-point header. Its scrolling form keeps the
 existing retained draft; Delete, Cancel and Save share the 58-point fixed footer, with deletion

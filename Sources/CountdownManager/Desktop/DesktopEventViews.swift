@@ -129,7 +129,8 @@ struct DesktopEventBrowser: View {
                              weather: weather, featured: featured, feed: !featured && mode == .feed,
                              selected: item.id == selectedID)
         }
-        .buttonStyle(.plain)
+        // The opaque card owns its appearance; avoid Plain's additional disabled fade.
+        .buttonStyle(.borderless)
         .accessibilityLabel(desktopEventAccessibilityLabel(item))
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")

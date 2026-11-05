@@ -127,6 +127,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public var showsWeather: Bool
     public var keepsAfterDate: Bool
     public var usesAutomaticTitle: Bool
+    public var isDay: Bool
     public var links: [EventLink]
     public var attachments: [EventAttachment]
 
@@ -140,6 +141,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         showsWeather: Bool = false,
         keepsAfterDate: Bool = false,
         usesAutomaticTitle: Bool = false,
+        isDay: Bool = false,
         attachments: [EventAttachment] = [],
         links: [EventLink] = []
     ) {
@@ -152,12 +154,13 @@ public struct Countdown: Identifiable, Codable, Equatable {
         self.showsWeather = showsWeather
         self.keepsAfterDate = keepsAfterDate
         self.usesAutomaticTitle = usesAutomaticTitle
+        self.isDay = isDay
         self.attachments = attachments
         self.links = links
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, note, date, emoji, subtasks, showsWeather, keepsAfterDate, usesAutomaticTitle, attachments, links
+        case id, title, note, date, emoji, subtasks, showsWeather, keepsAfterDate, usesAutomaticTitle, isDay, attachments, links
     }
 
     public init(from decoder: Decoder) throws {
@@ -172,6 +175,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         keepsAfterDate = values.contains(.keepsAfterDate) ? try values.decode(Bool.self, forKey: .keepsAfterDate) : false
         usesAutomaticTitle = values.contains(.usesAutomaticTitle)
             ? try values.decode(Bool.self, forKey: .usesAutomaticTitle) : false
+        isDay = values.contains(.isDay) ? try values.decode(Bool.self, forKey: .isDay) : usesAutomaticTitle
         attachments = values.contains(.attachments)
             ? try values.decode([EventAttachment].self, forKey: .attachments) : []
         guard Set(attachments.map(\.id)).count == attachments.count else {
@@ -193,6 +197,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
         if showsWeather { try values.encode(true, forKey: .showsWeather) }
         if keepsAfterDate { try values.encode(true, forKey: .keepsAfterDate) }
         if usesAutomaticTitle { try values.encode(true, forKey: .usesAutomaticTitle) }
+        try values.encode(isDay, forKey: .isDay)
         if !attachments.isEmpty { try values.encode(attachments, forKey: .attachments) }
         if !links.isEmpty { try values.encode(links, forKey: .links) }
     }

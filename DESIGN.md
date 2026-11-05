@@ -132,10 +132,11 @@ components:
 
 ## Overview
 
-Release 1.20.3 preserves the complete timer alarm emoji at its natural size inside the existing
-20-point slot. Release 1.20.4 uses the existing release-help section with the native `photo` symbol
-to describe screenshot-thumbnail intake. The accepted Graphite palette
-and retained system-native tinting limitation continue to apply.
+Release 1.21.0 uses the existing release-help sections with native `calendar.badge.plus` for
+`Дни до конца недели` and `square.grid.2x2` for `Стабильные карточки`. The one-time week action
+and ordinary-editor card fix extend the existing native control families; they add no new palette,
+window identity or recurring-week interface. The accepted Graphite palette and retained
+system-native tinting limitation continue to apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
@@ -268,6 +269,23 @@ Cards use softly squared corners (8 points), fields use tighter corners (4 point
 
 Creation is a compact terracotta square (31 × 31 points, 8-point corners); timer start is 32 × 32 with 6-point corners. Both use light content in light appearance and dark content against the lighter dark-mode accent. Favorite and edit actions use SF Symbols within 28-point targets. Save and Cancel keep native bordered-prominent and bordered button styles, large control size, default/cancel shortcuts, and platform focus and disabled states. Plain service actions remain visually quiet. Custom plain buttons do not add an invented universal hover animation; native keyboard focus remains available.
 
+Week creation extends this existing family. In the desktop `Создать день` menu, `До конца недели…`
+follows a separator; on Sunday the label becomes `На следующую неделю…`. The mini-panel adds a
+full-width secondary action beneath the existing inline single-day choices. Its empty state adds
+the same action as a fourth 260-point-wide, 32-point-high secondary button; it does not restore an
+otherwise absent header or introduce another toolbar control.
+
+The week preview follows the editor's internal mini-panel/native desktop-sheet family: 21-point
+Georgia heading, 49-point header, 16-point insets, scrolling content and a fixed 58-point action
+row. Rows use the existing calendar leaf, weekday and exact-date roles, with `Уже есть` or
+`Будет создан` as plain status text. The list fits one through seven days by scrolling rather than
+moving its actions offscreen. `Создать N дней` reuses the native prominent Save/Create action;
+`Отмена` keeps the native cancel treatment. No additional decorative icon, group-level Undo row
+or success toast is introduced. Light, Graphite Dark and Increase Contrast use the shared palette.
+The inactive underlying list remains mounted but is excluded from interaction and accessibility.
+Changing the civil day refreshes the range with a visible explanation and requires another Create;
+the old confirmation never silently commits the newly displayed range.
+
 ### Timer Presets
 
 Seven fixed durations share a 32-point high row with 2-point gaps. The selected 5-point-corner surface carries accent tint, a one-point rule, and semibold text. A two-point inset focus outline distinguishes keyboard focus. Left/right commands move selection. The selection background slides with ease-in-out over 180 ms; labels update immediately. Reduce Motion makes selection immediate.
@@ -397,11 +415,12 @@ Aurora tint, Increase Contrast branch, foreground and typography cannot drift be
 
 The mini-panel's fixed list footer carries local-storage reassurance, an `Открыть основное окно` button, a small settings gear, and Quit. The window button opens or brings forward the retained desktop window. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
 
-Desktop Settings, file libraries and create/edit share one native SwiftUI sheet mechanism,
+Desktop Settings, file libraries, create/edit and the week preview share one native SwiftUI sheet mechanism,
 including system appearance and opening/closing animation. macOS owns timing and Reduce Motion.
 The underlying event interface remains inactive until native dismissal finishes. Settings/files
 close through their cross, Escape or an outside click on parent content; editor dismissal
-retains its explicit Save/Cancel policy. Diagnostic Save is nested under Settings and blocks
+retains its explicit Save/Cancel policy. The week preview similarly finishes only through Create
+or Cancel and shares the cross-surface editing reservation. Diagnostic Save is nested under Settings and blocks
 Settings dismissal while export is active.
 
 ### Mars identity and opening motion
