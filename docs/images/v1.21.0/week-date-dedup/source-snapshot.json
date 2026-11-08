@@ -1,0 +1,15 @@
+{
+  "baseCommit": "4b3bc0eac38abc95a4d29a1493d8152f0255c0b3",
+  "source": "Uncommitted working tree on the focused fix branch at capture time",
+  "files": {
+    "Sources/CountdownCore/DayCreationWeek.swift": "c43bbcc460e5bf9f146eb98d278855d116b5b2d6b1f4c1fb9db33d86c47b095d",
+    "Sources/CountdownManager/WeekDayCreationView.swift": "d84c42a4fe3af74167473f53445c9744ff4f621cf69ef0e0c74a2e04f1260a7d",
+    "Sources/CountdownManager/DesktopSmokeRuntime.swift": "c7747c3d0b2b3ee03c7c32c9c01d5b0f449534636017988a5deb476ead1b5ff6",
+    "Tests/CountdownCoreTests/CountdownCoreTests.swift": "efd19c008ffbd91557e2dbb7722a76efdaf205d8016a1b10a696e56b1a6ba5a2",
+    "Tests/CountdownCoreTests/WeekCreationChecks.swift": "a1f4e0995c57f63781955034614a6d57f6d66e1f93b11b0aa6690d1b2c3f3e99",
+    "Tests/CountdownManagerUITests/WeekCreationWorkflowChecks.swift": "793a956b860c11a05ed7c57638186446d193f774a9f85576085788f70afce3c1",
+    "docs/PRODUCT.md": "2bbeaf5fffc94b93c320863a0d55d9ed090de871611488b70727e73afe1809d2",
+    "docs/ARCHITECTURE.md": "ecc10da374c518ec28a2f482556ad4eadf817f6333d189d3a1a0eb9e25bf7e8c",
+    "docs/VERIFICATION.md": "5454ad0eec29b939545997b58ea373e9041a68ed51376f2966c6eae0f0133d34"
+  }
+}

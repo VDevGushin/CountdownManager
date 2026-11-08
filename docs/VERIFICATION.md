@@ -302,10 +302,17 @@ boundaries, and reject an unsupported year rather than returning a partial range
 distinguish ordinary events, weekday-looking legacy text, explicit automatic-title legacy metadata
 and renamed days. JSON cases exercise absent-origin fallback, explicit true/false, invalid types
 and repository restart; batch checks preserve existing content and favorite and make repetition
-a no-op.
+a no-op. Date-only cases skip ordinary custom-titled events, weekday-titled events, automatic
+events and renamed days. The reported Monday regression retains an explicit false origin,
+automatic title and three subtasks, then skips its date alongside an ordinary Sunday event.
+Encoding and repeat confirmation preserve content, favorite and origin. Records on the same
+day number in another month or year do not occupy a target date.
 
 UIChecks `WeekCreationWorkflowChecks.swift` checks day-origin preservation through draft rename,
-date edits, automatic-title reset and reload, while an ordinary automatic-titled draft stays ordinary.
+date edits, automatic-title reset and reload. An ordinary automatic-titled draft keeps its origin
+while occupying its date. A Store regression saves and reloads that metadata combination with
+three subtasks alongside an ordinary Sunday event, creates Tuesday through Saturday and verifies
+one durable write and unchanged bytes on repetition.
 Controlled Store writes cover the complete candidate in one persistence attempt, failure rollback,
 explicit retry, fresh Store/repository reload and unchanged bytes on repetition. A held continuation
 checks the pending-write guard and complete-snapshot publication; a controlled Sunday-to-Monday

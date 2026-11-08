@@ -33,7 +33,7 @@ struct WeekDayCreationView: View {
 
     private var rows: [WeekDayCreationRow] {
         week.days.map { day in
-            WeekDayCreationRow(day: day, alreadyExists: store.data.items.contains { $0.isDay && $0.date == day })
+            WeekDayCreationRow(day: day, alreadyExists: store.data.containsEvent(on: day))
         }
     }
     private var missingCount: Int { rows.filter { !$0.alreadyExists }.count }
@@ -71,8 +71,8 @@ struct WeekDayCreationView: View {
                             if index < rows.count - 1 { Divider() }
                         }
                     }
-                    Text(missingCount == 0 ? "Все дни уже созданы. Новые карточки не нужны."
-                         : "Уже созданные дни останутся без изменений. Остальные события на этих датах сохранятся.")
+                    Text(missingCount == 0 ? "На всех датах уже есть события."
+                         : "Даты с событиями будут пропущены. Остальные дни будут созданы.")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                         .uiSmokeControl(id: "creation.week.count", value: { String(missingCount) })

@@ -1,0 +1,7 @@
+DesktopSmoke
+✓ week thursday: empty/inline entry, 3-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat; renamed-day skip and failed-write retry
+✓ week saturday: an ordinary Sunday event blocks the sole date on both surfaces; disabled Create and Cancel preserve saved bytes
+✓ week sunday: empty/inline entry, 7-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat
+✓ existing ordinary automatic Monday is shown as existing on both surfaces and retains all three tasks
+✓ week cold Sunday→Monday confirmation writes nothing, shows six-day re-review notice, then explicit second confirmation persists Tuesday–Sunday
+PASS: 5/5

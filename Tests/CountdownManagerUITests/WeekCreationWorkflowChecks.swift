@@ -10,6 +10,7 @@ func testWeekCreationWorkflows(in directory: URL) async throws {
     defer { defaults.removePersistentDomain(forName: suiteName) }
     try await testWeekBatchFailureRetryAndReload(in: directory.appendingPathComponent("retry"), defaults: defaults)
     try await testWeekBatchPendingSnapshot(in: directory.appendingPathComponent("pending"), defaults: defaults)
+    try await testWeekExistingAutomaticTitle(in: directory.appendingPathComponent("automatic"), defaults: defaults)
     try await testWeekBatchMidnightRevalidation(in: directory.appendingPathComponent("midnight"), defaults: defaults)
     print("PASS week workflows: stable day origin through draft edits, preview without writes, failed batch rollback/retry, single complete snapshot, durable restart/idempotence and stale-midnight re-review")
 }
@@ -41,7 +42,7 @@ private func testWeekDayDraftIdentity() throws {
 
 @MainActor
 private func testWeekBatchFailureRetryAndReload(in directory: URL, defaults: UserDefaults) async throws {
-    let today = weekWorkflowDay(2026, 11, 5)
+    let today = weekWorkflowDay(2026, 11, 4)
     let friday = weekWorkflowDay(2026, 11, 6)
     let saturday = weekWorkflowDay(2026, 11, 7)
     let ordinary = Countdown(title: "Стоматолог", note: "Keep ordinary event", date: friday, emoji: "", keepsAfterDate: true)
@@ -85,7 +86,7 @@ private func testWeekBatchFailureRetryAndReload(in directory: URL, defaults: Use
     guard let created = await store.createWeekDays(week) else {
         preconditionFailure("An explicit retry must save the complete batch")
     }
-    precondition(created.map(\.date) == [friday, weekWorkflowDay(2026, 11, 8)])
+    precondition(created.map(\.date) == [weekWorkflowDay(2026, 11, 5), weekWorkflowDay(2026, 11, 8)])
     precondition(created.allSatisfy { $0.isDay && $0.usesAutomaticTitle && $0.showsWeather && !$0.keepsAfterDate })
     precondition(snapshots.count == 2 && snapshots[1].1 > snapshots[0].1)
     precondition(Array(store.data.items.prefix(baseline.items.count)) == baseline.items)
@@ -199,6 +200,44 @@ private func waitForWeekWorkflow(_ condition: () -> Bool) async {
         precondition(ProcessInfo.processInfo.systemUptime < deadline, "Week workflow did not reach its deterministic barrier")
         await Task.yield()
     }
+}
+
+@MainActor
+private func testWeekExistingAutomaticTitle(in directory: URL, defaults: UserDefaults) async throws {
+    let today = weekWorkflowDay(2026, 11, 8)
+    let monday = weekWorkflowDay(2026, 11, 9)
+    var draft = EventEditorDraft(item: nil)
+    draft.useAutomaticTitle(for: monday)
+    draft.subtasks = [try Subtask(text: "Первая задача", isCompleted: true),
+                      try Subtask(text: "Вторая задача"), try Subtask(text: "Третья задача")]
+    let existing = draft.countdown(id: UUID(), date: monday)
+    precondition(existing.usesAutomaticTitle && !existing.isDay)
+    let ordinary = Countdown(title: "Поездка", date: weekWorkflowDay(2026, 11, 15), emoji: "")
+    let fileURL = directory.appendingPathComponent("countdowns.json")
+    let repository = CountdownRepository(fileURL: fileURL)
+    var baseline = CountdownData()
+    try baseline.save(existing, primary: true, today: today)
+    try baseline.save(ordinary, primary: false, today: today)
+    _ = try await repository.save(baseline, revision: 0)
+    var writes = 0
+    let store = Store(
+        fileURL: fileURL, disclosureDefaults: defaults,
+        persistenceSaveOverride: { data, revision in
+            writes += 1
+            return try await repository.save(data, revision: revision)
+        }, now: { today.date() }, loginItemManagementIsAvailable: false
+    )
+    await waitForWeekWorkflow { !store.hasPendingPersistence }
+    let created = await store.createWeekDays(requiredWorkflowWeek(today))
+    precondition(created?.map(\.date) == (10...14).map { weekWorkflowDay(2026, 11, $0) })
+    precondition(writes == 1 && Array(store.data.items.prefix(2)) == baseline.items && store.data.primaryID == existing.id,
+                 "The ordinary automatic Monday and all three tasks must survive the single batch write")
+    let durable = try await CountdownRepository(fileURL: fileURL).load()
+    precondition(durable == store.data && durable.items.filter { $0.date == monday } == [baseline.items[0]])
+    let completedBytes = try Data(contentsOf: fileURL)
+    let repeated = await store.createWeekDays(requiredWorkflowWeek(today))
+    let repeatedBytes = try Data(contentsOf: fileURL)
+    precondition(repeated?.isEmpty == true && writes == 1 && repeatedBytes == completedBytes)
 }
 
 private struct WeekWorkflowWriteFailure: Error {}

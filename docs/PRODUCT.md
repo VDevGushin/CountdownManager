@@ -427,18 +427,17 @@ desktop close and compact-mode switching retain the existing active-editor prote
 
 The preview lists each exact date and weekday, distinguishing days to create from days already
 present. `Создать N дней` commits only the missing days. When none are missing, creation is
-disabled. A saved day is an ordinary event with stable day-origin metadata; custom-titled ordinary
-events on the same date do not count as an existing day. Renaming a day or changing its title mode,
-weather, note, materials or retention does not remove its day identity. Moving that day changes
-the date represented by that identity. Multiple ordinary events and pre-existing duplicate days
-remain allowed; this action does not merge, modify or delete them.
+disabled. Any saved event occupying the exact civil date causes that date to be skipped, comparing
+year, month and day together. Title, creation route, automatic naming, day-origin metadata, weather,
+subtasks and materials do not affect this check. Existing content is preserved. Moving an event
+changes the occupied date. Multiple ordinary events and pre-existing duplicates remain allowed
+through their existing flows. Week creation adds events only to unoccupied dates.
 
-New single-day and week-created events carry day identity; ordinary `+` events do not, including
-when the user later selects `Название по дате`. For older records without explicit day identity,
-only the saved automatic-title flag supplies the compatibility fallback. A weekday-looking title
-alone never does. The origin of legacy custom-titled or previously renamed days without that flag
-cannot be recovered and is not guessed. Existing explicit true/false day identity wins over title
-mode and survives editing and restart.
+New single-day and week-created events carry day-origin metadata. Ordinary `+` events retain their
+ordinary origin when the user selects `Название по дате`. Both kinds occupy their saved dates for
+week preparation. Older records without explicit origin retain the saved automatic-title flag as
+their origin compatibility fallback. Existing explicit true/false origin survives editing and
+restart. Origin and title-mode metadata are preserved independently of date-only week deduplication.
 
 Every new day uses the single-day defaults: automatic weekday title, no additional emoji, empty
 note, subtasks, links and attachments, weather ON, retention OFF and favorite OFF. Existing events,

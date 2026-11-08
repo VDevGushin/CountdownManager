@@ -395,7 +395,8 @@ day-origin identity independently of title, weather and retention; days remain o
 records rather than a second event model or storage collection. New ordinary events default to false;
 single-day and week creation set true. Both true and false are encoded explicitly. Missing legacy
 metadata falls back only to the decoded `usesAutomaticTitle` flag, never to the textual title.
-Explicit false prevents an ordinary automatic-titled event from becoming a day after restart.
+Explicit false preserves an ordinary event's origin after restart. Week preparation uses the
+saved date of every event for duplicate protection, independently of these metadata flags.
 Renaming/moving an existing day preserves its marker; legacy custom-titled origins cannot be inferred.
 Loading performs no separate migration or rewrite, and old writers can drop the new metadata.
 
@@ -460,8 +461,11 @@ silently rewrite it; an inconsistent automatic title is corrected on explicit Sa
 `DayCreationWeek` in `Sources/CountdownCore/DayCreationWeek.swift` is a transient value containing
 `referenceDay`, `days` and `isNextWeek`. Its failable initializer constructs the full tomorrow–Sunday
 range, or next Monday–Sunday on Sunday, through civil-calendar additions; it never returns a partial
-range. `CountdownData.createMissingDays(in:today:)` rejects a stale reference day, derives missing
-dates from `isDay` and exact `Day` equality, and builds one complete candidate through the existing
+range. `CountdownData.containsEvent(on:)` compares exact `Day` equality across all saved events.
+Both the shared SwiftUI preview and the mutation boundary use it, so every occupied date is shown
+as existing and skipped during confirmation regardless of title or origin.
+`CountdownData.createMissingDays(in:today:)` rejects a stale reference day, derives missing
+dates through that shared rule, and builds one complete candidate through the existing
 validation rules before replacing its aggregate. Existing available events and `primaryID` are
 preserved; the ordinary expiry/normalization rules still apply.
 There is no persisted week identity, recurrence or duplicate consolidation.

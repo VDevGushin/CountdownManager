@@ -25,12 +25,15 @@ public struct DayCreationWeek: Equatable {
 }
 
 extension CountdownData {
-    /// Builds the complete candidate before replacing the snapshot; ordinary same-date events are unrelated.
+    /// Any event occupying the full civil date prevents another week-generated day on that date.
+    public func containsEvent(on day: Day) -> Bool {
+        items.contains { $0.date == day }
+    }
+
+    /// Builds the complete candidate before replacing the snapshot using the same rule as the preview.
     public mutating func createMissingDays(in week: DayCreationWeek, today: Day) throws -> [Countdown] {
         guard week.referenceDay == today else { throw CountdownError.date }
-        let missing = week.days.filter { day in
-            !items.contains { $0.isDay && $0.date == day }
-        }
+        let missing = week.days.filter { !containsEvent(on: $0) }
         guard !missing.isEmpty else { return [] }
         var updated = self
         var created: [Countdown] = []

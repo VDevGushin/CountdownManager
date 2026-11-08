@@ -1,0 +1,18 @@
+{
+  "executableSHA256": "28102d4f670acc9b16ac3478ef4ef27a578dd8e8b522ca2f35ddd31fd89eab9e",
+  "bundleVersion": "1.21.0",
+  "bundleBuild": "42",
+  "developmentBuild": true,
+  "publishedReleaseArtifact": false,
+  "beforeOriginalFixCoreExit": 133,
+  "beforeDateOnlyRuleCoreExit": 133,
+  "finalCoreChecksPassed": true,
+  "finalUIChecksPassed": true,
+  "strictSwiftLintViolations": 0,
+  "nativeDesignSystemChecks": 7,
+  "nativeDesignContractChecks": 18,
+  "nativeWeekScenarioPasses": 5,
+  "nativePNGCount": 24,
+  "isolatedDataOnly": true,
+  "diagnosticsOrProductionEventsCopied": false
+}

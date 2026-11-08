@@ -95,10 +95,10 @@ func testDayCreationWeekDeduplicationAndDefaults() throws {
     let baseline = data
     let week = requiredWeek(today: today)
     let created = try data.createMissingDays(in: week, today: today)
-    precondition(created.map(\.date) == [friday, sunday], "Only a marked day on the same date blocks batch creation")
-    precondition(created.map(\.title) == ["Пятница", "Воскресенье"])
+    precondition(created.map(\.date) == [sunday], "Every occupied date must block batch creation, including ordinary events")
+    precondition(created.map(\.title) == ["Воскресенье"])
     precondition(Array(data.items.prefix(3)) == baseline.items && data.primaryID == ordinary.id)
-    precondition(data.items.count == 5 && Set(data.items.map(\.id)).count == 5)
+    precondition(data.items.count == 4 && Set(data.items.map(\.id)).count == 4)
     for day in created {
         precondition(day.isDay && day.usesAutomaticTitle && day.showsWeather)
         precondition(!day.keepsAfterDate && day.emoji.isEmpty && day.subtasks.isEmpty)
@@ -114,6 +114,54 @@ func testDayCreationWeekDeduplicationAndDefaults() throws {
         preconditionFailure("A preview from another civil day must be reviewed again")
     } catch CountdownError.date {}
     precondition(data == completed, "Rejecting a stale preview must preserve the entire existing snapshot")
+}
+
+func testWeekCreationSkipsExistingAutomaticTitle() throws {
+    let today = weekCheckDay(2026, 11, 8)
+    let monday = weekCheckDay(2026, 11, 9)
+    let friday = weekCheckDay(2026, 11, 13)
+    let automatic = Countdown(
+        title: "Понедельник", note: "Сохранить планы", date: monday, emoji: "",
+        subtasks: [try Subtask(text: "Первая задача", isCompleted: true),
+                   try Subtask(text: "Вторая задача"), try Subtask(text: "Третья задача")],
+        usesAutomaticTitle: true, isDay: false
+    )
+    let ordinary = Countdown(title: "Встреча", date: monday, emoji: "")
+    let existingFriday = Countdown(title: "Планы на пятницу", date: friday, emoji: "", isDay: true)
+    let ordinarySunday = Countdown(title: "Поездка", date: weekCheckDay(2026, 11, 15), emoji: "")
+    var data = CountdownData()
+    data.items = [ordinary, automatic, existingFriday, ordinarySunday]
+    data.primaryID = automatic.id
+    let baseline = data
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    let baselineBytes = try encoder.encode(data)
+    data = try JSONDecoder().decode(CountdownData.self, from: baselineBytes)
+    precondition(data.items[1].usesAutomaticTitle && !data.items[1].isDay,
+                 "The saved automatic-title event must retain its explicit false origin marker")
+
+    let created = try data.createMissingDays(in: requiredWeek(today: today), today: today)
+    precondition(created.map(\.date) == [10, 11, 12, 14].map { weekCheckDay(2026, 11, $0) },
+                 "Sunday creation must skip the existing Monday, Friday and ordinary Sunday")
+    precondition(Array(data.items.prefix(4)) == baseline.items && data.primaryID == automatic.id,
+                 "Skipping the existing Monday must preserve its tasks, note, flags, identity and favorite")
+    precondition(data.items.filter { $0.date == monday }.count == 2,
+                 "The existing ordinary meeting and automatic Monday must not gain a duplicate day")
+    let completedBytes = try encoder.encode(data)
+    var restored = try JSONDecoder().decode(CountdownData.self, from: completedBytes)
+    let repeated = try restored.createMissingDays(in: requiredWeek(today: today), today: today)
+    precondition(repeated.isEmpty && restored == data)
+    let repeatedBytes = try encoder.encode(restored)
+    precondition(repeatedBytes == completedBytes)
+
+    var otherDates = CountdownData()
+    otherDates.items = [Countdown(title: "Другой месяц", date: weekCheckDay(2026, 12, 9), emoji: ""),
+                        Countdown(title: "Другой год", date: weekCheckDay(2027, 11, 9), emoji: "")]
+    let retained = otherDates.items
+    let fullWeek = try otherDates.createMissingDays(in: requiredWeek(today: today), today: today)
+    precondition(fullWeek.map(\.date) == requiredWeek(today: today).days && Array(otherDates.items.prefix(2)) == retained,
+                 "Date matching must compare year, month and day together")
+    print("PASS week date deduplication: existing ordinary and automatic events, three preserved tasks, four missing dates and zero-change repeat")
 }
 
 func testDayCreationWeekRepositoryRestart() async throws {

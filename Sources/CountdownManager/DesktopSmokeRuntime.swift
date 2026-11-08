@@ -630,33 +630,49 @@ final class DesktopSmokeRuntime {
         try require(fixture.data.items.isEmpty && cancelledBytes == emptyBytes, "Cancel changed the empty snapshot")
 
         let firstDate = try value(week.days.first, "first target date")
-        let ordinary = Countdown(title: "Стоматолог", note: "Обычное событие на этой же дате", date: firstDate, emoji: "")
+        let ordinaryDate = try value(name == "sunday" ? week.days.last : week.days.first, "ordinary event date")
+        let ordinary = Countdown(title: "Стоматолог", note: "Обычное событие на этой дате", date: ordinaryDate, emoji: "")
         let ordinarySaved = await fixture.save(ordinary, primary: true)
         try require(ordinarySaved, "cannot seed same-date ordinary event")
         try await press(miniPrefix + "day.add")
         try await wait("inline week choice") { self.controls.entries[miniPrefix + "creation.day.week"]?.isEnabled == true }
         if name == "thursday" { try await captureWindowThemes("week-mini-action", window: mini) }
         try await press(miniPrefix + "creation.day.week")
-        try await expect(miniPrefix + "creation.week.count", String(expectedCount))
-        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + "|new")
+        try await expect(miniPrefix + "creation.week.count", String(expectedCount - 1))
+        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + (name == "sunday" ? "|new" : "|existing"))
         try await press(miniPrefix + "creation.week.cancel")
         try await wait("ordinary preview Cancel") { !session.hasActiveEditor }
-        var missingCount = expectedCount
+        let missingCount = expectedCount - (name == "saturday" ? 1 : 2)
         if name == "thursday" {
-            var renamed = EventEditorDraft(day: firstDate)
+            let renamedDate = try value(week.days.dropFirst().first, "second target date")
+            var renamed = EventEditorDraft(day: renamedDate)
             renamed.setTitle("Подготовиться к выходным")
             renamed.note = "Не менять заметку созданного дня"
             renamed.subtasks = [try Subtask(text: "Сохранить выполненное дело", isCompleted: true)]
-            let seeded = await fixture.save(renamed.countdown(id: UUID(), date: firstDate), primary: false)
+            let seeded = await fixture.save(renamed.countdown(id: UUID(), date: renamedDate), primary: false)
             try require(seeded, "cannot seed renamed day")
-            missingCount -= 1
+        } else if name == "sunday" {
+            var automatic = EventEditorDraft(item: nil)
+            automatic.useAutomaticTitle(for: firstDate)
+            automatic.subtasks = [try Subtask(text: "Сохранить первую задачу"),
+                                  try Subtask(text: "Сохранить вторую задачу"),
+                                  try Subtask(text: "Сохранить третью задачу")]
+            let existing = automatic.countdown(id: UUID(), date: firstDate)
+            try require(!existing.isDay && existing.usesAutomaticTitle, "automatic fixture must retain ordinary origin")
+            let seeded = await fixture.save(existing, primary: false)
+            try require(seeded, "cannot seed an ordinary automatic Monday with tasks")
         }
         let baseline = fixture.data
         let baselineBytes = try Data(contentsOf: fileURL)
+        let baselineWrites = await gate.writeCount()
         try await press(miniPrefix + "day.add")
         try await press(miniPrefix + "creation.day.week")
         try await expect(miniPrefix + "creation.week.count", String(missingCount))
-        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + (name == "thursday" ? "|existing" : "|new"))
+        try await expect(miniPrefix + "creation.week.row.0", weekDateKey(firstDate) + "|existing")
+        if name == "sunday" {
+            try await expect(miniPrefix + "creation.week.row.6", weekDateKey(ordinaryDate) + "|existing")
+        }
+        if name == "sunday" { try await captureWindowThemes("week-sunday-existing-auto-mini-preview", window: mini) }
         try await wait("desktop locked by mini week preview") { self.controls.entries[prefix + "desktop.create-week"]?.isEnabled == false }
         try require(!controls.press(prefix + "desktop.create-week"), "desktop replaced a live mini preview")
         let retainedRoot = try value(controls.value(miniPrefix + "root.window"), "retained week mini root identity")
@@ -674,6 +690,7 @@ final class DesktopSmokeRuntime {
         try await press(prefix + "desktop.create-week")
         try await wait("native week sheet attaches") { window.attachedSheet?.isVisible == true && session.desktopIsPresented }
         try await expect(prefix + "creation.week.count", String(missingCount))
+        try await expect(prefix + "creation.week.row.0", weekDateKey(firstDate) + "|existing")
         let sheet = try value(window.attachedSheet, "native week sheet")
         _ = try await requireWeekFooter(scope: prefix, expectedSize: NSSize(width: 430, height: 560))
         try await wait("mini creation locked by desktop preview") { self.controls.entries[miniPrefix + "event.add"]?.isEnabled == false }
@@ -684,6 +701,20 @@ final class DesktopSmokeRuntime {
         if name == "sunday" {
             try await requireWeekScrolling(week: week, scope: prefix, window: sheet,
                                           captureName: "week-sunday-desktop-bottom-light")
+        }
+        if missingCount == 0 {
+            try require(controls.entries[prefix + "creation.week.confirm"]?.isEnabled == false,
+                        "an ordinary event occupying the only target date must disable creation")
+            try await press(prefix + "creation.week.cancel")
+            try await requireWeekSheetDismissal(sheet, host: window, session: session, ownerStore: fixture,
+                                                scope: prefix, description: "occupied Saturday preview Cancel")
+            let finalBytes = try Data(contentsOf: fileURL)
+            let finalWrites = await gate.writeCount()
+            try require(finalBytes == baselineBytes && fixture.data == baseline && finalWrites == baselineWrites,
+                        "reviewing an occupied single-date week changed existing data")
+            passed.append("week saturday: an ordinary Sunday event blocks the sole date on both surfaces; disabled Create and Cancel preserve saved bytes")
+            scenarioCompleted = true
+            return
         }
         if name == "thursday" {
             await gate.holdNextWrite()
@@ -717,7 +748,8 @@ final class DesktopSmokeRuntime {
                     "batch must persist in one complete write")
         try require(Array(durable.items.prefix(baseline.items.count)) == baseline.items && durable.primaryID == ordinary.id,
                     "week creation changed original events, renamed day or favorite")
-        try require(durable.items.filter(\.isDay).map(\.date).sorted() == week.days,
+        let expectedCreatedDates = name == "thursday" ? Array(week.days.suffix(1)) : Array(week.days.dropFirst().dropLast())
+        try require(durable.items.dropFirst(baseline.items.count).map(\.date) == expectedCreatedDates,
                     "week creation must add exactly the missing dates")
         try require(durable.items.suffix(missingCount).allSatisfy {
             $0.isDay && $0.usesAutomaticTitle && $0.showsWeather && !$0.keepsAfterDate
@@ -742,6 +774,7 @@ final class DesktopSmokeRuntime {
         try require(finalBytes == completeBytes && finalWrites == writesAfterConfirm,
                     "reviewing or cancelling an existing week changed event data")
         passed.append("week \(name): empty/inline entry, \(expectedCount)-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat\(name == "thursday" ? "; renamed-day skip and failed-write retry" : "")")
+        if name == "sunday" { passed.append("existing ordinary automatic Monday is shown as existing on both surfaces and retains all three tasks") }
         scenarioCompleted = true
     }
 

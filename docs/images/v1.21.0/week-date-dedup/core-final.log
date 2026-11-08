@@ -1,0 +1,16 @@
+Building for production...
+[2 / 5] CoreChecks-product
+[3 / 6] CoreChecks-product
+[5 / 6] CoreChecks-product
+Build complete! (3,63 с)
+PASS links: URL schemes/Unicode/whitespace, normalization, 0/10/11, identities, legacy and malformed JSON
+PASS links repository: restart, rejected raw save and stale revision preserve durable data
+PASS core regression: rejected edits, stale subtask actions and full-checklist replacement
+PASS core regression: fresh-repository lifecycle, rejected revisions, filesystem retry and corrupt JSON preservation
+PASS automatic titles: legacy compatibility, strict metadata, canonical date boundaries, validation guards, expiry without rollover, revision snapshots and restart
+PASS week date deduplication: existing ordinary and automatic events, three preserved tasks, four missing dates and zero-change repeat
+PASS week core: explicit day identity/legacy metadata, seven weekday ranges, Sunday next week, locale/time-zone/DST/year boundaries, defaults, same-date ordinary events, stable renamed days and repository restart
+PASS retained core lifecycle: ordinary expiry, primary preservation, post-date edits/tasks, four civil boundaries, rejected backdating and stale drafts
+PASS retained attachments: restart and midnight keep identity/bytes; ordinary expiry cleanup; failed delete retains copy; successful delete cleans only owned copy
+PASS core attachments: metadata compatibility, copy/restart, Save/Cancel/failure, revisions, expiry, safe cleanup and original preservation
+PASS unit: event validation, subtasks 0/1/10/11 and 50/51, trim, completion order, Today creation/editing, midnight rejection and expiry, stable event order, legacy/new JSON, repository revisions, calendar and emoji
