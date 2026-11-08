@@ -2,10 +2,15 @@
 
 ## Current release
 
-Preparing **1.21.1 / build 43** on 2026-11-08 for date-only week deduplication.
-[Candidate status](releases/v1.21.1.md) and [notes](releases/v1.21.1-notes.md) track this run.
-Latest remains the published **1.21.0 / build 42** until the new package is publicly verified.
-The final 1.21.1 package and public verification are pending.
+Published as Latest is **1.21.1 / build 43** on 2026-11-08 for date-only week deduplication.
+[Release status](releases/v1.21.1.md) and [notes](releases/v1.21.1-notes.md) describe the correction.
+[Public verification](images/v1.21.1/publication.json) records anonymous HTTP 200 and exact hashes
+for Latest, ZIP, versioned feed and stable feed. The annotated tag targets reviewed main commit
+`bedd38b064425a2a635f02af878cad9e1bcaadf4`.
+[Package audit](images/v1.21.1/artifact-audit.json) and [exact native acceptance](images/v1.21.1/PROVENANCE.md)
+passed archive/feed authenticity, altered-input rejection, metadata, extraction/codesign, week 5/5
+and help 1/1. The previous public release for the owner's manual update is **1.21.0 / build 42**.
+Default-branch homepage verification and final cleanup/handoff receipts follow the documentation push.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
