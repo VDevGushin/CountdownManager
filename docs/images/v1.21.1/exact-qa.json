@@ -1,0 +1,23 @@
+{
+  "version": "1.21.1",
+  "build": "43",
+  "executableSHA256": "e0b1c64bbd38a4bdeee2f65725ca5af2e38fdf61575eeb87f5fc36a9a6edd435",
+  "exactPackageRuntimeVerified": true,
+  "productionDataUnchangedDuringChecks": true,
+  "scenarios": [
+    {
+      "scenario": "week",
+      "home": "/private/tmp/countdown-release-1.21.1.4WhxNQ/exact-week-1lj5xnfl",
+      "result": "DesktopSmoke\n✓ week thursday: empty/inline entry, 3-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat; renamed-day skip and failed-write retry\n✓ week saturday: an ordinary Sunday event blocks the sole date on both surfaces; disabled Create and Cancel preserve saved bytes\n✓ week sunday: empty/inline entry, 7-date native preview, Cancel, same-date ordinary event, shared editor ownership, retained hide/show, one-write durable confirmation and zero-write repeat\n✓ existing ordinary automatic Monday is shown as existing on both surfaces and retains all three tasks\n✓ week cold Sunday→Monday confirmation writes nothing, shows six-day re-review notice, then explicit second confirmation persists Tuesday–Sunday\nPASS: 5/5",
+      "executableSHA256": "e0b1c64bbd38a4bdeee2f65725ca5af2e38fdf61575eeb87f5fc36a9a6edd435",
+      "nativePNGCount": 24
+    },
+    {
+      "scenario": "whats-new",
+      "home": "/private/tmp/countdown-release-1.21.1.4WhxNQ/exact-whats-new-29tp3h_s",
+      "result": "DesktopSmoke\n✓ native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures\nPASS: 1/1",
+      "executableSHA256": "e0b1c64bbd38a4bdeee2f65725ca5af2e38fdf61575eeb87f5fc36a9a6edd435",
+      "nativePNGCount": 4
+    }
+  ]
+}

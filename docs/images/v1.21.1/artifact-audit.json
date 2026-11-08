@@ -1,0 +1,49 @@
+{
+  "status": "passed",
+  "version": "1.21.1",
+  "build": "43",
+  "sourceCommit": "bedd38b064425a2a635f02af878cad9e1bcaadf4",
+  "archiveBytes": 6517634,
+  "archiveSHA256": "4a95570274c67d8a466b55f57bfedb791afb1dd42b799f085d393c0bca38a443",
+  "feedBytes": 2771,
+  "feedSHA256": "71c850b24d1aeba3e014ba711d32792ff61109418e2bec3b3c7e7395314192b8",
+  "finalExecutableSHA256": "e0b1c64bbd38a4bdeee2f65725ca5af2e38fdf61575eeb87f5fc36a9a6edd435",
+  "extractedApp": "/private/tmp/countdown-release-1.21.1.4WhxNQ/extracted/Countdown Manager.app",
+  "publicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "independentPublicKeyAudit": true,
+  "signatureVerifier": "Apple CryptoKit Curve25519.Signing.PublicKey",
+  "signatureChecks": {
+    "feed-changed-signature": false,
+    "archive-changed-payload": false,
+    "archive-valid": true,
+    "feed-valid": true,
+    "feed-changed-payload": false,
+    "archive-changed-signature": false
+  },
+  "feedSignedBoundaryVerified": true,
+  "feedSignedBytes": 2627,
+  "feedBoundarySources": [
+    "Sparkle 2.10.0 SPUExtractSignedFeed.m",
+    "Sparkle 2.10.0 common_cli/Signing.swift"
+  ],
+  "embeddedNotesAndMetadataVerified": true,
+  "extractedEntriesMatch": true,
+  "deepStrictCodesignPassed": true,
+  "inputsUnchanged": true,
+  "nativeBuildContract": {
+    "styleVersion": "native-calendar-graphite-v2",
+    "compilerSDK": {
+      "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+      "version": "15.4",
+      "canonicalName": "macosx15.4"
+    },
+    "linkedCompatibility": "13.0",
+    "signatureIdentifier": "local.countdownmanager.app",
+    "renderedAppearanceVerified": false
+  },
+  "architecture": "arm64",
+  "minimumSystemVersion": "13.0",
+  "published": false,
+  "installed": false,
+  "exactPackageRuntimeVerified": false
+}
