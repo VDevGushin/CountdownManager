@@ -1,0 +1,18 @@
+{
+  "verifiedAtUTC": "2026-11-08T15:24:57.088485+00:00",
+  "installedVersion": "1.21.0",
+  "installedBuild": "42",
+  "publishedTargetVersion": "1.21.1",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256": "92b86a44ce612d72e56ae440eab5b12600cde1a5365221d6e715f32865f92003",
+  "installedPreviousAndRunning": true,
+  "deepStrictCodesignPassed": true,
+  "ownerManualUpdateReady": true,
+  "ownerUpdateNotTriggered": true,
+  "productionDataResetOrMigrated": false,
+  "eventAndAttachmentBytesUnchangedDuringCleanup": true,
+  "temporaryUserDataBackupsCreated": false,
+  "taskScratchPermanentlyDeleted": true,
+  "localReleaseArchiveCopiesRetained": false,
+  "unrelatedTrashEmptied": false
+}

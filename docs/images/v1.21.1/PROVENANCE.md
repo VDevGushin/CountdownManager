@@ -32,4 +32,6 @@ The selected native checks establish local rendering, preview values and persist
 External keyboard delivery, VoiceOver speech, physical status-item/Spaces interaction and a
 public Sparkle installation/relaunch are outside this acceptance set. The app uses ad-hoc signing.
 [Publication](publication.json) passed anonymous public-asset hash checks after browser publication.
-Default-homepage and owner-handoff receipts follow verification of those steps.
+[Homepage verification](homepage.json) passed anonymous README/image comparison and browser review.
+[Owner handoff](handoff.json) verified previous public 1.21.0 installed and running, with task scratch
+permanently removed and event/attachment bytes preserved.

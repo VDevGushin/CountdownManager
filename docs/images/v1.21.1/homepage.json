@@ -1,0 +1,34 @@
+{
+  "verifiedAtUTC": "2026-11-08T15:20:02.043131+00:00",
+  "defaultBranch": "main",
+  "defaultBranchVerifiedWith": "Read-only connected GitHub API",
+  "anonymousDefaultREADMEAndImagesMatch": true,
+  "checks": {
+    "README.md": {
+      "status": 200,
+      "bytes": 21632,
+      "sha256": "b207ffd71744038bf72b10bf7cdda28db864e1af09ae4e6434ed335a35881d9e"
+    },
+    "docs/images/v1.21.1/week-desktop-result-dark.png": {
+      "status": 200,
+      "bytes": 269151,
+      "sha256": "21f8ac7e13c7e6c1240e0515c7eb4a365a88d6678254fcde67a4f072e2e349cc"
+    },
+    "docs/images/v1.21.1/week-mini-action-light.png": {
+      "status": 200,
+      "bytes": 100276,
+      "sha256": "ecd4f8df6dde4ed4a9618d03efd5a3e492e04b5dc8852a8806f48b063155a7f4"
+    },
+    "docs/images/v1.21.1/week-sunday-existing-auto-mini-preview-dark.png": {
+      "status": 200,
+      "bytes": 139241,
+      "sha256": "181905d1d48f5688b3f5e7da46ea02d3434343d9a47a89c0e18e4dcf6f046c98"
+    }
+  },
+  "browserAppearanceInspected": true,
+  "displayedImageWidths": [
+    838,
+    360,
+    360
+  ]
+}
