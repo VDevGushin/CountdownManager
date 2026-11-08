@@ -13,11 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.21.0 uses the read-only `Что нового` screen to describe `Дни до конца недели` and
-`Стабильные карточки`: one-time creation of upcoming days, including the following week on Sunday
-and skipping existing days, plus removal of the additional desktop-card fade when opening or
-closing the ordinary event editor. The batch is not recurrence, a template or group-level Undo.
-Existing event retention, attachment limits and editor Save/Cancel behaviour remain unchanged. The release-help
+Release 1.21.1 uses the read-only `Что нового` screen to describe `Неделя без повторов`.
+Week creation skips every full civil date occupied by a saved event. The preview identifies
+occupied dates and counts the remaining new days. The release-help
 window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,

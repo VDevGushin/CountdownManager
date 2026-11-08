@@ -2,23 +2,10 @@
 
 ## Current release
 
-Published as Latest: **1.21.0 / build 42**, week-day creation and the desktop card-style fix,
-2026-11-05. [Release status](releases/v1.21.0.md) · [Notes](releases/v1.21.0-notes.md).
-The exact package passed focused native week 4/4, editor stability 1/1 and release help 1/1.
-The anonymous ZIP, versioned appcast and stable appcast passed HTTP 200 and exact hash checks.
-[Public assets and tag receipt](images/v1.21.0/public-assets.json) ·
-[Package audit](images/v1.21.0/artifact-audit.json) · [Native provenance](images/v1.21.0/PROVENANCE.md).
-The annotated tag targets reviewed main `42e50c61e37476cff028ba52c6e647a85edba46e`.
-
-The superseded published release is **1.20.5 / build 41**. The [homepage receipt](images/v1.21.0/homepage.json)
-records anonymous HTTP 200 and matching default-main README/three image bytes, plus browser review.
-For the owner's manual update, the previous public 1.20.5/41 bundle was installed, verified and
-launched with current data; the native updater offered 1.21.0. The agent did not accept installation.
-The installed/running version subsequently changed to 1.21.0/42. The [final handoff receipt](images/v1.21.0/final-handoff.json)
-records this observed transition and completed permanent deletion of task backups, duplicate packages,
-test bundles and earlier Trash/archive copies. Current events, attachments, preferences and repository
-evidence were preserved. [Earlier direct-installation receipt](images/v1.21.0/installation.json) records
-an intermediate stage, not the final cleanup state.
+Preparing **1.21.1 / build 43** on 2026-11-08 for date-only week deduplication.
+[Candidate status](releases/v1.21.1.md) and [notes](releases/v1.21.1-notes.md) track this run.
+Latest remains the published **1.21.0 / build 42** until the new package is publicly verified.
+The final 1.21.1 package and public verification are pending.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

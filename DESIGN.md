@@ -132,11 +132,9 @@ components:
 
 ## Overview
 
-Release 1.21.0 uses the existing release-help sections with native `calendar.badge.plus` for
-`Дни до конца недели` and `square.grid.2x2` for `Стабильные карточки`. The one-time week action
-and ordinary-editor card fix extend the existing native control families; they add no new palette,
-window identity or recurring-week interface. The accepted Graphite palette and retained
-system-native tinting limitation continue to apply.
+Release 1.21.1 uses one existing release-help section with native `calendar.badge.plus` for
+`Неделя без повторов`. The week preview uses its existing `Уже есть` rows and primary creation
+count to explain occupied dates. The accepted Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
