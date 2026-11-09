@@ -1,0 +1,58 @@
+{
+  "verifiedAtUTC": "2026-11-09T17:28:03.888505+00:00",
+  "defaultBranch": "main",
+  "defaultBranchVerifiedThrough": "GitHub repository browser branch selector and default URL",
+  "READMEAndImagesMatch": true,
+  "browserAppearanceReviewed": true,
+  "browserScreenshot": "homepage-browser.png",
+  "imagesLoaded": [
+    {
+      "file": "docs/images/v1.22.0/event-copy-desktop-list-dark.png",
+      "displayedWidth": 838,
+      "naturalWidth": 2400,
+      "naturalHeight": 1576
+    },
+    {
+      "file": "docs/images/v1.22.0/event-copy-mini-list-light.png",
+      "displayedWidth": 360,
+      "naturalWidth": 780,
+      "naturalHeight": 1200
+    },
+    {
+      "file": "docs/images/v1.22.0/event-copy-mini-editor-dark.png",
+      "displayedWidth": 360,
+      "naturalWidth": 780,
+      "naturalHeight": 1200
+    }
+  ],
+  "checks": [
+    {
+      "path": "README.md",
+      "status": 200,
+      "bytes": 24074,
+      "sha256": "3d030d7312fd045e3702acd7b7ee53614fd7371005dbc7ae920719a4672cd006",
+      "matchesLocal": true
+    },
+    {
+      "path": "docs/images/v1.22.0/event-copy-desktop-list-dark.png",
+      "status": 200,
+      "bytes": 314561,
+      "sha256": "04e1f61face2c77a6c838f9b3a08d91d73bd445f7f326f74259e6828dbabfb4c",
+      "matchesLocal": true
+    },
+    {
+      "path": "docs/images/v1.22.0/event-copy-mini-list-light.png",
+      "status": 200,
+      "bytes": 137476,
+      "sha256": "09f2c24df7091af4216b2d09ab474e3dde8d8d6975eac7b792c2c5212387410e",
+      "matchesLocal": true
+    },
+    {
+      "path": "docs/images/v1.22.0/event-copy-mini-editor-dark.png",
+      "status": 200,
+      "bytes": 122580,
+      "sha256": "9096387ebf683044ddcdec4e7bbb73cd7f9d177531ba01df4d16685c6f0ccbf9",
+      "matchesLocal": true
+    }
+  ]
+}

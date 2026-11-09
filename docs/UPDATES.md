@@ -11,6 +11,10 @@ The annotated tag targets reviewed main commit `dee06cf1b3556ce24b20edf411ccd8dc
 [exact native acceptance](images/v1.22.0/PROVENANCE.md) passed archive/feed authenticity,
 altered-input rejection, metadata, extraction/codesign, copying 3/3 and help 1/1.
 The previous public release for the owner's manual update is **1.21.1 / build 43**.
+[Homepage verification](images/v1.22.0/homepage.json) passed anonymous README/image byte comparison
+and browser appearance review. [Final handoff](images/v1.22.0/handoff.json) verified the previous
+1.21.1 installed and running. Task scratch, profiles, build caches and local package copies were
+permanently removed after production event and attachment byte preservation was verified.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

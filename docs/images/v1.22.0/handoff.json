@@ -1,0 +1,22 @@
+{
+  "verifiedAtUTC": "2026-11-09T17:28:51.976355+00:00",
+  "installedVersion": "1.21.1",
+  "installedBuild": "43",
+  "publishedTargetVersion": "1.22.0",
+  "installedPath": "/Applications/Countdown Manager.app",
+  "installedExecutableSHA256": "e0b1c64bbd38a4bdeee2f65725ca5af2e38fdf61575eeb87f5fc36a9a6edd435",
+  "installedPreviousAndRunning": true,
+  "deepStrictCodesignPassed": true,
+  "ownerManualUpdateReady": true,
+  "ownerUpdateNotTriggered": true,
+  "productionDataResetOrMigrated": false,
+  "eventAndAttachmentBytesMatchPreReleaseBaseline": true,
+  "eventCount": 17,
+  "attachmentFileCount": 26,
+  "temporaryUserDataBackupsRetained": false,
+  "taskScratchPermanentlyDeleted": true,
+  "removedTaskEntries": 25,
+  "localReleaseArchiveCopiesRetained": false,
+  "unrelatedTrashEmptied": false,
+  "cleanupScope": "Enumerated event-copy/release scratch and only this archive hash in the Sparkle generation cache"
+}
