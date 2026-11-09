@@ -258,7 +258,7 @@ in that order in desktop details, panel cards and the shared editor, with consis
 primary-ink section headings. Empty saved attachment sections are omitted; editor controls remain.
 `SavedAttachmentSection` exposes saved-file presentation, optional compact disclosure, file opening
 and the full-library action. It receives no editor callback or editing-availability state.
-`DesktopEventDetail` keeps editor entry only in its header pencil; saved note and checklist
+`DesktopEventDetail` keeps saved-event editing in its header pencil and new-copy creation in its adjacent `doc.on.doc` action; saved note and checklist
 sections contain no duplicate editor actions, including empty states. Expiry explanations belong
 only to the editor and deletion confirmation, not ordinary saved sections or file libraries.
 
@@ -546,6 +546,33 @@ Date-sensitive event state is refreshed from timers and relevant macOS lifecycle
 Launch at login is integrated through `SMAppService.mainApp`. Settings binds to the existing
 `Store.loginStatus` and actions, including the `requiresApproval` System Settings route; it does
 not maintain another login preference.
+
+### Event copying
+
+`ManagerView` and the desktop FIFO carry a source snapshot separately from ordinary editing.
+Copy admission reserves the existing `EventEditorSession`. The desktop queue resolves the latest
+available source after earlier accepted writes. Both routes mount the same `EditorView` with a
+copy source and no edited event identity. The editor derives the initial date from the later of
+source date and current day, focuses the date field and keeps the source available for attachment
+preview and inherited-note validation.
+
+`EventEditorDraft(copying:date:)` reuses the existing field representation, replaces subtask and
+link identities, resets completion, and updates an automatic title. Inherited attachments remain
+transient source references until Save. `CountdownData.saveCopy` validates source availability,
+new identity and the explicit inherited note/file allowances through the ordinary save validation.
+Normal creation and existing-event edits keep their original validation path.
+
+`Store.saveCopy` owns asynchronous copy admission and repeated validation. It uses the editor's
+attachment draft plus a separate draft for the current Save attempt. The repository actor copies
+inherited durable references into fresh owned files, validates newly imported editor references,
+and pins the attempt until the existing commit boundary completes. Store rechecks the active
+editor token, exact inherited metadata, source availability and current civil day before committing
+against the latest event state. It returns the normalized saved event to the editor.
+
+An unsuccessful attempt releases its new file copies while keeping editor imports available for
+retry. Success makes the independent copies durable before releasing attempt pins. Editor Cancel
+uses its ordinary draft cleanup. JSON and file bytes retain their existing ordered persistence and
+crash-cleanup guarantees. Persisted records keep the existing event schema.
 
 ## Keep-awake state
 

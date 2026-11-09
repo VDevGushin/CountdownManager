@@ -8,6 +8,7 @@ struct DesktopEventDetail: View {
     @ObservedObject var weather: WeatherController
     let canMutate: Bool
     let edit: () -> Void
+    let copy: () -> Void
     let toggleFavorite: () -> Void
     let delete: () -> Void
     let toggleSubtask: (UUID) -> Void
@@ -78,6 +79,13 @@ struct DesktopEventDetail: View {
                 .help("Изменить событие")
                 .accessibilityIdentifier("desktop.detail.edit")
                 .uiSmokeControl(id: "desktop.detail.edit", action: edit)
+                .disabled(!canMutate)
+            AuroraSymbolAction(symbolName: "doc.on.doc", surface: .desktop, tone: .ink,
+                accessibilityLabel: "Создать копию события", action: copy)
+                .fixedSize()
+                .help("Создать копию…")
+                .accessibilityIdentifier("desktop.detail.copy")
+                .uiSmokeControl(id: "desktop.detail.copy", action: copy)
                 .disabled(!canMutate)
             AuroraSymbolAction(symbolName: "trash", surface: .desktop, tone: .ink, role: .destructive,
                 accessibilityLabel: "Удалить событие: \(item.title)", action: requestDeletion)

@@ -205,7 +205,7 @@
       },
       "named_sibling": {
         "file": "Sources/CountdownManager/Desktop/DesktopEventDetail.swift",
-        "member": "DesktopEventDetail.header star/pencil/trash"
+        "member": "DesktopEventDetail.header star/pencil/copy/trash"
       },
       "implementation": {
         "file": "Sources/CountdownManager/AuroraInstrument.swift",
@@ -218,7 +218,7 @@
           "reuse": "AuroraSymbolAction"
         }
       ],
-      "symbols": ["star", "star.fill", "pencil", "trash"],
+      "symbols": ["star", "star.fill", "pencil", "doc.on.doc", "trash"],
       "tokens": {
         "target": "28 x 28; Rectangle contentShape",
         "button_style": "Native borderless Button selected explicitly by AuroraSymbolAction.Surface.desktop",
@@ -235,7 +235,7 @@
       ],
       "verification": {
         "source": [
-          "Header contains three AuroraSymbolAction consumers with the existing symbols, tone mapping, labels, role and guards."
+          "Header contains four AuroraSymbolAction consumers ordered star, pencil, copy and trash with matching tones, labels, role and guards."
         ],
         "native": "Confirm geometry, focus and enabled/disabled states after extraction at matched build settings."
       },
@@ -262,11 +262,11 @@
       "consumers": [
         {
           "file": "Sources/CountdownManager/Views.swift",
-          "member": "ManagerView.eventActions star/pencil",
+          "member": "ManagerView.eventActions star/pencil/copy",
           "reuse": "AuroraSymbolAction"
         }
       ],
-      "symbols": ["star", "star.fill", "pencil"],
+      "symbols": ["star", "star.fill", "pencil", "doc.on.doc"],
       "tokens": {
         "target": "28 x 28; Rectangle contentShape",
         "button_style": "Native plain Button selected explicitly by AuroraSymbolAction.Surface.mini",
@@ -281,7 +281,7 @@
       ],
       "verification": {
         "source": [
-          "ManagerView.eventActions contains two AuroraSymbolAction consumers with existing tone and symbol mappings."
+          "ManagerView.eventActions contains three AuroraSymbolAction consumers with the surface tone and symbol mappings."
         ],
         "native": "Confirm ordinary and favorite mini cards keep the same action positions, target sizes and labels."
       },

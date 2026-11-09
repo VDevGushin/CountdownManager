@@ -66,6 +66,36 @@ public actor CountdownRepository {
         return attachment
     }
 
+    /// Pins independent inherited files for one Save attempt. The caller releases copyDraftID after commit or failure.
+    public func copyEventAttachments(_ attachments: [EventAttachment], inheritedFrom source: [EventAttachment],
+                                     editorDraftID: UUID, copyDraftID: UUID) throws -> [EventAttachment] {
+        guard attachmentDrafts[editorDraftID] != nil, attachmentDrafts[copyDraftID] == nil else {
+            throw EventAttachmentError.unknownDraft
+        }
+        try ensureDurableAttachments()
+        attachmentDrafts[copyDraftID] = [:]
+        var copies: [EventAttachment] = []
+        for attachment in attachments {
+            try Task.checkCancellation()
+            if source.contains(attachment) {
+                guard durableAttachments?[attachment.id] == attachment else {
+                    throw EventAttachmentError.unavailableFile
+                }
+                let url = try attachmentFiles.url(for: attachment)
+                let copy = try attachmentFiles.copy(from: url)
+                attachmentDrafts[copyDraftID]?[copy.id] = copy
+                copies.append(copy)
+            } else {
+                guard attachmentDrafts[editorDraftID]?[attachment.id] == attachment else {
+                    throw EventAttachmentError.unavailableFile
+                }
+                _ = try attachmentFiles.url(for: attachment)
+                copies.append(attachment)
+            }
+        }
+        return copies
+    }
+
     public func discardAttachmentDraft(_ draftID: UUID) throws {
         attachmentDrafts.removeValue(forKey: draftID)
         try cleanupAttachments()

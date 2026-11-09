@@ -247,7 +247,7 @@ Ordinary grid cards retain separate date/weather rows with a reserved
 16-point weather slot, including when the forecast is absent. That empty slot contains no
 visible or accessible placeholder. Mini-panel layouts are unchanged.
 
-The desktop detail action group uses neutral primary ink for the outline star, pencil and trash.
+The desktop detail action group uses neutral primary ink for the outline star, pencil, copy and trash.
 Only a selected, filled favorite star uses the accent color. Color communicates favorite state,
 not a permanent difference between otherwise equal icon actions; mini-panel controls are unchanged.
 
@@ -265,7 +265,18 @@ Cards use softly squared corners (8 points), fields use tighter corners (4 point
 
 ### Buttons
 
-Creation is a compact terracotta square (31 × 31 points, 8-point corners); timer start is 32 × 32 with 6-point corners. Both use light content in light appearance and dark content against the lighter dark-mode accent. Favorite and edit actions use SF Symbols within 28-point targets. Save and Cancel keep native bordered-prominent and bordered button styles, large control size, default/cancel shortcuts, and platform focus and disabled states. Plain service actions remain visually quiet. Custom plain buttons do not add an invented universal hover animation; native keyboard focus remains available.
+Creation is a compact terracotta square (31 × 31 points, 8-point corners); timer start is 32 × 32 with 6-point corners. Both use light content in light appearance and dark content against the lighter dark-mode accent. Favorite, edit and copy actions use SF Symbols within 28-point targets. Save and Cancel keep native bordered-prominent and bordered button styles, large control size, default/cancel shortcuts, and platform focus and disabled states. Plain service actions remain visually quiet. Custom plain buttons do not add an invented universal hover animation; native keyboard focus remains available.
+
+Event copying adds native `doc.on.doc` to this same `AuroraSymbolAction` family. Desktop details
+order favorite, pencil, copy and trash. Featured and ordinary mini-panel cards order favorite,
+pencil and copy. The copy action uses each surface's existing neutral tone, 28-point target,
+hover help `Создать копию…` and an explicit accessible name. The ordinary mini header reserves
+space for all three actions within its existing 51-point height.
+
+The copy opens the existing editor as `Копия события`, with date focus, the same scrolling form
+and fixed Save/Cancel footer. A past source adds a quiet explanatory caption by the date field.
+Copying reserves the same editor ownership across surfaces. The native icon field, checkbox group,
+subtask rows and material sections retain their established component families.
 
 Week creation extends this existing family. In the desktop `Создать день` menu, `До конца недели…`
 follows a separator; on Sunday the label becomes `На следующую неделю…`. The mini-panel adds a
@@ -350,7 +361,7 @@ The editor uses the existing SF Symbol `trash`, native rounded fields, and separ
 The mini-panel uses a collapsible attachments section inside the same event card. Its disclosure
 rotates one fixed chevron, as subtasks do; expanding or collapsing must not move the heading
 or count horizontally. Both surfaces
-use the event's pencil as their sole editor entry. Saved desktop sections contain no
+use the event's pencil to edit that saved event. The copy symbol opens a new-event draft. Saved desktop sections contain no
 `Изменить список…`, `Добавить подзадачи…`, `Добавить заметку` or attachment add/change button,
 including empty sections. Direct subtask checkboxes, file opening and `Показать все N` remain.
 Attachment rows can be added or removed in the shared editor before Save, with
@@ -398,7 +409,7 @@ collection-grid metadata keeps its existing layout.
 Saved event drop targets use the existing 8-point event silhouette, accent tint and a stationary
 2-point accent outline only while targeted. They add no resting upload container or add button to
 saved material sections. Number/symbol summaries and mini disclosure state remain unchanged.
-The context menu adds `Вставить текст как вложение…` without changing the star/pencil/trash family.
+The context menu adds `Вставить текст как вложение…` without changing the star/pencil/copy/trash family.
 
 Text composition follows the shared editor: 21-point Georgia title in a 49-point header, 16-point
 insets, native rounded filename field, a scrolling 13-point system text editor and a fixed 58-point
@@ -469,7 +480,7 @@ number. `Resources/NativeDesignContract.json` records deployment and linked comp
 required native appearance matrix. `AuroraInstrument.swift` owns the actual colors/tokens and shared
 primary, secondary and symbol-action components. Use `auroraPrimaryAction()` for editor Save and
 text-attachment Create, `auroraSecondaryAction()` for their Cancel actions, and `AuroraSymbolAction`
-for the existing event star/pencil/trash family. Toolbar Event and Create-day use
+for the existing event star/pencil/copy/trash family. Toolbar Event and Create-day use
 `auroraToolbarAction()` and `AuroraToolbarLabel`; the date menu explicitly uses native
 `menuStyle(.button)`, hides the framework indicator and places the standard neutral `chevron.down`
 in that shared label. It retains its existing today/tomorrow/date choices without a second action. Surface-specific native styles, targets and state

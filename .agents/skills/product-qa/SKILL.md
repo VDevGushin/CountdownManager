@@ -53,9 +53,45 @@ A new feature should add or update automated coverage for its important observab
 
 The exception is a scenario that cannot be automated reliably without changing the contract under test or introducing a flaky driver. State that limitation explicitly and define a short manual acceptance check tied to the changed behaviour. Do not distort production code to make an unreliable automation path possible.
 
+## Choose verification depth
+
+Use focused acceptance by default. Check the changed user workflow and its directly affected
+risks, including a relevant reverse or failure path when it can expose a defect. Select the
+smallest sufficient current evidence and reuse valid passes. Required automated regression
+coverage and verification gates continue to follow the project rules.
+
+Start an extended manual regression pass only when the owner explicitly requests that depth,
+for example `ручное тестирование с регрессами`, `пройди все сценарии` or
+`расширенный ручной прогон`. General requests to check a change use focused acceptance.
+
+## Extended manual regression pass
+
+For an explicitly requested extended pass, independently derive a task-specific case matrix
+from the user's intended workflow, PRODUCT/DESIGN contracts, affected implementation and credible
+failure modes. Use the exploration lenses below to discover cases beyond the implemented happy path.
+
+For each case, record its starting state, user actions and expected observable result before
+performing those actions. Cover distinct relevant states and transitions, including reverse paths,
+cancellation after edits, switching modes and switching back, renaming, reopening saved content,
+copying or repeating an operation, invalid input and correction, boundaries and shared state.
+Include the combinations that can affect this change. Scale the matrix to the actual product risk.
+Keep it in concise work notes and show the owner the planned coverage before starting the pass.
+
+Then walk every selected manual case through ordinary controls and keyboard interaction on an
+isolated current build. Record passed, failed or blocked with the observed result and supporting
+evidence. Label reused automated evidence separately. If a case cannot be exercised with the
+available driver, record the concrete limitation and remaining acceptance step. When exploration
+reveals another credible case, add its expected result to the matrix before exercising it.
+
+Fix in-scope defects, reproduce the corrected interaction and rerun affected reverse and sibling
+cases. Reconcile the planned matrix with the final results so every selected case has an outcome.
+
 ## Explore like a user
 
-After automated checks pass, exercise the relevant combinations from these lenses:
+After automated checks pass, use these lenses to select cases relevant to the chosen depth.
+Focused acceptance covers directly affected risks. An explicitly requested extended pass uses
+them to develop its broader matrix.
+
 
 - happy path;
 - invalid or negative input;

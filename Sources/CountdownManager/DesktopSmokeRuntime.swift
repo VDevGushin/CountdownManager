@@ -148,6 +148,8 @@ final class DesktopSmokeRuntime {
                     showDesktop()
                     try await wait("link desktop shown") { self.desktopWindow()?.isVisible == true }
                     try await verifyEventLinks()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
+                    try await verifyEventCopy()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
                     try await verifyWeekCreation()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-editor-stability") {
@@ -494,6 +496,213 @@ final class DesktopSmokeRuntime {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try JSONSerialization.data(withJSONObject: trace, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("editor-stability-trace.json"))
+    }
+
+    private func verifyEventCopy() async throws {
+        try await wait("loaded isolated copy bootstrap") { !self.store.isLoading }
+        try require(store.active.isEmpty, "copy verification requires an empty isolated bootstrap")
+        showDesktop()
+        try await wait("copy bootstrap desktop") { self.desktopWindow()?.isVisible == true }
+        let bootstrap = try value(desktopWindow(), "copy bootstrap window")
+        bootstrap.orderOut(nil)
+        let directory = configuration.homeURL.appendingPathComponent("EventCopy", isDirectory: true)
+        let fileURL = directory.appendingPathComponent("events.json")
+        let suite = "CountdownEventCopy.\(UUID().uuidString)"
+        let defaults = try value(UserDefaults(suiteName: suite), "copy fixture preferences")
+        var clock = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 9, hour: 12)), "copy clock")
+        let fixture = Store(fileURL: fileURL, disclosureDefaults: defaults, now: { clock }, loginItemManagementIsAvailable: false)
+        try await wait("copy fixture loaded") { !fixture.hasPendingPersistence }
+        let media = try UISmokeAttachmentMedia.make(in: directory.appendingPathComponent("Sources"))
+        let token = UUID()
+        let prepared = await fixture.beginAttachmentDraft(token)
+        try require(prepared, "copy fixture draft")
+        let attachment = try value(await fixture.importAttachment(from: media[1], draftID: token), "copy fixture PDF")
+        let favoriteDay = Day(try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 14)), "favorite date"))
+        let ordinaryDay = Day(try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 15)), "ordinary date"))
+        var favorite = Countdown(title: "Поездка в Суздаль", note: "Выехать утром. Взять документы и распечатанный маршрут.",
+            date: favoriteDay, emoji: "🚗", subtasks: [
+                try Subtask(text: "Проверить маршрут"),
+                try Subtask(text: "Забронировать гостиницу", isCompleted: true),
+                try Subtask(text: "Проверить документы", isCompleted: true)
+            ], showsWeather: true, keepsAfterDate: true,
+            attachments: [attachment], links: [EventLink(name: "Гостиница", address: "https://example.com/hotel")])
+        let ordinary = Countdown(title: "Проверить мотоцикл", date: ordinaryDay, emoji: "🏍️", subtasks: [
+            try Subtask(text: "Проверить давление в шинах"), try Subtask(text: "Проверить уровень масла", isCompleted: true)
+        ], keepsAfterDate: true)
+        let favoriteSaved = await fixture.save(favorite, primary: true)
+        let ordinarySaved = await fixture.save(ordinary, primary: false)
+        try require(favoriteSaved && ordinarySaved, "seed copy events")
+        await fixture.discardAttachmentDraft(token)
+        fixture.setSubtasksExpanded(false, for: favorite.id)
+        fixture.setSubtasksExpanded(false, for: ordinary.id)
+        let sourceFile = try value(await fixture.attachmentThumbnailURL(attachment, eventID: favorite.id), "copy source PDF")
+        let sourceBytes = try Data(contentsOf: sourceFile)
+        let initialData = fixture.data
+        let initialJSON = try Data(contentsOf: fileURL)
+        let attachmentRoot = directory.appendingPathComponent("Attachments")
+        let initialFiles = try FileManager.default.subpathsOfDirectory(atPath: attachmentRoot.path).sorted()
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let appearance = ApplicationAppearance(defaults: defaults)
+        let scope = "copy."
+        let miniScope = "copy-mini."
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appearanceSettings: appearance,
+            showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: scope
+        ), editorSession: session)
+        let window = try value(controller.window, "copy desktop")
+        window.setContentSize(NSSize(width: 1200, height: 760))
+        let mini = WeekSmokePanel(contentRect: NSRect(x: 0, y: 0, width: 390, height: 600),
+                                  styleMask: [.borderless], backing: .buffered, defer: false)
+        mini.isReleasedWhenClosed = false
+        mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
+            timer: timer, store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appearanceSettings: appearance
+        ).uiSmokeControlScope(miniScope))
+        var completed = false
+        defer {
+            if !completed { try? capture("event-copy-failure", window: window.attachedSheet ?? (mini.isVisible ? mini : window)) }
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: nil, reduceMotion: nil)
+            captureFixture = nil
+            mini.close()
+            window.close()
+            defaults.removePersistentDomain(forName: suite)
+        }
+        captureFixture = ["scenario": "event-copy", "referenceDay": "2026-11-09",
+                          "panelFixture": "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+                          "file": "Generated two-page PDF; app-owned imported bytes"]
+        controller.show()
+        try await expect(scope + "desktop.inspector", favorite.id.uuidString)
+        try await captureWindowThemes("event-copy-desktop-list", window: window)
+        mini.makeKeyAndOrderFront(nil)
+        try await wait("copy mini key") { mini.isKeyWindow }
+        for event in [favorite, ordinary] {
+            try await wait("native copy sibling frames") {
+                self.controls.frame(miniScope + "event.copy.\(event.id)") != nil
+                    && self.controls.frame(miniScope + "event.edit.\(event.id)") != nil
+            }
+            let copyFrame = try value(controls.frame(miniScope + "event.copy.\(event.id)"), "mini copy frame")
+            let editFrame = try value(controls.frame(miniScope + "event.edit.\(event.id)"), "mini edit frame")
+            try require(abs(copyFrame.width - 28) < 1 && abs(copyFrame.height - 28) < 1
+                        && abs(editFrame.height - copyFrame.height) < 1 && !copyFrame.intersects(editFrame),
+                        "copy must reuse the mini 28pt action group without overlap")
+        }
+        try await captureWindowThemes("event-copy-mini-list", window: mini)
+        try await press(miniScope + "event.copy.\(ordinary.id)")
+        try await expect(miniScope + "editor.title", ordinary.title)
+        try await expect(miniScope + "editor.date", "2026-11-15")
+        try await expect(miniScope + "editor.primary", "Не выбрано")
+        try await requireCopyDateFocus(in: mini)
+        try await press(miniScope + "editor.cancel")
+        try await wait("ordinary copy Cancel") { !session.hasActiveEditor }
+        try require(fixture.data == initialData, "ordinary copy Cancel changed data")
+        try await press(miniScope + "event.copy.\(favorite.id)")
+        try await wait("mini copy editor marker") { self.controls.entries[miniScope + "editor.copy"] != nil }
+        try await expect(miniScope + "editor.date", "2026-11-14")
+        try await expect(miniScope + "editor.note", favorite.note ?? "")
+        try await expect(miniScope + "editor.subtasks", "3")
+        try await expect(miniScope + "editor.attachments", "1")
+        try await expect(miniScope + "editor.links", "1")
+        try require(controls.entries[miniScope + "event.delete"] == nil, "copy editor exposes source deletion")
+        try await requireCopyDateFocus(in: mini)
+        try await wait("copy mini blocks desktop mutation") { self.controls.entries[scope + "desktop.detail.copy"]?.isEnabled == false }
+        try require(!controls.press(scope + "desktop.detail.copy"), "desktop replaced mini copy draft")
+        mini.orderOut(nil)
+        mini.makeKeyAndOrderFront(nil)
+        try await expect(miniScope + "editor.title", favorite.title)
+        try await captureWindowThemes("event-copy-mini-editor", window: mini)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await captureWindowThemes("event-copy-mini-editor-contrast", window: mini)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        try await press(miniScope + "editor.cancel")
+        try await wait("favorite copy Cancel") { !session.hasActiveEditor }
+        let cancelledJSON = try Data(contentsOf: fileURL)
+        let cancelledFiles = try FileManager.default.subpathsOfDirectory(atPath: attachmentRoot.path).sorted()
+        try require(cancelledJSON == initialJSON && fixture.data == initialData, "copy Cancel changed saved bytes")
+        try require(cancelledFiles == initialFiles, "opening or cancelling a copy created owned files")
+        passed.append("native mini favorite/ordinary 28pt copy actions, source-date defaults, actual NSDatePicker focus, shared-editor lock, retained hide/show and zero-write/file Cancel")
+        mini.orderOut(nil)
+        window.makeKeyAndOrderFront(nil)
+        try await press(scope + "desktop.detail.copy")
+        try await wait("copy native sheet") { window.attachedSheet?.isVisible == true && session.desktopIsPresented }
+        let sheet = try value(window.attachedSheet, "copy sheet")
+        try await expect(scope + "editor.date", "2026-11-14")
+        try await expect(scope + "editor.primary", "Не выбрано")
+        try await requireCopyDateFocus(in: sheet)
+        try await wait("desktop copy blocks mini mutation") { self.controls.entries[miniScope + "event.copy.\(favorite.id)"]?.isEnabled == false }
+        try require(!controls.press(miniScope + "event.copy.\(favorite.id)"), "mini replaced desktop copy draft")
+        try await captureWindowThemes("event-copy-desktop-editor", window: sheet)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: false)
+        try await captureWindowThemes("event-copy-desktop-editor-contrast", window: sheet)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: false)
+        let selectedDay = Day(try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 16)), "copy selected date"))
+        try await selectCopyDate(selectedDay, window: sheet, scope: scope)
+        try await press(scope + "editor.save")
+        try await wait("copy durable Save and native dismissal") {
+            window.attachedSheet == nil && !session.hasActiveEditor && !fixture.hasPendingPersistence && fixture.active.count == 3
+        }
+        let created = try value(fixture.active.first { $0.id != favorite.id && $0.id != ordinary.id }, "saved copy")
+        try require(created.title == favorite.title && created.date == selectedDay && created.note == favorite.note
+                    && created.subtasks.allSatisfy { !$0.isCompleted } && created.subtasks.count == favorite.subtasks.count
+                    && Set(created.subtasks.map(\.id)).isDisjoint(with: Set(favorite.subtasks.map(\.id)))
+                    && Set(created.links.map(\.id)).isDisjoint(with: Set(favorite.links.map(\.id)))
+                    && created.attachments.count == 1 && created.attachments.first?.id != attachment.id
+                    && created.links.count == favorite.links.count && fixture.data.primaryID == favorite.id,
+                    "copy Save did not preserve content, reset tasks, isolate identities or preserve favorite")
+        let copiedFile = try value(await fixture.attachmentThumbnailURL(created.attachments[0], eventID: created.id), "saved independent PDF")
+        let copiedBytes = try Data(contentsOf: copiedFile)
+        let remainingSourceBytes = try Data(contentsOf: sourceFile)
+        try require(copiedFile != sourceFile && copiedBytes == sourceBytes && remainingSourceBytes == sourceBytes
+                    && fixture.active.first { $0.id == favorite.id } == favorite, "copy Save changed source or file bytes")
+        passed.append("native desktop sheet date edit and Save create one durable independent event/file with new nested identities, reset tasks and intact source")
+        let farDate = Day(try value(Day.calendar.date(from: DateComponents(year: 2044, month: 9, day: 15)), "far future date"))
+        favorite.date = farDate
+        let farSaved = await fixture.save(favorite, primary: true, requireExisting: true)
+        try require(farSaved, "far source fixture update")
+        try await press(scope + "desktop.event.\(favorite.id)")
+        try await press(scope + "desktop.detail.copy")
+        try await expect(scope + "editor.date", "2044-9-15")
+        try await press(scope + "editor.cancel")
+        try await wait("far source Cancel") { window.attachedSheet == nil && !session.hasActiveEditor }
+        try await captureWindowThemes("event-copy-far-source", window: window)
+        favorite.date = Day(clock)
+        let todaySaved = await fixture.save(favorite, primary: true, requireExisting: true)
+        try require(todaySaved, "retained source fixture update")
+        clock = try value(Day.calendar.date(byAdding: .day, value: 1, to: clock), "past-source controlled midnight")
+        fixture.refresh()
+        try await wait("retained source crosses its date") { !fixture.hasPendingPersistence && fixture.today == Day(clock) }
+        try await press(scope + "desktop.detail.copy")
+        try await expect(scope + "editor.date", "2026-11-10")
+        try await wait("past source notice") { self.controls.entries[scope + "editor.copy.past-source"] != nil }
+        try await press(scope + "editor.cancel")
+        try await wait("past source Cancel") { window.attachedSheet == nil && !session.hasActiveEditor }
+        passed.append("far-future source keeps 15 September 2044 by default; retained past source clamps to today and displays its date explanation")
+        completed = true
+    }
+
+    private func copyDatePicker(in root: NSView) -> NSDatePicker? {
+        if let picker = root as? NSDatePicker { return picker }
+        return root.subviews.lazy.compactMap { self.copyDatePicker(in: $0) }.first
+    }
+
+    private func requireCopyDateFocus(in window: NSWindow) async throws {
+        try await wait("actual native copy date first responder") {
+            guard let content = window.contentView, let picker = self.copyDatePicker(in: content),
+                  let responder = window.firstResponder else { return false }
+            return responder === picker || picker.currentEditor() === responder
+                || (responder as? NSView)?.isDescendant(of: picker) == true
+        }
+    }
+
+    private func selectCopyDate(_ day: Day, window: NSWindow, scope: String) async throws {
+        let root = try value(window.contentView, "copy date root")
+        let picker = try value(copyDatePicker(in: root), "native copy date picker")
+        picker.dateValue = day.date()
+        try require(picker.sendAction(picker.action, to: picker.target), "native copy date action was not delivered")
+        try await expect(scope + "editor.date", "\(day.year)-\(day.month)-\(day.day)")
     }
 
     private func verifyWeekCreation() async throws {
@@ -4005,10 +4214,10 @@ final class DesktopSmokeRuntime {
         let scaleX = CGFloat(bitmap.pixelsWide) / content.bounds.width
         let scaleY = CGFloat(bitmap.pixelsHigh) / content.bounds.height
         let actions = [("desktop.favorite.\(selectedID)", favoriteColor),
-                       ("desktop.detail.edit", ink), ("desktop.detail.delete", ink)]
+                       ("desktop.detail.edit", ink), ("desktop.detail.copy", ink), ("desktop.detail.delete", ink)]
         for (index, action) in actions.enumerated() {
             let (identifier, color) = action
-            let frame = CGRect(x: inspectorFrame.maxX - 24 - 28 - CGFloat(2 - index) * 36,
+            let frame = CGRect(x: inspectorFrame.maxX - 24 - 28 - CGFloat(actions.count - 1 - index) * 36,
                                y: headerTop + (54 - 28) / 2, width: 28, height: 28)
             let expected = try value(NSColor(color).usingColorSpace(.sRGB), "expected detail action color")
             let minX = max(0, Int(floor(frame.minX * scaleX)))
@@ -4070,6 +4279,21 @@ final class DesktopSmokeRuntime {
             "executableSHA256": digest, "captures": captures, "syntheticData": true,
             "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture"
         ]
+        if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
+            manifest["scope"] = "Unreleased native event-copy actions and shared editor; isolated in-process rendering and actions"
+            manifest["eventCopy"] = [
+                "referenceDay": "2026-11-09", "initialEventDates": ["2026-11-14", "2026-11-15"],
+                "clock": "Injected Store civil clock; system clock unchanged",
+                "miniPanelFixture": "Isolated key-capable NSPanel at390x600 with production SwiftUI root",
+                "nativeInput": "NSDatePicker first responder and target/action date edit; registry invokes production buttons",
+                "file": "Generated PDF imported through the normal draft pipeline; copy bytes and identity checked after native Save",
+                "limitations": "No physical status-item, app-switch, Spaces, VoiceOver or compositor timing claim; deterministic failures covered separately"
+            ] as [String: Any]
+            if let url = Bundle.main.url(forResource: "NativeBuildProvenance", withExtension: "json"),
+               let provenance = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] {
+                manifest["nativeBuildProvenance"] = provenance
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
             manifest["scope"] = "Unreleased week-creation native mini-panel and desktop sheets; isolated in-process render and actions"
             manifest["weekCreation"] = [

@@ -270,6 +270,7 @@ package func editorCanSave(
 }
 
 package enum EditorFocusTarget: Hashable {
+    case date
     case title
     case note
     case emoji
@@ -352,6 +353,13 @@ package struct EventEditorDraft: Equatable {
         keepsAfterDate = item?.keepsAfterDate ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
         isDay = item?.isDay ?? false
+    }
+
+    package init(copying source: Countdown, date: Day) {
+        self.init(item: source)
+        subtasks = source.subtasks.map(Subtask.init(copying:))
+        links = source.links.map { EventLink(name: $0.name, address: $0.address) }
+        updateDayTitle(for: date)
     }
 
     package init(day: Day) {

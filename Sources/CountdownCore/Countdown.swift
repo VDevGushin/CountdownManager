@@ -85,6 +85,12 @@ public struct Subtask: Identifiable, Codable, Equatable {
         try normalizeAndValidate()
     }
 
+    public init(copying subtask: Subtask) {
+        id = UUID()
+        text = subtask.text
+        isCompleted = false
+    }
+
     private enum CodingKeys: String, CodingKey { case id, text, isCompleted }
 
     public init(from decoder: Decoder) throws {
@@ -210,6 +216,7 @@ public struct Countdown: Identifiable, Codable, Equatable {
 public enum CountdownError: LocalizedError {
     case title, note, date, emoji, eventNotFound, subtaskNotFound
     case subtaskText, subtaskLength, subtaskCount
+    case copyIdentity
 
     public var errorDescription: String? {
         switch self {
@@ -222,6 +229,7 @@ public enum CountdownError: LocalizedError {
         case .subtaskText: return "Введите текст подзадачи."
         case .subtaskLength: return "Подзадача должна быть не длиннее 50 символов."
         case .subtaskCount: return "У события может быть не больше десяти подзадач."
+        case .copyIdentity: return "Копия должна быть новым событием. Откройте создание копии снова."
         }
     }
 }
@@ -259,6 +267,25 @@ public struct CountdownData: Codable, Equatable {
     }
 
     public mutating func save(_ item: Countdown, primary: Bool, today: Day) throws {
+        try save(item, primary: primary, today: today, inheritedSource: nil)
+    }
+
+    /// Validates a new copy before the repository replaces inherited file references with owned copies.
+    public mutating func saveCopy(_ item: Countdown, sourceID: UUID, primary: Bool, today: Day) throws {
+        guard let source = items.first(where: { $0.id == sourceID && $0.isAvailable(on: today) }) else {
+            throw CountdownError.eventNotFound
+        }
+        guard !items.contains(where: { $0.id == item.id }) else { throw CountdownError.copyIdentity }
+        let savedTaskIDs = Set(items.flatMap { $0.subtasks.map(\.id) })
+        let savedLinkIDs = Set(items.flatMap { $0.links.map(\.id) })
+        guard item.subtasks.allSatisfy({ !$0.isCompleted && !savedTaskIDs.contains($0.id) }),
+              item.links.allSatisfy({ !savedLinkIDs.contains($0.id) }) else {
+            throw CountdownError.copyIdentity
+        }
+        try save(item, primary: primary, today: today, inheritedSource: source)
+    }
+
+    private mutating func save(_ item: Countdown, primary: Bool, today: Day, inheritedSource: Countdown?) throws {
         var cleaned = item
         cleaned.links = item.links.map { $0.normalized() }
         try EventLink.validate(cleaned.links)
@@ -272,7 +299,7 @@ public struct CountdownData: Codable, Equatable {
         }
         guard !cleaned.title.isEmpty else { throw CountdownError.title }
         let savedItem = items.first { $0.id == item.id && $0.isAvailable(on: today) }
-        let savedNote = savedItem?.note
+        let savedNote = (inheritedSource ?? savedItem)?.note
         guard CountdownNote.isAllowed(item.note ?? "", savedNote: savedNote) else { throw CountdownError.note }
         if item.note == savedNote { cleaned.note = savedNote }
         let retainedPastDate = cleaned.keepsAfterDate && savedItem?.keepsAfterDate == true
@@ -284,9 +311,11 @@ public struct CountdownData: Codable, Equatable {
             throw EventAttachmentError.invalidMetadata
         }
         if cleaned.attachments.count > EventAttachment.maximumCount {
-            let savedIDs = Set(savedItem?.attachments.map(\.id) ?? [])
+            let savedAttachments = (inheritedSource ?? savedItem)?.attachments ?? []
+            let savedIDs = Set(savedAttachments.map(\.id))
             // Historical over-limit events stay editable, but may not gain new references.
-            guard cleaned.attachments.allSatisfy({ savedIDs.contains($0.id) }) else {
+            guard cleaned.attachments.allSatisfy({ savedIDs.contains($0.id) }),
+                  inheritedSource == nil || cleaned.attachments.allSatisfy({ savedAttachments.contains($0) }) else {
                 throw EventAttachmentError.limitExceeded
             }
         }

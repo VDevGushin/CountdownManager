@@ -1,0 +1,601 @@
+{
+  "date": "2026-11-09",
+  "branch": "codex/event-copy",
+  "summary": {
+    "total": 50,
+    "passed": 49,
+    "partial": 1,
+    "failed": 0
+  },
+  "methods": [
+    "Внешние macOS Accessibility действия через CUA",
+    "Обычные клавиши, native NSDatePicker и NSOpenPanel",
+    "Read-only сравнение изолированных JSON и filehashes",
+    "Отказы ФС создавались только в отдельном QAhome"
+  ],
+  "cases": [
+    {
+      "id": "A01",
+      "title": "Основное событие — открыть копию и отменить",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Один черновик с исходными полями и датой, фокус даты, избранное выключено. Отмена сохраняет источник.",
+      "observed": "В большом окне открыта копия избранного с исходными полями и датой 15.09.2044. Фокус даты и выключенное избранное проверены. Отмена выполнена.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "A02",
+      "title": "Обычное событие — открыть копию и отменить",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "То же поведение у обычной карточки, без изменения избранного.",
+      "observed": "Черновик обычного события «Пятница» открыт и отменён после переносов даты.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "A03",
+      "title": "Повторное нажатие копирования — одна сессия",
+      "status": "passed",
+      "evidence": [
+        "Desktop UI — двойной клик/полное изменение и Cancel. JSON и owned files побайтно совпали с before-multi-cancel.json."
+      ],
+      "expected": "Остаётся один черновик с теми же введёнными данными.",
+      "observed": "Двойное нажатие значка открыло один черновик.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "A04",
+      "title": "Изменить несколько полей и отменить — исходник цел",
+      "status": "passed",
+      "evidence": [
+        "Desktop UI — двойной клик/полное изменение и Cancel. JSON и owned files побайтно совпали с before-multi-cancel.json."
+      ],
+      "expected": "JSON, файлы и исходные поля сохраняются. Повторное копирование начинает чистый черновик.",
+      "observed": "После изменения полей, флажков и удаления материалов выполнена отмена. JSON и все хеши сохранённых файлов точно совпали с исходным снимком.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B01",
+      "title": "Переименовать копию, сохранить и открыть карандашом",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Записано новое имя копии, источник сохраняет своё имя.",
+      "observed": "Переименованная копия сохранена. Карандаш повторно открыл новое имя, заметку с переносом и дату 17.11.2026.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B02",
+      "title": "Переименовать сохранённую копию и отменить",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "После отмены у копии остаётся последнее сохранённое имя.",
+      "observed": "Переименование сохранённой копии отменено. В деталях восстановлено последнее записанное имя.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B03",
+      "title": "Своё имя — сменить дату и вернуть обратно",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Своё имя сохраняется при обоих переносах даты.",
+      "observed": "Дата собственного события прошла 15 → 17 → 15 ноября. Название сохранилось.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B04",
+      "title": "Своё имя совпадает с днём недели — режим остаётся своим",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Название не превращается в автоматическое по совпадению текста.",
+      "observed": "Название «Пятница» оставалось собственным на воскресной и вторничной датах.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B05",
+      "title": "Автоматическое имя — сменить дату туда и обратно",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Название соответствует выбранной дате при каждом переносе.",
+      "observed": "Автоматическое имя обновилось при переходах 15 → 16 → 15 ноября.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B06",
+      "title": "Выделение автоматического имени без ввода — режим сохраняется",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Режим остаётся автоматическим, последующая смена даты обновляет имя.",
+      "observed": "Выделение автоматического названия без ввода сохранило режим. Следующая смена даты обновила имя.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B07",
+      "title": "Автоматическое имя → своё → другая дата",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Ручное имя сохраняется при следующей смене даты.",
+      "observed": "После ручного ввода своего имени последующий перенос даты сохранил введённый текст.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B08",
+      "title": "Свое имя → название по дате → сохранить и переоткрыть",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Режим переживает Save и открытие карандашом, последующий перенос даты меняет имя.",
+      "observed": "Возврат к названию по дате, сохранение и открытие карандашом сохранили автоматический режим.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B09",
+      "title": "Смена режима имени → отмена → повторное открытие",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Отмена возвращает сохранённый текст и режим владельца черновика.",
+      "observed": "Оба направления смены режима отменены. Повторное открытие вернуло сохранённый режим.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "B10",
+      "title": "Undo после ручной правки — автоматический режим сам не включается",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Текст может вернуться через Undo, режим остаётся собственным до явного сброса.",
+      "observed": "Command-Z вернул текст, при этом автоматический режим сам не включился.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C01",
+      "title": "15 сентября 2044 — исходная дата в копии",
+      "status": "passed",
+      "evidence": [
+        "Обычные внешние действия CUA в Countdown Copy QA, desktop. Состояние проверено через macOS AX."
+      ],
+      "expected": "Начальная дата точно 15.09.2044.",
+      "observed": "Начальное значение нативного поля даты равно 15.09.2044.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C02",
+      "title": "Сохранить копию на той же дате",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Создаётся отдельная запись на той же дате с новым ID.",
+      "observed": "Отдельная новая копия сохранена на той же дате 15.09.2044.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C03",
+      "title": "Сегодня — предупреждение при retention OFF",
+      "status": "passed",
+      "evidence": [
+        "Native NSDatePicker и реальное Save/Cancel, включая високосную дату и смену года."
+      ],
+      "expected": "Сегодня доступно. При retention OFF видно предупреждение о завершении дня.",
+      "observed": "Копия сохранена на 09.11.2026. При выключенном сохранении после даты показано предупреждение.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C04",
+      "title": "Прошедший сохранённый источник — сегодня с пояснением",
+      "status": "passed",
+      "evidence": [
+        "Native NSDatePicker и реальное Save/Cancel, включая високосную дату и смену года."
+      ],
+      "expected": "Выбрано сегодня, видна причина смены исходной даты.",
+      "observed": "Сохранённое прошедшее событие открыло черновик на сегодня с пояснением.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C05",
+      "title": "Прошлая дата — Save блокируется, исправление разрешает",
+      "status": "passed",
+      "evidence": [
+        "Native NSDatePicker и реальное Save/Cancel, включая високосную дату и смену года."
+      ],
+      "expected": "Save недоступно для прошлого, после исправления снова доступно.",
+      "observed": "Нативное поле ограничило выбор допустимым диапазоном и не приняло прошлую дату.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C06",
+      "title": "29 февраля и переход года — корректная дата и имя",
+      "status": "passed",
+      "evidence": [
+        "Native NSDatePicker и реальное Save/Cancel, включая високосную дату и смену года."
+      ],
+      "expected": "Дата календарно корректна, автоматическое имя соответствует ей.",
+      "observed": "Проверены 29.02.2028, 31.12.2026 и 01.01.2027. Названия дней корректны. Результат сохранён.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "C07",
+      "title": "Ввод даты клавиатурой и Return — сохранена введённая дата",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Записана именно введённая дата, создана одна запись.",
+      "observed": "В сегмент дня введена цифра 2. Return завершил ввод и открыл календарь. После закрытия календаря и сохранения записано 02.09.2044.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D01",
+      "title": "Пустое название и пробелы — блокировка Save и исправление",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Пустой текст блокирует Save, допустимое имя возвращает доступность.",
+      "observed": "Пустое имя и пробелы блокировали сохранение. Исправление вернуло доступность.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D02",
+      "title": "Заметка 150/151 символ — граница, исправление и отмена",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "150 символов допустимы, 151 блокирует, исправление работает, Cancel сохраняет источник.",
+      "observed": "151 символ остался целиком в черновике с блокировкой сохранения. После сокращения до 150 сохранение доступно.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D03",
+      "title": "Подзадача 50/51 символ — граница и исправление",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "50 символов допустимы, 51 блокирует, исправление возвращает Save.",
+      "observed": "51 символ в подзадаче блокировал сохранение. Исправление до 50 разрешило его.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D04",
+      "title": "Старая длинная заметка — полное копирование и сокращение",
+      "status": "passed",
+      "evidence": [
+        "Native UI через реальные поля/NSOpenPanel, Save, pencil-reopen и Cancel."
+      ],
+      "expected": "Исходный длинный текст сохраняется целиком. После сохранённого сокращения прежний предел уменьшается.",
+      "observed": "180 символов старой заметки сохранены целиком. После сохранённого сокращения до 151 увеличение до 152 блокируется.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D05",
+      "title": "Подзадачи — сброс выполнения, правка и удаление, Cancel/Save",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Все задачи копии невыполнены. Редактирование действует на копию, Cancel возвращает исходные строки.",
+      "observed": "Правка и удаление подзадач проверены с отменой и сохранением. У сохранённой копии 0 из 2 задач.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D06",
+      "title": "Значок — очистка и выбор, Cancel/Save",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Отмена сохраняет исходный значок, Save сохраняет выбранное значение или пустой значок.",
+      "observed": "Выбор значка отменён, исходный значок восстановлен. Затем сохранены очистка и повторный выбор другого значка.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "D07",
+      "title": "Ссылка — переименование, неверный адрес, удаление, Cancel/Save",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Неверный адрес блокирует Save. Cancel сохраняет исходную ссылку, Save применяет изменения копии.",
+      "observed": "Неверный адрес исправлен и отменён. Отдельная копия сохранила новое имя и адрес ссылки. Удаление также проверено.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E01",
+      "title": "Унаследованный файл — убрать и отменить",
+      "status": "passed",
+      "evidence": [
+        "Desktop UI — двойной клик/полное изменение и Cancel. JSON и owned files побайтно совпали с before-multi-cancel.json."
+      ],
+      "expected": "Источник и его файл остаются доступными.",
+      "observed": "Удаление унаследованного файла отменено. JSON и файлы совпали с исходным снимком.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E02",
+      "title": "Унаследованный файл — убрать и сохранить, источник доступен",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "У копии файл отсутствует, источник и его байты сохранены.",
+      "observed": "Копия сохранена без унаследованного файла. Файл источника сохранился с теми же байтами.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E03",
+      "title": "Новый файл — добавить и отменить, временная копия очищена",
+      "status": "passed",
+      "evidence": [
+        "Native NSOpenPanel, затем Cancel и точное сравнение JSON/owned-folder baseline."
+      ],
+      "expected": "JSON и сохранённые файлы сохраняются, draft-only импорт удалён.",
+      "observed": "Файл импортирован через системный диалог. Отмена черновика удалила временную копию и сохранила записанные данные.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E04",
+      "title": "Новый файл — добавить и сохранить, байты доступны",
+      "status": "passed",
+      "evidence": [
+        "Native UI через реальные поля/NSOpenPanel, Save, pencil-reopen и Cancel."
+      ],
+      "expected": "Новый файл доступен после Save и повторного открытия.",
+      "observed": "Новый файл выбран через системный диалог и сохранён вместе с 14 унаследованными.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E05",
+      "title": "10 подзадач/15 файлов/10 ссылок — перенос и прокрутка",
+      "status": "passed",
+      "evidence": [
+        "Native UI через реальные поля/NSOpenPanel, Save, pencil-reopen и Cancel."
+      ],
+      "expected": "Все строки перенесены, форма прокручивается, Save/Cancel доступны.",
+      "observed": "Набор 10 задач, 15 файлов и 10 ссылок пройден с прокруткой и правкой последней ссылки, затем сохранён.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E06",
+      "title": "17 старых файлов — полный перенос и ограничения добавления",
+      "status": "passed",
+      "evidence": [
+        "Native UI через реальные поля/NSOpenPanel, Save, pencil-reopen и Cancel."
+      ],
+      "expected": "Унаследованный набор сохраняется целиком. Новый файл добавляется после освобождения места ниже лимита.",
+      "observed": "17 старых файлов перенесены целиком. В другом черновике удалены три, добавлен новый и сохранены 15 файлов.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E07",
+      "title": "Удаление копии — отменить, затем подтвердить, файл источника цел",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Отмена удаления сохраняет копию. Подтверждение удаляет её файлы и сохраняет источник.",
+      "observed": "Удаление копии отменено, затем подтверждено. Её файл удалён, файл исходного события сохранён.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E08",
+      "title": "Удаление источника на отдельной паре — файл копии цел",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Удаление источника сохраняет доступность и байты файлов ранее сохранённой копии.",
+      "observed": "После удаления родительской копии файл дочерней открыт во встроенном просмотре. Независимость байтов проверена.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E09",
+      "title": "Недоступный файл — ошибка, исправление и повтор",
+      "status": "passed",
+      "evidence": [
+        "ОшибкаФС видима, JSON не изменён, исправленная копия сохраняется. Найдено stale desktop.error после успешного повтора. PNG file-error-editor.png / stale-error-after-save.png.",
+        "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+      ],
+      "expected": "Ошибка видима, черновик сохраняется. После исправления сохраняется одна копия.",
+      "observed": "Найдено старое сообщение после успеха. На исправленной сборке путь повторён в мини-панели. После исправления сохраняется одна копия без прежней ошибки.",
+      "history": [
+        {
+          "status": "failed",
+          "evidence": [
+            "ОшибкаФС видима, JSON не изменён, исправленная копия сохраняется. Найдено stale desktop.error после успешного повтора. PNG file-error-editor.png / stale-error-after-save.png.",
+            "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+          ]
+        }
+      ],
+      "buildStage": "fixed"
+    },
+    {
+      "id": "E10",
+      "title": "Ошибка записи — черновик сохранён, повтор создаёт одну копию",
+      "status": "passed",
+      "evidence": [
+        "Отказ atomicJSON проверен и восстановлен, ровноодна запись. Pending retest staleerrorfix onupdatedbinary.",
+        "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+      ],
+      "expected": "При ошибке запись отсутствует. Повтор сохраняет одну копию и убирает актуальную причину ошибки.",
+      "observed": "Отказ записи оставил черновик и исходные файлы. После восстановления JSON и явного повтора сохранена одна копия без прежней ошибки. Повторено в исправленном большом окне.",
+      "history": [
+        {
+          "status": "needs-retest",
+          "evidence": [
+            "Отказ atomicJSON проверен и восстановлен, ровноодна запись. Pending retest staleerrorfix onupdatedbinary.",
+            "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+          ]
+        }
+      ],
+      "buildStage": "fixed"
+    },
+    {
+      "id": "F01",
+      "title": "Избранное ON → Cancel, затем ON → Save — один favorite",
+      "status": "passed",
+      "evidence": [
+        "Внешний native UI, включая Cmd-W/Cmd-0/Cmd-N/Cmd-Tab и выбор К редактору."
+      ],
+      "expected": "Cancel сохраняет прежнее избранное. Save выбирает единственным основным копию.",
+      "observed": "Включение избранного с отменой сохранило прежний выбор. Сохранение назначило основной новую копию.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "F02",
+      "title": "Погода/retention — наследование, обратное переключение и Save/Cancel",
+      "status": "passed",
+      "evidence": [
+        "Внешние нативные действия, переоткрытие и read-only сравнение изолированных записей/байтов."
+      ],
+      "expected": "Начальные флажки равны источнику. Изменения коммитятся только Save.",
+      "observed": "Наследование обоих значений проверено. Отмена сохранила источник. Сохранение записало выключенные погоду и хранение у копии.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "F03",
+      "title": "Копия изменённой копии — актуальное содержимое и новый сброс задач",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Следующий черновик берёт актуальную копию и сбрасывает выполнение задач снова.",
+      "observed": "Изменённая копия с выполненной задачей скопирована. Следующая копия получила 0 из 3, новые идентификаторы и независимый файл.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G01",
+      "title": "Escape отменяет, Return сохраняет, Return в заметке переносит строку",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Escape завершает Cancel. Return сохраняет допустимый черновик. В заметке Return добавляет строку.",
+      "observed": "Escape отменил черновик. Return из названия сохранил. Return в заметке добавил строку. Escape календаря сохранил открытый черновик.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G02",
+      "title": "Вложенный текстовый файл — Cancel/Escape только верхнего уровня",
+      "status": "passed",
+      "evidence": [
+        "Native UI через реальные поля/NSOpenPanel, Save, pencil-reopen и Cancel."
+      ],
+      "expected": "Закрывается верхний composer, исходный copy draft со всеми полями остаётся.",
+      "observed": "Escape закрыл только вложенный редактор текста. Имя и заметка внешнего черновика сохранились. Его отмена выполнена отдельно.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G03",
+      "title": "Desktop backdrop, Cmd-W и закрытие — защита черновика",
+      "status": "partial",
+      "evidence": [
+        "Cmd-W сохранил изменённыйлист. Parent red close/backdrop неадресуемы через текущий CUA target приattachedSheet."
+      ],
+      "expected": "Лист и его данные удержаны до явного Save/Cancel.",
+      "observed": "Command-W удержал изменённый лист. Клики по красной кнопке родительского окна и фону не воспроизведены. Текущий драйвер предоставляет только сам модальный лист.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G04",
+      "title": "Mini скрытие/повторное открытие — поля и режим имени удержаны",
+      "status": "passed",
+      "evidence": [
+        "Внешний native UI, включая Cmd-W/Cmd-0/Cmd-N/Cmd-Tab и выбор К редактору."
+      ],
+      "expected": "После возврата сохранены несохранённые поля, режим названия и контекст.",
+      "observed": "Command-W скрыл мини-панель. Command-0 и «К редактору» вернули дату, поля и режим имени. Повторено после переключения приложения.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G05",
+      "title": "Редактор на одной поверхности блокирует изменения на другой",
+      "status": "passed",
+      "evidence": [
+        "Внешний native UI, включая Cmd-W/Cmd-0/Cmd-N/Cmd-Tab и выбор К редактору."
+      ],
+      "expected": "Вторая поверхность сохраняет данные и позволяет вернуться к владельцу редактора.",
+      "observed": "Второй интерфейс показал занятый редактор и недоступные действия. Command-N не заменил открытый черновик.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G06",
+      "title": "Повторный Save — одна запись",
+      "status": "passed",
+      "evidence": [
+        "Внешние действия CUA и проверка сохранённого изолированного JSON. Для Return учтено штатное поведение NSDatePicker."
+      ],
+      "expected": "Создаётся ровно одна новая запись.",
+      "observed": "Два быстрых Return создали одну копию. Счётчик увеличился с 10 до 11.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "G07",
+      "title": "Перезапуск — сохранённые копии и режимы читаются снова",
+      "status": "passed",
+      "evidence": [
+        "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+      ],
+      "expected": "После перезапуска сохранены даты, данные, файлы и режимы названия.",
+      "observed": "Перезапуск сохранил 22 записи, точный JSON и хеши файлов. Карандаш подтвердил сохранённый автоматический режим.",
+      "history": [
+        {
+          "status": "planned",
+          "evidence": [
+            "Ручной повтор на исправленной QA-сборке. Новый тестовый code payload совпал с прошедшей native verification сборкой после исключения ad-hoc подписи."
+          ]
+        }
+      ],
+      "buildStage": "fixed"
+    },
+    {
+      "id": "G08",
+      "title": "Длинное имя обычной карточки — дата и три действия доступны",
+      "status": "passed",
+      "evidence": [
+        "Внешний native UI, включая Cmd-W/Cmd-0/Cmd-N/Cmd-Tab и выбор К редактору."
+      ],
+      "expected": "Название читается в допустимых строках, дата и действия помещаются и нажимаются.",
+      "observed": "Длинная обычная карточка осмотрена после прокрутки. Две строки названия, дата, заметка и три действия доступны. Копирование открыло полное имя.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    },
+    {
+      "id": "E11",
+      "title": "Отменить файловый диалог и вернуться в тот же черновик",
+      "expected": "Файловый диалог закрыт, поля copy draft и существующие вложения сохранены, новые файлы отсутствуют.",
+      "status": "passed",
+      "evidence": [
+        "Native NSOpenPanel, затем Cancel и точное сравнение JSON/owned-folder baseline."
+      ],
+      "observed": "Отмена системного файлового диалога вернула тот же черновик с исходным вложением.",
+      "buildStage": "initial-with-unaffected-evidence-reused"
+    }
+  ],
+  "builds": {
+    "initialUnsignedExecutableSHA256": "38f9c96f84e1c80af083eb47bfda5b2376095cde1846bb44a007c3aa655386c2",
+    "fixedNativeExecutableSHA256": "96765f79d936bbba0a91766bf0738d63b61254da45727bf97ea57efa96e4bad0",
+    "fixedUnsignedExecutableSHA256": "d765b8c94f50d7691f3c3852bb5dee126b83867fd0ca456c65c3cc63f5393ff9"
+  }
+}

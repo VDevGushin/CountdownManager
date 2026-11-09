@@ -14,6 +14,7 @@ struct ManagerView: View {
     var showWhatsNew: () -> Void = {}
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
+    @State private var copying: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
     @State private var showingSettings = false
@@ -86,6 +87,7 @@ struct ManagerView: View {
                     EditorView(
                         store: store,
                         item: editing,
+                        copying: copying,
                         dayPreset: dayPreset,
                         selectDayDate: selectDayDate,
                         didSave: { event in
@@ -397,7 +399,7 @@ struct ManagerView: View {
                     .uiSmokeControl(id: "event.secondary.calendar.\(item.id.uuidString)")
                 GeometryReader { geometry in
                     let title = (eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.title
-                    let textWidth = max(0, geometry.size.width - 59)
+                    let textWidth = max(0, geometry.size.width - 87)
                     let wraps = title.contains(where: \.isNewline) || (title as NSString).size(withAttributes: [
                         .font: NSFont.systemFont(ofSize: 14, weight: .semibold)
                     ]).width > textWidth
@@ -525,6 +527,11 @@ struct ManagerView: View {
                 accessibilityLabel: "Редактировать событие: \(item.title)", action: { edit(item.id) })
             .accessibilityIdentifier("event.edit.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.edit.\(item.id.uuidString)", action: { edit(item.id) })
+            AuroraSymbolAction(symbolName: "doc.on.doc", surface: .mini, tone: .secondary,
+                accessibilityLabel: "Создать копию события: \(item.title)", action: { copyEvent(item.id) })
+            .help("Создать копию…")
+            .accessibilityIdentifier("event.copy.\(item.id.uuidString)")
+            .uiSmokeControl(id: "event.copy.\(item.id.uuidString)", action: { copyEvent(item.id) })
         }
         .fixedSize()
     }
@@ -663,6 +670,7 @@ struct ManagerView: View {
         weekCreation = nil
         editorSession.endPanelEditor()
         editing = nil
+        copying = nil
         dayPreset = nil
         selectDayDate = false
     }
@@ -677,6 +685,7 @@ struct ManagerView: View {
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
         editing = nil
+        copying = nil
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
@@ -694,6 +703,7 @@ struct ManagerView: View {
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
         editing = nil
+        copying = nil
         dayPreset = preset
         selectDayDate = selectDate
         showingDayChoices = false
@@ -704,9 +714,23 @@ struct ManagerView: View {
               !store.hasPendingPersistence, store.eventCreationIsAvailable,
               let week = DayCreationWeek(today: store.today), editorSession.beginPanelEditor() else { return }
         editing = nil
+        copying = nil
         dayPreset = nil
         selectDayDate = false
         weekCreation = week
+        showingDayChoices = false
+    }
+
+    private func copyEvent(_ id: UUID) {
+        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
+              store.eventCreationIsAvailable,
+              let item = store.active.first(where: { $0.id == id }),
+              editorSession.beginPanelEditor() else { return }
+        DiagnosticLog.shared.record("editor.open mode=copy id=\(item.id.uuidString)")
+        editing = nil
+        copying = item
+        dayPreset = nil
+        selectDayDate = false
         showingDayChoices = false
     }
 
@@ -716,6 +740,7 @@ struct ManagerView: View {
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=edit id=\(item.id.uuidString)")
         editing = item
+        copying = nil
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
@@ -931,6 +956,7 @@ private struct SubtaskChecklistView: View {
 struct EditorView: View {
     @ObservedObject var store: Store
     let item: Countdown?
+    private let copySource: Countdown?
     let didSave: (Countdown) -> Void
     let done: () -> Void
     private let isNewDay: Bool
@@ -977,22 +1003,27 @@ struct EditorView: View {
     init(
         store: Store,
         item: Countdown?,
+        copying source: Countdown? = nil,
         dayPreset: DayCreationPreset? = nil,
         selectDayDate: Bool = false,
         didSave: @escaping (Countdown) -> Void,
         done: @escaping () -> Void
     ) {
         self.store = store; self.item = item; self.done = done
+        copySource = source
         self.didSave = didSave
-        isNewDay = item == nil && dayPreset != nil
-        self.selectDayDate = item == nil && selectDayDate
-        if item == nil, let dayPreset {
+        isNewDay = item == nil && source == nil && dayPreset != nil
+        self.selectDayDate = source != nil || (item == nil && selectDayDate)
+        if let source {
+            _draft = State(initialValue: EventEditorDraft(copying: source, date: max(source.date, store.today)))
+        } else if item == nil, let dayPreset {
             _draft = State(initialValue: EventEditorDraft(day: dayPreset.day))
         } else {
             _draft = State(initialValue: EventEditorDraft(item: item))
         }
-        _date = State(initialValue: item?.date.date() ?? dayPreset?.day.date() ?? store.tomorrow)
-        _primary = State(initialValue: item.map { store.data.primaryID == $0.id } ?? false)
+        _date = State(initialValue: source.map { max($0.date, store.today).date() }
+            ?? item?.date.date() ?? dayPreset?.day.date() ?? store.tomorrow)
+        _primary = State(initialValue: source == nil && (item.map { store.data.primaryID == $0.id } ?? false))
     }
 
     private var emojiPage: Int { emojiPicker.pageIndex }
@@ -1014,8 +1045,8 @@ struct EditorView: View {
     private var minimumDate: Date { min(retainedDate ?? store.today, store.today).date() }
     private var validDate: Bool { Day(date) >= store.today || Day(date) == retainedDate }
     private var isUnavailable: Bool {
-        guard let item else { return false }
-        return !store.active.contains(where: { $0.id == item.id })
+        guard let original = copySource ?? item else { return false }
+        return !store.active.contains(where: { $0.id == original.id })
     }
     private var canSave: Bool {
         !isUnavailable && editorCanSave(
@@ -1032,7 +1063,7 @@ struct EditorView: View {
     }
 
     private var savedNote: String? {
-        item.flatMap { original in store.active.first(where: { $0.id == original.id })?.note }
+        (copySource ?? item).flatMap { original in store.active.first(where: { $0.id == original.id })?.note }
     }
 
     var body: some View {
@@ -1052,7 +1083,8 @@ struct EditorView: View {
 
     private var editorContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(item != nil ? EventUIStrings.editEvent : (isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent))
+            Text(copySource != nil ? "Копия события"
+                 : item != nil ? EventUIStrings.editEvent : (isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent))
                 .font(.custom("Georgia", size: 21))
                 .tracking(-0.5)
                 .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
@@ -1062,7 +1094,8 @@ struct EditorView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         if selectDayDate {
-                            Text(isNewDay ? "Выберите дату для нового дня." : "Выберите дату события.")
+                            Text(copySource != nil ? "Выберите дату для копии события."
+                                 : isNewDay ? "Выберите дату для нового дня." : "Выберите дату события.")
                                 .font(.caption)
                                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                         }
@@ -1085,7 +1118,7 @@ struct EditorView: View {
                                                     keepsAfterDate: draft.keepsAfterDate,
                                                     isImporting: isImportingAttachments, add: addAttachments,
                                                     thumbnailURL: { attachment in
-                                await store.editorAttachmentThumbnailURL(attachment, eventID: item?.id,
+                                await store.editorAttachmentThumbnailURL(attachment, eventID: copySource?.id ?? item?.id,
                                                                          draftID: attachmentSession.id)
                             })
                             Button("Вставить текст как вложение…") { beginTextComposition() }
@@ -1116,14 +1149,15 @@ struct EditorView: View {
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(item == nil ? "editor.new" : "editor.edit")
-        .uiSmokeControl(id: item == nil ? "editor.new" : "editor.edit")
+        .accessibilityIdentifier(copySource != nil ? "editor.copy" : item == nil ? "editor.new" : "editor.edit")
+        .uiSmokeControl(id: copySource != nil ? "editor.copy" : item == nil ? "editor.new" : "editor.edit")
         .task {
             await Task.yield()
-            focusedField = .title
+            let initialFocus: EditorFocusTarget = copySource == nil ? .title : .date
+            focusedField = initialFocus
             await Task.yield()
-            if UISmokeConfiguration.wasRequested && focusedField == .title {
-                UISmokeControlRegistry.shared.markFocused("editor.title")
+            if UISmokeConfiguration.wasRequested && focusedField == initialFocus {
+                UISmokeControlRegistry.shared.markFocused(copySource == nil ? "editor.title" : "editor.date")
             }
         }
         .modifier(MaterialDropZone(enabled: !isSaving && !isImportingAttachments && !isUnavailable
@@ -1206,12 +1240,20 @@ struct EditorView: View {
 
     private var dateControls: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if let copySource, copySource.date < store.today {
+                Text("Дата исходного события уже прошла. Для копии можно выбрать сегодня или будущую дату.")
+                    .font(.system(size: 10.5))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .accessibilityIdentifier("editor.copy.past-source")
+                    .uiSmokeControl(id: "editor.copy.past-source")
+            }
             DatePicker("Дата", selection: $date, in: minimumDate..., displayedComponents: [.date])
                 .datePickerStyle(.field)
                 .font(.system(size: 12))
                 .frame(minHeight: 28)
+                .focused($focusedField, equals: .date)
                 .accessibilityIdentifier("editor.date")
-                .uiSmokeControl(id: "editor.date", value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
+                .uiSmokeControl(id: "editor.date", action: { focus(.date, id: "editor.date") }, value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
             if (Day(date) == store.today && !draft.keepsAfterDate) || !validDate {
                 Text(dateHelp)
                     .font(.system(size: 10.5))
@@ -1263,7 +1305,9 @@ struct EditorView: View {
     private var editorActions: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isUnavailable {
-                Text("Событие больше недоступно. Черновик сохранён в этом окне; сохранить его как это событие нельзя.")
+                Text(copySource != nil
+                     ? "Исходное событие больше недоступно. Черновик сохранён в этом окне. Создание копии недоступно."
+                     : "Событие больше недоступно. Черновик сохранён в этом окне; сохранить его как это событие нельзя.")
                     .font(.caption)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .padding(.horizontal, 16)
@@ -1862,7 +1906,7 @@ struct EditorView: View {
 
     private func cancel() {
         guard !isSaving, composingText == nil else { return }
-        DiagnosticLog.shared.record("editor.cancel mode=\(item == nil ? "new" : "edit")")
+        DiagnosticLog.shared.record("editor.cancel mode=\(copySource != nil ? "copy" : item == nil ? "new" : "edit")")
         attachmentSession.cancel()
         done()
     }
@@ -1925,9 +1969,20 @@ struct EditorView: View {
         let countdown = draft.countdown(id: item?.id ?? UUID(), date: Day(date))
         isSaving = true
         Task {
-            if await store.save(countdown, primary: primary, requireExisting: item != nil) {
+            let saved: Countdown?
+            if let copySource {
+                if await attachmentSession.prepare(in: store) {
+                    saved = await store.saveCopy(countdown, sourceID: copySource.id,
+                                                 draftID: attachmentSession.id, primary: primary)
+                } else {
+                    saved = nil
+                }
+            } else {
+                saved = await store.save(countdown, primary: primary, requireExisting: item != nil) ? countdown : nil
+            }
+            if let saved {
                 await attachmentSession.discard(in: store)
-                didSave(countdown)
+                didSave(saved)
                 done()
             }
             isSaving = false

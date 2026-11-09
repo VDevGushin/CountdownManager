@@ -16,6 +16,7 @@ struct DesktopRootView: View {
         case toggleFavorite(eventID: UUID)
         case delete(eventID: UUID)
         case edit(itemID: UUID?, preset: DayCreationPreset?, selectDate: Bool)
+        case copy(sourceID: UUID)
         case week(DayCreationWeek)
     }
 
@@ -45,6 +46,7 @@ struct DesktopRootView: View {
     @State private var showWhatsNewAfterSettings = false
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
+    @State private var copying: Countdown?
     @State private var dayPreset: DayCreationPreset?
     @State private var weekCreation: DayCreationWeek?
     @State private var selectDayDate = false
@@ -69,7 +71,7 @@ struct DesktopRootView: View {
     private var hasQueuedEditor: Bool {
         pendingActions.contains {
             switch $0 {
-            case .edit, .week: return true
+            case .edit, .copy, .week: return true
             default: return false
             }
         }
@@ -180,7 +182,7 @@ struct DesktopRootView: View {
         case .editor:
             VStack(spacing: 0) {
                 if let error = store.error { errorBanner(error) }
-                EditorView(store: store, item: editing, dayPreset: dayPreset, selectDayDate: selectDayDate,
+                EditorView(store: store, item: editing, copying: copying, dayPreset: dayPreset, selectDayDate: selectDayDate,
                            didSave: eventSaved, done: dismissSheet)
             }
             .frame(width: 430, height: 600)
@@ -298,7 +300,8 @@ struct DesktopRootView: View {
                         DesktopEventDetail(
                             item: selection, today: store.today, primaryID: store.data.primaryID,
                             weather: weather, canMutate: canMutate && !deletionIsPending(selection.id),
-                            edit: { beginEditor(item: selection) }, toggleFavorite: { toggleFavorite(selection) },
+                            edit: { beginEditor(item: selection) }, copy: { beginCopy(sourceID: selection.id) },
+                            toggleFavorite: { toggleFavorite(selection) },
                             delete: { deleteEvent(selection.id) },
                             toggleSubtask: { toggleSubtask(selection, subtaskID: $0) },
                             openLink: { store.openLink($0, eventID: selection.id) },
@@ -534,6 +537,8 @@ struct DesktopRootView: View {
         presentedSheet = nil
         textAttachmentRequest = nil
         weekCreation = nil
+        editing = nil
+        copying = nil
         attachmentPreview.close()
         attachmentLibraryIsSource = false
         attachmentPreviewWasPresented = false
@@ -562,6 +567,12 @@ struct DesktopRootView: View {
     private func beginEditor(item: Countdown? = nil, preset: DayCreationPreset? = nil, selectDate: Bool = false) {
         guard canMutate, editorSession.beginDesktopEditor() else { return }
         pendingActions.append(.edit(itemID: item?.id, preset: preset, selectDate: selectDate))
+        processPendingActions()
+    }
+
+    private func beginCopy(sourceID: UUID) {
+        guard canMutate, editorSession.beginDesktopEditor() else { return }
+        pendingActions.append(.copy(sourceID: sourceID))
         processPendingActions()
     }
 
@@ -599,8 +610,21 @@ struct DesktopRootView: View {
             latestItem = nil
         }
         editing = latestItem
+        copying = nil
         dayPreset = preset
         selectDayDate = selectDate
+        presentedSheet = .editor
+        return true
+    }
+
+    private func presentCopy(sourceID: UUID) -> Bool {
+        guard store.eventCreationIsAvailable, !store.hasPendingPersistence,
+              editorSession.desktopIsPresented, !showingSettings, !showingEditor,
+              let source = store.active.first(where: { $0.id == sourceID }) else { return false }
+        editing = nil
+        copying = source
+        dayPreset = nil
+        selectDayDate = false
         presentedSheet = .editor
         return true
     }
@@ -666,6 +690,8 @@ struct DesktopRootView: View {
                     deletingEventID = nil
                 case let .edit(itemID, preset, selectDate):
                     succeeded = presentEditor(itemID: itemID, preset: preset, selectDate: selectDate)
+                case let .copy(sourceID):
+                    succeeded = presentCopy(sourceID: sourceID)
                 case let .week(week):
                     succeeded = presentWeekDays(week)
                 }

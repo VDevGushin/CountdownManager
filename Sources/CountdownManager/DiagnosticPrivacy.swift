@@ -17,6 +17,7 @@ package enum DiagnosticPrivacy {
             case .subtaskText: kind = "subtask_text"
             case .subtaskLength: kind = "subtask_length"
             case .subtaskCount: kind = "subtask_count"
+            case .copyIdentity: kind = "copy_identity"
             }
             return "category=validation validation=\(kind)"
         }
@@ -106,13 +107,13 @@ package enum DiagnosticPrivacy {
         "none", "ok", "failed", "skipped", "http", "decode", "invalid_data", "invalid_response", "url", "other", "timeout", "offline", "connection",
         "disabled", "no_eligible_dates", "location_pending", "location_unavailable", "loading", "available", "no_usable_data", "stopped",
         "idle", "running", "finished", "cocoa", "posix", "validation", "title", "note", "date", "emoji", "event_missing", "subtask_missing",
-        "subtask_text", "subtask_length", "subtask_count", "normalize", "countdown.save", "countdown.primary", "countdown.delete",
+        "subtask_text", "subtask_length", "subtask_count", "copy_identity", "normalize", "countdown.save", "countdown.copy", "countdown.primary", "countdown.delete",
         "subtask.add", "subtask.edit", "subtask.delete", "subtask.toggle", "manual-check", "manual-update", "scheduled-update", "sparkle-modal", "deferred-install", "deferred-modal",
         "show", "hide", "ui-smoke", "status-action", "update-ui", "command-w", "window-close", "panel-occluded", "application-deactivation", "active-space-change",
-        "permission_required", "denied", "unavailable", "requested",
+        "permission_required", "denied", "unavailable", "requested", "copy",
     ]
     private static let events: Set<String> = [
-        "app.launch", "app.terminate", "data.load", "data.save", "data.normalize", "countdown.save", "countdown.primary", "countdown.delete",
+        "app.launch", "app.terminate", "data.load", "data.save", "data.normalize", "countdown.save", "countdown.copy", "countdown.primary", "countdown.delete",
         "subtask.disclosure", "subtask.add", "subtask.edit", "subtask.delete", "subtask.toggle", "login-item.change", "login-item.status",
         "diagnostics.open-folder", "diagnostics.export", "diagnostics.dropped", "diagnostics.write", "legacy.redacted",
         "weather.request.start", "weather.request.end", "weather.source", "weather.publication", "weather.computation", "weather.schedule",

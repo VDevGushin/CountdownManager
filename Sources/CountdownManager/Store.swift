@@ -250,6 +250,7 @@ package final class Store: ObservableObject {
     @Published package private(set) var isResolvingMaterials = false
     @Published package private(set) var isReceivingMaterials = false
     private var attachmentDrafts: Set<UUID> = []
+    private var savingCopyDrafts: Set<UUID> = []
     private var attachmentPicker: (draftID: UUID, panel: NSOpenPanel)?
     package weak var dialogAppearanceSource: NSWindow?
     @Published private var attachmentOperationCount = 0
@@ -534,6 +535,59 @@ package final class Store: ObservableObject {
             disclosureCache.remove(eventID: countdown.id)
         }
         return didSave
+    }
+
+    package func saveCopy(_ countdown: Countdown, sourceID: UUID, draftID: UUID, primary: Bool) async -> Countdown? {
+        guard !Task.isCancelled, attachmentDrafts.contains(draftID),
+              savingCopyDrafts.insert(draftID).inserted else { return nil }
+        error = nil
+        attachmentOperationCount += 1
+        defer {
+            attachmentOperationCount -= 1
+            savingCopyDrafts.remove(draftID)
+        }
+        let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
+        defer { if isRecoveryMutation { finishRecoveryMutation() } }
+        let copyDraftID = UUID()
+        var savedCopy: Countdown?
+        do {
+            let currentDay = Day(now())
+            if currentDay != today { today = currentDay }
+            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { throw CancellationError() }
+            guard let source = data.items.first(where: { $0.id == sourceID && $0.isAvailable(on: today) }) else {
+                throw CountdownError.eventNotFound
+            }
+            var candidate = data
+            try candidate.saveCopy(countdown, sourceID: sourceID, primary: primary, today: today)
+            let attachments = try await repository.copyEventAttachments(
+                countdown.attachments, inheritedFrom: source.attachments,
+                editorDraftID: draftID, copyDraftID: copyDraftID
+            )
+            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { throw CancellationError() }
+            let commitDay = Day(now())
+            if commitDay != today { today = commitDay }
+            guard let latestSource = data.items.first(where: { $0.id == sourceID && $0.isAvailable(on: today) }),
+                  countdown.attachments.filter({ source.attachments.contains($0) })
+                    .allSatisfy({ latestSource.attachments.contains($0) }) else {
+                throw CountdownError.eventNotFound
+            }
+            candidate = data
+            try candidate.saveCopy(countdown, sourceID: sourceID, primary: primary, today: today)
+            guard let index = candidate.items.firstIndex(where: { $0.id == countdown.id }) else {
+                throw CountdownError.eventNotFound
+            }
+            candidate.items[index].attachments = attachments
+            let normalizedCopy = candidate.items[index]
+            if await commit(candidate, reason: "countdown.copy") { savedCopy = normalizedCopy }
+        } catch {
+            if attachmentDrafts.contains(draftID), !Task.isCancelled {
+                recordDiagnostic("countdown.copy failure \(DiagnosticPrivacy.errorFields(error))")
+                self.error = error.localizedDescription
+            }
+        }
+        do { try await repository.discardAttachmentDraft(copyDraftID) }
+        catch { reportAttachmentCleanupFailure() }
+        return savedCopy
     }
 
     package func createWeekDays(_ week: DayCreationWeek) async -> [Countdown]? {

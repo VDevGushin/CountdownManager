@@ -104,7 +104,7 @@ there is no rejection or prefix clipping. The counter shows the actual N/150 in 
 current saved-note allowance is exceeded, and Save is disabled until the draft is shortened.
 Selection and Undo retain native text behavior. The same limit is enforced at Save, not just in the editor.
 Existing stored notes longer than 150 remain fully visible and load without truncation or migration.
-For an active existing event only, the permitted length is max(150, its currently saved note length).
+For an active existing event or a copy of an available source, the permitted length is max(150, the corresponding saved note length).
 The note can stay that length or shrink while other fields, subtasks and primary selection remain
 saveable. A successful shorter Save reduces this allowance; draft deletion/Undo does not. Deleted or
 expired identities grant no allowance. Legacy counters show the real N/150 and a short explanation,
@@ -199,10 +199,10 @@ disabled forecasts must not shift surrounding content for otherwise unchanged ev
 window geometry.
 This layout rule and checklist animation apply only to the desktop, not the mini-panel.
 
-The desktop details header has three equal icon-only controls: favorite, a simple pencil for
-direct editing, and trash for direct event deletion. There is no persistent editing caption or
+The desktop details header has four equal icon-only controls in order — favorite, a simple pencil
+for direct editing, `doc.on.doc` for `Создать копию…`, and trash for direct event deletion. There is no persistent editing caption or
 overflow menu; accessible names and hover help identify the actions. An unselected outline star
-uses the same neutral primary ink as pencil and trash. Only the selected filled star uses accent
+uses the same neutral primary ink as pencil, copy and trash. Only the selected filled star uses accent
 color. This state-based color rule is desktop-only. Trash opens an
 inline confirmation naming the target event and warning that deletion cannot be undone. Only
 explicit confirmation deletes it; Cancel or selecting another event does not change saved data.
@@ -461,6 +461,47 @@ uses the ordinary durable deletion boundary and removes owned copies only after 
 A failed deletion keeps the draft and existing event/files available for retry.
 
 Editing does not change durable event data until the user explicitly saves.
+
+### Copying an event
+
+`Создать копию…` opens a prepared new-event draft from an available saved event, including a
+retained past event. The action is the native `doc.on.doc` symbol beside the pencil on both
+featured and ordinary mini-panel cards. Desktop details place it between pencil and trash.
+Hover help and accessibility identify the action. It opens the shared editor directly.
+
+The editor is titled `Копия события`. Its initial date is the source date when that date is today
+or later. A copy of 15 September 2044 initially keeps 15 September 2044. A retained past source
+initially selects today and explains that the original date has passed. The date field receives
+initial focus. Today and future dates, including the source date, are allowed. Save validates
+against the current civil day again, including across midnight.
+
+The draft inherits title, complete note, additional emoji, link names and addresses, subtask text
+and stored order, weather-display choice, retention choice, automatic-title mode and day origin.
+Custom titles remain verbatim until edited. Automatic titles follow the copy's selected date.
+Every copied subtask starts incomplete and has a new identity. Links also receive new identities.
+The favorite checkbox starts off. Explicitly enabling it assigns the saved copy as favorite after
+successful Save.
+
+Opening the draft creates no event or inherited file copies. Inherited files can be previewed and
+removed from the draft. Save creates independent owned file copies with new attachment identities,
+the same filenames and bytes. The event and its complete file references reach the existing durable
+write boundary together. Failed copying or writing retains the editor for retry and releases files
+created solely by that failed Save attempt. New materials added through the ordinary editor keep
+their existing draft lifetime and Save/Cancel behavior.
+
+The copy receives a new event identity. Cancel discards its draft and returns to the source context.
+Successful Save selects the new event in desktop details and keeps the ordinary shared event order.
+The source content and owned files are preserved. Source removal or expiry while the editor is open
+keeps the draft visible and blocks Save. Source availability, inherited file metadata and the active
+attachment draft are revalidated after asynchronous file work. Removing either saved event affects
+only that event's owned copies.
+
+An inherited note longer than 150 graphemes can be preserved in full or shortened within the source's
+saved-note allowance. Once the copy is saved, subsequent editing uses its own saved-note allowance.
+An inherited file collection above 15 is copied completely or reduced. While above the limit it can
+contain only inherited references. Adding new files follows the ordinary remaining-capacity rule.
+Copying shares the existing single cross-surface editor reservation, explicit Save/Cancel, mini-panel
+hide/show continuity and desktop native-sheet protections.
 
 ### Automatic event titles
 

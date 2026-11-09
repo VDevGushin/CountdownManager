@@ -48,6 +48,8 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
 | Week-day creation | `./verify.sh week` | Focused isolated production mini-panel/desktop week preview, empty/nonempty entry, Save/Cancel, missing days and shared editing ownership |
 | Week-day captures | `./verify.sh week-capture <marked-output-directory>` | The focused week scenarios plus native PNGs and current-source bundle/executable provenance; no general UI rerun |
+| Event copying | `./verify.sh event-copy` | Focused isolated mini/desktop copy actions, native date focus, Save/Cancel, editor ownership and independent files |
+| Event-copy captures | `./verify.sh event-copy-capture <marked-output-directory>` | The focused copy scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
 | Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
@@ -212,6 +214,30 @@ automatic mode survives reopening, repeated custom/reset/date cycles, Cancel, a 
 write failure and an explicit reset followed by successful retry. The date/title/mode and sibling
 fields must match the durable snapshot.
 This is in-process native input, with external keyboard delivery covered separately by XCUITest.
+
+### Event copying
+
+`EventCopyChecks.swift` protects the Core copy boundary and repository-owned independent files.
+It exercises fresh identities, incomplete copied tasks, rejection of reused child identities,
+inherited long-note and over-limit file allowances, source/date validation and discarded-attempt
+cleanup. `EventCopyWorkflowChecks.swift` adds Store-level Save/reload byte comparisons, editor
+Cancel, partial file-copy failure, JSON-write failure with retained draft imports and explicit retry,
+duplicate in-flight Save, source expiry, midnight date rejection and shrinking legacy note allowance.
+Deletion ownership is checked through the Core/repository cleanup boundary.
+
+`event-copy` and `event-copy-capture` mount the production mini root and desktop root on one isolated
+Store with a controlled civil clock. The mini fixture is a key-capable 390 × 600 NSPanel. The scenario
+checks ordinary and favorite copy targets against the neighboring 28-point pencil, actual native
+NSDatePicker first-responder ownership, source-date defaults, retained hide/show, cross-surface
+editing exclusion, zero-write/file Cancel, native desktop sheet/date change and Save with independent
+PDF bytes and new identities. Far-future and retained-past source dates have separate observations.
+The capture route records the actual tested executable and appearance provenance.
+
+Registry activation invokes production actions in process. Native date changes are delivered through
+NSDatePicker target/action. These checks establish the controlled native workflow and settled renders.
+Physical status-item interaction, Spaces, VoiceOver speech and perceived transition smoothness require
+their corresponding external or manual evidence. The copy action uses the existing symbol-action
+family, editor form and single editing reservation.
 
 ### Retained past events
 
