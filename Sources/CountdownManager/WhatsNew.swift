@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.21.1"
+    static let releaseID = "1.22.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,8 +38,12 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Неделя без повторов", symbol: "calendar.badge.plus",
-                            text: "При создании недели даты с существующими событиями пропускаются. Предпросмотр показывает свободные даты и точное число новых дней.")
+                    feature("Копирование события", symbol: "doc.on.doc",
+                            text: "Нажмите значок двух листов рядом с карандашом. Черновик наследует содержимое, ссылки и подзадачи. Все подзадачи снова невыполнены, избранное выключено.")
+                    feature("Дата и название", symbol: "calendar",
+                            text: "Сначала выбрана дата источника, даже 15 сентября 2044 года. Для прошедшего события предлагается сегодня. Автоматическое название следует выбранной дате.")
+                    feature("Независимые файлы", symbol: "paperclip",
+                            text: "«Сохранить» создаёт отдельное событие и копии файлов. При ошибке черновик остаётся для повтора, а после успеха прежняя ошибка исчезает. «Отмена» закрывает черновик.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

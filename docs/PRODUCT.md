@@ -13,10 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.21.1 uses the read-only `Что нового` screen to describe `Неделя без повторов`.
-Week creation skips every full civil date occupied by a saved event. The preview identifies
-occupied dates and counts the remaining new days. The release-help
-window was introduced in 1.19.0. It is offered once on the first safe explicit
+Release 1.22.0 uses the read-only `Что нового` screen to describe event copying, source-date
+selection and independent file copies. The three sections use `doc.on.doc`, `calendar` and
+`paperclip`. The release-help window was introduced in 1.19.0. It is offered once on the first safe explicit
 opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it

@@ -132,9 +132,9 @@ components:
 
 ## Overview
 
-Release 1.21.1 uses one existing release-help section with native `calendar.badge.plus` for
-`Неделя без повторов`. The week preview uses its existing `Уже есть` rows and primary creation
-count to explain occupied dates. The accepted Graphite palette and native control families apply.
+Release 1.22.0 uses three existing release-help sections with native `doc.on.doc`, `calendar` and
+`paperclip` for event copying, source-date selection and independent file copies. The existing
+13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed

@@ -1,0 +1,13 @@
+{
+  "stage": "preview",
+  "version": "1.22.0",
+  "build": "44",
+  "app": "/private/tmp/countdown-release-1.22.0.M4u3a8/Countdown Manager.app",
+  "mode": "whats-new",
+  "executableSHA256": "98658cf72ec9529d1d292da3ff43b5a23e9102f1c2f98e74f0e2a28563563695",
+  "result": "DesktopSmoke\n\u2713 native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures\nPASS: 1/1",
+  "captureCount": 4,
+  "launchServices": true,
+  "isolatedHome": "/private/tmp/countdown-release-1.22.0.M4u3a8/preview-help",
+  "inputsUnchanged": true
+}

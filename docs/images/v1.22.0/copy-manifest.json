@@ -1,0 +1,339 @@
+{
+  "applicationBuild" : "44",
+  "applicationVersion" : "1.22.0",
+  "captures" : [
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-desktop-list-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1576,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114145.93675904168,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-desktop-list-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1576,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114146.15963133334,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-mini-list-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114146.36918037501,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-mini-list-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114146.55153983334,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-mini-editor-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114147.13248329167,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-mini-editor-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114147.31571175001,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-mini-editor-contrast-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 114147.49369270835,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-mini-editor-contrast-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 114147.676914625,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 780
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-desktop-editor-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114148.38488125001,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-desktop-editor-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114148.56825633334,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-desktop-editor-contrast-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 114148.75016183333,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-desktop-editor-contrast-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1200,
+      "highContrast" : true,
+      "isKeyWindow" : true,
+      "observationUptime" : 114148.92581416668,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 860
+    },
+    {
+      "appearanceName" : "NSAppearanceNameDarkAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "dark",
+      "file" : "event-copy-far-source-dark.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1576,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114150.51691441667,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2400
+    },
+    {
+      "appearanceName" : "NSAppearanceNameAqua",
+      "canBecomeKey" : true,
+      "captureMethod" : "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride" : "light",
+      "file" : "event-copy-far-source-light.png",
+      "fixture" : {
+        "file" : "Generated two-page PDF; app-owned imported bytes",
+        "panelFixture" : "Isolated key-capable 390x600 NSPanel; production SwiftUI root",
+        "referenceDay" : "2026-11-09",
+        "scenario" : "event-copy"
+      },
+      "height" : 1576,
+      "highContrast" : false,
+      "isKeyWindow" : true,
+      "observationUptime" : 114150.74565895835,
+      "reduceMotion" : false,
+      "scale" : 2,
+      "width" : 2400
+    }
+  ],
+  "eventCopy" : {
+    "clock" : "Injected Store civil clock; system clock unchanged",
+    "file" : "Generated PDF imported through the normal draft pipeline; copy bytes and identity checked after native Save",
+    "initialEventDates" : [
+      "2026-11-14",
+      "2026-11-15"
+    ],
+    "limitations" : "No physical status-item, app-switch, Spaces, VoiceOver or compositor timing claim; deterministic failures covered separately",
+    "miniPanelFixture" : "Isolated key-capable NSPanel at390x600 with production SwiftUI root",
+    "nativeInput" : "NSDatePicker first responder and target\/action date edit; registry invokes production buttons",
+    "referenceDay" : "2026-11-09"
+  },
+  "executableSHA256" : "98658cf72ec9529d1d292da3ff43b5a23e9102f1c2f98e74f0e2a28563563695",
+  "nativeBuildProvenance" : {
+    "application" : {
+      "build" : "44",
+      "executable" : "CountdownManager",
+      "identifier" : "local.countdownmanager.app",
+      "version" : "1.22.0"
+    },
+    "compilerSDK" : {
+      "canonicalName" : "macosx15.4",
+      "path" : "\/Library\/Developer\/CommandLineTools\/SDKs\/MacOSX15.4.sdk",
+      "version" : "15.4"
+    },
+    "contractSHA256" : "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "createdAtUTC" : "2026-11-09T16:43:09.136205+00:00",
+    "deploymentTarget" : "13.0",
+    "linkedCompatibility" : "13.0",
+    "linkedMachO" : [
+      {
+        "architecture" : "thin",
+        "command" : "LC_BUILD_VERSION",
+        "minos" : "13.0",
+        "platform" : "1",
+        "sdk" : "13.0"
+      }
+    ],
+    "renderedAppearanceVerified" : false,
+    "schemaVersion" : 1,
+    "sourceAuthoritySHA256" : {
+      "DESIGN.md" : "ae855528496f12aaeb5217ef157e654b07c16fe72d74856b4ff3a043cb0e8900",
+      "docs\/PRODUCT.md" : "79176699f77aa4dfe54a228a66976ec038f08e501c4db7f8b416765e4325c403",
+      "Sources\/CountdownManager\/AuroraInstrument.swift" : "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "styleVersion" : "native-calendar-graphite-v2",
+    "swiftToolchain" : {
+      "executable" : "\/Applications\/Xcode.app\/Contents\/Developer\/Toolchains\/XcodeDefault.xctoolchain\/usr\/bin\/swift-frontend",
+      "version" : "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    }
+  },
+  "scope" : "Unreleased native event-copy actions and shared editor; isolated in-process rendering and actions",
+  "syntheticData" : true
+}
