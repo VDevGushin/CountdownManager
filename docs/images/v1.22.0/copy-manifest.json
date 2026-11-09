@@ -17,7 +17,7 @@
       "height" : 1576,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114145.93675904168,
+      "observationUptime" : 115985.79585020833,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -37,7 +37,7 @@
       "height" : 1576,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114146.15963133334,
+      "observationUptime" : 115986.03592583333,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -57,7 +57,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114146.36918037501,
+      "observationUptime" : 115986.25149412501,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -77,7 +77,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114146.55153983334,
+      "observationUptime" : 115986.42619191667,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -97,7 +97,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114147.13248329167,
+      "observationUptime" : 115987.03639933334,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -117,7 +117,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114147.31571175001,
+      "observationUptime" : 115987.217897875,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -137,7 +137,7 @@
       "height" : 1200,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114147.49369270835,
+      "observationUptime" : 115987.39104804167,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -157,7 +157,7 @@
       "height" : 1200,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114147.676914625,
+      "observationUptime" : 115987.56573933334,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 780
@@ -177,7 +177,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114148.38488125001,
+      "observationUptime" : 115988.31130470835,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -197,7 +197,7 @@
       "height" : 1200,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114148.56825633334,
+      "observationUptime" : 115988.49333733333,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -217,7 +217,7 @@
       "height" : 1200,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114148.75016183333,
+      "observationUptime" : 115988.67912,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -237,7 +237,7 @@
       "height" : 1200,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114148.92581416668,
+      "observationUptime" : 115988.86224541668,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 860
@@ -257,7 +257,7 @@
       "height" : 1576,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114150.51691441667,
+      "observationUptime" : 115990.500709625,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -277,7 +277,7 @@
       "height" : 1576,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114150.74565895835,
+      "observationUptime" : 115990.73527233335,
       "reduceMotion" : false,
       "scale" : 2,
       "width" : 2400
@@ -295,7 +295,7 @@
     "nativeInput" : "NSDatePicker first responder and target\/action date edit; registry invokes production buttons",
     "referenceDay" : "2026-11-09"
   },
-  "executableSHA256" : "98658cf72ec9529d1d292da3ff43b5a23e9102f1c2f98e74f0e2a28563563695",
+  "executableSHA256" : "ff430dd40e87b2d796ba110438a8283bca6ae29020acbe4b5a2bd8c4515e2944",
   "nativeBuildProvenance" : {
     "application" : {
       "build" : "44",
@@ -309,7 +309,7 @@
       "version" : "15.4"
     },
     "contractSHA256" : "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
-    "createdAtUTC" : "2026-11-09T16:43:09.136205+00:00",
+    "createdAtUTC" : "2026-11-09T17:18:54.677044+00:00",
     "deploymentTarget" : "13.0",
     "linkedCompatibility" : "13.0",
     "linkedMachO" : [

@@ -18,7 +18,7 @@
   },
   "linkedCompatibility": "13.0",
   "deploymentTarget": "13.0",
-  "createdAtUTC": "2026-11-09T16:43:09.136205+00:00",
+  "createdAtUTC": "2026-11-09T17:18:54.677044+00:00",
   "application": {
     "identifier": "local.countdownmanager.app",
     "version": "1.22.0",

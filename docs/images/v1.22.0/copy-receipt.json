@@ -1,13 +1,13 @@
 {
-  "stage": "preview",
+  "stage": "final",
   "version": "1.22.0",
   "build": "44",
   "app": "/private/tmp/countdown-release-1.22.0.M4u3a8/Countdown Manager.app",
   "mode": "event-copy",
-  "executableSHA256": "98658cf72ec9529d1d292da3ff43b5a23e9102f1c2f98e74f0e2a28563563695",
+  "executableSHA256": "ff430dd40e87b2d796ba110438a8283bca6ae29020acbe4b5a2bd8c4515e2944",
   "result": "DesktopSmoke\n\u2713 native mini favorite/ordinary 28pt copy actions, source-date defaults, actual NSDatePicker focus, shared-editor lock, retained hide/show and zero-write/file Cancel\n\u2713 native desktop sheet date edit and Save create one durable independent event/file with new nested identities, reset tasks and intact source\n\u2713 far-future source keeps 15 September 2044 by default; retained past source clamps to today and displays its date explanation\nPASS: 3/3",
   "captureCount": 14,
   "launchServices": true,
-  "isolatedHome": "/private/tmp/countdown-release-1.22.0.M4u3a8/preview-copy",
+  "isolatedHome": "/private/tmp/countdown-release-1.22.0.M4u3a8/final-copy-native",
   "inputsUnchanged": true
 }

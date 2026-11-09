@@ -1,0 +1,73 @@
+{
+  "status": "passed",
+  "version": "1.22.0",
+  "build": "44",
+  "sourceCommit": "dee06cf1b3556ce24b20edf411ccd8dcb95ac489",
+  "published": false,
+  "installed": false,
+  "exactPackageRuntimeVerified": false,
+  "auditStartedUTC": "2026-11-09T17:19:49.382356+00:00",
+  "archiveBytes": 6618139,
+  "archiveSHA256": "be68888dbf9d71a588d742ded4e2e0304ee865e573b339aaac4c8afe045c4b3f",
+  "feedBytes": 3927,
+  "feedSHA256": "77f7b2b6d241013688dc6be8c38ac545b8259318e5c7e95cf564b2abb52ce71d",
+  "finalExecutableSHA256": "ff430dd40e87b2d796ba110438a8283bca6ae29020acbe4b5a2bd8c4515e2944",
+  "publicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "independentPublicKeyAudit": true,
+  "signatureVerifier": "Apple CryptoKit Curve25519.Signing.PublicKey",
+  "signatureChecks": {
+    "archive-changed-payload": false,
+    "archive-changed-signature": false,
+    "archive-valid": true,
+    "feed-changed-payload": false,
+    "feed-changed-signature": false,
+    "feed-valid": true
+  },
+  "feedSignedBoundaryVerified": true,
+  "feedSignedBytes": 3783,
+  "feedBoundary": {
+    "sparkleVersion": "2.10.0",
+    "sparkleRevision": "eef1a539a373c1f1a320624b1130fc5de7b2e100",
+    "sourceSHA256": {
+      "Sparkle/SPUExtractSignedFeed.m": "a3661045ee078167381b3418fda1cb1258a1cf875be93889758bf309d81ed10b",
+      "common_cli/Signing.swift": "c7e502d683c84e62da5ff4d7d1579ea31b0f9489838fb808ec2205ca7c597a7f"
+    },
+    "signedOffset": 0,
+    "signedBytes": 3783,
+    "unsignedSigningBlockBytes": 144,
+    "derivation": "last extractor prefix; raw bytes before it; pinned writer template and advertised length verified"
+  },
+  "embeddedNotesAndMetadataVerified": true,
+  "feedMetadata": {
+    "archiveURL": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.22.0/CountdownManager-1.22.0-44.zip",
+    "version": "1.22.0",
+    "build": "44",
+    "minimumSystemVersion": "13.0",
+    "hardwareRequirements": "arm64",
+    "embeddedNotesSHA256": "f91f5cf83580c50e21947812764640992f1e6041064c19faeed321b6959d6199"
+  },
+  "extractedEntriesMatch": true,
+  "extractedApp": "/private/tmp/countdown-release-1.22.0.M4u3a8/audit-scratch.ut7arfw1/extracted/Countdown Manager.app",
+  "comparedEntries": 168,
+  "deepStrictCodesignPassed": true,
+  "inputsUnchanged": true,
+  "nativeBuildContract": {
+    "styleVersion": "native-calendar-graphite-v2",
+    "compilerSDK": {
+      "path": "/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk",
+      "version": "15.4",
+      "canonicalName": "macosx15.4"
+    },
+    "linkedCompatibility": "13.0",
+    "signatureIdentifier": "local.countdownmanager.app",
+    "renderedAppearanceVerified": false
+  },
+  "architecture": "arm64",
+  "minimumSystemVersion": "13.0",
+  "sourceFreezeVerified": {
+    "head": "dee06cf1b3556ce24b20edf411ccd8dcb95ac489",
+    "branch": "main",
+    "trackedWorktreeClean": true
+  },
+  "auditFinishedUTC": "2026-11-09T17:19:50.189157+00:00"
+}

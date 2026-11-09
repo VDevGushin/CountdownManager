@@ -11,7 +11,7 @@
       "height" : 1176,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114152.49247220834,
+      "observationUptime" : 115992.48451416667,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -25,7 +25,7 @@
       "height" : 1176,
       "highContrast" : false,
       "isKeyWindow" : true,
-      "observationUptime" : 114152.62279933335,
+      "observationUptime" : 115992.61420154167,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -39,7 +39,7 @@
       "height" : 1176,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114152.75670012501,
+      "observationUptime" : 115992.74699341667,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
@@ -53,13 +53,13 @@
       "height" : 1176,
       "highContrast" : true,
       "isKeyWindow" : true,
-      "observationUptime" : 114152.89367058333,
+      "observationUptime" : 115992.87933583334,
       "reduceMotion" : true,
       "scale" : 2,
       "width" : 860
     }
   ],
-  "executableSHA256" : "98658cf72ec9529d1d292da3ff43b5a23e9102f1c2f98e74f0e2a28563563695",
+  "executableSHA256" : "ff430dd40e87b2d796ba110438a8283bca6ae29020acbe4b5a2bd8c4515e2944",
   "scope" : "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
   "syntheticData" : true
 }

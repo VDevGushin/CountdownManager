@@ -2,18 +2,15 @@
 
 ## Current release
 
-Published as Latest is **1.21.1 / build 43** on 2026-11-08 for date-only week deduplication.
-[Release status](releases/v1.21.1.md) and [notes](releases/v1.21.1-notes.md) describe the correction.
-[Public verification](images/v1.21.1/publication.json) records anonymous Latest resolution to v1.21.1 and HTTP 200 with exact audited hashes
-for the ZIP, versioned feed and stable feed. The annotated tag targets reviewed main commit
-`bedd38b064425a2a635f02af878cad9e1bcaadf4`.
-[Package audit](images/v1.21.1/artifact-audit.json) and [exact native acceptance](images/v1.21.1/PROVENANCE.md)
-passed archive/feed authenticity, altered-input rejection, metadata, extraction/codesign, week 5/5
-and help 1/1. The previous public release for the owner's manual update is **1.21.0 / build 42**.
-[Homepage verification](images/v1.21.1/homepage.json) passed anonymous README/image byte comparison
-and browser appearance review. [Final handoff](images/v1.21.1/handoff.json) verified the previous
-1.21.0 installed and running for the owner's manual update. Task scratch, bundles, profiles, caches
-and local package copies were permanently removed after verification.
+Published as Latest is **1.22.0 / build 44** on 2026-11-09 for event copying and its retry fix.
+[Release status](releases/v1.22.0.md) and [notes](releases/v1.22.0-notes.md) describe the change.
+[Public verification](images/v1.22.0/publication.json) records anonymous Latest resolution to v1.22.0
+and HTTP 200 with exact audited hashes for the ZIP, versioned feed and stable feed.
+The annotated tag targets reviewed main commit `dee06cf1b3556ce24b20edf411ccd8dcb95ac489`.
+[Package audit](images/v1.22.0/artifact-audit.json) and
+[exact native acceptance](images/v1.22.0/PROVENANCE.md) passed archive/feed authenticity,
+altered-input rejection, metadata, extraction/codesign, copying 3/3 and help 1/1.
+The previous public release for the owner's manual update is **1.21.1 / build 43**.
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
