@@ -148,6 +148,8 @@ final class DesktopSmokeRuntime {
                     showDesktop()
                     try await wait("link desktop shown") { self.desktopWindow()?.isVisible == true }
                     try await verifyEventLinks()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
+                    try await verifySubtaskTransfer()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
                     try await verifyEventCopy()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
@@ -496,6 +498,22 @@ final class DesktopSmokeRuntime {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try JSONSerialization.data(withJSONObject: trace, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("editor-stability-trace.json"))
+    }
+
+    private func verifySubtaskTransfer() async throws {
+        try await wait("loaded isolated transfer bootstrap") { !self.store.isLoading }
+        try require(store.active.isEmpty, "transfer route requires an empty isolated bootstrap")
+        showDesktop()
+        try await wait("transfer bootstrap desktop") { self.desktopWindow()?.isVisible == true }
+        let bootstrap = try value(desktopWindow(), "transfer bootstrap window")
+        bootstrap.orderOut(nil)
+        captureFixture = ["scenario": "subtask-transfer", "referenceDay": "2026-11-16",
+                          "panelFixture": "Isolated key-capable 390x600 NSPanel; production SwiftUI root"]
+        defer { captureFixture = nil }
+        let scenario = SubtaskTransferSmokeScenario(configuration: configuration, timer: timer, keepAwake: keepAwake,
+            weather: weather, accessibility: accessibilitySettings, visualEnvironment: visualEnvironment,
+            captureThemes: { name, window in try await self.captureWindowThemes(name, window: window) })
+        passed.append(contentsOf: try await scenario.run())
     }
 
     private func verifyEventCopy() async throws {
@@ -3991,17 +4009,36 @@ final class DesktopSmokeRuntime {
     private func requireDetailHeaderBounds() throws {
         let header = try value(controls.frame("desktop.detail.header"), "desktop detail header")
         let edit = try value(controls.frame("desktop.detail.edit"), "desktop edit action")
+        let copy = try value(controls.frame("desktop.detail.copy"), "desktop copy action")
         let delete = try value(controls.frame("desktop.detail.delete"), "desktop delete action")
         let eventID = try value(controls.value("desktop.inspector"), "selected detail identity")
         let favorite = try value(controls.frame("desktop.favorite.\(eventID)"), "desktop favorite action")
-        try require(header.contains(edit) && header.contains(delete) && !edit.intersects(delete),
-                    "desktop edit/delete actions overlap or escape the narrow header")
-        try require([favorite, edit, delete].allSatisfy {
-            header.contains($0) && abs($0.width - 28) < 1 && abs($0.height - 28) < 1
+        let frames = [favorite, edit, copy, delete]
+        let diagnostic = "header=\(header), favorite=\(favorite), edit=\(edit), copy=\(copy), delete=\(delete)"
+        let observation: [String: Any] = [
+            "eventID": eventID, "measurement": "live NSView bounds converted to the window content view",
+            "expectedOrder": ["favorite", "edit", "copy", "delete"],
+            "expectedTargetSize": 28, "expectedAdjacentGap": 8,
+            "frames": ["header": header, "favorite": favorite, "edit": edit, "copy": copy, "delete": delete]
+                .mapValues { [$0.minX, $0.minY, $0.width, $0.height] }
+        ]
+        let receipt = "desktop-detail-header-\(Int(header.width.rounded()))-\(eventID).json"
+        try JSONSerialization.data(withJSONObject: observation, options: [.prettyPrinted, .sortedKeys])
+            .write(to: configuration.homeURL.appendingPathComponent(receipt))
+        try require(frames.allSatisfy { header.contains($0) },
+                    "desktop header actions escape the narrow header: \(diagnostic)")
+        for (index, frame) in frames.enumerated() {
+            for other in frames.dropFirst(index + 1) {
+                try require(!frame.intersects(other), "desktop header actions overlap: \(diagnostic)")
+            }
+        }
+        try require(frames.allSatisfy {
+            abs($0.width - 28) < 1 && abs($0.height - 28) < 1
                 && abs($0.midY - edit.midY) < 1
-        }, "desktop header actions do not retain equal icon-only targets")
-        try require(abs(edit.minX - favorite.maxX - 8) < 1 && abs(delete.minX - edit.maxX - 8) < 1,
-                    "desktop header icon spacing is not uniform")
+        }, "desktop header actions do not retain equal icon-only targets: \(diagnostic)")
+        try require(zip(frames, frames.dropFirst()).allSatisfy { previous, next in
+            abs(next.minX - previous.maxX - 8) < 1
+        }, "desktop header icon order or spacing is incorrect: \(diagnostic)")
     }
 
     private func verifyDesktopDeletion(
@@ -4279,6 +4316,20 @@ final class DesktopSmokeRuntime {
             "executableSHA256": digest, "captures": captures, "syntheticData": true,
             "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture"
         ]
+        if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
+            manifest["scope"] = "Unreleased native single-subtask transfer; isolated mini-panel and desktop inline controls"
+            manifest["subtaskTransfer"] = [
+                "referenceDay": "2026-11-16", "clock": "Injected Store civil clock; system clock unchanged",
+                "miniPanelFixture": "Isolated key-capable NSPanel at 390x600 with production SwiftUI root",
+                "actions": "Registry invokes production arrow/Cancel/confirm actions; target/date changes use EventEditorSession API",
+                "failure": "Injected repository write error checks unchanged JSON and explicit retry through native confirm action",
+                "limitations": "No physical menu/date input, status-item, app-switch, Spaces, VoiceOver or compositor timing claim"
+            ]
+            if let url = Bundle.main.url(forResource: "NativeBuildProvenance", withExtension: "json"),
+               let provenance = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any] {
+                manifest["nativeBuildProvenance"] = provenance
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
             manifest["scope"] = "Unreleased native event-copy actions and shared editor; isolated in-process rendering and actions"
             manifest["eventCopy"] = [

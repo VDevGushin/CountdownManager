@@ -388,6 +388,7 @@ enum UIChecks {
         try await testWeekCreationWorkflows(in: directory.appendingPathComponent("week-creation"))
         try await testRetentionWorkflows(in: directory.appendingPathComponent("retention"))
         try await testEventCopyWorkflows(in: directory.appendingPathComponent("event-copy"))
+        try await testSubtaskTransferWorkflows(in: directory.appendingPathComponent("subtask-transfer"))
         await testAsyncWorkflowRegressions()
         await MainActor.run {
             testIsolatedStoreCannotManageLoginItem(

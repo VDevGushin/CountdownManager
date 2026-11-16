@@ -448,7 +448,7 @@ It owns operations including:
 - event save and validation;
 - atomic construction of missing days for a reviewed week range;
 - event deletion;
-- subtask CRUD and completion toggling.
+- subtask CRUD, completion toggling and atomic transfer between event owners.
 
 It stores the optional explicit favorite in `primaryID`. Normalization expires only events whose date ended and whose `keepsAfterDate` is false, and clears an expired or invalid selection; it does not populate an absent selection. An empty `emoji` string represents no additional icon, preserving the existing JSON field shape.
 
@@ -547,6 +547,55 @@ Date-sensitive event state is refreshed from timers and relevant macOS lifecycle
 Launch at login is integrated through `SMAppService.mainApp`. Settings binds to the existing
 `Store.loginStatus` and actions, including the `requiresApproval` System Settings route; it does
 not maintain another login preference.
+
+### Subtask transfer
+
+`CountdownData.transferSubtask(from:subtaskID:to:on:today:)` validates a single incomplete
+subtask and constructs one candidate containing its removal from the source and append to the
+recipient. It preserves the subtask UUID and text, remaining row order and unrelated event
+metadata. An explicit recipient must be available on the requested today/future date and differ
+from the source. A nil recipient creates an ordinary automatically titled day only when that date
+contains no available event. The ten-subtask limit includes completed rows.
+
+`Store.transferSubtask(eventID:subtaskID:to:on:)` is the application mutation boundary. It refreshes
+the current civil day, applies domain validation and commits the complete candidate through the
+existing serialized repository/revision path. Transfer calls `commit` with `publishImmediately`
+false, retaining the accepted source checklist while the write is pending. Ordinary callers keep
+the default immediate-publication path. The local `isTransferringSubtask` barrier participates in
+pending persistence, serializes overlapping mutations and defers normalization until the transfer
+settles. The resulting event identifies the successful recipient. Rejection or persistence failure
+leaves the accepted source/recipient data intact.
+`Store.save(_:primary:requireExisting:)` snapshots the same-ID event and whether a transfer is
+pending before awaiting that barrier. If it waited for a transfer and the same-ID event changed,
+it rejects the stale whole-event save with a conflict explanation before another write. This
+protects both a source edit that could restore a moved row and a recipient edit that could erase
+it. An unrelated event, including one on the same date, remains saveable. A failed transfer leaves
+its original event unchanged and permits its queued save. Saves that did not wait for a transfer
+retain their existing overlap behaviour.
+
+The transfer changes subtask ownership in the existing schema, with no new subtask date field,
+file copying or independent task persistence.
+
+`EventEditorSession.subtaskTransfer` owns a separate published inline draft containing source
+identity, task identity, surface, destination date and recipient. `hasActiveEditor` includes this
+reservation for mutation/updater admission, while the existing panel/desktop full-editor
+presentation predicates continue to refer only to the full editor. Inline transfer therefore
+keeps the underlying checklist visible. Only one full editor or transfer can reserve this owner.
+Both saved-checklist surfaces route confirmation through the same Store operation. Completion
+controls are disabled during the reservation, with the checkbox and arrow kept as distinct targets.
+
+`beginSubtaskTransferSave` and `finishSubtaskTransferSave` own the draft's saving reservation
+through `subtaskTransferIsSaving`. While saving, the session rejects destination edits, cancellation
+and replacement. The desktop also blocks selection, close and explicit switching to the mini-panel
+until that reservation settles. Failed persistence releases the saving flag while retaining the
+draft for retry. Success releases the complete transfer reservation.
+
+The mini-panel retains the draft through hide/show. Idle Cancel releases it. Reconciliation releases
+an unavailable or completed source task outside a save. Desktop selection changes, desktop close
+and explicit switching to the mini-panel cancel an idle transfer owned by that surface so it cannot
+retain an invisible editing lock. The opposite surface reuses its existing editor-busy notice.
+A sole eligible recipient is selected by the inline form, while a multi-recipient date requires an
+explicit selection.
 
 ### Event copying
 

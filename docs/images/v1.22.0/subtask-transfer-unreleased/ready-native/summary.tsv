@@ -1,0 +1,15 @@
+label	result
+general	PASS
+collapse	PASS
+editor	PASS
+continuity-1	PASS
+continuity-2	PASS
+continuity-3	PASS
+desktop	PASS
+attachments	PASS
+weather	PASS
+empty-state	PASS
+week	PASS
+event-copy	PASS
+subtask-transfer	PASS
+editor-stability	PASS

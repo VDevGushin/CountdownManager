@@ -109,8 +109,16 @@ struct ManagerView: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("root.window")
         .uiSmokeControl(id: "root.window", value: { rootIdentity.uuidString })
-        .onChange(of: store.data) { _ in closeUnavailableAttachmentList() }
-        .onChange(of: store.today) { _ in closeUnavailableAttachmentList() }
+        .onChange(of: store.data) { _ in
+            closeUnavailableAttachmentList()
+            if !store.hasPendingPersistence {
+                editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
+            }
+        }
+        .onChange(of: store.today) { _ in
+            closeUnavailableAttachmentList()
+            editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
+        }
         .onChange(of: attachmentPreview.selection) { selection in
             if selection == nil, !attachmentLibraryIsSource { attachmentListEventID = nil }
         }
@@ -120,8 +128,9 @@ struct ManagerView: View {
         let displayed = store.active
         let primaryID = store.data.primaryID
         return VStack(spacing: 0) {
-            if editorSession.desktopIsPresented {
-                Text("Редактор открыт в основном окне")
+            if editorSession.desktopIsPresented || editorSession.subtaskTransfer?.surface == .desktop {
+                Text(editorSession.subtaskTransfer?.surface == .desktop
+                     ? "Перенос подзадачи открыт в основном окне" : "Редактор открыт в основном окне")
                     .font(.system(size: 11))
                     .padding(8)
                     .accessibilityIdentifier("desktop.editor.active")
@@ -242,7 +251,7 @@ struct ManagerView: View {
                 .help(EventUIStrings.createDay).accessibilityLabel(EventUIStrings.createDay)
                 .accessibilityIdentifier("day.add")
                 .uiSmokeControl(id: "day.add", action: toggleDayChoices)
-                .disabled(!store.eventCreationIsAvailable)
+                .disabled(!store.eventCreationIsAvailable || editorSession.hasActiveEditor)
             Button(action: add) {
                 Image(systemName: "plus")
                     .frame(width: 31, height: 31)
@@ -253,7 +262,7 @@ struct ManagerView: View {
                 .help(EventUIStrings.addEvent).accessibilityLabel(EventUIStrings.addEvent)
                 .accessibilityIdentifier("event.add")
                 .uiSmokeControl(id: "event.add", action: add)
-                .disabled(!store.eventCreationIsAvailable)
+                .disabled(!store.eventCreationIsAvailable || editorSession.hasActiveEditor)
         }
         .padding(.horizontal, 16)
         .padding(.top, 12)
@@ -289,7 +298,7 @@ struct ManagerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 12)
-        .disabled(!store.eventCreationIsAvailable)
+        .disabled(!store.eventCreationIsAvailable || editorSession.hasActiveEditor)
     }
 
     private var plannerAccent: Color {
@@ -588,7 +597,7 @@ struct ManagerView: View {
     }
 
     private func openSettings() {
-        guard !showingEditor, attachmentListEventID == nil, !store.hasPendingPersistence else { return }
+        guard !editorSession.hasActiveEditor, attachmentListEventID == nil, !store.hasPendingPersistence else { return }
         attachmentPreview.close()
         attachmentListEventID = nil
         showingSettings = true
@@ -899,41 +908,50 @@ private struct SubtaskChecklistView: View {
     @ViewBuilder
     private func subtaskRows(_ subtasks: [Subtask]) -> some View {
         ForEach(subtasks) { subtask in
-            HStack(spacing: 0) {
-                Toggle(isOn: Binding(
-                    get: { subtask.isCompleted },
-                    set: { _ in toggleSubtask(subtask.id) }
-                )) {
-                    Text(subtask.text)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .strikethrough(subtask.isCompleted)
-                        .foregroundStyle(subtask.isCompleted
-                            ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
-                        .help(subtask.text)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 6)
-                        .contentShape(Rectangle())
-                }
-                .toggleStyle(.checkbox)
-                .tint(subtask.isCompleted
-                    ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
-                    : AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
-                .accessibilityLabel("\(subtask.isCompleted ? "Отметить невыполненной" : "Отметить выполненной"): \(subtask.text)")
-                .accessibilityIdentifier("subtask.toggle.\(subtask.id.uuidString)")
-                .uiSmokeControl(
-                    id: "subtask.toggle.\(subtask.id.uuidString)",
-                    action: { toggleSubtask(subtask.id) },
-                    value: {
-                        let isCompleted = store.active
-                            .first(where: { $0.id == item.id })?
-                            .subtasks.first(where: { $0.id == subtask.id })?
-                            .isCompleted
-                        return isCompleted == true ? "completed" : "active"
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 0) {
+                    Toggle(isOn: Binding(
+                        get: { subtask.isCompleted },
+                        set: { _ in toggleSubtask(subtask.id) }
+                    )) {
+                        Text(subtask.text)
+                            .font(.system(size: 12))
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .strikethrough(subtask.isCompleted)
+                            .foregroundStyle(subtask.isCompleted
+                                ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
+                            .help(subtask.text)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 6)
+                            .contentShape(Rectangle())
                     }
-                )
+                    .toggleStyle(.checkbox)
+                    .disabled(editorSession.hasActiveEditor)
+                    .tint(subtask.isCompleted
+                        ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+                        : AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
+                    .accessibilityLabel("\(subtask.isCompleted ? "Отметить невыполненной" : "Отметить выполненной"): \(subtask.text)")
+                    .accessibilityIdentifier("subtask.toggle.\(subtask.id.uuidString)")
+                    .uiSmokeControl(
+                        id: "subtask.toggle.\(subtask.id.uuidString)",
+                        action: { toggleSubtask(subtask.id) },
+                        value: {
+                            let isCompleted = store.active
+                                .first(where: { $0.id == item.id })?
+                                .subtasks.first(where: { $0.id == subtask.id })?
+                                .isCompleted
+                            return isCompleted == true ? "completed" : "active"
+                        }
+                    )
 
+                    if !subtask.isCompleted {
+                        SubtaskTransferButton(store: store, editorSession: editorSession, eventID: item.id,
+                                              subtask: subtask, surface: .panel)
+                    }
+                }
+                SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
+                                    subtaskID: subtask.id, surface: .panel)
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")

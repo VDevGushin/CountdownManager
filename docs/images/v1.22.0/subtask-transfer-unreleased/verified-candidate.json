@@ -1,0 +1,45 @@
+{
+  "app": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-verified/Countdown Manager.app",
+  "executableSHA256": "140dd52c7a14ab88e6cf21d1b0835a2802c28ae06a8297536ae0b60178e36326",
+  "version": "1.22.0",
+  "build": "44",
+  "nativeBuildProvenance": {
+    "schemaVersion": 1,
+    "styleVersion": "native-calendar-graphite-v2",
+    "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "sourceAuthoritySHA256": {
+      "docs/PRODUCT.md": "46a47fbd9dbd402d2f9231fb6c37d563206ef585826e37ba8c7a4b56c1adea2d",
+      "DESIGN.md": "630f6b9a979da101d0eb00b1df6faba473a8debe7053eff23ccf3825c6e9c4f3",
+      "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "compilerSDK": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version": "27.2",
+      "canonicalName": "macosx27.2"
+    },
+    "swiftToolchain": {
+      "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+      "version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    },
+    "linkedCompatibility": "13.0",
+    "deploymentTarget": "13.0",
+    "createdAtUTC": "2026-11-16T12:02:39.226359+00:00",
+    "application": {
+      "identifier": "local.countdownmanager.app",
+      "version": "1.22.0",
+      "build": "44",
+      "executable": "CountdownManager"
+    },
+    "linkedMachO": [
+      {
+        "architecture": "thin",
+        "command": "LC_BUILD_VERSION",
+        "platform": "1",
+        "minos": "13.0",
+        "sdk": "13.0"
+      }
+    ],
+    "renderedAppearanceVerified": false
+  },
+  "status": "native-regression-in-progress"
+}

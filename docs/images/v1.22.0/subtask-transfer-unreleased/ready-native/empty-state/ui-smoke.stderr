@@ -1,0 +1,4 @@
+UISmoke
+✓ empty-state dates/defaults, no auto-save, Cancel, retained draft, first Save, last deletion, ordinary plus and day routes
+✓ midnight retains stale ordinary draft, rejects Save, updates empty calendar and expires the last saved event
+PASS: 2/2

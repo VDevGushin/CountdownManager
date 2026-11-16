@@ -1,0 +1,313 @@
+{
+  "source": {
+    "path": ".build/subtask-transfer-focus-probe/Countdown Manager.app/Contents/MacOS/CountdownManager",
+    "wholeFileSHA256": "7096250cb9ba0e13599bdd54272d1b7b639ef78dd6f4931d149efa42c625492c",
+    "sections": {
+      "__TEXT,__text": {
+        "size": 6103756,
+        "sha256": "d373d0b3905c0fbd29198f4eaa6443f18e5f456989fc5407c5fb2ff335c47982"
+      },
+      "__TEXT,__stubs": {
+        "size": 12156,
+        "sha256": "ba846931e473254821343057b0e248df92cb55b8f1e0b2f8b0a438b5e4f083a3"
+      },
+      "__TEXT,__objc_stubs": {
+        "size": 16192,
+        "sha256": "a342a6d72258fffb402766eeb02d3205fb5fa05bd51b316e37aca6bc5c4740bc"
+      },
+      "__TEXT,__objc_methlist": {
+        "size": 8556,
+        "sha256": "4b395ce0cadfacc93457c1b44d3cf024e16651ecf42ebae30873b3ef4bcf6b32"
+      },
+      "__TEXT,__const": {
+        "size": 82864,
+        "sha256": "0b11cb7ef5dddd7bbf710ff36a37ec95e3e3ea335c73eb38d4d4ae556e8f736f"
+      },
+      "__TEXT,__constg_swiftt": {
+        "size": 13696,
+        "sha256": "eb680afaa27c958ccf1d9268ce5fe3df44cd80326245fa0962eeab9963465ed8"
+      },
+      "__TEXT,__swift5_typeref": {
+        "size": 584315,
+        "sha256": "7365fc01e55d527fc784d170ad320ed7e3ef4a8d88f2186c35860eaa12a50deb"
+      },
+      "__TEXT,__swift5_reflstr": {
+        "size": 14636,
+        "sha256": "1783203e60c3070f1a471f70dba0be3ac8a537dc6422409422a03cdfdcb396cd"
+      },
+      "__TEXT,__swift5_fieldmd": {
+        "size": 18420,
+        "sha256": "c129907ca6ab5ac2ac9f5665647dcfd4e992820ce4bd0f9ee5d5dd39802feef2"
+      },
+      "__TEXT,__cstring": {
+        "size": 161957,
+        "sha256": "868b544611a638c496596e795310573de117a78131e489d1e0b9fb5ffd6ef716"
+      },
+      "__TEXT,__swift5_builtin": {
+        "size": 300,
+        "sha256": "7b2a10ce4c04bfa74d0c7920e3161e88c923612f33be3366e60fa46b0624d24b"
+      },
+      "__TEXT,__swift5_assocty": {
+        "size": 3344,
+        "sha256": "ac4e8325a24b4c8772ef10b7638ec66dc4797ce67f5a18d2b81ba4b888c7be3a"
+      },
+      "__TEXT,__swift5_proto": {
+        "size": 1784,
+        "sha256": "2371d6cb389c4035787fbcad25094ac3cccd037d3e1330c1e5828c920779d659"
+      },
+      "__TEXT,__swift5_types": {
+        "size": 1088,
+        "sha256": "43fb997dfa8e183322a183d681dba59cf29caa5be03969df9c4c1cf72500dd5b"
+      },
+      "__TEXT,__objc_classname": {
+        "size": 4259,
+        "sha256": "94d14854eedb86bcb50b2c6b04098a145f7a2f65eee45936feecea3cf49c6795"
+      },
+      "__TEXT,__objc_methname": {
+        "size": 34421,
+        "sha256": "b2df7d6ecd4184c1ae1b801852a07383a032ae48a444821e04eed74c58025707"
+      },
+      "__TEXT,__swift5_entry": {
+        "size": 8,
+        "sha256": "10ca9632d46d3010651ae8c647091d81e2062ff87bbdd7cb9bfcfeabcfd38740"
+      },
+      "__TEXT,__swift5_capture": {
+        "size": 16476,
+        "sha256": "28232403f5fdb81395719b38d178ad71e01866eaf1190be7868b112e0ffadd83"
+      },
+      "__TEXT,__objc_methtype": {
+        "size": 9045,
+        "sha256": "1ddaa3b8b8e8997122ba063512010a4b63bf6439eb9f78cc274c71fcab797170"
+      },
+      "__TEXT,__swift_as_entry": {
+        "size": 1280,
+        "sha256": "f3c304604bebe9d75a38b38081e16af41930d451745624fddd358e534936d220"
+      },
+      "__TEXT,__swift_as_cont": {
+        "size": 20328,
+        "sha256": "803bebd0656567086682dbf4c624f3a028c703809219723c904a6366dd6ca8dc"
+      },
+      "__TEXT,__swift_as_ret": {
+        "size": 8848,
+        "sha256": "5f13e3bd3ff962e1e623e0fc15357543b50065db4c8704b08e9be2da0bc81b0d"
+      },
+      "__TEXT,__oslogstring": {
+        "size": 192,
+        "sha256": "694b97618bd9177414dcf5c63e718072dc1d70610ad28a496becb612f2036c49"
+      },
+      "__TEXT,__swift5_protos": {
+        "size": 12,
+        "sha256": "ee670106946d021494f8db045828ec33bfbcb8938022810092c8cdc038a9f68e"
+      },
+      "__TEXT,__unwind_info": {
+        "size": 87064,
+        "sha256": "693ddae2159e00fe8b4ed30fe739f4bd4d7fc7ef53005a8e915f7c214ed84a45"
+      },
+      "__TEXT,__eh_frame": {
+        "size": 345668,
+        "sha256": "0233ea01e974d2cdcf65beeb68630030eaf6ea3a1ac9d94964ddd453355c37aa"
+      },
+      "__DATA_CONST,__const": {
+        "size": 61288,
+        "sha256": "c0540fcedd6e115462ed0b7c300d7b2948cbed81bf0d07cc3f1df0473711039d"
+      },
+      "__DATA_CONST,__objc_classlist": {
+        "size": 448,
+        "sha256": "40a115744f2a813e4c15ecb3633cadcb0f74d8cc9354a627158e661d10e0e27c"
+      },
+      "__DATA_CONST,__objc_protolist": {
+        "size": 112,
+        "sha256": "ced1605f8309d96493906fb4094fa19824b2b8ae5c85fa13cfb9eeb72572e347"
+      },
+      "__DATA_CONST,__objc_imageinfo": {
+        "size": 8,
+        "sha256": "7408fcdda372aaed9b8d62d262bd8e7ad4da66abeb61efb31e7c98020b1321ce"
+      },
+      "__DATA_CONST,__got": {
+        "size": 13592,
+        "sha256": "4583e4b748dde2297b2cdf37170fa3e344d2a2d289fed73c5ad549a00cf0985e"
+      },
+      "__DATA,__objc_const": {
+        "size": 22336,
+        "sha256": "734f9f552d9862628662ce9b01aabaafe10baccd6fb90f27ee6fd3018d1a0f8f"
+      },
+      "__DATA,__objc_selrefs": {
+        "size": 8160,
+        "sha256": "b010d6fb6b55e15a59f2d2bccb64ae202ec7b8a7314bc37ae5fb8c4ad8b491aa"
+      },
+      "__DATA,__objc_protorefs": {
+        "size": 112,
+        "sha256": "28fb60a92d6a249c1d316c9e714e0f7971a740193a601881808d30fa2096dbba"
+      },
+      "__DATA,__objc_classrefs": {
+        "size": 592,
+        "sha256": "249abfed5813a3c4479167396715aeb055e23fafd7a3941d6ba8e155bfd285f3"
+      },
+      "__DATA,__objc_data": {
+        "size": 5232,
+        "sha256": "d864a15643a9c4605a91e1d7f95dbd88eb3dab9208684c8d1b40d42a98efe549"
+      },
+      "__DATA,__data": {
+        "size": 75696,
+        "sha256": "20025045cdd9fc1e4768e929b7de70fc6c0377459fb9095f419df88c03fa289c"
+      }
+    }
+  },
+  "qaClone": {
+    "path": "/private/tmp/countdown-focus-probe-manual/Countdown Focus QA.app/Contents/MacOS/CountdownManager",
+    "wholeFileSHA256": "6297a481b436ba9670ded36d65cdf80f9360a8342aa24b0bac595b1f1d108a32",
+    "sections": {
+      "__TEXT,__text": {
+        "size": 6103756,
+        "sha256": "d373d0b3905c0fbd29198f4eaa6443f18e5f456989fc5407c5fb2ff335c47982"
+      },
+      "__TEXT,__stubs": {
+        "size": 12156,
+        "sha256": "ba846931e473254821343057b0e248df92cb55b8f1e0b2f8b0a438b5e4f083a3"
+      },
+      "__TEXT,__objc_stubs": {
+        "size": 16192,
+        "sha256": "a342a6d72258fffb402766eeb02d3205fb5fa05bd51b316e37aca6bc5c4740bc"
+      },
+      "__TEXT,__objc_methlist": {
+        "size": 8556,
+        "sha256": "4b395ce0cadfacc93457c1b44d3cf024e16651ecf42ebae30873b3ef4bcf6b32"
+      },
+      "__TEXT,__const": {
+        "size": 82864,
+        "sha256": "0b11cb7ef5dddd7bbf710ff36a37ec95e3e3ea335c73eb38d4d4ae556e8f736f"
+      },
+      "__TEXT,__constg_swiftt": {
+        "size": 13696,
+        "sha256": "eb680afaa27c958ccf1d9268ce5fe3df44cd80326245fa0962eeab9963465ed8"
+      },
+      "__TEXT,__swift5_typeref": {
+        "size": 584315,
+        "sha256": "7365fc01e55d527fc784d170ad320ed7e3ef4a8d88f2186c35860eaa12a50deb"
+      },
+      "__TEXT,__swift5_reflstr": {
+        "size": 14636,
+        "sha256": "1783203e60c3070f1a471f70dba0be3ac8a537dc6422409422a03cdfdcb396cd"
+      },
+      "__TEXT,__swift5_fieldmd": {
+        "size": 18420,
+        "sha256": "c129907ca6ab5ac2ac9f5665647dcfd4e992820ce4bd0f9ee5d5dd39802feef2"
+      },
+      "__TEXT,__cstring": {
+        "size": 161957,
+        "sha256": "868b544611a638c496596e795310573de117a78131e489d1e0b9fb5ffd6ef716"
+      },
+      "__TEXT,__swift5_builtin": {
+        "size": 300,
+        "sha256": "7b2a10ce4c04bfa74d0c7920e3161e88c923612f33be3366e60fa46b0624d24b"
+      },
+      "__TEXT,__swift5_assocty": {
+        "size": 3344,
+        "sha256": "ac4e8325a24b4c8772ef10b7638ec66dc4797ce67f5a18d2b81ba4b888c7be3a"
+      },
+      "__TEXT,__swift5_proto": {
+        "size": 1784,
+        "sha256": "2371d6cb389c4035787fbcad25094ac3cccd037d3e1330c1e5828c920779d659"
+      },
+      "__TEXT,__swift5_types": {
+        "size": 1088,
+        "sha256": "43fb997dfa8e183322a183d681dba59cf29caa5be03969df9c4c1cf72500dd5b"
+      },
+      "__TEXT,__objc_classname": {
+        "size": 4259,
+        "sha256": "94d14854eedb86bcb50b2c6b04098a145f7a2f65eee45936feecea3cf49c6795"
+      },
+      "__TEXT,__objc_methname": {
+        "size": 34421,
+        "sha256": "b2df7d6ecd4184c1ae1b801852a07383a032ae48a444821e04eed74c58025707"
+      },
+      "__TEXT,__swift5_entry": {
+        "size": 8,
+        "sha256": "10ca9632d46d3010651ae8c647091d81e2062ff87bbdd7cb9bfcfeabcfd38740"
+      },
+      "__TEXT,__swift5_capture": {
+        "size": 16476,
+        "sha256": "28232403f5fdb81395719b38d178ad71e01866eaf1190be7868b112e0ffadd83"
+      },
+      "__TEXT,__objc_methtype": {
+        "size": 9045,
+        "sha256": "1ddaa3b8b8e8997122ba063512010a4b63bf6439eb9f78cc274c71fcab797170"
+      },
+      "__TEXT,__swift_as_entry": {
+        "size": 1280,
+        "sha256": "f3c304604bebe9d75a38b38081e16af41930d451745624fddd358e534936d220"
+      },
+      "__TEXT,__swift_as_cont": {
+        "size": 20328,
+        "sha256": "803bebd0656567086682dbf4c624f3a028c703809219723c904a6366dd6ca8dc"
+      },
+      "__TEXT,__swift_as_ret": {
+        "size": 8848,
+        "sha256": "5f13e3bd3ff962e1e623e0fc15357543b50065db4c8704b08e9be2da0bc81b0d"
+      },
+      "__TEXT,__oslogstring": {
+        "size": 192,
+        "sha256": "694b97618bd9177414dcf5c63e718072dc1d70610ad28a496becb612f2036c49"
+      },
+      "__TEXT,__swift5_protos": {
+        "size": 12,
+        "sha256": "ee670106946d021494f8db045828ec33bfbcb8938022810092c8cdc038a9f68e"
+      },
+      "__TEXT,__unwind_info": {
+        "size": 87064,
+        "sha256": "693ddae2159e00fe8b4ed30fe739f4bd4d7fc7ef53005a8e915f7c214ed84a45"
+      },
+      "__TEXT,__eh_frame": {
+        "size": 345668,
+        "sha256": "0233ea01e974d2cdcf65beeb68630030eaf6ea3a1ac9d94964ddd453355c37aa"
+      },
+      "__DATA_CONST,__const": {
+        "size": 61288,
+        "sha256": "c0540fcedd6e115462ed0b7c300d7b2948cbed81bf0d07cc3f1df0473711039d"
+      },
+      "__DATA_CONST,__objc_classlist": {
+        "size": 448,
+        "sha256": "40a115744f2a813e4c15ecb3633cadcb0f74d8cc9354a627158e661d10e0e27c"
+      },
+      "__DATA_CONST,__objc_protolist": {
+        "size": 112,
+        "sha256": "ced1605f8309d96493906fb4094fa19824b2b8ae5c85fa13cfb9eeb72572e347"
+      },
+      "__DATA_CONST,__objc_imageinfo": {
+        "size": 8,
+        "sha256": "7408fcdda372aaed9b8d62d262bd8e7ad4da66abeb61efb31e7c98020b1321ce"
+      },
+      "__DATA_CONST,__got": {
+        "size": 13592,
+        "sha256": "4583e4b748dde2297b2cdf37170fa3e344d2a2d289fed73c5ad549a00cf0985e"
+      },
+      "__DATA,__objc_const": {
+        "size": 22336,
+        "sha256": "734f9f552d9862628662ce9b01aabaafe10baccd6fb90f27ee6fd3018d1a0f8f"
+      },
+      "__DATA,__objc_selrefs": {
+        "size": 8160,
+        "sha256": "b010d6fb6b55e15a59f2d2bccb64ae202ec7b8a7314bc37ae5fb8c4ad8b491aa"
+      },
+      "__DATA,__objc_protorefs": {
+        "size": 112,
+        "sha256": "28fb60a92d6a249c1d316c9e714e0f7971a740193a601881808d30fa2096dbba"
+      },
+      "__DATA,__objc_classrefs": {
+        "size": 592,
+        "sha256": "249abfed5813a3c4479167396715aeb055e23fafd7a3941d6ba8e155bfd285f3"
+      },
+      "__DATA,__objc_data": {
+        "size": 5232,
+        "sha256": "d864a15643a9c4605a91e1d7f95dbd88eb3dab9208684c8d1b40d42a98efe549"
+      },
+      "__DATA,__data": {
+        "size": 75696,
+        "sha256": "20025045cdd9fc1e4768e929b7de70fc6c0377459fb9095f419df88c03fa289c"
+      }
+    }
+  },
+  "sameFileBackedSections": true,
+  "sectionCount": 37,
+  "scope": "All file-backed Mach-O sections; external Info.plist and embedded code-signature blob differ after QA identity re-signing"
+}

@@ -1,0 +1,6 @@
+RUN general
+UISmoke failed; result: /private/tmp/countdown-readiness-native.v3XjBL/general/ui-smoke-result.txt
+UISmoke
+Window visible=true, key=false, loading=false, saveEnabled=false
+FAIL after 4 scenarios: clicking completion alert changed app focus
+Actual: focus=editor.title, nativeFieldID=nil, responder=nil, delegate=nil, delegateFrame=nil, title=nil, date=nil, emoji=nil, editor.scroll=nil, editor.title=nil, editor.note=nil, FAIL general evidence=/private/tmp/countdown-readiness-native.v3XjBL

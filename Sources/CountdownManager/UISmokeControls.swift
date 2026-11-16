@@ -209,6 +209,7 @@ private struct UISmokeControlModifier: ViewModifier {
 
     private var usesNativeRegistration: Bool {
         id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.") || id.hasPrefix("event.copy.")
+            || id.hasPrefix("subtask.transfer.")
             || id.hasPrefix("desktop.event.")
             || id.hasPrefix("editor.links") || id.hasPrefix("desktop.links.") || id.hasPrefix("panel.links.")
             || ["creation.week.cancel", "creation.week.confirm"].contains(id)
@@ -220,11 +221,11 @@ private struct UISmokeControlModifier: ViewModifier {
         switch id {
         case "desktop.overview.header", "desktop.overview.date", "desktop.weather.overview", "desktop.browser", "editor.scroll",
              "desktop.detail.identity", "desktop.detail.note", "desktop.detail.checklist",
-             "desktop.detail.copy", "desktop.detail.edit", "desktop.detail.delete": return true
+             "desktop.detail.header", "desktop.detail.copy", "desktop.detail.edit", "desktop.detail.delete": return true
         default:
             // Custom Layout placement can leave geometry preferences stale after a retained card resizes.
             return ["event.copy.", "event.edit.", "event.primary.", "desktop.card.", "desktop.favorite.identity.", "desktop.favorite.metadata.",
-                    "desktop.event.", "desktop.presentation.", "desktop.summary.", "desktop.collection.remaining.",
+                    "desktop.event.", "desktop.favorite.", "desktop.presentation.", "desktop.summary.", "desktop.collection.remaining.",
                     "desktop.date.browser.", "desktop.weather.browser.", "desktop.attachments.indicator.", "desktop.links.indicator.",
                     "editor.attachment.thumbnail.", "editor.attachment.label.",
                     "desktop.attachment.thumbnail.", "panel.attachment.thumbnail.",

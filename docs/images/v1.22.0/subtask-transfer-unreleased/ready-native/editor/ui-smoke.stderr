@@ -1,0 +1,7 @@
+UISmoke
+✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry
+PASS: 5/5

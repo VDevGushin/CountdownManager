@@ -126,6 +126,8 @@ private func testDesktopMonthGrouping() {
 
 @MainActor
 func testDesktopEditorOwnership() {
+    testSubtaskTransferOwnership()
+    testSubtaskTransferReconciliation()
     let session = EventEditorSession()
     precondition(!session.hasActiveEditor && !session.isPresented && !session.desktopIsPresented)
     precondition(session.beginPanelEditor())
@@ -164,4 +166,144 @@ func testDesktopEditorOwnership() {
     precondition(!updates.shouldCancelUpdateTermination)
     session.endDesktopEditor()
     precondition(!session.hasActiveEditor)
+}
+
+@MainActor
+private func testSubtaskTransferOwnership() {
+    let today = Day(Date())
+    let tomorrow = Day(Day.calendar.date(byAdding: .day, value: 1, to: today.date())!)
+    let session = EventEditorSession()
+    let eventID = UUID()
+    let subtaskID = UUID()
+    let targetID = UUID()
+    precondition(session.beginPanelEditor())
+    precondition(!session.beginSubtaskTransfer(eventID: eventID, subtaskID: subtaskID,
+                                              surface: .desktop, date: tomorrow))
+    session.endPanelEditor()
+    precondition(session.beginDesktopEditor())
+    precondition(!session.beginSubtaskTransfer(eventID: eventID, subtaskID: subtaskID,
+                                              surface: .panel, date: tomorrow))
+    session.endDesktopEditor()
+
+    for surface in [EventEditorSession.Surface.panel, .desktop] {
+        precondition(session.beginSubtaskTransfer(eventID: eventID, subtaskID: subtaskID,
+                                                 surface: surface, date: tomorrow))
+        precondition(session.hasActiveEditor && !session.isPresented && !session.desktopIsPresented)
+        precondition(session.surface == nil && session.subtaskTransfer?.surface == surface)
+        precondition(session.subtaskTransfer?.eventID == eventID)
+        precondition(session.subtaskTransfer?.subtaskID == subtaskID)
+        precondition(session.subtaskTransfer?.date == tomorrow && session.subtaskTransfer?.targetEventID == nil)
+        precondition(!session.beginPanelEditor() && !session.beginDesktopEditor())
+        precondition(!session.beginSubtaskTransfer(eventID: UUID(), subtaskID: UUID(),
+                                                  surface: .panel, date: today))
+        precondition(!session.beginSubtaskTransfer(eventID: UUID(), subtaskID: UUID(),
+                                                  surface: .desktop, date: today))
+        session.endPanelEditor()
+        session.endDesktopEditor()
+        session.isPresented = false
+        precondition(session.subtaskTransfer?.surface == surface)
+        session.isPresented = true
+        precondition(!session.isPresented && session.subtaskTransfer?.surface == surface)
+        session.selectSubtaskTransferTarget(targetID)
+        precondition(session.subtaskTransfer?.targetEventID == targetID)
+        session.updateSubtaskTransfer(date: today)
+        precondition(session.subtaskTransfer?.date == today && session.subtaskTransfer?.targetEventID == nil)
+        session.selectSubtaskTransferTarget(targetID)
+        session.selectSubtaskTransferTarget(nil)
+        precondition(session.subtaskTransfer?.targetEventID == nil)
+        precondition(updateRestartBlockReason(editorIsPresented: session.hasActiveEditor,
+                                             persistenceIsBusy: false, timerIsRunning: false) != nil)
+        testSubtaskTransferSaveReservation(session, today: today, tomorrow: tomorrow)
+        session.endSubtaskTransfer()
+        precondition(!session.hasActiveEditor && session.subtaskTransfer == nil && !session.subtaskTransferIsSaving)
+    }
+    session.updateSubtaskTransfer(date: tomorrow)
+    session.selectSubtaskTransferTarget(targetID)
+    session.endSubtaskTransfer()
+    precondition(!session.hasActiveEditor)
+    precondition(session.beginPanelEditor())
+    session.endSubtaskTransfer()
+    precondition(session.isPresented)
+    session.endPanelEditor()
+}
+
+@MainActor
+private func testSubtaskTransferSaveReservation(_ session: EventEditorSession, today: Day, tomorrow: Day) {
+    let expectedDraft = session.subtaskTransfer!
+    var staleDraft = expectedDraft
+    staleDraft.date = tomorrow
+    precondition(!session.beginSubtaskTransferSave(staleDraft) && !session.subtaskTransferIsSaving)
+    precondition(session.beginSubtaskTransferSave(expectedDraft))
+    precondition(session.subtaskTransferIsSaving && session.hasActiveEditor)
+    precondition(!session.beginSubtaskTransferSave(expectedDraft))
+    session.endSubtaskTransfer()
+    session.updateSubtaskTransfer(date: tomorrow)
+    session.selectSubtaskTransferTarget(UUID())
+    session.reconcileSubtaskTransfer(items: [], today: today)
+    precondition(session.subtaskTransfer == expectedDraft && session.subtaskTransferIsSaving)
+    precondition(!session.beginSubtaskTransfer(eventID: UUID(), subtaskID: UUID(),
+                                              surface: .panel, date: tomorrow))
+    precondition(!session.beginSubtaskTransfer(eventID: UUID(), subtaskID: UUID(),
+                                              surface: .desktop, date: tomorrow))
+    precondition(!session.beginPanelEditor() && !session.beginDesktopEditor())
+    session.finishSubtaskTransferSave(staleDraft, succeeded: true)
+    precondition(session.subtaskTransfer == expectedDraft && session.subtaskTransferIsSaving)
+    session.finishSubtaskTransferSave(expectedDraft, succeeded: false)
+    precondition(session.subtaskTransfer == expectedDraft && !session.subtaskTransferIsSaving)
+    precondition(session.beginSubtaskTransferSave(expectedDraft))
+    session.finishSubtaskTransferSave(expectedDraft, succeeded: true)
+    precondition(session.subtaskTransfer == nil && !session.subtaskTransferIsSaving && !session.hasActiveEditor)
+    precondition(!session.beginSubtaskTransferSave(expectedDraft))
+    session.finishSubtaskTransferSave(expectedDraft, succeeded: false)
+    precondition(session.subtaskTransfer == nil && !session.subtaskTransferIsSaving)
+}
+
+@MainActor
+private func testSubtaskTransferReconciliation() {
+    let today = Day(Date())
+    let yesterday = Day(Day.calendar.date(byAdding: .day, value: -1, to: today.date())!)
+    let tomorrow = Day(Day.calendar.date(byAdding: .day, value: 1, to: today.date())!)
+    let subtask = try! Subtask(text: "Переносимый пункт")
+    let neighbor = try! Subtask(text: "Другой пункт")
+    let original = Countdown(title: "Источник", date: today, emoji: "", subtasks: [subtask, neighbor])
+    let session = EventEditorSession()
+    precondition(session.beginSubtaskTransfer(eventID: original.id, subtaskID: subtask.id,
+                                             surface: .panel, date: tomorrow))
+    session.selectSubtaskTransferTarget(UUID())
+    let draft = session.subtaskTransfer
+    session.reconcileSubtaskTransfer(items: [original], today: today)
+    precondition(session.subtaskTransfer == draft)
+    var otherCompleted = original
+    otherCompleted.subtasks[1].isCompleted = true
+    session.reconcileSubtaskTransfer(items: [otherCompleted], today: today)
+    precondition(session.subtaskTransfer == draft)
+    session.reconcileSubtaskTransfer(items: [original], today: tomorrow)
+    precondition(session.subtaskTransfer == nil && !session.hasActiveEditor)
+
+    var retained = original
+    retained.date = yesterday
+    retained.keepsAfterDate = true
+    precondition(session.beginSubtaskTransfer(eventID: retained.id, subtaskID: subtask.id,
+                                             surface: .desktop, date: tomorrow))
+    let retainedDraft = session.subtaskTransfer
+    session.reconcileSubtaskTransfer(items: [retained], today: today)
+    precondition(session.subtaskTransfer == retainedDraft)
+    session.endSubtaskTransfer()
+
+    var completed = original
+    completed.subtasks[0].isCompleted = true
+    var removed = original
+    removed.subtasks = [neighbor]
+    var expired = original
+    expired.date = yesterday
+    for unavailableItems in [[], [completed], [removed], [expired]] {
+        precondition(session.beginSubtaskTransfer(eventID: original.id, subtaskID: subtask.id,
+                                                 surface: .panel, date: tomorrow))
+        session.reconcileSubtaskTransfer(items: unavailableItems, today: today)
+        precondition(session.subtaskTransfer == nil && !session.hasActiveEditor)
+    }
+    precondition(session.beginDesktopEditor())
+    session.reconcileSubtaskTransfer(items: [], today: today)
+    precondition(session.desktopIsPresented)
+    session.endDesktopEditor()
 }

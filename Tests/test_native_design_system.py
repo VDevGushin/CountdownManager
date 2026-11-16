@@ -276,6 +276,27 @@ def validate_sources(root: Path) -> list[str]:
     if re.search(r"\.(?:tint|foregroundStyle|background|overlay|border|frame)\s*\(|\b(?:Path|Canvas|NSBezierPath)\s*\(",
                  code_mask(toolbar_label)):
         failures.append("invented toolbar label tint/chrome/drawing")
+
+    # Physical A/B/C keyboard checks established this composite native configuration.
+    # This guard detects its regression; it does not itself prove keyboard traversal.
+    try:
+        transfer_form, _ = declaration(sources["Sources/CountdownManager/SubtaskTransferView.swift"],
+                                       "SubtaskTransferForm")
+        date_chain = code_mask(control_chain(transfer_form, "subtask.transfer.date", builders="DatePicker"))
+        date_required = [r"\.datePickerStyle\s*\(\s*\.field\s*\)",
+                         r"\.controlSize\s*\(\s*\.regular\s*\)",
+                         r"\.frame\s*\(\s*minHeight:\s*28\s*\)",
+                         r"\.focused\s*\(\s*\$dateIsFocused\s*\)"]
+        if not all(re.search(pattern, date_chain) for pattern in date_required) or not re.search(
+                r"@FocusState\s+private\s+var\s+dateIsFocused\s*:\s*Bool\b", code_mask(transfer_form)):
+            failures.append("inline transfer date configuration drift")
+        if any(len(re.findall(r"\." + method + r"\s*\(", date_chain)) != 1
+               for method in ("datePickerStyle", "controlSize", "frame", "focused")):
+            failures.append("inline transfer date configuration drift")
+        if re.search(r"\.(?:overlay|border|background|focusable)\s*(?:\(|\{)", date_chain):
+            failures.append("inline transfer date gained custom focus/chrome")
+    except (KeyError, ValueError) as error:
+        failures.append("inline transfer date configuration: " + str(error))
     return failures
 
 
@@ -368,6 +389,26 @@ class NativeDesignSystemChecks(unittest.TestCase):
             path.write_text(text.replace("red: 0.718, green: 0.278, blue: 0.173",
                                          "red: 0.700, green: 0.278, blue: 0.173"))
             self.assertIn("frozen theme recipe drift: theme-v2-graphite", validate_sources(root))
+
+    def test_inline_transfer_date_native_configuration_is_protected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self.fixture(directory)
+            path = root / "Sources/CountdownManager/SubtaskTransferView.swift"
+            text = path.read_text()
+            mutations = [
+                (".controlSize(.regular)", "", "configuration drift"),
+                (".controlSize(.regular)", ".controlSize(.small)", "configuration drift"),
+                (".focused($dateIsFocused)", "", "configuration drift"),
+                ("@FocusState private var dateIsFocused: Bool", "", "configuration drift"),
+                (".frame(minHeight: 28)", ".frame(minHeight: 20)", "configuration drift"),
+                (".frame(minHeight: 28)", ".frame(minHeight: 28).overlay { Color.clear }", "gained custom focus/chrome"),
+                (".focused($dateIsFocused)", ".focusable().focused($dateIsFocused)", "gained custom focus/chrome"),
+            ]
+            for original, replacement, failure in mutations:
+                with self.subTest(mutation=(original, replacement)):
+                    self.assertEqual(text.count(original), 1, "mutation must target the current native date configuration")
+                    path.write_text(text.replace(original, replacement, 1))
+                    self.assertIn("inline transfer date " + failure, validate_sources(root))
 
     def test_comments_and_string_examples_do_not_create_false_source_controls(self):
         with tempfile.TemporaryDirectory() as directory:

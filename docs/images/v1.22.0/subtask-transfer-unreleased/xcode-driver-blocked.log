@@ -1,0 +1,36 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -xctestrun /private/tmp/countdown-readiness-xcode/Build/Products/CountdownManager_macosx27.2-arm64-x86_64.xctestrun -destination platform=macOS -parallel-testing-enabled NO -resultBundlePath /private/tmp/countdown-readiness-xcui-results.xcresult test-without-building
+
+Writing result bundle at path:
+	/private/tmp/countdown-readiness-xcui-results.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64e, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:x86_64, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:Mac Catalyst, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Mac Catalyst, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:x86_64, variant:Mac Catalyst, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:DriverKit, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64, variant:DriverKit, id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64e, variant:Designed for [iPad,iPhone], id:<HOST-DEVICE-ID>, name:My Mac }
+{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:<HOST-DEVICE-ID>, name:My Mac }
+2026-11-16 15:01:02.598672+0300 CountdownManagerXCUITests-Runner[52247:2586753] [Default] Running tests...
+2026-11-16 15:02:02.748225+0300 CountdownManagerXCUITests-Runner[52247:2586753] [Default] Failed to initialize for UI testing: Error Domain=com.apple.dt.XCTest.XCTFuture Code=1000 "Timed out while enabling automation mode." UserInfo={NSLocalizedDescription=Timed out while enabling automation mode.}
+
+
+*** If you believe this error represents a bug, please attach the result bundle at /tmp/countdown-readiness-xcui-results.xcresult
+
+2026-11-16 15:02:10.444 xcodebuild[52242:2586598] [MT] IDETestOperationsObserverDebug: 69.154 elapsed -- Testing started completed.
+2026-11-16 15:02:10.444 xcodebuild[52242:2586598] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-16 15:02:10.444 xcodebuild[52242:2586598] [MT] IDETestOperationsObserverDebug: 69.154 sec, +69.154 sec -- end
+
+Test session results, code coverage, and logs:
+	/tmp/countdown-readiness-xcui-results.xcresult
+
+Testing failed:
+	CountdownManagerXCUITests-Runner (52247) encountered an error (The test runner failed to initialize for UI testing. (Underlying Error: Timed out while enabling automation mode.))
+
+** TEST EXECUTE FAILED **
+
+Testing started

@@ -1,0 +1,25 @@
+UISmoke
+✓ real retained editor and running timer postpone update; explicit safe continuation resumes once
+✓ timer preset selection reaches both ends, is last-tap-wins and drives Play
+✓ the reused completion alert renders Aurora colors in both themes and responds to live isolated Increase Contrast
+✓ completion icon loops only while visible, restarts safely and becomes static for live Reduce Motion
+✓ completion alert closes on its first click or after five seconds without changing timer state
+✓ native settings save sheet opens, cancels, reopens and cancels without creating archives or changing events
+✓ isolated Reduce Motion overrides apply and switching during opening preserves the draft and endpoint layout
+✓ emoji disclosure starts closed, preserves every draft field, collapses on choice/clear and survives hide/show
+✓ five 6x8 catalogue pages fit eight columns in both themes; rapid and reduced-motion requests settle correctly
+✓ note field stays visible with a live count, retains draft through hide/show, preserves Cancel and saves an empty note; editor actions remain reachable
+✓ editor subtask transitions preserve UUIDs, neighbor text and completion; 0–10 boundaries and live Reduce Motion retain focus/layout
+✓ single editor persists note, emoji and ten subtasks only on Save
+✓ completion can be toggled and reopened
+✓ failed Save rolls back all stored fields; hide/show retains the draft and retry durably saves it
+✓ removed event retains draft and disables Save without resurrection
+✓ inline deletion confirmation preserves cancellation and persists explicit deletion
+✓ diagnostics remain free of private editor input
+✓ tomorrow day defaults, native date/title changes and manual override persist only on Save; draft survives hide/show
+✓ choose-date day starts blank, follows its chosen date and Cancel leaves durable data unchanged
+✓ ordinary and day creation allow no icon or favorite; every card is compact while Mars supplies the menu
+✓ choosing and clearing an icon remain draft changes until Save; Cancel preserves the stored icon
+✓ list and editor can select or clear a favorite; no favorite remains durable after reopening
+✓ today creation through ordinary and day editors keeps tomorrow defaults, date-aware expiry notice, draft continuity and durable Save
+PASS: 23/23

@@ -1,16 +1,27 @@
 import AppKit
 import Combine
+import CountdownCore
 import Foundation
 import Sparkle
 
+package struct SubtaskTransferDraft: Equatable {
+    package let eventID: UUID
+    package let subtaskID: UUID
+    package let surface: EventEditorSession.Surface
+    package var date: Day
+    package var targetEventID: UUID?
+}
+
 @MainActor
 package final class EventEditorSession: ObservableObject {
-    package enum Surface {
+    package enum Surface: Equatable {
         case panel
         case desktop
     }
 
     @Published package private(set) var surface: Surface?
+    @Published package private(set) var subtaskTransfer: SubtaskTransferDraft?
+    @Published package private(set) var subtaskTransferIsSaving = false
 
     package init() {}
 
@@ -25,11 +36,11 @@ package final class EventEditorSession: ObservableObject {
         }
     }
 
-    package var hasActiveEditor: Bool { surface != nil }
+    package var hasActiveEditor: Bool { surface != nil || subtaskTransfer != nil }
     package var desktopIsPresented: Bool { surface == .desktop }
 
     package func beginPanelEditor() -> Bool {
-        guard surface == nil else { return false }
+        guard !hasActiveEditor else { return false }
         surface = .panel
         return true
     }
@@ -40,7 +51,7 @@ package final class EventEditorSession: ObservableObject {
     }
 
     package func beginDesktopEditor() -> Bool {
-        guard surface == nil else { return false }
+        guard !hasActiveEditor else { return false }
         surface = .desktop
         return true
     }
@@ -48,6 +59,51 @@ package final class EventEditorSession: ObservableObject {
     package func endDesktopEditor() {
         guard surface == .desktop else { return }
         surface = nil
+    }
+
+    package func beginSubtaskTransfer(eventID: UUID, subtaskID: UUID, surface: Surface, date: Day) -> Bool {
+        guard !hasActiveEditor else { return false }
+        subtaskTransfer = SubtaskTransferDraft(eventID: eventID, subtaskID: subtaskID,
+                                             surface: surface, date: date)
+        return true
+    }
+
+    package func updateSubtaskTransfer(date: Day) {
+        guard !subtaskTransferIsSaving, var draft = subtaskTransfer else { return }
+        draft.date = date
+        draft.targetEventID = nil
+        subtaskTransfer = draft
+    }
+
+    package func selectSubtaskTransferTarget(_ id: UUID?) {
+        guard !subtaskTransferIsSaving else { return }
+        subtaskTransfer?.targetEventID = id
+    }
+
+    package func endSubtaskTransfer() {
+        guard !subtaskTransferIsSaving else { return }
+        subtaskTransfer = nil
+    }
+
+    package func beginSubtaskTransferSave(_ expectedDraft: SubtaskTransferDraft) -> Bool {
+        guard !subtaskTransferIsSaving, subtaskTransfer == expectedDraft else { return false }
+        subtaskTransferIsSaving = true
+        return true
+    }
+
+    package func finishSubtaskTransferSave(_ expectedDraft: SubtaskTransferDraft, succeeded: Bool) {
+        guard subtaskTransferIsSaving, subtaskTransfer == expectedDraft else { return }
+        subtaskTransferIsSaving = false
+        if succeeded { endSubtaskTransfer() }
+    }
+
+    package func reconcileSubtaskTransfer(items: [Countdown], today: Day) {
+        guard !subtaskTransferIsSaving, let draft = subtaskTransfer else { return }
+        let sourceIsAvailable = items.contains { event in
+            event.id == draft.eventID && event.isAvailable(on: today)
+                && event.subtasks.contains { $0.id == draft.subtaskID && !$0.isCompleted }
+        }
+        if !sourceIsAvailable { endSubtaskTransfer() }
     }
 }
 

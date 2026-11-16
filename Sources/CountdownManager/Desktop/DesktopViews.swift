@@ -110,7 +110,7 @@ struct DesktopRootView: View {
             desktopCommandBar
             Divider()
             if let error = store.error, !showingEditor, attachmentsEventID == nil { errorBanner(error) }
-            if editorSession.isPresented { panelEditorBanner }
+            if editorSession.isPresented || editorSession.subtaskTransfer?.surface == .panel { panelEditorBanner }
             splitContent
             Divider()
             footer
@@ -165,11 +165,23 @@ struct DesktopRootView: View {
             }
         }
         .onChange(of: selectedID) { selectedID in
+            if let transfer = editorSession.subtaskTransfer, transfer.surface == .desktop,
+               transfer.eventID != selectedID {
+                editorSession.endSubtaskTransfer()
+            }
             if selectedID != attachmentsEventID { dismissAttachments() }
         }
         .onChange(of: isProcessingActions) { _ in processPendingActions() }
         .onReceive(store.$data) { _ in
-            DispatchQueue.main.async { processPendingActions() }
+            DispatchQueue.main.async {
+                if !store.hasPendingPersistence {
+                    editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
+                }
+                processPendingActions()
+            }
+        }
+        .onChange(of: store.today) { _ in
+            editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("desktop.root")
@@ -288,7 +300,7 @@ struct DesktopRootView: View {
                 DesktopEventBrowser(
                     store: store, weather: weather, collection: collection, mode: mode,
                     selectedID: selectedID, isFiltering: !query.isEmpty,
-                    select: { selectedID = $0 }, resetFilters: resetFilters,
+                    select: { if !editorSession.subtaskTransferIsSaving { selectedID = $0 } }, resetFilters: resetFilters,
                     create: { beginEditor(preset: .today(store.today)) }, canCreate: canMutate,
                     editorSession: editorSession, showTextAttachment: { presentTextAttachment(eventID: $0, text: $1) }
                 )
@@ -298,8 +310,9 @@ struct DesktopRootView: View {
                 VStack(spacing: 0) {
                     if let selection {
                         DesktopEventDetail(
-                            item: selection, today: store.today, primaryID: store.data.primaryID,
+                            store: store, editorSession: editorSession, item: selection, today: store.today, primaryID: store.data.primaryID,
                             weather: weather, canMutate: canMutate && !deletionIsPending(selection.id),
+                            canBeginTransfer: { canMutate && !isProcessingActions && pendingActions.isEmpty },
                             edit: { beginEditor(item: selection) }, copy: { beginCopy(sourceID: selection.id) },
                             toggleFavorite: { toggleFavorite(selection) },
                             delete: { deleteEvent(selection.id) },
@@ -413,10 +426,13 @@ struct DesktopRootView: View {
 
     private var panelEditorBanner: some View {
         HStack {
-            Label("В мини-панели открыт редактор. Сначала сохраните или отмените изменения.", systemImage: "pencil")
+            Label(editorSession.subtaskTransfer?.surface == .panel
+                  ? "В мини-панели открыт перенос подзадачи. Завершите или отмените его."
+                  : "В мини-панели открыт редактор. Сначала сохраните или отмените изменения.",
+                  systemImage: editorSession.subtaskTransfer?.surface == .panel ? "arrowshape.turn.up.right" : "pencil")
                 .font(.system(size: 12))
             Spacer()
-            Button("К редактору", action: showPanel)
+            Button(editorSession.subtaskTransfer?.surface == .panel ? "К переносу" : "К редактору", action: showPanel)
         }
         .padding(12)
         .background(AuroraInstrument.accentSurface(for: colorScheme,

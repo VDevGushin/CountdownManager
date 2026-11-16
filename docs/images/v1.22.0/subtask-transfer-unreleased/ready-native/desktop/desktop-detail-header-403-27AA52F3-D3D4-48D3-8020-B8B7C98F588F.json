@@ -1,0 +1,44 @@
+{
+  "eventID" : "27AA52F3-D3D4-48D3-8020-B8B7C98F588F",
+  "expectedAdjacentGap" : 8,
+  "expectedOrder" : [
+    "favorite",
+    "edit",
+    "copy",
+    "delete"
+  ],
+  "expectedTargetSize" : 28,
+  "frames" : {
+    "copy" : [
+      872,
+      68,
+      28,
+      28
+    ],
+    "delete" : [
+      908,
+      68,
+      28,
+      28
+    ],
+    "edit" : [
+      836,
+      68,
+      28,
+      28
+    ],
+    "favorite" : [
+      800,
+      68,
+      28,
+      28
+    ],
+    "header" : [
+      557,
+      55,
+      403,
+      54
+    ]
+  },
+  "measurement" : "live NSView bounds converted to the window content view"
+}

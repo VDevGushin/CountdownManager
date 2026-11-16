@@ -50,22 +50,24 @@ final class DesktopWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func hide() {
-        guard !editorSession.desktopIsPresented else { return }
+        guard !editorSession.desktopIsPresented, !editorSession.subtaskTransferIsSaving else { return }
         window?.close()
     }
 
     func hideForPanel() -> Bool {
-        guard !editorSession.desktopIsPresented, let window, window.attachedSheet == nil else { return false }
+        guard !editorSession.desktopIsPresented, !editorSession.subtaskTransferIsSaving, let window, window.attachedSheet == nil else { return false }
+        if editorSession.subtaskTransfer?.surface == .desktop { editorSession.endSubtaskTransfer() }
         window.orderOut(nil)
         DiagnosticLog.shared.record("desktop.hide-for-panel")
         return true
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
-        !editorSession.desktopIsPresented
+        !editorSession.desktopIsPresented && !editorSession.subtaskTransferIsSaving
     }
 
     func windowWillClose(_ notification: Notification) {
+        if editorSession.subtaskTransfer?.surface == .desktop { editorSession.endSubtaskTransfer() }
         DiagnosticLog.shared.record("desktop.close")
     }
 }

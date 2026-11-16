@@ -601,9 +601,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     }
 
     private func returnToActiveEditor() {
-        if editorSession.desktopIsPresented {
+        if editorSession.desktopIsPresented || editorSession.subtaskTransfer?.surface == .desktop {
             showDesktopWindow()
-        } else if editorSession.isPresented {
+        } else if editorSession.isPresented || editorSession.subtaskTransfer?.surface == .panel {
             showPanel()
         } else if desktopController?.window?.isVisible == true {
             showDesktopWindow()

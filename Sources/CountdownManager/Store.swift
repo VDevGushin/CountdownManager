@@ -244,6 +244,8 @@ package final class Store: ObservableObject {
     @Published private var isRecoveringPersistence = false
     private var recoveryMutationInFlight = false
     private var persistenceRecoveryWaiters: [CheckedContinuation<Void, Never>] = []
+    private var isTransferringSubtask = false
+    private var subtaskTransferWaiters: [CheckedContinuation<Void, Never>] = []
     private var needsDeferredNormalization = false
     private var subscriptions = Set<AnyCancellable>()
     private var midnightTimer: Timer?
@@ -317,6 +319,7 @@ package final class Store: ObservableObject {
 
     package var hasPendingPersistence: Bool {
         isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
+            || isTransferringSubtask
             || isImportingAttachments || isReceivingMaterials || isResolvingMaterials
     }
 
@@ -349,7 +352,7 @@ package final class Store: ObservableObject {
             if updated != data {
                 let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
                 recordDiagnostic("data.normalize removed=\(data.items.count - updated.items.count)")
-                if isRecoveringPersistence {
+                if isRecoveringPersistence || isTransferringSubtask {
                     needsDeferredNormalization = true
                 } else {
                     stagePersistence(
@@ -397,7 +400,7 @@ package final class Store: ObservableObject {
         }
     }
 
-    private func commit(_ updated: CountdownData, reason: String) async -> Bool {
+    private func commit(_ updated: CountdownData, reason: String, publishImmediately: Bool = true) async -> Bool {
         guard !isLoading, !readFailed else {
             error = "Сохранение недоступно: сначала восстановите файл \(fileURL.path) и перезапустите приложение."
             return false
@@ -406,7 +409,7 @@ package final class Store: ObservableObject {
         revision += 1
         let writeRevision = revision
         inFlightPersistenceRevisions.insert(writeRevision)
-        data = updated
+        if publishImmediately { data = updated }
         return await finishPersistence(
             updated,
             revision: writeRevision,
@@ -460,6 +463,9 @@ package final class Store: ObservableObject {
     }
 
     private func waitForPersistenceRecoveryIfNeeded() async -> Bool {
+        if isTransferringSubtask {
+            await withCheckedContinuation { subtaskTransferWaiters.append($0) }
+        }
         guard isRecoveringPersistence else { return false }
         await withCheckedContinuation { continuation in
             persistenceRecoveryWaiters.append(continuation)
@@ -487,7 +493,7 @@ package final class Store: ObservableObject {
     }
 
     private func persistDeferredNormalizationIfNeeded() {
-        guard needsDeferredNormalization else { return }
+        guard needsDeferredNormalization, !isTransferringSubtask else { return }
         needsDeferredNormalization = false
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
@@ -513,8 +519,15 @@ package final class Store: ObservableObject {
     }
 
     package func save(_ countdown: Countdown, primary: Bool, requireExisting: Bool = false) async -> Bool {
+        let waitingForTransfer = isTransferringSubtask
+        let eventBeforeTransfer = data.items.first { $0.id == countdown.id }
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
+        if waitingForTransfer, eventBeforeTransfer != data.items.first(where: { $0.id == countdown.id }) {
+            error = "Событие изменилось во время переноса подзадачи. Откройте его заново перед сохранением."
+            recordDiagnostic("countdown.save rejected id=\(countdown.id.uuidString) category=transfer-conflict")
+            return false
+        }
         recordDiagnostic("countdown.save begin id=\(countdown.id.uuidString) primary=\(primary)")
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
@@ -607,6 +620,42 @@ package final class Store: ObservableObject {
         }
         guard !created.isEmpty else { return [] }
         return await commit(updated, reason: "countdown.create-week") ? created : nil
+    }
+
+    package func transferSubtask(
+        eventID: UUID,
+        subtaskID: UUID,
+        to targetEventID: UUID?,
+        on targetDay: Day
+    ) async -> Countdown? {
+        guard !Task.isCancelled, !hasPendingPersistence, eventCreationIsAvailable else { return nil }
+        let currentDay = Day(now())
+        if currentDay != today { today = currentDay }
+        error = nil
+        var updated = data
+        let destination: Countdown
+        do {
+            destination = try updated.transferSubtask(from: eventID, subtaskID: subtaskID,
+                                                     to: targetEventID, on: targetDay, today: today)
+        } catch {
+            recordDiagnostic("subtask.transfer rejected event=\(eventID.uuidString) \(DiagnosticPrivacy.errorFields(error))")
+            self.error = error.localizedDescription
+            return nil
+        }
+        isTransferringSubtask = true
+        defer {
+            isTransferringSubtask = false
+            let waiters = subtaskTransferWaiters
+            subtaskTransferWaiters.removeAll()
+            waiters.forEach { $0.resume() }
+            persistDeferredNormalizationIfNeeded()
+        }
+        guard await commit(updated, reason: "subtask.transfer", publishImmediately: false) else { return nil }
+        if updated.items.first(where: { $0.id == eventID })?.subtasks.isEmpty == true {
+            disclosureCache.remove(eventID: eventID)
+        }
+        setSubtasksExpanded(true, for: destination.id)
+        return destination
     }
 
     func addSubtask(to eventID: UUID, text: String) async -> Bool {

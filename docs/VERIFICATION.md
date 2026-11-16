@@ -48,6 +48,8 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Empty-state panel captures | `./verify.sh empty-state-capture <marked-output-directory>` | Same focused scenarios plus eight isolated empty/editor captures; no weather HTTP, update or general UI suite |
 | Week-day creation | `./verify.sh week` | Focused isolated production mini-panel/desktop week preview, empty/nonempty entry, Save/Cancel, missing days and shared editing ownership |
 | Week-day captures | `./verify.sh week-capture <marked-output-directory>` | The focused week scenarios plus native PNGs and current-source bundle/executable provenance; no general UI rerun |
+| Single-subtask transfer | `./verify.sh subtask-transfer` | Focused isolated production mini/desktop arrow and inline form, Cancel, editor exclusion, recipient limit, atomic move and failed-write retry |
+| Single-subtask transfer captures | `./verify.sh subtask-transfer-capture <marked-output-directory>` | The same focused scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
 | Event copying | `./verify.sh event-copy` | Focused isolated mini/desktop copy actions, native date focus, Save/Cancel, editor ownership and independent files |
 | Event-copy captures | `./verify.sh event-copy-capture <marked-output-directory>` | The focused copy scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
@@ -146,6 +148,22 @@ then exercises its existing palette/contrast, dismissal and focus invariants. `c
 the mini/editor/settings/completion appearance set; material and attachment native fixtures cover
 the shared dialog/preview families. A native file-dialog capture establishes its drawing only
 when the system supplies visible pixels; an effective-appearance assertion alone is not a pixel test.
+
+## Single-subtask transfer native evidence
+
+`subtask-transfer` mounts the production mini-panel root in an isolated key-capable 390×600
+NSPanel and the production desktop root with a synthetic 16 November 2026 Store clock. It checks
+separate incomplete-task arrows, inline opening without a full editor/sheet, explicit recipient
+selection for a multi-event date, Cancel byte preservation, retained mini hide/show, full-recipient
+confirmation blocking, a single preserved-identity move and new-day creation after failed-write
+retry. The injected write failure preserves the JSON bytes before another production confirm action.
+
+The registry invokes production arrow/Cancel/confirm closures. Date and destination selection
+use the shared `EventEditorSession` API and are not evidence for physical input in native date
+fields or menus. Captures use `NSView.cacheDisplay` with Light/Dark and Increase Contrast
+appearance overrides. The manifest records build provenance, injected clock and these limits.
+The route does not exercise physical status-item clicks, switching applications or Spaces,
+VoiceOver, or WindowServer compositor timing.
 
 ## CoreChecks
 

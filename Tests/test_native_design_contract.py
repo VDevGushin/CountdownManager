@@ -1,10 +1,12 @@
 """Mechanical native build-contract checks. No compiler, GUI, or application is launched."""
 
 import copy
+from collections import Counter, defaultdict
 import importlib.util
 import json
 from pathlib import Path
 import plistlib
+import re
 import tempfile
 import unittest
 
@@ -30,6 +32,45 @@ Load command 11
   cmdsize 24
  entryoff 100
 """
+
+
+class XcodeSourceMembershipChecks(unittest.TestCase):
+    def assert_production_source_membership(self, project):
+        # The checked-in project keeps file, target and build-phase objects on one line.
+        project = re.sub(r"/\*.*?\*/", "", project, flags=re.DOTALL)
+        objects = dict(re.findall(r"^\s*([A-F0-9]{24})\s*=\s*\{(.*?)\};\s*$", project, flags=re.MULTILINE))
+        file_paths = {}
+        source_membership = defaultdict(list)
+        for identifier, body in objects.items():
+            if "isa = PBXFileReference;" in body:
+                path = re.search(r'\bpath = ("[^"]+"|[^;]+);', body)
+                if path:
+                    file_paths[identifier] = path.group(1).strip('"')
+        for body in objects.values():
+            if "isa = PBXNativeTarget;" not in body:
+                continue
+            target = re.search(r"\bname = ([^;]+);", body).group(1).strip('"')
+            phases = re.search(r"\bbuildPhases = \(([^)]*)\);", body).group(1)
+            for phase_id in re.findall(r"[A-F0-9]{24}", phases):
+                phase = objects[phase_id]
+                if "isa = PBXSourcesBuildPhase;" not in phase:
+                    continue
+                entries = re.search(r"\bfiles = \(([^)]*)\);", phase).group(1)
+                for build_id in re.findall(r"[A-F0-9]{24}", entries):
+                    reference = re.search(r"\bfileRef = ([A-F0-9]{24})\s*;", objects[build_id]).group(1)
+                    source_membership[file_paths[reference]].append(target)
+        for directory, target in [("CountdownCore", "CountdownCore"),
+                                  ("CountdownManager", "CountdownManagerUI"),
+                                  ("CountdownManagerApp", "CountdownManager")]:
+            for source in (ROOT / "Sources" / directory).rglob("*.swift"):
+                path = source.relative_to(ROOT).as_posix()
+                with self.subTest(source=path):
+                    self.assertEqual(Counter(file_paths.values())[path], 1, "Missing or duplicate Xcode file reference")
+                    self.assertEqual(source_membership[path], [target], "Incorrect Xcode source target membership")
+
+    def test_every_production_swift_file_is_built_by_its_xcode_target(self):
+        project = (ROOT / "CountdownManager.xcodeproj/project.pbxproj").read_text()
+        self.assert_production_source_membership(project)
 
 
 class NativeDesignContractChecks(unittest.TestCase):

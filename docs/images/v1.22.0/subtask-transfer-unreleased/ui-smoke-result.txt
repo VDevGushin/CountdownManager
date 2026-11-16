@@ -1,0 +1,5 @@
+DesktopSmoke
+✓ native mini arrow opens an inline form; full editor excluded; Cancel and hide/show preserve saved bytes
+✓ desktop arrow shares inline controls; full receiver blocks Save; one selected task retains identity on move
+✓ empty date creates an ordinary day; failed native confirmation preserves both sides and retries once
+PASS: 3/3

@@ -893,11 +893,12 @@ content.
 
 A subtask may be completed and later reopened.
 
-In an event card, the checkbox, its text and the remaining width of the same subtask row form
-one completion control. A click anywhere in that row changes that subtask exactly once; reopening
-a completed row uses the same control. Checkbox accessibility and keyboard activation remain
-native. Other rows and the checklist disclosure header do not share its activation area. Subtask
-text fields in the event editor remain editable and do not become row-completion controls.
+In an event card, the checkbox, its text and the remaining width before a separate transfer
+action form one completion control. A click in that completion area changes that subtask exactly
+once; reopening a completed row uses the same control. The transfer arrow has its own hit target
+and never toggles completion. Checkbox accessibility and keyboard activation remain native. Other
+rows and the checklist disclosure header do not share its activation area. Subtask text fields in
+the event editor remain editable and do not become row-completion controls.
 
 Completed subtasks remain visible.
 
@@ -908,6 +909,55 @@ Stable user order is preserved inside each group.
 Completing all subtasks does not complete, archive, or expire the parent event.
 
 The event continues to exist until its own calendar date ends.
+
+### Moving a subtask
+
+The Product Owner accepted the single-subtask arrow and inline destination design on
+16 November 2026 after reviewing the Lavish prototype. This replaces the earlier proposal for
+moving all incomplete subtasks at once.
+
+Each incomplete saved subtask has a separate neutral `arrowshape.turn.up.right` action at the
+trailing edge of its row, with `Перенести на другой день` hover help and an accessible name that
+identifies the subtask. Completed rows have no transfer action. Opening the action reveals the
+native date and destination-event controls directly below that row in both the mini-panel and
+desktop details. The checklist heading and progress counter keep their ordinary treatment.
+
+The initial destination date is tomorrow. The user may select today or any future calendar day.
+The destination is another available event on that exact date. A sole eligible recipient is
+selected automatically. When several events share that date, the user selects the recipient
+explicitly. The source event cannot receive its own subtask.
+If no available event occupies the chosen date, confirmation creates a day using the ordinary
+automatic weekday title, day-origin metadata and new-day weather default. Opening or cancelling
+the inline form creates no event and moves no subtask.
+
+`Перенести` moves the selected incomplete subtask, retaining its identity and text, to the end of
+the recipient's stored subtask order. The source's remaining subtasks and their completion states
+retain their identities and order. The move gives the subtask the recipient event's date through
+its new owner; the subtask still has no independent date. Event dates, favorite selection, notes,
+links, files and retention choices keep their ordinary meanings. The source remains available
+under its existing expiry/retention rule even when its checklist becomes empty.
+
+The recipient may contain at most ten subtasks, counting completed and incomplete entries.
+A full recipient blocks confirmation with an explanation and leaves date/recipient selection
+available. Confirmation revalidates the current civil day, source and subtask availability,
+incomplete state, selected recipient/date and capacity. If an occupied destination date needs a
+recipient selection, it never silently creates an additional day.
+
+Only one inline transfer or full event editor can own the shared editing reservation across both
+surfaces. Opening a transfer disables saved-subtask completion controls until the transfer ends.
+Hiding and reopening the mini-panel preserves the inline selection. The opposite surface uses
+the existing editor-busy notice to identify where the transfer is open. `Отмена` and a successful
+move end it. While an idle transfer belongs to desktop details, choosing another event, closing
+the desktop window or explicitly switching to the mini-panel cancels that transfer. During a save,
+the destination controls, Cancel, desktop selection, desktop close and the explicit switch to the
+mini-panel wait for the write to finish. If its source event/subtask disappears or the source
+subtask becomes completed outside the save, the transfer closes and releases its reservation.
+
+A missing or rescheduled recipient and a stale past destination prevent the move. Source and
+recipient changes, including optional new-day creation, are committed in one durable snapshot.
+The saved source checklist stays visible with its current contents while the write is pending.
+A failed save preserves both saved events and the inline choice for explicit retry. `Отмена`
+closes the inline form without saving.
 
 ### Progress
 

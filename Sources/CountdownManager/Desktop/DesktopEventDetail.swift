@@ -2,11 +2,14 @@ import CountdownCore
 import SwiftUI
 
 struct DesktopEventDetail: View {
+    @ObservedObject var store: Store
+    @ObservedObject var editorSession: EventEditorSession
     let item: Countdown
     let today: Day
     let primaryID: UUID?
     @ObservedObject var weather: WeatherController
     let canMutate: Bool
+    let canBeginTransfer: () -> Bool
     let edit: () -> Void
     let copy: () -> Void
     let toggleFavorite: () -> Void
@@ -208,17 +211,30 @@ struct DesktopEventDetail: View {
             } else {
                 VStack(alignment: .leading, spacing: 13) {
                     ForEach(presentation.activeSubtasks + presentation.completedSubtasks) { subtask in
-                        Toggle(isOn: Binding(get: { subtask.isCompleted }, set: { _ in toggleSubtask(subtask.id) })) {
-                            Text(subtask.text).font(.system(size: 13))
-                                .strikethrough(subtask.isCompleted)
-                                .fixedSize(horizontal: false, vertical: true)
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(alignment: .top, spacing: 0) {
+                                Toggle(isOn: Binding(get: { subtask.isCompleted }, set: { _ in toggleSubtask(subtask.id) })) {
+                                    Text(subtask.text).font(.system(size: 13))
+                                        .strikethrough(subtask.isCompleted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                }
+                                .toggleStyle(.checkbox)
+                                .accessibilityIdentifier("desktop.subtask.toggle.\(subtask.id.uuidString)")
+                                .uiSmokeControl(id: "desktop.subtask.toggle.\(subtask.id.uuidString)",
+                                                action: { toggleSubtask(subtask.id) },
+                                                value: { subtask.isCompleted ? "on" : "off" })
+                                .disabled(!canMutate)
+                                if !subtask.isCompleted {
+                                    SubtaskTransferButton(store: store, editorSession: editorSession,
+                                                          eventID: item.id, subtask: subtask, surface: .desktop,
+                                                          canBegin: canBeginTransfer)
+                                }
+                            }
+                            SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
+                                                subtaskID: subtask.id, surface: .desktop)
                         }
-                        .toggleStyle(.checkbox)
-                        .accessibilityIdentifier("desktop.subtask.toggle.\(subtask.id.uuidString)")
-                        .uiSmokeControl(id: "desktop.subtask.toggle.\(subtask.id.uuidString)",
-                                        action: { toggleSubtask(subtask.id) },
-                                        value: { subtask.isCompleted ? "on" : "off" })
-                        .disabled(!canMutate)
                     }
                 }
                 .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15),

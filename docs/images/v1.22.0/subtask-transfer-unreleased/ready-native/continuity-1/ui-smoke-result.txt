@@ -1,0 +1,10 @@
+UISmoke
+✓ panel accepts key focus
+✓ settings retain navigation through hide/show, leave the list inactive and restore its scroll position
+✓ host, root State and long-list scroll survive direct hide/show
+✓ main-list panel hide preserves the UI session
+✓ editor panel hide preserves the UI session
+✓ status-item handler preserves editor identity/draft and input; Save after reopen persists
+✓ Cancel after reopen destroys draft and retains list position
+✓ starting a timer inside an editor preserves input focus/draft; hide/show, Save and Cancel preserve its deadline and event JSON
+PASS: 8/8

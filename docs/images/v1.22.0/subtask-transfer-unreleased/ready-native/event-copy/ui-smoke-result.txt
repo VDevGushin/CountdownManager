@@ -1,0 +1,5 @@
+DesktopSmoke
+✓ native mini favorite/ordinary 28pt copy actions, source-date defaults, actual NSDatePicker focus, shared-editor lock, retained hide/show and zero-write/file Cancel
+✓ native desktop sheet date edit and Save create one durable independent event/file with new nested identities, reset tasks and intact source
+✓ far-future source keeps 15 September 2044 by default; retained past source clamps to today and displays its date explanation
+PASS: 3/3

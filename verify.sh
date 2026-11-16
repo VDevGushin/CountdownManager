@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|editor-stability) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|editor-stability-capture)
+    fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability) ;;
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|subtask-transfer-capture|editor-stability-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|editor-stability-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|subtask-transfer-capture <directory>|editor-stability-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -86,12 +86,15 @@ run_smoke() {
     local stderr_path="$test_home/ui-smoke.stderr"
     local timeout_seconds=45
     local launch_arguments=("$launch_argument")
-    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" || "$launch_argument" == "--ui-smoke-event-copy" ]]; then timeout_seconds=70; fi
+    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" || "$launch_argument" == "--ui-smoke-event-copy" || "$launch_argument" == "--ui-smoke-subtask-transfer" ]]; then timeout_seconds=70; fi
     if [[ "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-attachment-preview)
     fi
     if [[ "$launch_argument" == "--ui-smoke-week-creation" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-week-creation)
+    fi
+    if [[ "$launch_argument" == "--ui-smoke-subtask-transfer" ]]; then
+        launch_arguments=(--ui-smoke-desktop --ui-smoke-subtask-transfer)
     fi
     if [[ "$launch_argument" == "--ui-smoke-event-copy" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-event-copy)
@@ -302,6 +305,21 @@ case "$mode" in
             copy_focused_desktop_evidence editor-stability captures editor-stability-smoke
         fi
         echo "PASS: native editor transitions preserve card appearance, geometry and saved data"
+        ;;
+    subtask-transfer|subtask-transfer-capture)
+        build_ui_app
+        echo "Verification: native single-subtask transfer workflows"
+        if ! run_smoke subtask-transfer-smoke --ui-smoke-subtask-transfer; then
+            if [[ "$mode" == "subtask-transfer-capture" ]]; then
+                copy_focused_desktop_evidence subtask-transfer failed subtask-transfer-smoke
+            fi
+            exit 1
+        fi
+        if [[ "$mode" == "subtask-transfer-capture" ]]; then
+            test -s "$verify_root/subtask-transfer-smoke/Captures/manifest.json"
+            copy_focused_desktop_evidence subtask-transfer captures subtask-transfer-smoke
+        fi
+        echo "PASS: focused native single-subtask transfer in desktop and mini-panel"
         ;;
     event-copy|event-copy-capture)
         build_ui_app

@@ -1410,10 +1410,14 @@ final class UISmokeRuntime {
     private func weatherCityPicker() throws -> NSPopUpButton {
         let content = try requireValue(window()?.contentView, "weather settings content")
         let pickers = allSubviews(of: content).compactMap { $0 as? NSPopUpButton }
+        let locationTitles = Set(["Автоматически"] + WeatherCity.allCases.map(\.title))
         let identified = pickers.first { $0.accessibilityIdentifier() == "settings.weather.location" }
-        let populated = pickers.first { $0.itemTitles.contains("Грозный") }
-        return try requireValue(identified ?? populated ?? (pickers.count == 1 ? pickers.first : nil),
-                                "native weather city menu; found menus: \(pickers.map(\.itemTitles))")
+        let matching = pickers.filter { locationTitles.contains($0.title) }
+        let diagnostic = pickers.map {
+            "title=\($0.title), id=\($0.accessibilityIdentifier() ?? "nil"), enabled=\($0.isEnabled)"
+        }
+        return try requireValue(identified ?? (matching.count == 1 ? matching.first : nil),
+                                "native weather city picker; found popups: \(diagnostic)")
     }
 
     private func verifyHeaderDayBoundary() async throws {

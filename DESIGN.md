@@ -295,6 +295,23 @@ The inactive underlying list remains mounted but is excluded from interaction an
 Changing the civil day refreshes the range with a visible explanation and requires another Create;
 the old confirmation never silently commits the newly displayed range.
 
+### Subtask transfer
+
+The single-subtask design accepted on 16 November 2026 extends the existing checklist row with
+a neutral trailing `arrowshape.turn.up.right` SF Symbol. It is a separate action beside the native
+checkbox/text completion control, with `Перенести на другой день` help and a subtask-specific
+accessible label and a value stating whether its date selection is open or closed. Completed
+rows omit it. The checklist heading and count keep their existing
+geometry, with no group-level transfer button or explanatory block above the list.
+
+Activating the arrow reveals compact native date and event-selection fields immediately below
+that subtask. `Отмена` and `Перенести` use the existing native secondary/primary action family.
+The mini-panel keeps its disclosure behaviour and the desktop checklist remains expanded. The
+inline fields belong inside the existing event card or detail area, without an extra card,
+application-owned popover or sheet. Light, Graphite Dark, Increase Contrast and Reduce Motion
+follow the shared checklist and field roles. The arrow and completion control have independent
+hit targets and keyboard/accessibility actions.
+
 ### Timer Presets
 
 Seven fixed durations share a 32-point high row with 2-point gaps. The selected 5-point-corner surface carries accent tint, a one-point rule, and semibold text. A two-point inset focus outline distinguishes keyboard focus. Left/right commands move selection. The selection background slides with ease-in-out over 180 ms; labels update immediately. Reduce Motion makes selection immediate.
