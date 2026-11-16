@@ -1,0 +1,46 @@
+Fetching https://github.com/sparkle-project/Sparkle from cache
+Fetched https://github.com/sparkle-project/Sparkle from cache (1.34s)
+Computing version for https://github.com/sparkle-project/Sparkle
+Computed https://github.com/sparkle-project/Sparkle at 2.10.0 (3.49s)
+Computed https://github.com/sparkle-project/Sparkle at 2.10.0 (0.00s)
+Creating working copy for https://github.com/sparkle-project/Sparkle
+Working copy of https://github.com/sparkle-project/Sparkle resolved at 2.10.0
+Fetching binary artifact https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-for-Swift-Package-Manager.zip from cache
+Fetched https://github.com/sparkle-project/Sparkle/releases/download/2.10.0/Sparkle-for-Swift-Package-Manager.zip from cache (0.49s)
+Building for production...
+[0/7] Write sources
+[3/7] Copying Sparkle.framework
+[4/7] Write swift-version--58304C5D6DBC2206.txt
+[6/8] Compiling CountdownCore AttachmentFiles.swift
+[7/9] Compiling CountdownManagerUI Application.swift
+/Users/vladislav.gushchin/.codex/worktrees/release-1-23-0/Countdown/Sources/CountdownManager/UISmokeRuntime.swift:1417:67: warning: left side of nil coalescing operator '??' has non-optional type 'String', so the right side is never used
+1415 |         let matching = pickers.filter { locationTitles.contains($0.title) }
+1416 |         let diagnostic = pickers.map {
+1417 |             "title=\($0.title), id=\($0.accessibilityIdentifier() ?? "nil"), enabled=\($0.isEnabled)"
+     |                                                                   `- warning: left side of nil coalescing operator '??' has non-optional type 'String', so the right side is never used
+1418 |         }
+1419 |         return try requireValue(identified ?? (matching.count == 1 ? matching.first : nil),
+[8/10] Compiling CountdownManager App.swift
+[8/10] Write Objects.LinkFileList
+[9/10] Linking CountdownManager
+Build of product 'CountdownManager' complete! (118.56s)
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+warning: '--build-system native' has been deprecated and will be removed in a future release; please report an issue at https://github.com/swiftlang/swift-package-manager/issues if you are unable to adopt the default build system.
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.iOK1hE/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.iOK1hE/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.iOK1hE/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/Autoupdate: replacing existing signature
+/private/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.iOK1hE/Countdown Manager.app/Contents/Frameworks/Sparkle.framework/Versions/B/Updater.app: replacing existing signature
+/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T/countdown-bundle.iOK1hE/Countdown Manager.app/Contents/Frameworks/Sparkle.framework: replacing existing signature
+/var/folders/y_/glph_07n5k181hkx1v74blh80000gn/T//countdown-bundle.iOK1hE/Countdown Manager.app: replacing existing signature
+{
+  "styleVersion": "native-calendar-graphite-v2",
+  "compilerSDK": {
+    "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+    "version": "27.2",
+    "canonicalName": "macosx27.2"
+  },
+  "linkedCompatibility": "13.0",
+  "signatureIdentifier": "local.countdownmanager.app",
+  "renderedAppearanceVerified": false
+}
+Готово: /private/tmp/countdown-release-1.23.0.a8ZBxC/Countdown Manager.app

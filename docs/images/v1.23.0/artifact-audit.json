@@ -1,0 +1,102 @@
+{
+  "status": "passed",
+  "version": "1.23.0",
+  "build": "45",
+  "sourceCommit": "54167e7d5c7fbb5698417d2ba3c3b6822edafcdf",
+  "published": false,
+  "installed": false,
+  "exactPackageRuntimeVerified": false,
+  "auditStartedUTC": "2026-11-16T16:02:13.899546+00:00",
+  "auditFinishedUTC": "2026-11-16T16:02:17.655058+00:00",
+  "archiveBytes": 6717542,
+  "archiveSHA256": "1e2c3c95dffe0af78b66ebc8582bf9ef91f5006b643c71bb84075f7250663e77",
+  "feedBytes": 3613,
+  "feedSHA256": "00826f144d6cca59d1a306e55923aebe87c4d986808698dac69a2d5c1769892e",
+  "finalExecutableSHA256": "f3ceb83291dcadbccdcc9823e0e925b215c5e0234134392ea99af87943d0e33d",
+  "publicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "independentPublicKeyAudit": true,
+  "signatureVerifier": "Apple CryptoKit Curve25519.Signing.PublicKey",
+  "signatureChecks": {
+    "archive-changed-payload": false,
+    "archive-changed-signature": false,
+    "archive-valid": true,
+    "feed-changed-payload": false,
+    "feed-changed-signature": false,
+    "feed-valid": true
+  },
+  "feedSignedBoundaryVerified": true,
+  "feedSignedBytes": 3469,
+  "feedBoundary": {
+    "sparkleVersion": "2.10.0",
+    "sparkleRevision": "eef1a539a373c1f1a320624b1130fc5de7b2e100",
+    "sourceSHA256": {
+      "Sparkle/SPUExtractSignedFeed.m": "a3661045ee078167381b3418fda1cb1258a1cf875be93889758bf309d81ed10b",
+      "common_cli/Signing.swift": "c7e502d683c84e62da5ff4d7d1579ea31b0f9489838fb808ec2205ca7c597a7f"
+    },
+    "signedOffset": 0,
+    "signedBytes": 3469,
+    "unsignedSigningBlockBytes": 144,
+    "derivation": "last extractor prefix; raw bytes before it; pinned writer template and advertised length verified"
+  },
+  "embeddedNotesAndMetadataVerified": true,
+  "feedMetadata": {
+    "archiveURL": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.23.0/CountdownManager-1.23.0-45.zip",
+    "version": "1.23.0",
+    "build": "45",
+    "minimumSystemVersion": "13.0",
+    "hardwareRequirements": "arm64",
+    "embeddedNotesSHA256": "88166e56ef3eb0282b40b1bdee9461adff5964e183cbf8bf55ef96e2c100af25"
+  },
+  "extractedEntriesMatch": true,
+  "comparedEntries": 169,
+  "deepStrictCodesignPassed": true,
+  "inputsUnchanged": true,
+  "nativeBuildContract": {
+    "schemaVersion": 1,
+    "styleVersion": "native-calendar-graphite-v2",
+    "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "sourceAuthoritySHA256": {
+      "docs/PRODUCT.md": "fcb4cecd0e3cc0f8054a14c62da0b581ffcd32e91427924785d203e0af239ef4",
+      "DESIGN.md": "c38c9b29ef052a8fc2d476c8f6a8a75dbaf2065a1b4387a4c83991dac5cf56bb",
+      "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "compilerSDK": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version": "27.2",
+      "canonicalName": "macosx27.2"
+    },
+    "swiftToolchain": {
+      "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+      "version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    },
+    "linkedCompatibility": "13.0",
+    "deploymentTarget": "13.0",
+    "createdAtUTC": "2026-11-16T15:52:28.346239+00:00",
+    "application": {
+      "identifier": "local.countdownmanager.app",
+      "version": "1.23.0",
+      "build": "45",
+      "executable": "CountdownManager"
+    },
+    "linkedMachO": [
+      {
+        "architecture": "thin",
+        "command": "LC_BUILD_VERSION",
+        "platform": "1",
+        "minos": "13.0",
+        "sdk": "13.0"
+      }
+    ],
+    "renderedAppearanceVerified": false
+  },
+  "architecture": "arm64",
+  "minimumSystemVersion": "13.0",
+  "sourceFreezeVerified": {
+    "head": "54167e7d5c7fbb5698417d2ba3c3b6822edafcdf",
+    "branch": "main",
+    "trackedWorktreeCleanAtAudit": true,
+    "postFreezeEvidencePaths": [],
+    "sourceBuildInputsUnchanged": true
+  },
+  "auditScope": "Public-key artifact authenticity and extraction only; native runtime acceptance recorded separately"
+}
