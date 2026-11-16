@@ -13,10 +13,10 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.22.0 uses the read-only `Что нового` screen to describe event copying, source-date
-selection and independent file copies. The three sections use `doc.on.doc`, `calendar` and
-`paperclip`. The release-help window was introduced in 1.19.0. It is offered once on the first safe explicit
-opening of the panel or desktop after installing this release, including a first installation.
+Release 1.23.0 uses the read-only `Что нового` screen to describe single-subtask transfer,
+date/recipient selection and explicit Cancel/retry. The three sections use
+`arrowshape.turn.up.right`, `calendar` and `checkmark.circle`. The release-help window was
+introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
 until a later safe explicit opening; an active timer alone does not block it.

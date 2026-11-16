@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.22.0"
+    static let releaseID = "1.23.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,12 +38,12 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Копирование события", symbol: "doc.on.doc",
-                            text: "Нажмите значок двух листов рядом с карандашом. Черновик наследует содержимое, ссылки и подзадачи. Все подзадачи снова невыполнены, избранное выключено.")
-                    feature("Дата и название", symbol: "calendar",
-                            text: "Сначала выбрана дата источника, даже 15 сентября 2044 года. Для прошедшего события предлагается сегодня. Автоматическое название следует выбранной дате.")
-                    feature("Независимые файлы", symbol: "paperclip",
-                            text: "«Сохранить» создаёт отдельное событие и копии файлов. При ошибке черновик остаётся для повтора, а после успеха прежняя ошибка исчезает. «Отмена» закрывает черновик.")
+                    feature("Перенос подзадачи", symbol: "arrowshape.turn.up.right",
+                            text: "Нажмите стрелку справа от невыполненной подзадачи. Выбор даты и события откроется прямо под ней — в мини-панели и большом окне.")
+                    feature("Дата и получатель", symbol: "calendar",
+                            text: "Сначала предлагается завтра. Можно выбрать сегодня или будущую дату. На пустой дате будет создан день, а для занятой даты можно выбрать событие-получатель.")
+                    feature("Отмена и повтор", symbol: "checkmark.circle",
+                            text: "«Перенести» сохраняет один выбранный пункт у получателя. «Отмена» сворачивает форму. При ошибке записи выбор остаётся доступным для повторной попытки.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

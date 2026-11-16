@@ -1,6 +1,15 @@
 # Signed releases and updates
 
-## Current release
+## Release 1.23.0 preparation
+
+Version **1.23.0 / build 45** is being prepared for single-subtask transfer after the owner's
+explicit release request. [Candidate status](releases/v1.23.0.md) and
+[release notes](releases/v1.23.0-notes.md) describe this release. Source freeze, final production
+package, archive/feed authenticity, exact-package native acceptance and public publication
+receipts are recorded as they complete. The production feed and signing identity below apply.
+The intended previous public handoff version for this release is **1.22.0 / build 44**.
+
+## Current published release
 
 Published as Latest is **1.22.0 / build 44** on 2026-11-09 for event copying and its retry fix.
 [Release status](releases/v1.22.0.md) and [notes](releases/v1.22.0-notes.md) describe the change.
