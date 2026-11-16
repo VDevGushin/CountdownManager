@@ -1,29 +1,22 @@
 # Signed releases and updates
 
-## Release 1.23.0 preparation
-
-Version **1.23.0 / build 45** is being prepared for single-subtask transfer after the owner's
-explicit release request. [Candidate status](releases/v1.23.0.md) and
-[release notes](releases/v1.23.0-notes.md) describe this release. Source freeze, final production
-package, archive/feed authenticity, exact-package native acceptance and public publication
-receipts are recorded as they complete. The production feed and signing identity below apply.
-The intended previous public handoff version for this release is **1.22.0 / build 44**.
-
 ## Current published release
 
-Published as Latest is **1.22.0 / build 44** on 2026-11-09 for event copying and its retry fix.
-[Release status](releases/v1.22.0.md) and [notes](releases/v1.22.0-notes.md) describe the change.
-[Public verification](images/v1.22.0/publication.json) records anonymous Latest resolution to v1.22.0
-and HTTP 200 with exact audited hashes for the ZIP, versioned feed and stable feed.
-The annotated tag targets reviewed main commit `dee06cf1b3556ce24b20edf411ccd8dcb95ac489`.
-[Package audit](images/v1.22.0/artifact-audit.json) and
-[exact native acceptance](images/v1.22.0/PROVENANCE.md) passed archive/feed authenticity,
-altered-input rejection, metadata, extraction/codesign, copying 3/3 and help 1/1.
-The previous public release for the owner's manual update is **1.21.1 / build 43**.
-[Homepage verification](images/v1.22.0/homepage.json) passed anonymous README/image byte comparison
-and browser appearance review. [Final handoff](images/v1.22.0/handoff.json) verified the previous
-1.21.1 installed and running. Task scratch, profiles, build caches and local package copies were
-permanently removed after production event and attachment byte preservation was verified.
+Published as Latest is **1.23.0 / build 45** on 2026-11-16 for single-subtask transfer.
+[Release status](releases/v1.23.0.md) and [notes](releases/v1.23.0-notes.md) describe the change.
+[Public verification](images/v1.23.0/publication.json) confirms anonymous Latest resolution to
+v1.23.0 and HTTP 200 with exact audited hashes for the ZIP, versioned feed and stable feed.
+The annotated tag targets frozen main source `54167e7d5c7fbb5698417d2ba3c3b6822edafcdf`.
+[Package audit](images/v1.23.0/artifact-audit.json) passed independent archive/feed authenticity,
+four altered-input rejections, exact feed signature boundary, embedded notes/metadata,
+extraction bytes/modes/symlinks and strict/deep codesign.
+[Exact native acceptance](images/v1.23.0/PROVENANCE.md) passed transfer3/3 and release help1/1
+on the production executable, with native README and help images.
+
+The previous public release for the owner's manual update is **1.22.0 / build 44**.
+Installed/running identity, task cleanup and final default-branch homepage verification are
+being completed and will receive their own receipts. The prior publication and handoff remain
+recorded under [1.22.0](releases/v1.22.0.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

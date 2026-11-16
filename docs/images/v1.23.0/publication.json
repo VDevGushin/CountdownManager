@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "version": "1.23.0",
+  "build": "45",
+  "published": true,
+  "verifiedStartedUTC": "2026-11-16T16:15:30.111226+00:00",
+  "verifiedFinishedUTC": "2026-11-16T16:15:34.696314+00:00",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.23.0",
+  "releaseID": 447274194,
+  "publishedAtUTC": "2026-11-16T16:11:23Z",
+  "latestTag": "v1.23.0",
+  "draft": false,
+  "prerelease": false,
+  "latestHTTPStatus": 200,
+  "latestResolvedURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.23.0",
+  "tagObjectSHA": "f3987e0cff0a077c9ea78f9b47d949c4f6ae1fd2",
+  "tagTargetCommit": "54167e7d5c7fbb5698417d2ba3c3b6822edafcdf",
+  "expectedSourceCommit": "54167e7d5c7fbb5698417d2ba3c3b6822edafcdf",
+  "tagTargetsFrozenSource": true,
+  "releaseAssets": [
+    "CountdownManager-1.23.0-45.zip",
+    "appcast.xml"
+  ],
+  "publicChecks": {
+    "archive": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.23.0/CountdownManager-1.23.0-45.zip",
+      "status": 200,
+      "bytes": 6717542,
+      "sha256": "1e2c3c95dffe0af78b66ebc8582bf9ef91f5006b643c71bb84075f7250663e77",
+      "matchesAuditedBytes": true
+    },
+    "versionFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.23.0/appcast.xml",
+      "status": 200,
+      "bytes": 3613,
+      "sha256": "00826f144d6cca59d1a306e55923aebe87c4d986808698dac69a2d5c1769892e",
+      "matchesAuditedBytes": true
+    },
+    "stableFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "status": 200,
+      "bytes": 3613,
+      "sha256": "00826f144d6cca59d1a306e55923aebe87c4d986808698dac69a2d5c1769892e",
+      "matchesAuditedBytes": true
+    }
+  },
+  "verificationMethod": "Anonymous live GitHub API and HTTP downloads without credentials",
+  "browserPublication": {
+    "observedBy": "Primary agent",
+    "url": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.23.0",
+    "observations": "Latest badge, frozen source54167e7, both completed asset uploads"
+  },
+  "homepageVerification": "Pending after publication-documentation push",
+  "handoff": "Pending primary-agent verification of previous1.22.0/44 and cleanup"
+}
