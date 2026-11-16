@@ -14,8 +14,9 @@ extraction bytes/modes/symlinks and strict/deep codesign.
 on the production executable, with native README and help images.
 
 The previous public release for the owner's manual update is **1.22.0 / build 44**.
-Installed/running identity, task cleanup and final default-branch homepage verification are
-being completed and will receive their own receipts. The prior publication and handoff remain
+[Installed identity](images/v1.23.0/handoff.json), [cleanup](images/v1.23.0/cleanup.json) and
+[homepage verification](images/v1.23.0/homepage.json) have recorded receipts. Runtime launch is
+deferred at the owner's request for background-only work while gaming. The prior publication and handoff remain
 recorded under [1.22.0](releases/v1.22.0.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`

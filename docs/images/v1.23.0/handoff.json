@@ -1,0 +1,10 @@
+{
+  "status": "installed-verified-runtime-deferred",
+  "installedVersion": "1.22.0",
+  "installedBuild": "44",
+  "installedExecutableSHA256": "ff430dd40e87b2d796ba110438a8283bca6ae29020acbe4b5a2bd8c4515e2944",
+  "publishedVersion": "1.23.0",
+  "publishedBuild": "45",
+  "runtimeLaunchDeferredReason": "Owner is playing a game and requested no application windows or focus changes",
+  "ownerManualUpdatePending": true
+}

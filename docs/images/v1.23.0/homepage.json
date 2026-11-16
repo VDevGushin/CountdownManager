@@ -1,0 +1,73 @@
+{
+  "status": "passed",
+  "verifiedAtUTC": "2026-11-16T16:26:10.685200+00:00",
+  "defaultBranch": "main",
+  "defaultBranchCommit": "d885390a21bc1e05e82ecfc777bdf431dcc603a2",
+  "expectedHomepageCommit": "d885390a21bc1e05e82ecfc777bdf431dcc603a2",
+  "readme": {
+    "url": "https://raw.githubusercontent.com/VDevGushin/CountdownManager/main/README.md",
+    "status": 200,
+    "bytes": 25233,
+    "sha256": "a13472069499e78f30533a9f06581c1d4f987ce6af850c328304294c8ef40e5c",
+    "matchesLocalBytes": true,
+    "initialResponseSHA256": "a13472069499e78f30533a9f06581c1d4f987ce6af850c328304294c8ef40e5c",
+    "cacheBypassUsed": false
+  },
+  "images": [
+    {
+      "path": "docs/images/v1.23.0/subtask-transfer-desktop-inline-dark.png",
+      "url": "https://raw.githubusercontent.com/VDevGushin/CountdownManager/main/docs/images/v1.23.0/subtask-transfer-desktop-inline-dark.png",
+      "status": 200,
+      "bytes": 268571,
+      "sha256": "8402086e1a51dd2ad95698407f0377a6a519dbae3af29068d076a051a3c1e730",
+      "matchesLocalBytes": true,
+      "initialResponseSHA256": "8402086e1a51dd2ad95698407f0377a6a519dbae3af29068d076a051a3c1e730",
+      "cacheBypassUsed": false
+    },
+    {
+      "path": "docs/images/v1.23.0/subtask-transfer-mini-list-light.png",
+      "url": "https://raw.githubusercontent.com/VDevGushin/CountdownManager/main/docs/images/v1.23.0/subtask-transfer-mini-list-light.png",
+      "status": 200,
+      "bytes": 142233,
+      "sha256": "6f593394128b5019e17a10596a02280607393a3915225ff87149a72bd9bba47a",
+      "matchesLocalBytes": true,
+      "initialResponseSHA256": "6f593394128b5019e17a10596a02280607393a3915225ff87149a72bd9bba47a",
+      "cacheBypassUsed": false
+    },
+    {
+      "path": "docs/images/v1.23.0/subtask-transfer-mini-inline-dark.png",
+      "url": "https://raw.githubusercontent.com/VDevGushin/CountdownManager/main/docs/images/v1.23.0/subtask-transfer-mini-inline-dark.png",
+      "status": 200,
+      "bytes": 140398,
+      "sha256": "99d26e708d1caeb81f4e981c411bb9862ae1f6b6f5e066068772b8400314a0a8",
+      "matchesLocalBytes": true,
+      "initialResponseSHA256": "99d26e708d1caeb81f4e981c411bb9862ae1f6b6f5e066068772b8400314a0a8",
+      "cacheBypassUsed": false
+    }
+  ],
+  "downloadURL": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.23.0/CountdownManager-1.23.0-45.zip",
+  "downloadURLMatchesAuditedArchive": true,
+  "verificationMethod": "Anonymous live repository metadata and default-branch raw README/image HTTP bytes",
+  "browserVisualReview": "Not performed by this background audit; primary agent owns any separate visual check",
+  "browserReview": {
+    "surface": "hidden in-app browser",
+    "versionText": "Опубликована 1.23.0 · сборка 45",
+    "correctReleaseAndDownloadLinks": true,
+    "allThreeImagesLoaded": true,
+    "imageDisplaySizes": [
+      [
+        530,
+        348.03125
+      ],
+      [
+        360,
+        553.84375
+      ],
+      [
+        360,
+        553.84375
+      ]
+    ],
+    "observedBeforeBackgroundOnlyHandoff": true
+  }
+}

@@ -1,0 +1,342 @@
+{
+  "status": "passed",
+  "verifiedAtUTC": "2026-11-16T16:32:04.681716+00:00",
+  "removed": [
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-date-control-probe",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-final",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-focus-probe",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-preview",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-probe",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-rc",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-readiness",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-ready",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.build/subtask-transfer-verified",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-manual-qa",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-manual-qa",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-focus-probe-manual",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-date-control-probe-manual",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-final-manual",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-subtask-transfer-captures",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.RsOVHx",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.hbYK8R",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.oma8LF",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.u7Sckx",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.v3XjBL",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.wTK3zE",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-mock-check.js",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-mock-module-cache",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-mock-symbols.swift",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/update-transfer-mock.py",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-macho-compare.py",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.sh",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native-remaining.sh",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native-root.txt",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/Library/Caches/Sparkle_generate_appcast/1e2c3c95dffe0af78b66ebc8582bf9ef91f5006b643c71bb84075f7250663e77",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/Users/vladislav.gushchin/AI-Agents/Countdown/.lavish/task-transfer",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/prepare-countdown-123-docs.py",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-date-control-probe.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-focus-probe-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-rc-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-rc-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-final-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-final-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-final-xcode.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-native.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-xcode",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-xcode.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-xcui-results.xcresult",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-readiness-xcui.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-ready-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-ready-native-retry.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-ready-native.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-ready-xcode-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-release-fuzz",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-remaining-native.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-subtask-transfer-manual",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-transfer-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-transfer-final-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-transfer-native.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-verified-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-verified-fast.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-verified-native.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-weather-probe-build.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-weather-probe.log",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-weather-probe.sh",
+      "existed": true,
+      "absentAfter": true
+    },
+    {
+      "path": "/private/tmp/countdown-release-1.23.0.a8ZBxC",
+      "existed": true,
+      "absentAfter": true
+    }
+  ],
+  "preservedPendingOwnership": [
+    "/private/tmp/countdown-skill-validation",
+    "/private/tmp/countdown-skill-verification.log",
+    "/private/tmp/countdown-transfer-audit",
+    "/private/tmp/countdown-transfer-clang",
+    "/private/tmp/countdown-transfer-core-check",
+    "/private/tmp/countdown-transfer-core-direct",
+    "/private/tmp/countdown-transfer-swift"
+  ],
+  "productionBefore": {
+    "files": 33,
+    "aggregateSHA256": "bbf9c022bf678ecb49d98331d1af2c9494506fc56e9760df7f28135c9153e4b5",
+    "preferencesSHA256": "2a656fcc327ce235b37fb31911d356cac04543d20e9cbcc93a76b441416a29f9"
+  },
+  "productionAfter": {
+    "files": 33,
+    "aggregateSHA256": "bbf9c022bf678ecb49d98331d1af2c9494506fc56e9760df7f28135c9153e4b5",
+    "preferencesSHA256": "2a656fcc327ce235b37fb31911d356cac04543d20e9cbcc93a76b441416a29f9"
+  },
+  "productionUnchanged": true,
+  "previewPIDClosed": 67775
+}
