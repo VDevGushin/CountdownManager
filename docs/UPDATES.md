@@ -2,22 +2,17 @@
 
 ## Current published release
 
-Published as Latest is **1.23.0 / build 45** on 2026-11-16 for single-subtask transfer.
-[Release status](releases/v1.23.0.md) and [notes](releases/v1.23.0-notes.md) describe the change.
-[Public verification](images/v1.23.0/publication.json) confirms anonymous Latest resolution to
-v1.23.0 and HTTP 200 with exact audited hashes for the ZIP, versioned feed and stable feed.
-The annotated tag targets frozen main source `54167e7d5c7fbb5698417d2ba3c3b6822edafcdf`.
-[Package audit](images/v1.23.0/artifact-audit.json) passed independent archive/feed authenticity,
-four altered-input rejections, exact feed signature boundary, embedded notes/metadata,
-extraction bytes/modes/symlinks and strict/deep codesign.
-[Exact native acceptance](images/v1.23.0/PROVENANCE.md) passed transfer3/3 and release help1/1
-on the production executable, with native README and help images.
+Published as Latest is **1.24.0 / build 46** on 2026-11-18 for desktop subtask search.
+[Release status](releases/v1.24.0.md) and [notes](releases/v1.24.0-notes.md) describe the change.
+[Public verification](images/v1.24.0/publication.json) records the audited ZIP, versioned feed
+and stable feed. The annotated tag targets frozen main source
+`3d01a67ace806098cbe8e82c4a3256bd47546d81`.
+[Package and native evidence](images/v1.24.0/PROVENANCE.md) records signature checks,
+native search, release help and the current homepage captures.
 
-The previous public release for the owner's manual update is **1.22.0 / build 44**.
-[Installed identity](images/v1.23.0/handoff.json), [cleanup](images/v1.23.0/cleanup.json) and
-[homepage verification](images/v1.23.0/homepage.json) have recorded receipts. Runtime launch is
-deferred at the owner's request for background-only work while gaming. The prior publication and handoff remain
-recorded under [1.22.0](releases/v1.22.0.md).
+The previous public release for the owner's manual update is **1.23.0 / build 45**.
+[Handoff](images/v1.24.0/handoff.json) verifies that it is installed and running.
+The prior publication remains recorded under [1.23.0](releases/v1.23.0.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

@@ -1,0 +1,10 @@
+{
+  "status": "previous-public-release-installed-and-running",
+  "installedVersion": "1.23.0",
+  "installedBuild": "45",
+  "installedExecutableSHA256": "f3ceb83291dcadbccdcc9823e0e925b215c5e0234134392ea99af87943d0e33d",
+  "runningExecutable": "/Applications/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "publishedVersion": "1.24.0",
+  "ownerManualUpdatePending": true,
+  "eventAndAttachmentBytesPreserved": true
+}

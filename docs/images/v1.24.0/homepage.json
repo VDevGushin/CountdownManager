@@ -1,0 +1,24 @@
+{
+  "status": "passed",
+  "defaultBranch": "main",
+  "verifiedCommit": "80d0b8ea7ef0ba01ed4ca3228238627809ba1406",
+  "readmeSHA256": "5e99bd5c0330c7b5657b1e6a39f887405e825145ad5d908cab6081769ccc9097",
+  "publicReadmeHTTPStatus": 200,
+  "renderedHomepage": {
+    "download": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.24.0/CountdownManager-1.24.0-46.zip",
+    "images": [
+      {
+        "alt": "Поиск по подзадачам в коллекции, графитовая тема",
+        "loaded": true,
+        "src": "https://github.com/VDevGushin/CountdownManager/raw/main/docs/images/v1.24.0/subtask-search-collection-dark.png",
+        "sha256": "073a9a439bf9604f76ee94589e24af95dddb84ee7d36d2aeb1ab12c83b842c34"
+      },
+      {
+        "alt": "Поиск по подзадачам в ленте, светлая тема",
+        "loaded": true,
+        "src": "https://github.com/VDevGushin/CountdownManager/raw/main/docs/images/v1.24.0/subtask-search-feed-light.png",
+        "sha256": "1619a6e62c5124cfda62e69e34c37fd12a2d4c30ab10b20cb00e1902563e20d3"
+      }
+    ]
+  }
+}

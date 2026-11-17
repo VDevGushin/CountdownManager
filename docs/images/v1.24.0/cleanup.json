@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "removed": [
+    "Countdown Manager.app",
+    ".build/manual-qa/Countdown Search QA.app",
+    "/private/tmp/countdown-search-manual-qa",
+    "/private/tmp/countdown-subtask-search-evidence",
+    "/private/tmp/countdown-search-build",
+    "/private/tmp/countdown-search-swift",
+    "/private/tmp/countdown-search-contact.swift",
+    "/private/tmp/countdown-search-demo-check.js",
+    "/private/tmp/countdown-search-symbols.swift",
+    "/private/tmp/countdown-release-1.24.0"
+  ],
+  "productionEventAndAttachmentBytesPreserved": true,
+  "retained": "Tracked release evidence, local design and exploratory QA reports, and installed previous public app"
+}
