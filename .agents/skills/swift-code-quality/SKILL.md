@@ -26,11 +26,15 @@ Use repository contracts first:
 
 For Swift, SwiftUI, AppKit, Foundation, accessibility, lifecycle, concurrency, or other platform behaviour, prefer current first-party sources:
 
-1. Apple documentation;
+1. [Apple Developer Documentation](https://developer.apple.com/documentation);
 2. Apple Human Interface Guidelines when interaction semantics matter;
 3. Apple release notes and framework documentation;
 4. official Swift documentation and Swift Evolution proposals;
 5. direct observation on the supported runtime when documentation is insufficient.
+
+For a platform-sensitive decision, read the specific framework, symbol or task documentation and its relevant sample code or release notes. Check macOS availability, deprecations, isolation and lifecycle requirements against the project's deployment target, SDK and Swift language mode. If a page requires JavaScript, try its offered Markdown version or locate the specific official page through search. Report any remaining evidence gap.
+
+Use [Habr](https://habr.com/ru/feed/) to discover practical engineering articles relevant to a concrete question about Swift, architecture, debugging, testing or performance. Read the selected article's reasoning and examples before relying on them. Check publication/update dates, the author's environment and linked primary sources. Verify Apple API claims through first-party documentation and performance claims through applicable measurements. Search by topic when useful to the decision.
 
 Use [Swift by Sundell articles](https://www.swiftbysundell.com/articles/) as a supplementary source for practical Swift and SwiftUI architecture, state ownership, concurrency, and testing patterns. Check article dates and examples against the project's Swift language mode, supported macOS versions, and current first-party documentation. Consult relevant articles for the task rather than reading the archive by default. Repository contracts and first-party sources retain priority.
 
@@ -66,6 +70,20 @@ sibling before coding. Preserve existing symbols, native control treatment, disc
 state and empty/count behavior; one shared data model does not mean identical panel/desktop
 interaction. Carry the chosen sibling comparison into focused acceptance checks. Do not invent
 another visual/action family merely because the feature is new.
+
+### Verify the approach before writing dependent code
+
+Use the affected contract and implementation to decide what needs external evidence.
+
+- For a new capability or unfamiliar API, check the relevant current Apple/Swift guidance before choosing the mechanism. For an architecture choice, search task-specific practices when they can resolve a concrete trade-off.
+- For uncertain macOS behaviour that can change the decision, use `.agents/skills/macos-platform-research/SKILL.md` to resolve the smallest material question.
+- For a local change covered by an established implementation and verified contract, reuse that evidence while its version and platform assumptions remain applicable.
+
+Define the question and decision criteria before searching. Examine limitations, counterexamples and failure modes as well as supporting examples. Compare the candidate with the simplest viable existing solution. Use supplementary articles to discover approaches, checking their compatibility under the source rules above.
+
+Finish research when the material assumptions have sufficient support, the approach fits project constraints and a verification path is clear. If focused reading leaves a critical question open, use a minimal isolated experiment. Continue independent work while an unresolved question is being investigated. Revisit sources when implementation or tests contradict the assumptions.
+
+For a consequential choice, briefly explain the solution, the assumptions checked, direct supporting links and any remaining uncertainty in an existing progress update. Distinguish documented guarantees, runtime observations and inference. Keep routine choices concise.
 
 ## 2 — Prefer native, direct solutions
 

@@ -23,6 +23,20 @@ submitted decision that changes the contract; agent-authored docs and passing im
 tests cannot substitute for that source. Routine technical and visual choices inside the accepted
 contract remain the agent's responsibility.
 
+## Check references before choosing a direction
+
+Define the user task, real content and interaction constraints before browsing references.
+
+- For a new interaction, surface or substantial redesign, read the relevant Apple HIG guidance before choosing the direction.
+- When visual exploration can improve composition, hierarchy, typography, spacing or color, inspect relevant Dribbble references using the source rules below.
+- For a small adjustment within an established component family, use the existing sibling and applicable guidance. Reuse inspected references while they remain applicable.
+
+Evaluate candidate directions against the task and look for states that expose their weaknesses. Explain the expected improvement relative to the current interface. Popularity and visual polish can guide discovery, with usability requiring verification.
+
+Finish exploration when a direction fits the task and product identity, relevant platform guidance is understood and important interaction assumptions have a validation path. Resolve material uncertainty through relevant states or a focused prototype. Revisit sources when actual content, accessibility or platform behaviour contradicts an assumption.
+
+For a consequential proposal, briefly explain the rationale, link the specific guidance or inspected references used and identify unresolved assumptions in the existing handoff. Keep routine choices concise.
+
 ## Give each surface a job
 
 Choose a window, temporary panel, inspector, or settings surface according to the work it supports. Preserve existing roles unless the requested change calls for a new one.
@@ -93,6 +107,10 @@ Inspect captures at their real scale and record whether they show HTML, a native
 Update product or design sources only for accepted changes in their scope. Follow `AGENTS.md` for README and current native screenshot requirements; an unimplemented concept does not become a shipped feature in those documents.
 
 ## Platform references
+
+Use [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines) as the primary platform design reference. Read the macOS and component guidance relevant to the actual decision, checking applicability to supported macOS versions. Distinguish an explicit Apple recommendation from an interpretation or a project-specific choice. When a page requires JavaScript, use its offered Markdown version or locate the specific official page through search. Link the specific guidance used for a consequential design choice.
+
+Use [Dribbble](https://dribbble.com/) for visual exploration when the task benefits from fresh composition, hierarchy, typography, spacing or color references. Search for comparable desktop tasks and content density, then inspect the actual images at a useful scale. For each reference carried into a proposal, identify the visual principle being adapted and how it serves this application's task and identity. Link the original shot and credit its author when presenting it. Assess keyboard use, resizing, long and empty content, accessibility and relevant interaction states in the resulting design. A static shot leaves those behaviours unverified. If images are inaccessible, disclose the limitation and ground visual decisions in inspected material.
 
 Consult the relevant current first-party guidance when the decision needs it, rather than loading a whole manual for every task:
 
