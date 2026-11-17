@@ -1,0 +1,2 @@
+DesktopSmoke
+FAIL after 0 scenarios: timeout: mini Settings restored after highlights
