@@ -1,0 +1,4 @@
+DesktopSmoke
+✓ search typing preserves native detail geometry with inherited font metrics and color-only highlighting
+✓ subtask search renders collection/feed, retained completed matches, ten-task context, completion retention and empty/clear without changing saved event bytes
+PASS: 2/2

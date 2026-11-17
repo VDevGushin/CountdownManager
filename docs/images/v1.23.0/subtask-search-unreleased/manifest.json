@@ -1,0 +1,352 @@
+{
+  "applicationBuild": "45",
+  "applicationVersion": "1.23.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-collection-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353836.08443525,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "073a9a439bf9604f76ee94589e24af95dddb84ee7d36d2aeb1ab12c83b842c34"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-collection-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353836.32088033337,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "54be1629a11e6ce434d6b5a2c17b430cf156cc2d5495222c6338a11f3043604c"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-feed-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353836.55821270833,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "ee4f195c534c15899abcd7876980908a9a8dca9e898cf00412c95b72ac30bba5"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-feed-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353836.79967566667,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "1619a6e62c5124cfda62e69e34c37fd12a2d4c30ab10b20cb00e1902563e20d3"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-feed-contrast-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": true,
+      "isKeyWindow": true,
+      "observationUptime": 353837.039669,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "fddd6b7919463d8a80ef529d2e1bdec5b370a4ffa426026084e7678dbe57b441"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-feed-contrast-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": true,
+      "isKeyWindow": true,
+      "observationUptime": 353837.27704033337,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "b6a482999f03a40bcccf9a3f44de199493d6137309a6180fe807bf635c35b237"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-long-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353837.5902298334,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "43d137e0b764d64f6d262fcbc9f5c515853f8131e7ea812ab81c784b6de6fe67"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-long-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353837.8386308334,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "04231ea388be51772a147b65520a83800f4fb0e61371afa9ef5b6911c4bd5ea2"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-favorite-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353838.188498375,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "637eb3f9edeafc4374fd527cdadefd693ccc155bb85806cea761570828e4cd1d"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-favorite-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353838.42951720837,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "fd21fe4bd77826f55adc9aacd22f285208c38d0b324dfac43d6f27fba3060ab8"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-completed-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353838.7749985417,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "12385be728e8f15b06ef7fe1b836ede22048d731cb7bc47c947f8904b3fcf613"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-completed-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353839.0154368334,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "9c4a148e045a2366f4705e7452e593561aba08bea08e5ab8e35a9d77defdb40c"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-search-empty-dark.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353839.46362375,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "2613adb6d7acd26f93ab097a3b8043c1840104b2311ac3ce9f90fb8e24f5d71f"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-search-empty-light.png",
+      "fixture": {
+        "data": "synthetic",
+        "highlight": "foreground color only; inherited font and metrics",
+        "referenceDay": "2026-11-17",
+        "scenario": "subtask-search"
+      },
+      "height": 1616,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 353839.68761575,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 2400,
+      "sha256": "87fa8eac0e1190898568f37f0f04f910ece4e3b4bd7d9264fa9acdfa69358fea"
+    }
+  ],
+  "executableSHA256": "e46a702ae447de20483166ba247ea897fde7621fef0874c3b80033a96787c933",
+  "scope": "Unreleased desktop subtask search on the 1.23.0/45 base; isolated in-process native input and rendering",
+  "syntheticData": true,
+  "nativeBuildProvenance": {
+    "schemaVersion": 1,
+    "styleVersion": "native-calendar-graphite-v2",
+    "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "sourceAuthoritySHA256": {
+      "docs/PRODUCT.md": "f02e51ef436e4b4cf3e7f1232a55b4747c0442e4a701f59bbe6670e334576ba9",
+      "DESIGN.md": "b054757e4fac15525f29e69fc316797c47c665ffdd170a270f646c9a0bd55c19",
+      "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "compilerSDK": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version": "27.2",
+      "canonicalName": "macosx27.2"
+    },
+    "swiftToolchain": {
+      "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+      "version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    },
+    "linkedCompatibility": "13.0",
+    "deploymentTarget": "13.0",
+    "createdAtUTC": "2026-11-17T17:43:56.603520+00:00",
+    "application": {
+      "identifier": "local.countdownmanager.app",
+      "version": "1.23.0",
+      "build": "45",
+      "executable": "CountdownManager"
+    },
+    "linkedMachO": [
+      {
+        "architecture": "thin",
+        "command": "LC_BUILD_VERSION",
+        "platform": "1",
+        "minos": "13.0",
+        "sdk": "13.0"
+      }
+    ],
+    "renderedAppearanceVerified": false
+  },
+  "sourceFilesSHA256": {
+    "Sources/CountdownManager/Desktop/DesktopViews.swift": "9417afa5a17f60aa429b0b11ff05333de889ce2c2fd6360835e4b23e3c208777",
+    "Sources/CountdownManager/Desktop/DesktopSheetBackdropDismissal.swift": "152d000dcd27223d384526dc7156b00639a4df06e1d555ef0ff2c065f648dc7c",
+    "Sources/CountdownManager/Desktop/DesktopDividerGrip.swift": "a54a541473514944d4cfb6fee1215a27e0ed33120e3a75fa51780cb7df596116",
+    "Sources/CountdownManager/Desktop/DesktopWindowController.swift": "2df672f4867cb35d5e35f73b63014c8f80628284de87df28bd36b6af11398b6d",
+    "Sources/CountdownManager/Desktop/DesktopEventViews.swift": "3f38522d2f844b34c75fdcd1a1674715ef3f9ac8488140a51635e4087ee2267b",
+    "Sources/CountdownManager/Desktop/DesktopEventDetail.swift": "068217a2c6c70943b7dc8613983dd3a7742e0e37b30ea8cce2a15698d52d6ba7",
+    "Sources/CountdownManager/Desktop/DesktopSheetTerminationPolicy.swift": "04baf2b91d00c2a6b9479f44ee254fdaf650c966addf1665c73bca892d5af569",
+    "Sources/CountdownManager/Desktop/DesktopPresentation.swift": "52b266aacbb90a32e99906fbf19acfcfa87f559beb27d36adde7589c4501e502",
+    "Sources/CountdownManager/DesktopSmokeRuntime.swift": "42280435477ff500762bc1119f309c4307b626e9cba035415cb1fce6db518548"
+  }
+}

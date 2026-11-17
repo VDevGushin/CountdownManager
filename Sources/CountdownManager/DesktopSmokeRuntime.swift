@@ -148,6 +148,11 @@ final class DesktopSmokeRuntime {
                     showDesktop()
                     try await wait("link desktop shown") { self.desktopWindow()?.isVisible == true }
                     try await verifyEventLinks()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-search") {
+                    try await wait("search parent loaded") { !self.store.isLoading }
+                    showDesktop()
+                    try await wait("search parent shown") { self.desktopWindow()?.isVisible == true }
+                    try await verifySubtaskSearch()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
                     try await verifySubtaskTransfer()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
@@ -2073,6 +2078,147 @@ final class DesktopSmokeRuntime {
         try await verifyMonthlyBrowsing()
         try await verifyWeatherGeometry()
         try await verifyRetainedEvents()
+    }
+
+    private func verifySubtaskSearch() async throws {
+        let parent = try value(desktopWindow(), "search parent window")
+        let directory = configuration.homeURL.appendingPathComponent("SubtaskSearch", isDirectory: true)
+        let suite = configuration.defaultsSuiteName + ".subtask-search"
+        let defaults = try value(UserDefaults(suiteName: suite), "search preferences")
+        var now = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 15, hour: 12)), "search clock")
+        let fixture = Store(fileURL: directory.appendingPathComponent("events.json"), disclosureDefaults: defaults,
+                            now: { now }, loginItemManagementIsAvailable: false)
+        try await wait("search fixture loads") { !fixture.isLoading }
+        let today = Day(try value(Day.calendar.date(byAdding: .day, value: 2, to: now), "search today"))
+        let tomorrow = Day(try value(Day.calendar.date(byAdding: .day, value: 3, to: now), "search tomorrow"))
+        let task = try Subtask(text: "Продлить страховку")
+        let first = Countdown(title: "Вторник", note: "Спокойно закрыть бытовые дела.", date: today, emoji: "",
+                              subtasks: [task, try Subtask(text: "Забрать посылку"),
+                                         try Subtask(text: "Записаться на сервис", isCompleted: true)])
+        let trip = Countdown(title: "Подготовка к поездке", note: "Проверить документы перед выездом.", date: tomorrow, emoji: "",
+                             subtasks: [try Subtask(text: "Проверить страховку перед поездкой"), try Subtask(text: "Скачать билеты")])
+        let completed = try Subtask(text: "Сохранить страховку в телефон", isCompleted: true)
+        let past = Countdown(title: "Подготовка мотоцикла", date: fixture.today, emoji: "", subtasks: [completed], keepsAfterDate: true)
+        let long = try Subtask(text: "Проверить все документы и продлить страховку")
+        let dense = Countdown(title: "Пятница", date: tomorrow, emoji: "",
+                              subtasks: try (1...9).map { try Subtask(text: "Подготовить вещь \($0)") } + [long])
+        for event in [first, trip, dense, past] {
+            let saved = await fixture.save(event, primary: false)
+            try require(saved, "cannot seed search fixture")
+        }
+        now = today.date().addingTimeInterval(12 * 60 * 60)
+        fixture.refresh()
+        let session = EventEditorSession()
+        let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
+        let scope = "search-fixture."
+        let controller = DesktopWindowController(rootView: DesktopRootView(
+            store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
+            weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
+            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
+            smokeControlScope: scope
+        ), editorSession: session)
+        let window = try value(controller.window, "search window")
+        let previousScheme = visualEnvironment.colorSchemeOverride
+        let previousContrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let previousMotion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        parent.orderOut(nil)
+        window.setContentSize(NSSize(width: 1200, height: 780))
+        controller.show()
+        var succeeded = false
+        defer {
+            if !succeeded {
+                try? capture("subtask-search-failure", window: window)
+                let diagnostic: [String: Any] = [
+                    "query": controls.value(scope + "desktop.search") ?? "unregistered",
+                    "appActive": NSApp.isActive, "fixtureKey": window.isKeyWindow,
+                    "keyIsFixture": NSApp.keyWindow === window,
+                    "responder": String(describing: NSApp.keyWindow?.firstResponder),
+                    "fixtureResponder": String(describing: window.firstResponder)
+                ]
+                try? JSONSerialization.data(withJSONObject: diagnostic, options: [.prettyPrinted, .sortedKeys])
+                    .write(to: configuration.homeURL.appendingPathComponent("subtask-search-failure.json"))
+            }
+            controller.close()
+            parent.makeKeyAndOrderFront(nil)
+            defaults.removePersistentDomain(forName: suite)
+            visualEnvironment.colorSchemeOverride = previousScheme
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: previousContrast, reduceMotion: previousMotion)
+            captureFixture = nil
+        }
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        captureFixture = ["scenario": "subtask-search", "referenceDay": "2026-11-17", "data": "synthetic",
+                          "highlight": "foreground color only; inherited font and metrics"]
+        try await wait("search fixture shown") { self.controls.entries[scope + "desktop.detail.\(first.id)"] != nil }
+        let divider = try await positionDivider(in: window, fraction: 2.0 / 3.0, controlScope: scope)
+        let initialBytes = try Data(contentsOf: directory.appendingPathComponent("events.json"))
+        let geometryIDs = [scope + "desktop.detail.identity", scope + "desktop.detail.note", scope + "desktop.detail.checklist"]
+            + first.subtasks.map { scope + "desktop.subtask.toggle.\($0.id)" }
+        let baseline = try geometryIDs.map { try value(controls.frame($0), "unhighlighted detail geometry") }
+        for query in ["в", "вто", "ВТОРНИК", "страх", "страховку", ""] {
+            try await replaceFocusedText(control: scope + "desktop.search", text: query, inputWindow: window)
+            try await wait("color-only highlighting preserves detail geometry") {
+                zip(geometryIDs, baseline).allSatisfy { identifier, before in
+                    guard let after = self.controls.frame(identifier) else { return false }
+                    return abs(after.minY - before.minY) < 0.5 && abs(after.height - before.height) < 0.5
+                        && abs(after.minX - before.minX) < 0.5 && abs(after.width - before.width) < 0.5
+                }
+            }
+        }
+        passed.append("search typing preserves native detail geometry with inherited font metrics and color-only highlighting")
+        try await replaceFocusedText(control: scope + "desktop.search", text: "страховку", inputWindow: window)
+        for event in [first, trip, dense, past] {
+            try await expect(scope + "desktop.search.snippet.\(event.id)", DesktopEventSearch("страховку").snippet(in:
+                try value(DesktopEventSearch("страховку").firstSubtask(in: event), "matched task").text))
+        }
+        try await captureWindowThemes("subtask-search-collection", window: window)
+        try await press(scope + "desktop.mode")
+        try await expect(scope + "desktop.mode", "feed")
+        try await captureWindowThemes("subtask-search-feed", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: true)
+        try await captureWindowThemes("subtask-search-feed-contrast", window: window)
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        try await press(scope + "desktop.event.\(dense.id)")
+        try await wait("all ten search-context tasks remain mounted") {
+            dense.subtasks.allSatisfy { self.controls.entries[scope + "desktop.subtask.toggle.\($0.id)"] != nil }
+        }
+        let split = try value(window.contentView.flatMap { nativeSplit(in: $0) }, "search detail split")
+        let detailScroll = try value(nativeScroll(in: split.arrangedSubviews[1]), "search detail scroll")
+        try scrollBrowser(detailScroll, toEnd: true)
+        try await captureWindowThemes("subtask-search-long", window: window)
+        try await press(scope + "desktop.event.\(trip.id)")
+        try await press(scope + "desktop.favorite.\(trip.id)")
+        try await wait("matching favorite remains separate") {
+            fixture.data.primaryID == trip.id && self.controls.value(scope + "desktop.presentation.\(trip.id)") == "favorite"
+                && !fixture.hasPendingPersistence
+        }
+        try await captureWindowThemes("subtask-search-favorite", window: window)
+        try await press(scope + "desktop.favorite.\(trip.id)")
+        try await wait("search favorite toggle restores original selection") { fixture.data.primaryID == nil && !fixture.hasPendingPersistence }
+        try await press(scope + "desktop.event.\(past.id)")
+        try await expect(scope + "desktop.subtask.toggle.\(completed.id)", "on")
+        try await captureWindowThemes("subtask-search-completed", window: window)
+        try await replaceFocusedText(control: scope + "desktop.search", text: "продлить", inputWindow: window)
+        try await press(scope + "desktop.event.\(first.id)")
+        try await press(scope + "desktop.subtask.toggle.\(task.id)")
+        try await expect(scope + "desktop.subtask.toggle.\(task.id)", "on")
+        try require(controls.entries[scope + "desktop.event.\(first.id)"] != nil,
+                    "completing a matched task removed its event from search")
+        try await press(scope + "desktop.subtask.toggle.\(task.id)")
+        try await expect(scope + "desktop.subtask.toggle.\(task.id)", "off")
+        try await replaceFocusedText(control: scope + "desktop.search", text: "неизвестное дело", inputWindow: window)
+        try await wait("search empty result") {
+            self.controls.ids(withPrefix: scope + "desktop.event.").isEmpty
+                && self.controls.value(scope + "desktop.inspector") == nil
+        }
+        try await captureWindowThemes("subtask-search-empty", window: window)
+        try await replaceFocusedText(control: scope + "desktop.search", text: "", inputWindow: window)
+        try await wait("clear removes every search snippet") { self.controls.ids(withPrefix: scope + "desktop.search.snippet.").isEmpty }
+        try await requireDivider(divider, in: window, after: "search changes", controlScope: scope)
+        let finalBytes = try Data(contentsOf: directory.appendingPathComponent("events.json"))
+        try require(finalBytes == initialBytes, "search or reversible completion altered saved fixture bytes")
+        passed.append("subtask search renders collection/feed, retained completed matches, ten-task context, completion retention and empty/clear without changing saved event bytes")
+        succeeded = true
     }
 
     private func verifyRetainedEvents() async throws {
@@ -4375,7 +4521,7 @@ final class DesktopSmokeRuntime {
         try JSONSerialization.data(withJSONObject: manifest, options: [.prettyPrinted, .sortedKeys]).write(to: destination)
     }
 
-    private func replaceFocusedText(control: String, text: String) async throws {
+    private func replaceFocusedText(control: String, text: String, inputWindow: NSWindow? = nil) async throws {
         let editsDesktopSheet = (control.hasPrefix("editor.") && editorSession.desktopIsPresented)
             || control.hasPrefix("desktop.attachments.list.search.")
         if editsDesktopSheet {
@@ -4387,10 +4533,11 @@ final class DesktopSmokeRuntime {
         try await press(control)
         await Task.yield()
         try await wait("focused native text editor for \(control)") {
-            NSApp.keyWindow?.firstResponder is NSTextView
+            (inputWindow ?? NSApp.keyWindow)?.firstResponder is NSTextView
                 && (!control.hasPrefix("editor.") || self.controls.focusedID == control)
         }
-        let textView = try value(NSApp.keyWindow?.firstResponder as? NSTextView, "native field editor")
+        let textView = try value((inputWindow ?? NSApp.keyWindow)?.firstResponder as? NSTextView, "native field editor")
+        if let inputWindow { try require(textView.window === inputWindow, "field editor escaped its fixture window") }
         textView.selectAll(nil)
         textView.insertText(text, replacementRange: textView.selectedRange())
         try await expect(control, text)

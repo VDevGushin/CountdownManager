@@ -26,6 +26,44 @@ package struct DesktopEventMonthSection: Equatable, Identifiable {
     package let items: [Countdown]
 }
 
+package struct DesktopEventSearch {
+    package let query: String
+
+    package init(_ query: String) {
+        self.query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    package func ranges(in text: String) -> [Range<String.Index>] {
+        guard !query.isEmpty else { return [] }
+        var matches: [Range<String.Index>] = []
+        var start = text.startIndex
+        while start < text.endIndex,
+              let match = text.range(of: query, options: .caseInsensitive,
+                                     range: start..<text.endIndex, locale: .current), !match.isEmpty {
+            matches.append(match)
+            start = match.upperBound
+        }
+        return matches
+    }
+
+    package func matches(_ text: String) -> Bool {
+        !query.isEmpty && text.localizedCaseInsensitiveContains(query)
+    }
+
+    package func firstSubtask(in item: Countdown) -> Subtask? {
+        let ordered = item.subtasks.filter { !$0.isCompleted } + item.subtasks.filter(\.isCompleted)
+        return ordered.first { matches($0.text) }
+    }
+
+    package func snippet(in text: String) -> String {
+        guard let match = ranges(in: text).first else { return text }
+        let start = text.distance(from: text.startIndex, to: match.lowerBound) <= 12 ? text.startIndex
+            : text.index(match.lowerBound, offsetBy: -8, limitedBy: text.startIndex) ?? text.startIndex
+        let end = text.index(match.upperBound, offsetBy: 24, limitedBy: text.endIndex) ?? text.endIndex
+        return (start > text.startIndex ? "…" : "") + text[start..<end] + (end < text.endIndex ? "…" : "")
+    }
+}
+
 package struct DesktopEventCollection: Equatable {
     package let favorite: Countdown?
     package let ordinary: [Countdown]
@@ -37,12 +75,13 @@ package struct DesktopEventCollection: Equatable {
     }
 
     package init(items: [Countdown], today: Day, primaryID: UUID?, query: String) {
-        let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let search = DesktopEventSearch(query)
         let matching = items.enumerated().filter { entry in
             let item = entry.element
             return item.isAvailable(on: today)
-                && (search.isEmpty || item.title.localizedCaseInsensitiveContains(search)
-                    || (item.note?.localizedCaseInsensitiveContains(search) ?? false))
+                && (search.query.isEmpty || search.matches(item.title)
+                    || item.note.map(search.matches) == true
+                    || item.subtasks.contains { search.matches($0.text) })
         }.sorted { first, second in
             let firstIsPast = first.element.date < today
             let secondIsPast = second.element.date < today

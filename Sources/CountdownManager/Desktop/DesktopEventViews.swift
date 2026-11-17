@@ -7,7 +7,7 @@ struct DesktopEventBrowser: View {
     let collection: DesktopEventCollection
     let mode: DesktopEventViewMode
     let selectedID: UUID?
-    let isFiltering: Bool
+    let search: DesktopEventSearch
     let select: (UUID) -> Void
     let resetFilters: () -> Void
     let create: () -> Void
@@ -94,14 +94,14 @@ struct DesktopEventBrowser: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(isFiltering ? "Ничего не нашлось" : EventUIStrings.emptyTitle)
+            Text(!search.query.isEmpty ? "Ничего не нашлось" : EventUIStrings.emptyTitle)
                 .font(.custom("Georgia", size: 23))
-            Text(isFiltering ? "Попробуйте другое название или покажите все события."
+            Text(!search.query.isEmpty ? "Попробуйте другое слово или покажите все события."
                  : "Добавьте событие — заметка и подготовка будут рядом с датой.")
                 .font(.system(size: 13))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
-            if isFiltering {
+            if !search.query.isEmpty {
                 Button("Показать все события", action: resetFilters)
             } else {
                 Button("Создать день на сегодня", action: create).disabled(!canCreate)
@@ -127,11 +127,12 @@ struct DesktopEventBrowser: View {
         Button { select(item.id) } label: {
             DesktopEventCard(item: item, today: store.today, primaryID: store.data.primaryID,
                              weather: weather, featured: featured, feed: !featured && mode == .feed,
-                             selected: item.id == selectedID)
+                             selected: item.id == selectedID, search: search)
         }
         // The opaque card owns its appearance; avoid Plain's additional disabled fade.
         .buttonStyle(.borderless)
-        .accessibilityLabel(desktopEventAccessibilityLabel(item))
+        .accessibilityLabel(desktopEventAccessibilityLabel(item)
+            + (search.firstSubtask(in: item).map { ". Подзадача: \($0.text)" } ?? ""))
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
@@ -293,6 +294,7 @@ private struct DesktopEventCard: View {
     let featured: Bool
     let feed: Bool
     let selected: Bool
+    let search: DesktopEventSearch
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
@@ -332,8 +334,12 @@ private struct DesktopEventCard: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Label("Избранное", systemImage: "star.fill")
                         .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
-                    Text(item.title).font(.custom("Georgia", size: 27)).tracking(-0.5)
-                        .fixedSize(horizontal: false, vertical: true)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(desktopSearchAttributedText(item.title, search: search, color: accent))
+                            .font(.custom("Georgia", size: 27)).tracking(-0.5)
+                            .fixedSize(horizontal: false, vertical: true)
+                        subtaskMatch
+                    }
                 }
                 Spacer(minLength: 0)
                 DesktopCalendarLeaf(item: item, featured: true, role: "browser").padding(.top, 9)
@@ -358,10 +364,12 @@ private struct DesktopEventCard: View {
         DesktopOrdinaryCardLayout(feedProgress: feed ? 1 : 0) {
             DesktopCalendarLeaf(item: item, featured: false, role: "browser")
                 .uiSmokeControl(id: "desktop.card.leaf.\(item.id)")
-            VStack(alignment: .leading, spacing: 0) {
-                Text(item.title).font(.system(size: 15, weight: .semibold))
+            VStack(alignment: .leading, spacing: 6) {
+                Text(desktopSearchAttributedText(item.title, search: search, color: accent))
+                    .font(.system(size: 15, weight: .semibold))
                     .lineLimit(3).fixedSize(horizontal: false, vertical: true)
                     .transaction { $0.animation = nil }
+                subtaskMatch
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipped()
@@ -402,6 +410,21 @@ private struct DesktopEventCard: View {
         }
         .font(.system(size: 11))
         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+    }
+
+    @ViewBuilder
+    private var subtaskMatch: some View {
+        if let subtask = search.firstSubtask(in: item) {
+            let snippet = search.snippet(in: subtask.text)
+            Text(desktopSearchAttributedText(snippet, search: search, color: accent))
+                .font(.system(size: 12))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .strikethrough(subtask.isCompleted)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .transaction { $0.animation = nil }
+                .uiSmokeControl(id: "desktop.search.snippet.\(item.id)", value: { snippet })
+        }
     }
 
     private var metadataLayout: AnyLayout {
@@ -457,6 +480,16 @@ private struct DesktopEventCard: View {
             for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
         ) : accent
     }
+}
+
+package func desktopSearchAttributedText(_ value: String, search: DesktopEventSearch, color: Color) -> AttributedString {
+    var text = AttributedString(value)
+    for match in search.ranges(in: value) {
+        if let range = Range(match, in: text) {
+            text[range].foregroundColor = color
+        }
+    }
+    return text
 }
 
 struct DesktopCalendarLeaf: View {

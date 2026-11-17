@@ -13,9 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.23.0 uses the read-only `Что нового` screen to describe single-subtask transfer,
-date/recipient selection and explicit Cancel/retry. The three sections use
-`arrowshape.turn.up.right`, `calendar` and `checkmark.circle`. The release-help window was
+Release 1.24.0 uses the read-only `Что нового` screen to describe desktop subtask search,
+matching snippets and color-only highlighting. The three sections use `magnifyingglass`,
+`list.bullet` and `textformat`. The release-help window was
 introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -138,8 +138,19 @@ the status-item icon does not hide the desktop window; toggling it again hides o
 Returning through `Открыть основное окно` hides the panel and restores the retained window state.
 
 The in-window command bar uses an icon-only native segmented control for collection (grid) and
-feed (list), with a visible selected state, hover help and accessible names, search by event title
-or note, and event creation. There is no separate favorite-only filter: only one event can be
+feed (list), with a visible selected state, hover help and accessible names, search by event title,
+note or subtask text, and event creation. The `Поиск событий и дел` field filters while typing,
+ignores surrounding whitespace and matches case-insensitively using the current locale.
+Completed subtasks participate in the same search, including those in retained past events.
+Each event appears once and keeps its ordinary favorite/date placement. When a subtask matches,
+the existing card shows one secondary-text line below its title, using the first match in the
+displayed checklist order (active tasks before completed tasks). A long match uses a fragment
+around the matched text; a completed match retains strikethrough. The full checklist remains
+visible in the details. All matching fragments in event titles, detail notes and subtasks use
+only the shared accent text color, inheriting their existing font, weight, spacing and line height.
+Completing a matching task keeps the event in the results. Clearing the query removes search
+fragments and color highlighting. Search itself changes no saved event content.
+There is no separate favorite-only filter: only one event can be
 favorite, and both views already show the same featured favorite card above ordinary events;
 the nearest event never substitutes for an absent favorite. Ordinary events follow stable date
 order, preserving existing order for equal dates, grouped under month-and-year headings in both

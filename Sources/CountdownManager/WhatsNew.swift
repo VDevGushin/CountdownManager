@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.23.0"
+    static let releaseID = "1.24.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,12 +38,12 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Перенос подзадачи", symbol: "arrowshape.turn.up.right",
-                            text: "Нажмите стрелку справа от невыполненной подзадачи. Выбор даты и события откроется прямо под ней — в мини-панели и большом окне.")
-                    feature("Дата и получатель", symbol: "calendar",
-                            text: "Сначала предлагается завтра. Можно выбрать сегодня или будущую дату. На пустой дате будет создан день, а для занятой даты можно выбрать событие-получатель.")
-                    feature("Отмена и повтор", symbol: "checkmark.circle",
-                            text: "«Перенести» сохраняет один выбранный пункт у получателя. «Отмена» сворачивает форму. При ошибке записи выбор остаётся доступным для повторной попытки.")
+                    feature("Поиск по подзадачам", symbol: "magnifyingglass",
+                            text: "В большом окне введите слово в поле «Поиск событий и дел». Поиск учитывает название, заметку и подзадачи, включая выполненные.")
+                    feature("Совпадение в карточке", symbol: "list.bullet",
+                            text: "В сетке и ленте под названием события виден короткий фрагмент найденного пункта. Выберите событие, чтобы увидеть полный чек-лист.")
+                    feature("Подсветка текста", symbol: "textformat",
+                            text: "Совпавшие слова выделяются терракотовым цветом. Размер и начертание текста сохраняются.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

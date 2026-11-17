@@ -915,11 +915,25 @@ file/editor paths, not represented as a new external run for this visual-only re
 
 Run full SwiftLint and `./verify.sh fast` before the focused `./verify.sh desktop` runtime.
 UIChecks adds deterministic desktop collection/feed presentation coverage: active-day filtering,
-stable equal-date ordering, trimmed case-insensitive title/note search, favorite pinning without a favorite-only filter,
+stable equal-date ordering, trimmed case-insensitive title/note/subtask search, favorite pinning without a favorite-only filter,
 no substitute favorite for nil/invalid/expired IDs, visible selection reconciliation and
 one-third/320-point pane constraints. Editor-session checks exercise exclusive panel/desktop
 admission, repeated requests, wrong-owner cleanup, compatibility setters and updater postponement,
 once-only resumption and termination rechecking with either editor owner.
+
+Subtask-search checks cover active/completed and retained/expired events, multiple matches without
+duplicate events, equal-date ordering, empty/cleared queries, Unicode and canonical equivalence,
+match-centered fragments and first-match checklist order. Attributed-text checks require unchanged
+characters with only foreground color and no font/kern/tracking attributes.
+The focused `--ui-smoke-desktop --ui-smoke-subtask-search` route mounts an isolated synthetic search
+fixture using the same marked test home and current-source build as the desktop route below.
+It addresses that window's native field editor directly, compares detail identity/note/checklist/checkbox frames before and
+after highlighting, exercises grid/feed, completed retained matches, ten-task context and
+completion without losing a matching event, then checks clear/empty results and saved-byte
+preservation. Captures include collection/feed/completed/empty, favorite and long-text context
+in Light and Graphite Dark, plus both Increase Contrast appearances for the feed.
+The fixture uses an injected 17 November 2026 civil date and in-process input/rendering.
+It does not require foreground-app activation and does not certify physical keyboard delivery.
 
 `./verify.sh desktop` uses `--ui-smoke-desktop` with the ordinary isolated home, event file,
 defaults and diagnostics boundaries. It seeds synthetic events, checklists and forecasts only.

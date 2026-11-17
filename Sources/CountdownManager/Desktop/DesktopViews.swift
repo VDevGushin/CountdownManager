@@ -299,7 +299,7 @@ struct DesktopRootView: View {
             HSplitView {
                 DesktopEventBrowser(
                     store: store, weather: weather, collection: collection, mode: mode,
-                    selectedID: selectedID, isFiltering: !query.isEmpty,
+                    selectedID: selectedID, search: DesktopEventSearch(query),
                     select: { if !editorSession.subtaskTransferIsSaving { selectedID = $0 } }, resetFilters: resetFilters,
                     create: { beginEditor(preset: .today(store.today)) }, canCreate: canMutate,
                     editorSession: editorSession, showTextAttachment: { presentTextAttachment(eventID: $0, text: $1) }
@@ -311,7 +311,8 @@ struct DesktopRootView: View {
                     if let selection {
                         DesktopEventDetail(
                             store: store, editorSession: editorSession, item: selection, today: store.today, primaryID: store.data.primaryID,
-                            weather: weather, canMutate: canMutate && !deletionIsPending(selection.id),
+                            weather: weather, search: DesktopEventSearch(query),
+                            canMutate: canMutate && !deletionIsPending(selection.id),
                             canBeginTransfer: { canMutate && !isProcessingActions && pendingActions.isEmpty },
                             edit: { beginEditor(item: selection) }, copy: { beginCopy(sourceID: selection.id) },
                             toggleFavorite: { toggleFavorite(selection) },
@@ -361,11 +362,11 @@ struct DesktopRootView: View {
                 mode = mode == .collection ? .feed : .collection
             }, value: { mode.rawValue })
             Spacer(minLength: 12)
-            TextField("Найти событие", text: $query)
+            TextField("Поиск событий и дел", text: $query)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 180)
                 .focused($searchFocused)
-                .accessibilityLabel("Найти событие")
+                .accessibilityLabel("Поиск событий и дел")
                 .accessibilityIdentifier("desktop.search")
                 .uiSmokeControl(id: "desktop.search", action: { searchFocused = true }, value: { query })
             Button { beginEditor() } label: {

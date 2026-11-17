@@ -8,6 +8,7 @@ struct DesktopEventDetail: View {
     let today: Day
     let primaryID: UUID?
     @ObservedObject var weather: WeatherController
+    let search: DesktopEventSearch
     let canMutate: Bool
     let canBeginTransfer: () -> Bool
     let edit: () -> Void
@@ -25,6 +26,10 @@ struct DesktopEventDetail: View {
 
     private var presentation: CountdownRowPresentation {
         CountdownRowPresentation(item: item, today: today, primaryID: primaryID)
+    }
+
+    private var searchColor: Color {
+        AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
     }
 
     var body: some View {
@@ -146,7 +151,7 @@ struct DesktopEventDetail: View {
     private var eventIdentity: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
-                Text(item.title)
+                Text(desktopSearchAttributedText(item.title, search: search, color: searchColor))
                     .font(.custom("Georgia", size: 27)).tracking(-0.5)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)
@@ -185,7 +190,8 @@ struct DesktopEventDetail: View {
         if let note = presentation.note, !note.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 sectionLabel("Заметка")
-                Text(note).font(.system(size: 13)).lineSpacing(5)
+                Text(desktopSearchAttributedText(note, search: search, color: searchColor))
+                    .font(.system(size: 13)).lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
             }
             .uiSmokeControl(id: "desktop.detail.note")
@@ -214,7 +220,8 @@ struct DesktopEventDetail: View {
                         VStack(alignment: .leading, spacing: 0) {
                             HStack(alignment: .top, spacing: 0) {
                                 Toggle(isOn: Binding(get: { subtask.isCompleted }, set: { _ in toggleSubtask(subtask.id) })) {
-                                    Text(subtask.text).font(.system(size: 13))
+                                    Text(desktopSearchAttributedText(subtask.text, search: search, color: searchColor))
+                                        .font(.system(size: 13))
                                         .strikethrough(subtask.isCompleted)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .frame(maxWidth: .infinity, alignment: .leading)

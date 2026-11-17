@@ -1,6 +1,7 @@
 import Foundation
 import CountdownCore
 import CountdownManagerUI
+import SwiftUI
 
 func testDesktopPresentation() throws {
     let today = Day(DateComponents(calendar: Day.calendar, year: 2026, month: 10, day: 23).date!)
@@ -41,7 +42,7 @@ func testDesktopPresentation() throws {
     let matchingNote = DesktopEventCollection(
         items: items, today: today, primaryID: favorite.id, query: "ДОКУМЕНТЫ"
     )
-    precondition(matchingNote.events == [first])
+    precondition(matchingNote.events == [favorite, first])
     let matchingFavorite = DesktopEventCollection(
         items: items, today: today, primaryID: favorite.id, query: "  оТПУСК\n"
     )
@@ -74,6 +75,60 @@ func testDesktopPresentation() throws {
     precondition(DesktopEventViewMode.collection.systemImage == "square.grid.2x2")
     precondition(DesktopEventViewMode.feed.systemImage == "list.bullet")
     testDesktopMonthGrouping()
+    try testDesktopSubtaskSearch()
+}
+
+private func testDesktopSubtaskSearch() throws {
+    let today = Day(Date())
+    let yesterday = Day(Day.calendar.date(byAdding: .day, value: -1, to: today.date())!)
+    let completed = try Subtask(text: "Сохранить страховку в телефон", isCompleted: true)
+    let active = try Subtask(text: "Продлить СТРАХОВКУ")
+    var first = Countdown(title: "Первое", date: today, emoji: "", subtasks: [completed, active])
+    let second = Countdown(title: "Второе", date: today, emoji: "", subtasks: [completed])
+    let past = Countdown(title: "Прошлое", date: yesterday, emoji: "", subtasks: [completed], keepsAfterDate: true)
+    let expired = Countdown(title: "Удаляемое", date: yesterday, emoji: "", subtasks: [active])
+    let other = Countdown(title: "Пустое", date: today, emoji: "")
+    let items = [first, past, second, expired, other]
+    let search = DesktopEventSearch(" \nсТрАхОвКу  ")
+    precondition(search.query == "сТрАхОвКу")
+    let collection = DesktopEventCollection(items: items, today: today, primaryID: nil, query: search.query)
+    precondition(collection.events == [first, second, past])
+    precondition(collection.pastItems == [past])
+    precondition(search.firstSubtask(in: first) == active)
+    first.subtasks[1].isCompleted = true
+    precondition(search.firstSubtask(in: first) == completed)
+    precondition(DesktopEventCollection(items: [first], today: today, primaryID: nil, query: search.query).events == [first])
+    precondition(DesktopEventCollection(items: items, today: today, primaryID: second.id, query: search.query)
+        .events == [second, items[0], past])
+    precondition(DesktopEventSearch("  \n").firstSubtask(in: first) == nil)
+    precondition(DesktopEventSearch("Первое").firstSubtask(in: first) == nil)
+    precondition(DesktopEventCollection(items: items, today: today, primaryID: nil, query: "без совпадений").events.isEmpty)
+    let plain = DesktopEventCollection(items: items, today: today, primaryID: nil, query: " \n")
+    precondition(plain.events == [items[0], second, other, past])
+    precondition(desktopSelection(current: second.id, available: collection.events) == second.id)
+
+    let repeated = "👨‍👩‍👧‍👦 страховка, СТРАХОВКА и е\u{301}"
+    let repeatedSearch = DesktopEventSearch("страховка")
+    precondition(repeatedSearch.ranges(in: repeated).map { String(repeated[$0]) } == ["страховка", "СТРАХОВКА"])
+    precondition(DesktopEventSearch("é").matches("e\u{301}"))
+    let composedRange = DesktopEventSearch("é").ranges(in: "e\u{301}")
+    precondition(composedRange.count == 1)
+    precondition(DesktopEventSearch("👨‍👩‍👧‍👦").ranges(in: repeated).count == 1)
+    precondition(DesktopEventSearch(" ").ranges(in: repeated).isEmpty)
+    let longText = String(repeating: "👨‍👩‍👧‍👦 ", count: 20) + "страховка" + String(repeating: " дорога", count: 20)
+    let snippet = repeatedSearch.snippet(in: longText)
+    precondition(snippet.hasPrefix("…") && snippet.hasSuffix("…") && snippet.contains("страховка"))
+    precondition(snippet.count == 8 + "страховка".count + 24 + 2)
+    precondition(repeatedSearch.snippet(in: "страховка") == "страховка")
+    precondition(DesktopEventSearch("страховку").snippet(in: "Продлить страховку") == "Продлить страховку")
+    precondition(repeatedSearch.snippet(in: "Без совпадения") == "Без совпадения")
+
+    let attributed = desktopSearchAttributedText(repeated, search: repeatedSearch, color: .red)
+    precondition(String(attributed.characters) == repeated)
+    precondition(attributed.runs.filter { $0.foregroundColor == .red }.count == 2)
+    precondition(attributed.runs.allSatisfy { $0.font == nil && $0.kern == nil && $0.tracking == nil })
+    let plainText = desktopSearchAttributedText(repeated, search: DesktopEventSearch(""), color: .red)
+    precondition(plainText.runs.allSatisfy { $0.foregroundColor == nil && $0.font == nil })
 }
 
 private func testDesktopMonthGrouping() {

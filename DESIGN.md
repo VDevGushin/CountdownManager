@@ -132,9 +132,9 @@ components:
 
 ## Overview
 
-Release 1.23.0 uses three existing release-help sections with native `arrowshape.turn.up.right`,
-`calendar` and `checkmark.circle` for single-subtask transfer, date/recipient selection and
-Cancel/retry. The existing 13-point body, 12-point semibold section labels, Graphite palette
+Release 1.24.0 uses three existing release-help sections with native `magnifyingglass`,
+`list.bullet` and `textformat` for desktop subtask search, matching snippets and color-only
+highlighting. The existing 13-point body, 12-point semibold section labels, Graphite palette
 and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
@@ -312,6 +312,23 @@ inline fields belong inside the existing event card or detail area, without an e
 application-owned popover or sheet. Light, Graphite Dark, Increase Contrast and Reduce Motion
 follow the shared checklist and field roles. The arrow and completion control have independent
 hit targets and keyboard/accessibility actions.
+
+### Desktop search matches
+
+The existing 180-point command-bar field uses `Поиск событий и дел` and searches title, note and
+subtask text in collection and feed. A matching subtask adds one 12-point secondary-ink line,
+6 points below the existing card title. The first match follows the displayed active/completed
+checklist order. Long text starts near the match; completed text retains strikethrough. The
+card's existing padding, calendar leaf, metadata, count and selected outline supply its structure.
+The featured favorite uses the same text line beneath its Georgia title.
+
+Matching ranges in titles, snippets and detail notes/checklists receive only the shared accent
+foreground color, including its Light/Dark/Increase Contrast branches. Font family, size, weight,
+tracking and line height inherit the existing text role. This color-only treatment was accepted
+on 17 November 2026 after the prototype's heavier matching text changed letter widths.
+The expanded detail checklist keeps every task and its existing checkbox/transfer controls.
+An empty query removes snippets and highlighting. The existing empty-search composition uses
+`Попробуйте другое слово или покажите все события.` with its existing return action.
 
 ### Timer Presets
 

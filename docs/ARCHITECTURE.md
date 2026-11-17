@@ -170,9 +170,9 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.23.0`.
-Its three current sections describe single-subtask transfer, date/recipient selection and Cancel/retry
-using `arrowshape.turn.up.right`, `calendar` and `checkmark.circle`.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.24.0`.
+Its three current sections describe desktop subtask search, matching snippets and color-only
+highlighting using `magnifyingglass`, `list.bullet` and `textformat`.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
@@ -207,6 +207,10 @@ uses native SwiftUI controls directly, without an independent toolbar owner or c
 derives the active filtered stable-date ordering, favorite/ordinary partition and month/year sections
 from Store data; it does not persist or mutate another copy. Section identity includes the year.
 `desktopSelection` reconciles missing visible IDs.
+`DesktopEventSearch` derives locale-aware title/note/subtask matches and a short first-task
+fragment from the window query. `desktopSearchAttributedText` adds only foreground-color
+attributes to those ranges; the existing SwiftUI text roles own every font metric. The root
+passes the same derived query to collection cards and details without another saved state owner.
 `DesktopEventFlowLayout` places all month headings and ordinary event buttons in one coordinate
 system, as adaptive equal-height grid rows or single-column feed rows. Nested month stacks no
 longer animate their heights independently from event placements. `DesktopOrdinaryCardLayout`
