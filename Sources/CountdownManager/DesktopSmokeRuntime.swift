@@ -167,6 +167,8 @@ final class DesktopSmokeRuntime {
                     try await verifyWeekCreation()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-editor-stability") {
                     try await verifyEditorStability()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-desktop-note") {
+                    try await verifyDesktopNote()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
                     try await runAttachmentFocusedChecks()
                 } else {
@@ -180,6 +182,138 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyDesktopNote() async throws {
+        try await wait("isolated note store loaded") { !self.store.isLoading }
+        try require(store.active.isEmpty, "note monkey smoke requires an empty test profile")
+        let original = "Проверить смету\nВызвать мастера\n\n\nДо среды\n\nПодготовить список материалов и сроки"
+        let tasks = try (1...6).map { try Subtask(text: "Подготовка \($0)") }
+        let favorite = Countdown(title: "Контрольная дата", date: store.today, emoji: "")
+        let date = Day(try value(Day.calendar.date(byAdding: .day, value: 42, to: store.today.date()), "note date"))
+        let event = Countdown(title: "План работ", note: original, date: date, emoji: "🔧", subtasks: tasks)
+        let seededFavorite = await store.save(favorite, primary: true)
+        let seededEvent = await store.save(event, primary: false)
+        try require(seededFavorite && seededEvent, "cannot seed note fixture")
+        visualEnvironment.colorSchemeOverride = .dark
+        showDesktop()
+        let window = try value(desktopWindow(), "note desktop")
+        window.setContentSize(NSSize(width: 1600, height: 1030))
+        try await press("desktop.event.\(event.id)")
+        try await expect("desktop.inspector", event.id.uuidString)
+        try await wait("rendered note section") { self.controls.frame("desktop.detail.note") != nil }
+        try capture("monkey-before-edit", window: window)
+        let baseline = try desktopNoteInk(in: window)
+        try require(baseline > 50, "note body ROI must have baseline ink: \(baseline)")
+
+        var expectedNote = original
+        var expectedTasks = tasks
+        for index in 0..<10 {
+            let searchActive = !index.isMultiple(of: 3)
+            let commit = !index.isMultiple(of: 2)
+            if index == 3 || index == 7 {
+                window.setContentSize(NSSize(width: index == 3 ? 1050 : 1600, height: 1030))
+            }
+            if index == 5 || index == 8 {
+                try await press("desktop.mode")
+            }
+            if searchActive {
+                try await replaceFocusedText(control: "desktop.search", text: "Проверить", inputWindow: window)
+            } else {
+                try await replaceFocusedText(control: "desktop.search", text: "", inputWindow: window)
+            }
+            try await expect("desktop.inspector", event.id.uuidString)
+            if index == 6 {
+                let first = try value(tasks.first, "first note fixture subtask")
+                let last = try value(tasks.last, "last note fixture subtask")
+                try await dragSavedSubtask(last, before: first, window: window, scope: "desktop.")
+                expectedTasks = [last] + tasks.dropLast()
+                try await requireSavedTaskOrder(expectedTasks, eventID: event.id)
+            }
+            try await wait("note geometry ready for selection") { self.controls.frame("desktop.detail.note") != nil }
+            try await selectVisibleNoteText(in: window)
+            if index == 0 || index == 1 { try capture("monkey-selected-\(index)", window: window) }
+
+            let priorBytes = try Data(contentsOf: configuration.dataURL)
+            try await clickNotePencil(in: window)
+            try await wait("note editor sheet is key") { window.attachedSheet?.isKeyWindow == true }
+            try await press("editor.note")
+            try await wait("native note editor received focus") {
+                (window.attachedSheet?.firstResponder as? NoteTextView)?.isEditable == true
+            }
+            let editor = try value(window.attachedSheet?.firstResponder as? NoteTextView, "native note editor")
+            let draft = original + "\nИзменение \(index)"
+            editor.selectAll(nil)
+            editor.insertText(draft, replacementRange: editor.selectedRange())
+            try await expect("editor.note", draft)
+            if index % 3 == 2 {
+                try await press("editor.title")
+            }
+            try await press(commit ? "editor.save" : "editor.cancel")
+            try await wait("note editor has closed") {
+                window.attachedSheet == nil && !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence
+            }
+            let current = try Data(contentsOf: configuration.dataURL)
+            let persisted = try JSONDecoder().decode(CountdownData.self, from: current)
+            if commit { expectedNote = draft }
+            let saved = persisted.items.first { $0.id == event.id }
+            try require(saved?.note == expectedNote && saved?.subtasks == expectedTasks,
+                        "unexpected saved note or subtask order after cycle \(index)")
+            if !commit { try require(current == priorBytes, "note Cancel changed saved bytes in cycle \(index)") }
+            try capture("monkey-after-\(index)-\(commit ? "save" : "cancel")", window: window)
+            let ink = try desktopNoteInk(in: window)
+            try require(ink > 50, "note body lost ink after cycle \(index): \(ink); saved note still present")
+        }
+        passed.append("Ten native desktop note edit cycles preserve text ink and storage after prior text selection, search, focus handoff, layout changes and task reordering")
+    }
+
+    private func selectVisibleNoteText(in window: NSWindow) async throws {
+        let root = try value(window.contentView, "note text root")
+        let rect = try value(controls.frame("desktop.detail.note"), "visible note frame")
+        let y = root.isFlipped ? rect.minY + 29 : rect.maxY - 29
+        let coords = [rect.minX + 2, rect.minX + 42, rect.minX + 81].map {
+            let point = root.convert(CGPoint(x: $0, y: y), to: nil)
+            return CGPoint(x: point.x, y: window.frame.height - point.y)
+        }
+        try postReorderMouse(.leftMouseDown, at: coords[0], in: window)
+        try await Task.sleep(nanoseconds: 40_000_000)
+        try postReorderMouse(.leftMouseDragged, at: coords[1], in: window)
+        try await Task.sleep(nanoseconds: 40_000_000)
+        try postReorderMouse(.leftMouseDragged, at: coords[2], in: window)
+        try postReorderMouse(.leftMouseUp, at: coords[2], in: window)
+        try await Task.sleep(nanoseconds: 85_000_000)
+    }
+
+    private func clickNotePencil(in window: NSWindow) async throws {
+        let root = try value(window.contentView, "note editor root")
+        try await wait("note pencil enabled") { self.controls.entries["desktop.detail.edit"]?.isEnabled == true }
+        let rect = try value(controls.frame("desktop.detail.edit"), "note pencil frame")
+        let center = root.convert(CGPoint(x: rect.midX, y: rect.midY), to: nil)
+        let point = CGPoint(x: center.x, y: window.frame.height - center.y)
+        try postReorderMouse(.leftMouseDown, at: point, in: window)
+        try postReorderMouse(.leftMouseUp, at: point, in: window)
+    }
+
+    private func desktopNoteInk(in window: NSWindow) throws -> Int {
+        let root = try value(window.contentView, "note bitmap root")
+        let rect = try value(controls.frame("desktop.detail.note"), "note body frame")
+        let top = root.isFlipped ? rect.minY : root.bounds.maxY - rect.maxY
+        let bitmap = try value(root.bitmapImageRepForCachingDisplay(in: root.bounds), "note bitmap")
+        root.cacheDisplay(in: root.bounds, to: bitmap)
+        let sx = CGFloat(bitmap.pixelsWide) / root.bounds.width
+        let sy = CGFloat(bitmap.pixelsHigh) / root.bounds.height
+        let xs = max(0, Int(rect.minX * sx))..<min(bitmap.pixelsWide, max(0, Int((rect.minX + min(130, rect.width)) * sx)))
+        let ys = max(0, Int((top + 23) * sy))..<min(bitmap.pixelsHigh, max(0, Int((top + 57) * sy)))
+        var ink = 0
+        for y in ys {
+            for x in xs {
+                if let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB),
+                   color.redComponent > 0.58, color.greenComponent > 0.48, color.blueComponent > 0.37 {
+                    ink += 1
+                }
+            }
+        }
+        return ink
     }
 
     private func verifyEditorStability() async throws {

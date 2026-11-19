@@ -987,6 +987,15 @@ retained desktop close/reopen, the shared timer and removed selection. This rout
 rerun the general panel regression suite; use existing focused panel checks when their shared
 implementation changes.
 
+The focused `--ui-smoke-desktop --ui-smoke-desktop-note` route uses an empty marked test home
+with a multiline note and six subtasks. AppKit mouse events select part of the displayed note
+and click the pencil before input in the native note field. Ten Save/Cancel cycles cover search,
+focus handoff, width and mode changes and a subtask reorder. After each close the test samples
+rendered text pixels below the heading and compares the stored text and task order.
+It reproduces the blank note body while preserving saved bytes on the pre-fix build.
+These in-process captures exclude physical input and compositor presentation.
+See [fix verification](images/v1.25.0/desktop-note-visibility-unreleased/PROVENANCE.md).
+
 Desktop-only refinement checks cover emoji/date metadata in browser/details, the absence of
 the redundant favorite-only control and desktop timer controls, shared running/finished timer
 continuity and the unchanged mini-panel timer spacer. A separate native desktop fixture holds a persistence write with a

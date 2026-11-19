@@ -13,10 +13,11 @@
 
 ## Как выглядит приложение
 
-Большое окно и мини-панель с чек-листами на демонстрационных данных.
+Большое окно и мини-панель с чек-листами на демонстрационных данных. Снимки сделаны
+на разрабатываемой сборке на базе 1.25.0.
 
-<img src="docs/images/v1.25.0/subtask-reorder-desktop-dark.png" alt="Подзадачи в большом окне" width="900">
-<img src="docs/images/v1.25.0/subtask-reorder-mini-light.png" alt="Подзадачи после перетаскивания в мини-панели" width="390">
+<img src="docs/images/v1.25.0/desktop-note-visibility-unreleased/subtask-reorder-desktop-dark.png" alt="Заметка и подзадачи в большом окне" width="900">
+<img src="docs/images/v1.25.0/desktop-note-visibility-unreleased/subtask-reorder-mini-light.png" alt="Подзадачи после перетаскивания в мини-панели" width="390">
 
 ## Установка и обновления
 

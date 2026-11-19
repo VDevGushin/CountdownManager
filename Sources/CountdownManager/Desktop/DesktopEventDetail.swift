@@ -202,6 +202,8 @@ struct DesktopEventDetail: View {
                 Text(desktopSearchAttributedText(note, search: search, color: searchColor))
                     .font(.system(size: 13)).lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+                    // Discard the native selection across the editor sheet's focus handoff.
+                    .id(editorSession.desktopIsPresented)
             }
             .uiSmokeControl(id: "desktop.detail.note")
         }
