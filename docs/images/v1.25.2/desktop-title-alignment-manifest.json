@@ -1,0 +1,39 @@
+{
+  "applicationBuild": "49",
+  "applicationVersion": "1.25.2",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-title-alignment-dark.png",
+      "height": 1416,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 449120.3169332917,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "dd1c7d54e44ea0e2935ff4a188a870362d81af193b23b068b4525913be0e4167"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-title-alignment-search-dark.png",
+      "height": 1416,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 449120.5147730834,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "85f7c5f039d24b4c9afd36c72fbcb5bcdf8d7d93d0740dadc1291c78746e79df"
+    }
+  ],
+  "executableSHA256": "aea61f646030853bc4ddf8a87ab32aa8b9a44f5d4a37e9a4d0c45666927ad394",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true
+}

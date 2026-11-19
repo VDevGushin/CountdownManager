@@ -1,0 +1,23 @@
+desktop-title-alignment
+DesktopSmoke
+✓ Wrapped desktop grid titles keep a common leading edge, including while search colors a match
+PASS: 1/1
+subtask-search
+DesktopSmoke
+✓ search typing preserves native detail geometry with inherited font metrics and color-only highlighting
+✓ subtask search renders collection/feed, retained completed matches, ten-task context, completion retention and empty/clear without changing saved event bytes
+PASS: 2/2
+desktop-note
+DesktopSmoke
+✓ Ten native desktop note edit cycles preserve text ink and storage after prior text selection, search, focus handoff, layout changes and task reordering
+PASS: 1/1
+subtask-reorder
+DesktopSmoke
+✓ Desktop drag stays within its column and group, cancels outside, moves neighbors before mouse-up and preserves arrow alignment
+✓ Mini-panel drag is bounded and cancels outside; repeated active/completed reordering saves a shared checklist
+✓ Mini and desktop editors match the reordered checklist; new-row focus, Cancel and text Save preserve stored order
+PASS: 3/3
+whats-new
+DesktopSmoke
+✓ native highlights: background/editor deferral, first safe mini opening, one-time and manual reopen, retained timer/data, four theme/contrast captures
+PASS: 1/1
