@@ -132,10 +132,9 @@ components:
 
 ## Overview
 
-Release 1.25.1 uses one existing release-help section with native `note.text` for keeping
-desktop notes visible after closing the editor. The existing 13-point body, 12-point semibold
-section labels, Graphite palette
-and native control families apply.
+Release 1.25.2 uses one existing release-help section with native `text.alignleft`
+for leading alignment of wrapped desktop card titles. The existing 13-point body,
+12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed

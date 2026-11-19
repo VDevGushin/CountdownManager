@@ -13,8 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.25.1 uses the read-only `Что нового` screen to describe keeping notes visible
-after closing the desktop editor, with `note.text` as its symbol. The release-help window was
+Release 1.25.2 uses the read-only `Что нового` screen to describe left alignment of
+wrapped desktop card titles, with `text.alignleft` as its symbol. The release-help window was
 introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -178,6 +178,7 @@ is shown. The indicator is a summary, not another file-editing action.
 In the collection grid, relative labels (`Сегодня`, `Завтра`, `Через N дней`) sit at the bottom
 of ordinary cards with a consistent inset and align across each row, regardless of title wrapping
 or forecast presence. Exact dates and forecasts remain above them.
+Wrapped titles align to the leading edge on every line in ordinary collection cards and feed rows.
 Checklist checkboxes, favorite changes and editing belong to the right-hand event details,
 consistently in both collection and feed. A complete nonempty checklist has a green completion
 indicator; reopening a task restores the incomplete presentation. Completing or reopening a task

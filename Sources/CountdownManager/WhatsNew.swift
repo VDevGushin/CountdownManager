@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.25.1"
+    static let releaseID = "1.25.2"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,8 +38,8 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Заметка остаётся видимой", symbol: "note.text",
-                            text: "Если перед открытием редактора выделить текст заметки в карточке, он остаётся виден после сохранения или отмены. Текст в карточке можно выделять и копировать.")
+                    feature("Длинные заголовки выровнены слева", symbol: "text.alignleft",
+                            text: "В обычных карточках большого окна все строки перенесённого названия начинаются от левого края, в том числе при поиске.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
