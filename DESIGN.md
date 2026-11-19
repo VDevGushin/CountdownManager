@@ -231,6 +231,7 @@ events last. `Вчера`/`N дней назад` uses secondary ink in both sur
 ease-in-out reflows the same ordinary event identities without scaling text, spring effects or
 fading the entire browser. Calendar, title and metadata remain persistent visual elements;
 text reflows inside clipped moving containers rather than animating individual glyph positions.
+Wrapped ordinary event titles align each line to the leading edge in both modes.
 Reduce Motion makes mode changes immediate. The desktop footer
 contains navigation and settings, not timer controls; the compact panel's timer is unchanged.
 

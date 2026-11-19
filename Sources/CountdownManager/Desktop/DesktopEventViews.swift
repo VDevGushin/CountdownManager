@@ -367,6 +367,7 @@ private struct DesktopEventCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(desktopSearchAttributedText(item.title, search: search, color: accent))
                     .font(.system(size: 15, weight: .semibold))
+                    .multilineTextAlignment(.leading)
                     .lineLimit(3).fixedSize(horizontal: false, vertical: true)
                     .transaction { $0.animation = nil }
                 subtaskMatch

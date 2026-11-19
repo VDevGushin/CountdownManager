@@ -973,6 +973,10 @@ in Light and Graphite Dark, plus both Increase Contrast appearances for the feed
 The fixture uses an injected 17 November 2026 civil date and in-process input/rendering.
 It does not require foreground-app activation and does not certify physical keyboard delivery.
 
+The focused `--ui-smoke-desktop --ui-smoke-desktop-title-alignment` route uses two
+ordinary grid cards with unequal wrapped lines on an isolated profile. It inspects
+the rendered start of each line before and during color-only search highlighting.
+
 `./verify.sh desktop` uses `--ui-smoke-desktop` with the ordinary isolated home, event file,
 defaults and diagnostics boundaries. It seeds synthetic events, checklists and forecasts only.
 Unlike general smoke/XCUITest modes, focused desktop smoke enables production shell lifecycle

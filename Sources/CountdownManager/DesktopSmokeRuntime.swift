@@ -169,6 +169,8 @@ final class DesktopSmokeRuntime {
                     try await verifyEditorStability()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-desktop-note") {
                     try await verifyDesktopNote()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-desktop-title-alignment") {
+                    try await verifyDesktopTitleAlignment()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-attachment-preview") {
                     try await runAttachmentFocusedChecks()
                 } else {
@@ -181,6 +183,67 @@ final class DesktopSmokeRuntime {
                 try? capture("failure-desktop")
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
+        }
+    }
+
+    private func verifyDesktopTitleAlignment() async throws {
+        try await wait("title fixture store loaded") { !self.store.isLoading }
+        try require(store.active.isEmpty, "title alignment requires an empty isolated profile")
+        let titles = ["День рождения участников", "День рождения всей команды весной"]
+        let events = titles.map { Countdown(title: $0, date: store.today, emoji: "🎉") }
+        for event in events {
+            let saved = await store.save(event, primary: false)
+            try require(saved, "cannot seed desktop title fixture")
+        }
+        visualEnvironment.colorSchemeOverride = .dark
+        showDesktop()
+        let window = try value(desktopWindow(), "title alignment desktop")
+        window.setContentSize(NSSize(width: 960, height: 680))
+        let ids = events.map { "desktop.card.title.\($0.id)" }
+        try await wait("desktop grid titles laid out") {
+            window.isKeyWindow && self.controls.value("desktop.mode") == DesktopEventViewMode.collection.rawValue
+                && ids.allSatisfy { self.controls.frame($0) != nil }
+        }
+        try capture("desktop-title-alignment-dark", window: window)
+        try requireLeadingCardTitles(ids, window: window)
+        try await replaceFocusedText(control: "desktop.search", text: "рождения", inputWindow: window)
+        try capture("desktop-title-alignment-search-dark", window: window)
+        try requireLeadingCardTitles(ids, window: window)
+        passed.append("Wrapped desktop grid titles keep a common leading edge, including while search colors a match")
+    }
+
+    private func requireLeadingCardTitles(_ ids: [String], window: NSWindow) throws {
+        let root = try value(window.contentView, "desktop title bitmap root")
+        root.layoutSubtreeIfNeeded()
+        let bitmap = try value(root.bitmapImageRepForCachingDisplay(in: root.bounds), "desktop title bitmap")
+        root.cacheDisplay(in: root.bounds, to: bitmap)
+        let scaleX = CGFloat(bitmap.pixelsWide) / root.bounds.width
+        let scaleY = CGFloat(bitmap.pixelsHigh) / root.bounds.height
+        for id in ids {
+            let frame = try value(controls.frame(id), "grid title frame")
+            let top = root.isFlipped ? frame.minY : root.bounds.maxY - frame.maxY
+            let minX = Int(ceil(frame.minX * scaleX))
+            let maxX = Int(floor(frame.maxX * scaleX))
+            let minY = Int(ceil(top * scaleY))
+            let maxY = Int(floor((top + frame.height) * scaleY))
+            try require(minX >= 0 && minY >= 0 && maxX <= bitmap.pixelsWide && maxY <= bitmap.pixelsHigh
+                        && minX < maxX && minY < maxY, "grid title sample escaped the desktop")
+            var lineStarts: [Int] = []
+            var lastInkRow: Int?
+            for y in minY..<maxY {
+                guard let start = (minX..<maxX).first(where: { x in
+                    guard let color = bitmap.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) else { return false }
+                    return color.redComponent > 0.58 && color.greenComponent > 0.45 && color.blueComponent > 0.37
+                }) else { continue }
+                if let lastInkRow, y - lastInkRow <= Int(ceil(3 * scaleY)), let line = lineStarts.indices.last {
+                    lineStarts[line] = min(lineStarts[line], start)
+                } else {
+                    lineStarts.append(start)
+                }
+                lastInkRow = y
+            }
+            try require(lineStarts.count >= 2 && lineStarts.allSatisfy { CGFloat($0 - minX) <= 4 * scaleX },
+                        "wrapped title lines do not start at the leading edge: \(lineStarts.map { $0 - minX }) pixels")
         }
     }
 
