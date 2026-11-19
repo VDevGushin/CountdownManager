@@ -1,0 +1,36 @@
+{
+  "status": "published-and-publicly-verified",
+  "version": "1.25.0",
+  "build": "47",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.25.0",
+  "publicationMethod": "GitHub Actions, draft asset digest verification then Latest",
+  "workflowRun": "https://github.com/VDevGushin/CountdownManager/actions/runs/44586063031",
+  "sourceCommit": "2de49901de9d89dae9a95a9d4ded98e9ada6ab58",
+  "defaultBranch": "main",
+  "assets": {
+    "latest": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest",
+      "status": 200,
+      "sha256": "a41d95f84be3d97457c8fa77902965f397340ceddd7a081e08ca6593489cd244",
+      "bytes": 146855
+    },
+    "archive": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.0/CountdownManager-1.25.0-47.zip",
+      "status": 200,
+      "sha256": "b71bf6c65a5c3395f035244f9911eaff31dde3b4ef506938e9e05f321c947b9e",
+      "bytes": 6923021
+    },
+    "versionFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.0/appcast.xml",
+      "status": 200,
+      "sha256": "927d5f6fd0cb65d53e173dcd3a9a7f8940668f8aacfad51eeee1a7589f0ce7c2",
+      "bytes": 2847
+    },
+    "stableFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "status": 200,
+      "sha256": "927d5f6fd0cb65d53e173dcd3a9a7f8940668f8aacfad51eeee1a7589f0ce7c2",
+      "bytes": 2847
+    }
+  }
+}

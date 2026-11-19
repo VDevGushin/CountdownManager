@@ -1,0 +1,21 @@
+{
+  "status": "working-directories-removed-trash-unverified",
+  "removed": [
+    "/private/tmp/countdown-reorder-bounded-retry.maxLCD",
+    "/private/tmp/countdown-reorder-vertical.3ItH7E",
+    "/private/tmp/countdown-reorder-finish.OV4tzd",
+    "/private/tmp/countdown-row-layout.n9Wb7O",
+    "/private/tmp/countdown-reorder-native",
+    "/private/tmp/countdown-reorder-mini-paint.snFeTL",
+    "/private/tmp/countdown-delete-qa.VSFowT",
+    "/private/tmp/countdown-reorder-deepqa",
+    "/private/tmp/countdown-reorder-bounded-final.q0nrOA",
+    "/private/tmp/countdown-monkey-chain.Y0rsaT",
+    "/private/tmp/countdown-reorder-bounded.bBesxx",
+    "/private/tmp/countdown-reorder-insets.W21Sbm",
+    "/private/tmp/countdown-release.8AVbYk"
+  ],
+  "remoteTransportBranchRemoved": "codex/publish-v1.25.0",
+  "productionEventAndAttachmentBytesPreserved": true,
+  "trashLimitation": "macOS denied directory access, so previously trashed scoped items could not be verified or removed individually"
+}

@@ -1,0 +1,17 @@
+{
+  "defaultBranch": "main",
+  "readmeSHA256": "8f9f3146ea2e9f429797f67a768f6c2e2e575f924371ae05c276bbc2e80aa28f",
+  "matchesLocal": true,
+  "images": [
+    {
+      "path": "docs/images/v1.25.0/subtask-reorder-desktop-dark.png",
+      "sha256": "d4ea46640eb84b509e22a2db9491227a047ceeb60e42aca9ccd9d9e862cce468",
+      "bytes": 241468
+    },
+    {
+      "path": "docs/images/v1.25.0/subtask-reorder-mini-light.png",
+      "sha256": "219aaa0ee00787343ed4b81199b8bb6f13723da2abed0569c16f4e7a6f727c00",
+      "bytes": 129538
+    }
+  ]
+}
