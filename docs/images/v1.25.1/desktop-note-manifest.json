@@ -1,0 +1,69 @@
+{
+  "applicationBuild": "48",
+  "applicationVersion": "1.25.1",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-note-before.png",
+      "height": 2116,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 445457.93978862505,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 3200,
+      "sha256": "ba0aeae57a2418efa78cbc6fc49600e0e73c692de6c3f9ed6bd30b3f20f8f929"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-note-selection.png",
+      "height": 2116,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 445458.3896599167,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 3200,
+      "sha256": "226e00b31497fd80f59a79b4e59c836af289a5bf63efe82b8ef7ed75984fcd75"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-note-after-cancel.png",
+      "height": 2116,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 445459.401577375,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 3200,
+      "sha256": "ba0aeae57a2418efa78cbc6fc49600e0e73c692de6c3f9ed6bd30b3f20f8f929"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "desktop-note-after-save.png",
+      "height": 2116,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 445460.68999470834,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 3200,
+      "sha256": "9539dddecd342922b27e743729356b0d62cca8f64822f10c92959e556f7c8a18"
+    }
+  ],
+  "executableSHA256": "506dfbe6466d7daf10400a60bb0028ca5688746302f5c05c123a9bd0f2fbf1c9",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true
+}

@@ -1,0 +1,24 @@
+{
+  "applicationBuild": "48",
+  "applicationVersion": "1.25.1",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-reorder-mini-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 445478.72301870835,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "219aaa0ee00787343ed4b81199b8bb6f13723da2abed0569c16f4e7a6f727c00"
+    }
+  ],
+  "executableSHA256": "506dfbe6466d7daf10400a60bb0028ca5688746302f5c05c123a9bd0f2fbf1c9",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true
+}
