@@ -5,19 +5,18 @@
 Учётная запись не нужна. События, файлы, ссылки и таймер доступны без интернета;
 опциональный прогноз погоды требует сети.
 
-**1.25.0 · сборка 47 · Apple Silicon · macOS 13+.**
-Перетаскивайте подзадачи вверх и вниз в большом окне или раскрытой мини-панели.
-Порядок сохраняется внутри каждой группы и совпадает в карточке и редакторе.
+**1.25.1 · сборка 48 · Apple Silicon · macOS 13+.**
+В большом окне заметка остаётся видимой после сохранения или отмены, даже если перед
+открытием редактора её текст был выделен в карточке.
 
-[Скачать последний выпуск](https://github.com/VDevGushin/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.25.0-notes.md) · [Проверки выпуска](docs/releases/v1.25.0.md)
+[Скачать последний выпуск](https://github.com/VDevGushin/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.25.1-notes.md) · [Проверки выпуска](docs/releases/v1.25.1.md)
 
 ## Как выглядит приложение
 
-Большое окно и мини-панель с чек-листами на демонстрационных данных. Снимки сделаны
-на разрабатываемой сборке на базе 1.25.0.
+Большое окно и мини-панель с чек-листами на демонстрационных данных.
 
-<img src="docs/images/v1.25.0/desktop-note-visibility-unreleased/subtask-reorder-desktop-dark.png" alt="Заметка и подзадачи в большом окне" width="900">
-<img src="docs/images/v1.25.0/desktop-note-visibility-unreleased/subtask-reorder-mini-light.png" alt="Подзадачи после перетаскивания в мини-панели" width="390">
+<img src="docs/images/v1.25.1/desktop-note-after-cancel.png" alt="Заметка после отмены редактирования в большом окне" width="900">
+<img src="docs/images/v1.25.1/subtask-reorder-mini-light.png" alt="Подзадачи после перетаскивания в мини-панели" width="390">
 
 ## Установка и обновления
 

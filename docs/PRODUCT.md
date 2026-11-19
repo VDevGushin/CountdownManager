@@ -13,9 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.25.0 uses the read-only `Что нового` screen to describe subtask reordering, matching
-checklist and editor order, and stable row geometry. The sections use `arrow.up.arrow.down`,
-`list.bullet` and `checkmark.circle`. The release-help window was
+Release 1.25.1 uses the read-only `Что нового` screen to describe keeping notes visible
+after closing the desktop editor, with `note.text` as its symbol. The release-help window was
 introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it

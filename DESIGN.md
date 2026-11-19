@@ -132,9 +132,9 @@ components:
 
 ## Overview
 
-Release 1.25.0 uses three existing release-help sections with native `arrow.up.arrow.down`,
-`list.bullet` and `checkmark.circle` for subtask reordering, consistent editor order and stable
-row geometry. The existing 13-point body, 12-point semibold section labels, Graphite palette
+Release 1.25.1 uses one existing release-help section with native `note.text` for keeping
+desktop notes visible after closing the editor. The existing 13-point body, 12-point semibold
+section labels, Graphite palette
 and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point

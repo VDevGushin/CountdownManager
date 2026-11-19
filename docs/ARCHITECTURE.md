@@ -170,9 +170,9 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.0`.
-Its three current sections describe subtask reordering, consistent editor order and stable
-row geometry using `arrow.up.arrow.down`, `list.bullet` and `checkmark.circle`.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.1`.
+Its current section describes keeping the desktop note visible after closing the editor
+and uses `note.text`.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
