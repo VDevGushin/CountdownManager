@@ -1,5 +1,9 @@
 # Signed releases and updates
 
+## Next release
+
+The 1.25.0 / build 47 [candidate](releases/v1.25.0.md) adds subtask reordering.
+
 ## Current published release
 
 Published as Latest is **1.24.0 / build 46** on 2026-11-18 for desktop subtask search.

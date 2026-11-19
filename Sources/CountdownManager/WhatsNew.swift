@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.24.0"
+    static let releaseID = "1.25.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,12 +38,12 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Поиск по подзадачам", symbol: "magnifyingglass",
-                            text: "В большом окне введите слово в поле «Поиск событий и дел». Поиск учитывает название, заметку и подзадачи, включая выполненные.")
-                    feature("Совпадение в карточке", symbol: "list.bullet",
-                            text: "В сетке и ленте под названием события виден короткий фрагмент найденного пункта. Выберите событие, чтобы увидеть полный чек-лист.")
-                    feature("Подсветка текста", symbol: "textformat",
-                            text: "Совпавшие слова выделяются терракотовым цветом. Размер и начертание текста сохраняются.")
+                    feature("Перестановка подзадач", symbol: "arrow.up.arrow.down",
+                            text: "Перетащите строку вверх или вниз в большом окне или раскрытой мини-панели. Порядок сохраняется внутри группы выполненных или невыполненных дел.")
+                    feature("Один порядок в карточке и редакторе", symbol: "list.bullet",
+                            text: "Невыполненные дела идут первыми. Новая подзадача появляется в конце этой группы.")
+                    feature("Ровные строки при отметке", symbol: "checkmark.circle",
+                            text: "Стрелка переноса исчезает у выполненной подзадачи, а текст и высота строки сохраняют свои размеры.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
