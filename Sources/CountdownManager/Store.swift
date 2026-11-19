@@ -729,6 +729,21 @@ package final class Store: ObservableObject {
         return await commit(updated, reason: "subtask.toggle")
     }
 
+    package func reorderSubtask(eventID: UUID, move: SubtaskReorder, to index: Int) async -> Bool {
+        guard !Task.isCancelled, !hasPendingPersistence, eventCreationIsAvailable else { return false }
+        var updated = data
+        do {
+            guard try updated.reorderSubtask(eventID: eventID, move: move, to: index, today: Day(now())) else {
+                return false
+            }
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+        error = nil
+        return await commit(updated, reason: "subtask.reorder")
+    }
+
     func makePrimary(_ id: UUID) async {
         await setPrimarySelection(id)
     }

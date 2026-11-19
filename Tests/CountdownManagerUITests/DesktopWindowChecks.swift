@@ -76,6 +76,42 @@ func testDesktopPresentation() throws {
     precondition(DesktopEventViewMode.feed.systemImage == "list.bullet")
     testDesktopMonthGrouping()
     try testDesktopSubtaskSearch()
+    try testSubtaskDropGeometry()
+}
+
+private func testSubtaskDropGeometry() throws {
+    let first = try Subtask(text: "Same size")
+    let second = try Subtask(text: "Wraps at the current width")
+    let third = try Subtask(text: "Third row")
+    let done = try Subtask(text: "Completed", isCompleted: true)
+    let tasks = [first, second, third, done]
+    let sizes = [first.id: CGSize(width: 280, height: 28), second.id: CGSize(width: 280, height: 43),
+                 third.id: CGSize(width: 280, height: 28), done.id: CGSize(width: 280, height: 16)]
+    let move = SubtaskReorder(subtasks: tasks, subtaskID: third.id)!
+    let frames = subtaskRowFrames(tasks, sizes: sizes, spacing: 13)
+    precondition(frames[second.id]?.minY == 41 && frames[third.id]?.minY == 97)
+    func index(_ x: CGFloat, _ y: CGFloat, displayed: [Subtask] = tasks) -> Int? {
+        subtaskDropIndex(move: move, displayed: displayed, frames: subtaskRowFrames(displayed, sizes: sizes, spacing: 13),
+                         pointer: CGPoint(x: x, y: y))
+    }
+    precondition(index(45, 63) == 2)
+    precondition(index(45, 60) == 1)
+    let preview = move.reordered(to: 1)!
+    precondition(preview == [first, third, second, done])
+    precondition(index(45, 60, displayed: preview) == 1)
+    precondition(index(45, 10, displayed: preview) == 0)
+    precondition(index(45, 119, displayed: preview) == 2)
+    precondition(index(45, 146, displayed: preview) == nil)
+    precondition(index(-1, 60, displayed: preview) == nil)
+    precondition(index(281, 60, displayed: preview) == nil)
+    let longMove = SubtaskReorder(subtasks: tasks, subtaskID: second.id)!
+    precondition(subtaskDropIndex(move: longMove, displayed: tasks, frames: frames, pointer: CGPoint(x: 45, y: 4)) == 0)
+    let lifted = frames[second.id]!
+    let boundary = frames[first.id]!.union(frames[third.id]!)
+    precondition(subtaskLiftOffset(-1_000, origin: lifted, groupBounds: boundary) == -41)
+    precondition(subtaskLiftOffset(1_000, origin: lifted, groupBounds: boundary) == 41)
+    precondition(subtaskLiftOffset(6, origin: lifted, groupBounds: boundary) == 6)
+    precondition(subtaskRowFrames(tasks, sizes: [:], spacing: 13).isEmpty)
 }
 
 private func testDesktopSubtaskSearch() throws {

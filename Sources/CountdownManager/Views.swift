@@ -802,7 +802,7 @@ struct PlannerCalendarDateTile: View {
 }
 
 private struct SubtaskChecklistView: View {
-    let store: Store
+    @ObservedObject var store: Store
     let item: Countdown
     let presentation: CountdownRowPresentation
     @ObservedObject var editorSession: EventEditorSession
@@ -869,14 +869,15 @@ private struct SubtaskChecklistView: View {
                 value: { disclosureState.isExpanded ? "expanded" : "collapsed" }
             )
 
-            VStack(alignment: .leading, spacing: 0) {
-                subtaskRows(presentation.activeSubtasks)
-                subtaskRows(presentation.completedSubtasks)
-            }
+            SubtaskReorderRows(subtasks: item.subtasks, spacing: 0,
+                               isEnabled: isExpanded && canReorder, save: saveSubtaskOrder, row: subtaskRow)
             .fixedSize(horizontal: false, vertical: true)
+            // Disclosure clips the list's height while leaving room for the drag highlight on either side.
+            .padding(.horizontal, subtaskLiftOutset)
             .frame(height: isExpanded ? nil : 0, alignment: .top)
             .opacity(isExpanded ? 1 : 0)
             .clipped()
+            .padding(.horizontal, -subtaskLiftOutset)
             .disabled(!isExpanded)
             .allowsHitTesting(isExpanded)
             .accessibilityHidden(!isExpanded)
@@ -884,10 +885,6 @@ private struct SubtaskChecklistView: View {
             .accessibilityIdentifier("subtasks.list")
         }
         .animation(disclosureAnimation, value: isExpanded)
-        .animation(
-            accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
-            value: item.subtasks.map(\.isCompleted)
-        )
         .transaction { transaction in
             if accessibilitySettings.prefersReducedMotion {
                 transaction.animation = nil
@@ -905,57 +902,62 @@ private struct SubtaskChecklistView: View {
         }
     }
 
-    @ViewBuilder
-    private func subtaskRows(_ subtasks: [Subtask]) -> some View {
-        ForEach(subtasks) { subtask in
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 0) {
-                    Toggle(isOn: Binding(
-                        get: { subtask.isCompleted },
-                        set: { _ in toggleSubtask(subtask.id) }
-                    )) {
-                        Text(subtask.text)
-                            .font(.system(size: 12))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            .strikethrough(subtask.isCompleted)
-                            .foregroundStyle(subtask.isCompleted
-                                ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
-                            .help(subtask.text)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 6)
-                            .contentShape(Rectangle())
-                    }
-                    .toggleStyle(.checkbox)
-                    .disabled(editorSession.hasActiveEditor)
-                    .tint(subtask.isCompleted
-                        ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
-                        : AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
-                    .accessibilityLabel("\(subtask.isCompleted ? "Отметить невыполненной" : "Отметить выполненной"): \(subtask.text)")
-                    .accessibilityIdentifier("subtask.toggle.\(subtask.id.uuidString)")
-                    .uiSmokeControl(
-                        id: "subtask.toggle.\(subtask.id.uuidString)",
-                        action: { toggleSubtask(subtask.id) },
-                        value: {
-                            let isCompleted = store.active
-                                .first(where: { $0.id == item.id })?
-                                .subtasks.first(where: { $0.id == subtask.id })?
-                                .isCompleted
-                            return isCompleted == true ? "completed" : "active"
-                        }
-                    )
+    private var canReorder: Bool {
+        !editorSession.hasActiveEditor && !store.hasPendingPersistence && store.eventCreationIsAvailable
+    }
 
-                    if !subtask.isCompleted {
-                        SubtaskTransferButton(store: store, editorSession: editorSession, eventID: item.id,
-                                              subtask: subtask, surface: .panel)
-                    }
+    private func saveSubtaskOrder(_ move: SubtaskReorder, _ index: Int) async -> Bool {
+        guard disclosureState.isExpanded, canReorder else { return false }
+        return await store.reorderSubtask(eventID: item.id, move: move, to: index)
+    }
+
+    private func subtaskRow(_ subtask: Subtask, _ interaction: SubtaskReorderInteraction?) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 0) {
+                Toggle(isOn: Binding(
+                    get: { subtask.isCompleted },
+                    set: { _ in toggleSubtask(subtask.id) }
+                )) {
+                    Text(subtask.text)
+                        .font(.system(size: 12))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .strikethrough(subtask.isCompleted)
+                        .foregroundStyle(subtask.isCompleted
+                            ? AuroraInstrument.secondaryInk(for: colorScheme) : AuroraInstrument.ink(for: colorScheme))
+                        .help(subtask.text)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 6)
+                        .contentShape(Rectangle())
                 }
-                SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
-                                    subtaskID: subtask.id, surface: .panel)
+                .toggleStyle(.checkbox)
+                .modifier(interaction ?? .disabled)
+                .disabled(editorSession.hasActiveEditor)
+                .tint(subtask.isCompleted
+                    ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+                    : AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
+                .accessibilityLabel("\(subtask.isCompleted ? "Отметить невыполненной" : "Отметить выполненной"): \(subtask.text)")
+                .accessibilityIdentifier("subtask.toggle.\(subtask.id.uuidString)")
+                .uiSmokeControl(
+                    id: "subtask.toggle.\(subtask.id.uuidString)",
+                    action: { toggleSubtask(subtask.id) },
+                    value: {
+                        let isCompleted = store.active
+                            .first(where: { $0.id == item.id })?
+                            .subtasks.first(where: { $0.id == subtask.id })?
+                            .isCompleted
+                        return isCompleted == true ? "completed" : "active"
+                    }
+                )
+
+                SubtaskTransferButton(store: store, editorSession: editorSession, eventID: item.id,
+                                      subtask: subtask, surface: .panel)
             }
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
+            SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
+                                subtaskID: subtask.id, surface: .panel)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
     }
 
     private func toggleDisclosure() {
@@ -1429,7 +1431,8 @@ struct EditorView: View {
     }
 
     private func editorSubtasks(scrollProxy: ScrollViewProxy) -> some View {
-        VStack(alignment: .leading, spacing: 7) {
+        let displayedSubtasks = checklistDisplayOrder(draft.subtasks)
+        return VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text("Подзадачи").font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
@@ -1437,7 +1440,7 @@ struct EditorView: View {
                 Spacer()
                 Text("\(draft.subtasks.count)/\(Subtask.maximumCount)").font(.caption2).foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
-            ForEach(draft.subtasks) { subtask in
+            ForEach(displayedSubtasks) { subtask in
                 EditorSubtaskRow(
                     draft: $draft,
                     subtask: subtask,
@@ -1471,7 +1474,7 @@ struct EditorView: View {
             .allowsHitTesting(draft.subtasks.count < Subtask.maximumCount)
             .accessibilityHidden(draft.subtasks.count >= Subtask.maximumCount)
         }
-        .animation(editorSubtaskAnimation, value: draft.subtasks.map(\.id))
+        .animation(editorSubtaskAnimation, value: displayedSubtasks.map(\.id))
         .transaction { transaction in
             if accessibilitySettings.prefersReducedMotion {
                 transaction.animation = nil

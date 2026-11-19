@@ -51,8 +51,7 @@ package struct DesktopEventSearch {
     }
 
     package func firstSubtask(in item: Countdown) -> Subtask? {
-        let ordered = item.subtasks.filter { !$0.isCompleted } + item.subtasks.filter(\.isCompleted)
-        return ordered.first { matches($0.text) }
+        checklistDisplayOrder(item.subtasks).first { matches($0.text) }
     }
 
     package func snippet(in text: String) -> String {

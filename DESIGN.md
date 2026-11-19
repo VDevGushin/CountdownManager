@@ -296,13 +296,31 @@ The inactive underlying list remains mounted but is excluded from interaction an
 Changing the civil day refreshes the range with a visible explanation and requires another Create;
 the old confirmation never silently commits the newly displayed range.
 
+### Subtask order
+
+The current checklist row is the drag source on both surfaces. A lifted row keeps its text,
+checkbox and existing actions on a softly tinted surface with optically equal margins
+around the checkbox and transfer symbol. The right edge accounts for the inset of the
+symbol within its hit target. The row keeps its checklist column and tracks the vertical
+grab offset between the top and bottom of its group. Adjacent rows animate into their
+prospective positions with the existing 150 ms ease-in-out. Reduce Motion makes position
+changes immediate. Mini-panel disclosure reserves enough horizontal space for the highlight
+outset while clipping the list vertically. The checklist adds no visible reorder buttons.
+The original active/completed ordering groups and compact disclosure remain.
+The shared editor uses the same order, with new editable rows at the end of the incomplete group.
+In the mini-panel, a completion click changes the group placement immediately so two
+checkbox labels cannot slide through the same row. Drag continues to animate neighboring
+positions.
+
 ### Subtask transfer
 
 The single-subtask design accepted on 16 November 2026 extends the existing checklist row with
 a neutral trailing `arrowshape.turn.up.right` SF Symbol. It is a separate action beside the native
 checkbox/text completion control, with `Перенести на другой день` help and a subtask-specific
 accessible label and a value stating whether its date selection is open or closed. Completed
-rows omit it. The checklist heading and count keep their existing
+rows leave its 28-point area blank so that line wraps and row height stay stable when
+completion changes. In desktop details, the target is centered on the first line of
+the checkbox label, including when a long subtask wraps. The checklist heading and count keep their existing
 geometry, with no group-level transfer button or explanatory block above the list.
 
 Activating the arrow reveals compact native date and event-selection fields immediately below

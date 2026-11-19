@@ -1,0 +1,137 @@
+{
+  "applicationBuild": "46",
+  "applicationVersion": "1.24.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-reorder-moving.png",
+      "height": 1416,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425737.10471925,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "859847d69f84890e7dd91cf63b6abdd472db3eb4ad19599d096643bb641fcebb"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-reorder-desktop-dark.png",
+      "height": 1416,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425737.3639580834,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "f868d2686e78d973881e24319ad89b16e65b26e5910bf9ae7c34eea99a02186b"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-reorder-desktop-light.png",
+      "height": 1416,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425737.5675137084,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 1920,
+      "sha256": "3de7cc99b03df9c7b6907f62386daf580cea0283ecd7ee7b16442c5c49636a46"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-reorder-mini-moving.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425738.07127633336,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "cd67a454fb6f26006bd7738b1a5be9fd7616a43886898fb1c3a898d3379a9baf"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "subtask-reorder-mini-dark.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425738.68870245834,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "103ed3ed1cc38ac02fc09f9ef9bd92af6d4616b44f1bc967311809538598a3d6"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-reorder-mini-light.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 425738.863376625,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "615b6b2b3646ce75e557e5666bda005fc60d7a309c0ced1e293e2557f080e6b8"
+    }
+  ],
+  "executableSHA256": "129fadcea77c1087b8de95472c6059c14073ad3d5fb3b5f8678284476fe45d95",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true,
+  "nativeBuildProvenance": {
+    "schemaVersion": 1,
+    "styleVersion": "native-calendar-graphite-v2",
+    "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "sourceAuthoritySHA256": {
+      "docs/PRODUCT.md": "91519bceac1de2fe96181efb95a1d403c146d706be97873d3e32520b6b1c2c0b",
+      "DESIGN.md": "1e8baf1f414a3d28b9570cd27e5124b01eab82c651898dd83acd68f99120b225",
+      "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "compilerSDK": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version": "27.2",
+      "canonicalName": "macosx27.2"
+    },
+    "swiftToolchain": {
+      "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+      "version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    },
+    "linkedCompatibility": "13.0",
+    "deploymentTarget": "13.0",
+    "createdAtUTC": "2026-11-18T13:41:27.430883+00:00",
+    "application": {
+      "identifier": "local.countdownmanager.app",
+      "version": "1.24.0",
+      "build": "46",
+      "executable": "CountdownManager"
+    },
+    "linkedMachO": [
+      {
+        "architecture": "thin",
+        "command": "LC_BUILD_VERSION",
+        "platform": "1",
+        "minos": "13.0",
+        "sdk": "13.0"
+      }
+    ],
+    "renderedAppearanceVerified": false
+  }
+}

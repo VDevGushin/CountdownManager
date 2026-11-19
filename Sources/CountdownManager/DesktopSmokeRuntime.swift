@@ -153,6 +153,12 @@ final class DesktopSmokeRuntime {
                     showDesktop()
                     try await wait("search parent shown") { self.desktopWindow()?.isVisible == true }
                     try await verifySubtaskSearch()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-reorder") {
+                    try await verifySubtaskReorder()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-monkey") {
+                    try await verifySubtaskMutationChain()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-completion") {
+                    try await verifySubtaskCompletionLayout()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
                     try await verifySubtaskTransfer()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
@@ -2078,6 +2084,407 @@ final class DesktopSmokeRuntime {
         try await verifyMonthlyBrowsing()
         try await verifyWeatherGeometry()
         try await verifyRetainedEvents()
+    }
+
+    private func verifySubtaskReorder() async throws {
+        try await wait("loaded isolated reorder store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "reorder fixture requires an empty profile")
+        let first = try Subtask(text: "Отправить документы")
+        let second = try Subtask(text: "Проверить адрес, маршрут и документы для поездки")
+        let third = try Subtask(text: "Разобрать фотографии")
+        let doneFirst = try Subtask(text: "Купить билеты", isCompleted: true)
+        let doneSecond = try Subtask(text: "Зарядить телефон", isCompleted: true)
+        let event = Countdown(title: "Подготовка к поездке", note: "Сверить маршрут перед выездом.",
+                              date: store.today, emoji: "", subtasks: [first, doneFirst, second, third, doneSecond])
+        let seeded = await store.save(event, primary: true)
+        try require(seeded, "cannot seed reorder fixture")
+        store.setSubtasksExpanded(true, for: event.id)
+        showDesktop()
+        let window = try value(desktopWindow(), "reorder desktop")
+        window.setContentSize(NSSize(width: 960, height: 680))
+        try await wait("desktop checklist and exact row positions") {
+            self.controls.frame("desktop.subtask.text.\(second.id)") != nil && window.isKeyWindow
+        }
+        let font = NSFont.systemFont(ofSize: 13)
+        let lineHeight = ceil(font.ascender - font.descender + font.leading)
+        for task in [first, second] {
+            let text = try value(controls.frame("desktop.subtask.text.\(task.id)"), "task label")
+            let arrow = try value(controls.frame("subtask.transfer.open.\(task.id)"), "task transfer target")
+            try require(abs(text.minY + lineHeight / 2 - arrow.midY) < 2 && abs(arrow.height - 28) < 1,
+                        "desktop transfer arrow does not align with the first text line (\(text), \(arrow))")
+            if task == second { try require(text.height > lineHeight + 5, "expected a wrapped fixture task") }
+        }
+        try await dragSavedSubtask(third, before: first, window: window, scope: "desktop.", sampleName: "subtask-reorder-moving")
+        try await requireSavedTaskOrder([third, doneFirst, first, second, doneSecond], eventID: event.id)
+        try await captureWindowThemes("subtask-reorder-desktop", window: window)
+        try await verifyReorderCancelsOutside(second, first: third, window: window, scope: "desktop.")
+        passed.append("Desktop drag stays within its column and group, cancels outside, moves neighbors before mouse-up and preserves arrow alignment")
+
+        try await press("desktop.panel")
+        let mini = try value(panelWindow(), "reorder mini-panel")
+        try await wait("mini checklist and exact row positions") {
+            self.controls.frame("subtask.toggle.\(second.id)") != nil && mini.isKeyWindow
+        }
+        try await dragSavedSubtask(second, before: third, window: mini, scope: "", sampleName: "subtask-reorder-mini-moving")
+        try await requireSavedTaskOrder([second, doneFirst, third, first, doneSecond], eventID: event.id)
+        try await dragSavedSubtask(doneSecond, before: doneFirst, window: mini, scope: "")
+        let final = [second, doneSecond, third, first, doneFirst]
+        try await requireSavedTaskOrder(final, eventID: event.id)
+        try await captureWindowThemes("subtask-reorder-mini", window: mini)
+        try await verifyReorderCancelsOutside(first, first: second, window: mini, scope: "")
+        try await press("desktop.open")
+        try await wait("reordered data is shared with desktop") {
+            guard let top = self.controls.frame("desktop.subtask.toggle.\(second.id)"),
+                  let next = self.controls.frame("desktop.subtask.toggle.\(third.id)") else { return false }
+            return top.minY < next.minY
+        }
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(persisted.items.first?.subtasks == final, "saved checklist did not match the preview")
+        passed.append("Mini-panel drag is bounded and cancels outside; repeated active/completed reordering saves a shared checklist")
+        try await verifyReorderedEditor(eventID: event.id, displayed: [second, third, first, doneSecond, doneFirst], stored: final)
+    }
+
+    private func verifyReorderedEditor(eventID: UUID, displayed: [Subtask], stored: [Subtask]) async throws {
+        let fields = displayed.map { "editor.subtask.\($0.id)" }
+        let before = try Data(contentsOf: configuration.dataURL)
+        try await press("desktop.panel")
+        try await press("event.edit.\(eventID)")
+        try await requireEditorFieldOrder(fields)
+        try await press("editor.subtask.add")
+        try await expect("editor.subtasks", String(fields.count + 1))
+        try await wait("new subtask gets editor focus") {
+            guard let focused = self.controls.focusedID else { return false }
+            return focused.hasPrefix("editor.subtask.") && !fields.contains(focused)
+        }
+        let added = try value(controls.focusedID, "added editor row")
+        var fieldsWithAdded = fields
+        fieldsWithAdded.insert(added, at: displayed.prefix { !$0.isCompleted }.count)
+        try await requireEditorFieldOrder(fieldsWithAdded)
+        try await press("editor.cancel")
+        try await wait("mini editor cancelled") { !self.editorSession.hasActiveEditor }
+        let afterCancel = try Data(contentsOf: configuration.dataURL)
+        try require(afterCancel == before, "viewing and cancelling the grouped editor changed saved bytes")
+
+        try await press("desktop.open")
+        try await press("desktop.detail.edit")
+        try await requireEditorFieldOrder(fields)
+        let edited = try value(displayed.last, "completed editor row")
+        let text = "Купить билеты заранее"
+        try await replaceFocusedText(control: "editor.subtask.\(edited.id)", text: text)
+        try await press("editor.save")
+        try await wait("desktop editor saved") { !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence }
+        let saved = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        var expected = stored
+        let index = try value(expected.firstIndex { $0.id == edited.id }, "stored editor row")
+        expected[index].text = text
+        try require(saved.items.first(where: { $0.id == eventID })?.subtasks == expected,
+                    "grouped editor Save changed task identities, order or completion")
+        passed.append("Mini and desktop editors match the reordered checklist; new-row focus, Cancel and text Save preserve stored order")
+    }
+
+    private func requireEditorFieldOrder(_ ids: [String]) async throws {
+        try await wait("editor fields match checklist order") {
+            let frames = ids.compactMap { self.controls.frame($0) }
+            return frames.count == ids.count && zip(frames, frames.dropFirst()).allSatisfy { $0.0.minY < $0.1.minY }
+        }
+    }
+
+    private func verifySubtaskMutationChain() async throws {
+        try await wait("isolated checklist chain loaded") { !self.store.isLoading }
+        try require(store.active.isEmpty, "checklist chain requires an empty isolated profile")
+        let first = try Subtask(text: "Отправить документы")
+        let completed = try Subtask(text: "Купить билеты", isCompleted: true)
+        let moving = try Subtask(text: "Проверить маршрут")
+        var source = Countdown(title: "Подготовка к поездке", date: store.today, emoji: "",
+                               subtasks: [first, completed, moving])
+        var receiver = Countdown(title: "Поездка", date: Day(store.tomorrow), emoji: "", subtasks: [
+            try Subtask(text: "Зарядить телефон"),
+            try Subtask(text: "Собрать сумку", isCompleted: true)
+        ])
+        let sourceSaved = await store.save(source, primary: true)
+        let receiverSaved = await store.save(receiver, primary: false)
+        try require(sourceSaved && receiverSaved, "cannot seed checklist chain")
+        showDesktop()
+        let window = try value(desktopWindow(), "checklist chain desktop")
+        window.setContentSize(NSSize(width: 960, height: 680))
+        try await wait("checklist chain source rows ready") {
+            window.isKeyWindow && self.controls.frame("desktop.subtask.toggle.\(moving.id)") != nil
+        }
+        try await dragSavedSubtask(moving, before: first, window: window, scope: "desktop.")
+        source.subtasks = [moving, completed, first]
+        try await requireSavedTaskOrder(source.subtasks, eventID: source.id)
+        try await verifyReorderedTaskTransfer(moving, to: receiver)
+        source.subtasks.removeAll { $0.id == moving.id }
+        receiver.subtasks.append(moving)
+        try await requireSavedEventChain([source, receiver], primary: source.id)
+        passed.append("Reordered subtask moves once to the default receiver and retains its UUID; Cancel preserves the file")
+
+        try await press("desktop.event.\(receiver.id)")
+        try await expect("desktop.inspector", receiver.id.uuidString)
+        try await press("desktop.detail.copy")
+        try await expect("editor.subtasks", String(receiver.subtasks.count))
+        try await press("editor.cancel")
+        try await wait("chain copy cancelled") { !self.editorSession.hasActiveEditor && window.attachedSheet == nil }
+        try await requireSavedEventChain([source, receiver], primary: source.id)
+        try await press("desktop.detail.copy")
+        try await wait("chain copy sheet open") { self.editorSession.desktopIsPresented && window.attachedSheet != nil }
+        try await press("editor.save")
+        try await wait("chain copy saved") { !self.store.hasPendingPersistence && self.store.active.count == 3 }
+        var copy = try value(store.active.first { $0.id != source.id && $0.id != receiver.id }, "chain copy")
+        try require(copy.title == receiver.title && copy.date == receiver.date
+                    && copy.subtasks.map(\.text) == receiver.subtasks.map(\.text)
+                    && copy.subtasks.allSatisfy { !$0.isCompleted }
+                    && Set(copy.subtasks.map(\.id)).isDisjoint(with: receiver.subtasks.map(\.id)),
+                    "copy changed date or checklist order, retained completion, or reused task identifiers")
+        try await requireSavedEventChain([source, receiver, copy], primary: source.id)
+        try await press("desktop.event.\(copy.id)")
+        try await expect("desktop.inspector", copy.id.uuidString)
+        let copiedMove = try value(copy.subtasks.last, "copied moved task")
+        let copiedFirst = try value(copy.subtasks.first, "first copy task")
+        try await wait("copied checklist ready") {
+            window.isKeyWindow && self.controls.frame("desktop.subtask.toggle.\(copiedMove.id)") != nil
+        }
+        try await dragSavedSubtask(copiedMove, before: copiedFirst, window: window, scope: "desktop.")
+        copy.subtasks = [copiedMove] + copy.subtasks.dropLast()
+        try await requireSavedTaskOrder(copy.subtasks, eventID: copy.id)
+        try await verifyChainCopyRowDeletion(copiedMove, copy: copy, window: window)
+        copy.subtasks.removeAll { $0.id == copiedMove.id }
+        try await requireSavedEventChain([source, receiver, copy], primary: source.id)
+        passed.append("Same-date repeatable copy holds independent UUIDs, resets checkboxes and saves drag; draft row deletion preserves the source")
+
+        try await clickChainDeleteButton(in: window)
+        try await expect("desktop.delete.confirmation", copy.title)
+        try await press("desktop.delete.cancel")
+        try await wait("copy delete cancelled") { self.controls.entries["desktop.delete.confirmation"] == nil }
+        try await requireSavedEventChain([source, receiver, copy], primary: source.id)
+        try await clickChainDeleteButton(in: window)
+        try await expect("desktop.delete.confirmation", copy.title)
+        try await press("desktop.delete.confirm")
+        try await requireSavedEventChain([source, receiver], primary: source.id)
+        passed.append("Cancel preserves the copied event; confirmation deletes only that copy and leaves its same-date source and transferred row intact on reload")
+    }
+
+    private func clickChainDeleteButton(in window: NSWindow) async throws {
+        showDesktop()
+        let id = "desktop.detail.delete"
+        try await wait("chain delete button ready after editor") {
+            window.isKeyWindow && window.attachedSheet == nil && self.controls.entries[id]?.isEnabled == true
+        }
+        let root = try value(window.contentView, "chain delete content view")
+        let frame = try value(controls.frame(id), "chain delete button frame")
+        let center = root.convert(CGPoint(x: frame.midX, y: frame.midY), to: nil)
+        let point = CGPoint(x: center.x, y: window.frame.height - center.y)
+        try postReorderMouse(.leftMouseDown, at: point, in: window)
+        try postReorderMouse(.leftMouseUp, at: point, in: window)
+    }
+
+    private func verifyReorderedTaskTransfer(_ task: Subtask, to receiver: Countdown) async throws {
+        let arrow = "subtask.transfer.open.\(task.id)"
+        let before = try Data(contentsOf: configuration.dataURL)
+        try await press(arrow)
+        try await expect("subtask.transfer.target", receiver.id.uuidString)
+        try await press("subtask.transfer.cancel")
+        try await wait("chain transfer cancelled") { !self.editorSession.hasActiveEditor }
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(after == before, "cancelled chain transfer changed saved bytes")
+        try await press(arrow)
+        try await expect("subtask.transfer.target", receiver.id.uuidString)
+        try await press("subtask.transfer.confirm")
+        try await wait("chain transfer saved") { !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence }
+    }
+
+    private func verifyChainCopyRowDeletion(_ task: Subtask, copy: Countdown, window: NSWindow) async throws {
+        let before = try Data(contentsOf: configuration.dataURL)
+        try await press("desktop.detail.edit")
+        try await press("editor.subtask.delete.\(task.id)")
+        try await expect("editor.subtasks", String(copy.subtasks.count - 1))
+        try await press("editor.cancel")
+        try await wait("copy row delete cancelled") { !self.editorSession.hasActiveEditor && window.attachedSheet == nil }
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(after == before, "cancelled copy row deletion changed saved bytes")
+        try await press("desktop.detail.edit")
+        try await press("editor.subtask.delete.\(task.id)")
+        try await expect("editor.subtasks", String(copy.subtasks.count - 1))
+        try await press("editor.save")
+        try await wait("copy row delete saved") {
+            !self.editorSession.hasActiveEditor && !self.store.hasPendingPersistence && window.attachedSheet == nil
+        }
+    }
+
+    private func requireSavedEventChain(_ events: [Countdown], primary: UUID) async throws {
+        let expected = Dictionary(uniqueKeysWithValues: events.map { ($0.id, $0) })
+        try await wait("checklist chain saved exact events") {
+            !self.store.hasPendingPersistence && self.store.data.primaryID == primary
+                && Dictionary(uniqueKeysWithValues: self.store.active.map { ($0.id, $0) }) == expected
+        }
+        let reloaded = try await CountdownRepository(fileURL: configuration.dataURL).load()
+        try require(reloaded == store.data, "checklist chain did not survive a fresh repository load")
+    }
+
+    private func verifySubtaskCompletionLayout() async throws {
+        try await wait("loaded isolated completion store") { !self.store.isLoading }
+        try require(store.active.isEmpty, "completion fixture requires an empty profile")
+        let completed = try Subtask(text: "Купить билеты", isCompleted: true)
+        let long = try Subtask(text: "Проверить адрес, маршрут и документы для поездки")
+        let tasks = [completed, long, try Subtask(text: "Проверить маршрут")]
+        let event = Countdown(title: "Подготовка к поездке", date: store.today, emoji: "", subtasks: tasks)
+        let seeded = await store.save(event, primary: true)
+        try require(seeded, "cannot seed completion fixture")
+        store.setSubtasksExpanded(true, for: event.id)
+        showPanel()
+        let mini = try value(panelWindow(), "completion mini-panel")
+        let controlID = "subtask.toggle.\(completed.id)"
+        let headingID = "panel.subtasks.heading.\(event.id)"
+        let neighborID = "subtask.toggle.\(tasks[1].id)"
+        try await wait("mini checklist is rendered") {
+            self.controls.frame(headingID) != nil && self.controls.frame(neighborID) != nil
+        }
+        let heading = try value(controls.frame(headingID), "checklist heading before completion")
+        try capture("subtask-completion-mini-before", window: mini)
+        try await press(controlID)
+        try await Task.sleep(nanoseconds: 45_000_000)
+        try capture("subtask-completion-mini-early", window: mini)
+        try await wait("reopened row is above the adjacent incomplete row") {
+            guard let row = self.controls.frame(controlID), let neighbor = self.controls.frame(neighborID) else { return false }
+            return row.maxY <= neighbor.minY + 1
+        }
+        var expected = event.subtasks
+        expected[0].isCompleted = false
+        try await requireSavedTaskOrder(expected, eventID: event.id)
+        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
+        try require(persisted.items.first?.subtasks == expected && controls.frame(headingID) == heading,
+                    "completion did not preserve neighbor tasks and checklist heading")
+        try capture("subtask-completion-mini-saved", window: mini)
+        passed.append("Mini completion regroup preserves the heading and saved neighbors; sampled early and saved frames record row placement")
+
+        // Task order stays the same when the middle row changes group: the following row is already completed.
+        try await press("subtask.toggle.\(tasks[2].id)")
+        try await expect("subtask.toggle.\(tasks[2].id)", "completed")
+        try await verifyStableCompletionFrames(target: long, following: tasks[2], heading: headingID, desktop: false)
+        try await press("desktop.open")
+        let desktop = try value(desktopWindow(), "completion desktop")
+        desktop.setContentSize(NSSize(width: 960, height: 680))
+        try await verifyStableCompletionFrames(target: long, following: tasks[2],
+                                               heading: "desktop.subtasks.heading.\(event.id)", desktop: true)
+    }
+
+    private func verifyStableCompletionFrames(target: Subtask, following: Subtask, heading: String, desktop: Bool) async throws {
+        let scope = desktop ? "desktop." : ""
+        let toggle = "\(scope)subtask.toggle.\(target.id)"
+        let next = "\(scope)subtask.toggle.\(following.id)"
+        let label = desktop ? "desktop.subtask.text.\(target.id)" : toggle
+        let transfer = "subtask.transfer.open.\(target.id)"
+        func relativeFrame(_ id: String) throws -> CGRect {
+            let origin = try value(controls.frame(heading), "completion checklist heading").origin
+            let frame = try value(controls.frame(id), "completion row \(id)")
+            return frame.offsetBy(dx: -origin.x, dy: -origin.y)
+        }
+        try await wait("completion geometry ready (\(scope))") {
+            self.controls.frame(label) != nil && self.controls.frame(next) != nil
+                && self.controls.frame(heading) != nil
+                && (desktop || self.controls.entries[transfer]?.isEnabled == true)
+        }
+        let before = try relativeFrame(label)
+        let nextBefore = try relativeFrame(next)
+        if desktop { try require(before.height > 20, "desktop completion fixture should wrap") }
+        for isCompleted in [true, false] {
+            try await press(toggle)
+            try await expect(toggle, desktop ? (isCompleted ? "on" : "off") : (isCompleted ? "completed" : "active"))
+            // The retained panel can still register the same transfer ID while desktop is visible.
+            if !desktop {
+                try await wait("panel transfer follows completion (\(isCompleted))") {
+                    (self.controls.entries[transfer] != nil) == !isCompleted
+                }
+            }
+            // Observe the settled desktop frame after its completion animation.
+            if desktop { try await Task.sleep(nanoseconds: 180_000_000) }
+            let after = try relativeFrame(label)
+            let nextAfter = try relativeFrame(next)
+            try require(abs(before.minX - after.minX) < 1 && abs(before.minY - after.minY) < 1
+                        && abs(before.width - after.width) < 1 && abs(before.height - after.height) < 1
+                        && abs(nextBefore.minY - nextAfter.minY) < 1,
+                        "completion shifted rows (\(scope), \(isCompleted)): label \(before) → \(after), next \(nextBefore) → \(nextAfter)")
+        }
+        passed.append("\(desktop ? "Desktop" : "Mini-panel") completion and reopening preserve label and next-row geometry")
+    }
+
+    private func verifyReorderCancelsOutside(_ source: Subtask, first: Subtask, window: NSWindow, scope: String) async throws {
+        let sourceID = scope + "subtask.toggle.\(source.id)"
+        let sourceFrame = try value(controls.frame(sourceID), "outside-drag source")
+        let firstFrame = try value(controls.frame(scope + "subtask.toggle.\(first.id)"), "outside-drag top bound")
+        // Keep native input inside its owning window so AppKit does not deactivate the app.
+        let outside = CGPoint(x: 18, y: max(96, firstFrame.minY - 280))
+        let savedBytes = try Data(contentsOf: configuration.dataURL)
+        try await beginReorderMouse(at: CGPoint(x: sourceFrame.minX + 62, y: sourceFrame.minY + 10), in: window)
+        try postReorderMouse(.leftMouseDragged, at: outside, in: window)
+        do {
+            try await wait("outside pointer leaves the lifted row bounded (\(scope))") {
+                guard let moved = self.controls.frame(sourceID) else { return false }
+                return abs(moved.minX - sourceFrame.minX) < 1 && abs(moved.minY - firstFrame.minY) < 2
+            }
+        } catch {
+            try? postReorderMouse(.leftMouseUp, at: outside, in: window)
+            throw error
+        }
+        try postReorderMouse(.leftMouseUp, at: outside, in: window)
+        try await wait("outside drop restores the original row position (\(scope))") {
+            guard let restored = self.controls.frame(sourceID) else { return false }
+            return abs(restored.minY - sourceFrame.minY) < 1 && !self.store.hasPendingPersistence
+        }
+        let after = try Data(contentsOf: configuration.dataURL)
+        try require(after == savedBytes, "an outside drop changed event bytes")
+    }
+
+    private func dragSavedSubtask(_ source: Subtask, before target: Subtask, window: NSWindow,
+                                  scope: String, sampleName: String? = nil) async throws {
+        let sourceID = scope + "subtask.toggle.\(source.id)"
+        let targetID = scope + "subtask.toggle.\(target.id)"
+        let sourceFrame = try value(controls.frame(sourceID), "drag source frame")
+        let targetFrame = try value(controls.frame(targetID), "drag target frame")
+        let from = CGPoint(x: sourceFrame.minX + 62, y: sourceFrame.minY + min(10, sourceFrame.height / 2))
+        let to = CGPoint(x: from.x + 40, y: targetFrame.minY + 4)
+        let baseline = try Data(contentsOf: configuration.dataURL)
+        try await beginReorderMouse(at: from, in: window)
+        try postReorderMouse(.leftMouseDragged, at: to, in: window)
+        do {
+            try await wait("dragged row and neighbor move before mouse-up (\(scope))") {
+                guard let moved = self.controls.frame(sourceID), let neighbor = self.controls.frame(targetID) else { return false }
+                let expectedY = max(targetFrame.minY, sourceFrame.minY + to.y - from.y)
+                return abs(moved.minX - sourceFrame.minX) < 1 && abs(moved.minY - expectedY) < 4
+                    && neighbor.minY > targetFrame.minY + 8
+            }
+            let whileDragging = try Data(contentsOf: configuration.dataURL)
+            try require(baseline == whileDragging, "an intermediate pointer position wrote to disk")
+            if let sampleName { try capture(sampleName, window: window) }
+        } catch {
+            let observed = "source \(String(describing: controls.frame(sourceID))) and neighbor \(String(describing: controls.frame(targetID)))"
+            try? capture("subtask-reorder-unsettled", window: window)
+            try? postReorderMouse(.leftMouseUp, at: .zero, in: window)
+            throw Failure("\(error.localizedDescription). Start \(sourceFrame), target \(targetFrame), observed \(observed)")
+        }
+        try postReorderMouse(.leftMouseUp, at: to, in: window)
+    }
+
+    private func beginReorderMouse(at point: CGPoint, in window: NSWindow) async throws {
+        try postReorderMouse(.leftMouseDown, at: point, in: window)
+        try await Task.sleep(nanoseconds: 70_000_000)
+        try postReorderMouse(.leftMouseDragged, at: CGPoint(x: point.x, y: point.y - 10), in: window)
+        try await Task.sleep(nanoseconds: 70_000_000)
+    }
+
+    private func postReorderMouse(_ type: NSEvent.EventType, at topDown: CGPoint, in window: NSWindow) throws {
+        // SwiftUI's global frames include desktop chrome. NSEvent uses bottom-up window coordinates.
+        let location = CGPoint(x: topDown.x, y: window.frame.height - topDown.y)
+        let event = try value(NSEvent.mouseEvent(with: type, location: location,
+            modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
+            context: nil, eventNumber: 0, clickCount: 1, pressure: type == .leftMouseUp ? 0 : 1), "native reorder input")
+        NSApp.postEvent(event, atStart: false)
+    }
+
+    private func requireSavedTaskOrder(_ expected: [Subtask], eventID: UUID) async throws {
+        try await wait("reordered checklist committed") {
+            !self.store.hasPendingPersistence && self.store.active.first(where: { $0.id == eventID })?.subtasks == expected
+        }
     }
 
     private func verifySubtaskSearch() async throws {

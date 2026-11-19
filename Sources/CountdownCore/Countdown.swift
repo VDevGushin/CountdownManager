@@ -213,9 +213,42 @@ public struct Countdown: Identifiable, Codable, Equatable {
     }
 }
 
+package struct SubtaskReorder {
+    package let original: [Subtask]
+    package let subtaskID: UUID
+    package let group: [Subtask]
+    package let originalIndex: Int
+    private let groupIndices: [Int]
+
+    package init?(subtasks: [Subtask], subtaskID: UUID) {
+        guard Set(subtasks.map(\.id)).count == subtasks.count,
+              let task = subtasks.first(where: { $0.id == subtaskID }) else { return nil }
+        let indices = subtasks.indices.filter { subtasks[$0].isCompleted == task.isCompleted }
+        let group = indices.map { subtasks[$0] }
+        guard let index = group.firstIndex(where: { $0.id == subtaskID }) else { return nil }
+        original = subtasks
+        self.subtaskID = subtaskID
+        self.group = group
+        originalIndex = index
+        groupIndices = indices
+    }
+
+    package func reordered(to destination: Int) -> [Subtask]? {
+        guard group.indices.contains(destination) else { return nil }
+        var ordered = group
+        let task = ordered.remove(at: originalIndex)
+        ordered.insert(task, at: destination)
+        var result = original
+        for (index, value) in zip(groupIndices, ordered) {
+            result[index] = value
+        }
+        return result
+    }
+}
+
 public enum CountdownError: LocalizedError {
     case title, note, date, emoji, eventNotFound, subtaskNotFound
-    case subtaskText, subtaskLength, subtaskCount
+    case subtaskText, subtaskLength, subtaskCount, subtaskOrderChanged
     case copyIdentity
 
     public var errorDescription: String? {
@@ -229,6 +262,7 @@ public enum CountdownError: LocalizedError {
         case .subtaskText: return "Введите текст подзадачи."
         case .subtaskLength: return "Подзадача должна быть не длиннее 50 символов."
         case .subtaskCount: return "У события может быть не больше десяти подзадач."
+        case .subtaskOrderChanged: return "Список подзадач изменился. Повторите перестановку."
         case .copyIdentity: return "Копия должна быть новым событием. Откройте создание копии снова."
         }
     }
@@ -378,6 +412,16 @@ public struct CountdownData: Codable, Equatable {
             throw CountdownError.subtaskNotFound
         }
         items[eventIndex].subtasks[subtaskIndex].isCompleted.toggle()
+    }
+
+    package mutating func reorderSubtask(eventID: UUID, move: SubtaskReorder, to index: Int, today: Day) throws -> Bool {
+        guard let eventIndex = items.firstIndex(where: { $0.id == eventID && $0.isAvailable(on: today) }) else {
+            throw CountdownError.eventNotFound
+        }
+        guard items[eventIndex].subtasks == move.original else { throw CountdownError.subtaskOrderChanged }
+        guard index != move.originalIndex, let tasks = move.reordered(to: index) else { return false }
+        items[eventIndex].subtasks = tasks
+        return true
     }
 
     public mutating func delete(_ id: UUID, today: Day) {

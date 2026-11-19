@@ -20,6 +20,41 @@ func testSubtaskTransferWorkflows(in directory: URL) async throws {
 }
 
 @MainActor
+func testSubtaskReorderPersistence(in directory: URL) async throws {
+    let fixture = try transferWorkflowFixture()
+    var baseline = fixture.data
+    let second = try Subtask(text: "Another task")
+    baseline.items[0].subtasks.append(second)
+    let fileURL = directory.appendingPathComponent("countdowns.json")
+    let repository = CountdownRepository(fileURL: fileURL)
+    _ = try await repository.save(baseline, revision: 0)
+    let originalBytes = try Data(contentsOf: fileURL)
+    let suite = "CountdownSubtaskReorder.\(UUID().uuidString)"
+    let defaults = UserDefaults(suiteName: suite)!
+    defer { defaults.removePersistentDomain(forName: suite) }
+    var writes = 0
+    let store = Store(fileURL: fileURL, disclosureDefaults: defaults, persistenceSaveOverride: { data, revision in
+        writes += 1
+        if writes == 1 { throw TransferWorkflowWriteFailure() }
+        return try await repository.save(data, revision: revision)
+    }, now: { fixture.today.date() }, loginItemManagementIsAvailable: false)
+    await waitForTransferWorkflow { !store.hasPendingPersistence }
+    let move = SubtaskReorder(subtasks: baseline.items[0].subtasks, subtaskID: second.id)!
+    let failed = await store.reorderSubtask(eventID: fixture.source.id, move: move, to: 0)
+    await waitForTransferWorkflow { !store.hasPendingPersistence }
+    let afterFailure = try Data(contentsOf: fileURL)
+    precondition(!failed && writes == 1 && store.data == baseline && afterFailure == originalBytes && store.error != nil)
+    let saved = await store.reorderSubtask(eventID: fixture.source.id, move: move, to: 0)
+    let restored = try await CountdownRepository(fileURL: fileURL).load()
+    let expectedOrder = [second, fixture.task]
+    precondition(saved && writes == 2 && store.error == nil && restored == store.data)
+    precondition(restored.items[0].subtasks == expectedOrder && restored.primaryID == baseline.primaryID)
+    let stale = await store.reorderSubtask(eventID: fixture.source.id, move: move, to: 0)
+    precondition(!stale && writes == 2 && store.data == restored)
+    print("PASS subtask reorder: failed write restores original order, retry persists exactly once, stale move rejected")
+}
+
+@MainActor
 private func testTransferWriteFailureRetryAndReload(in directory: URL, defaults: UserDefaults) async throws {
     let fixture = try transferWorkflowFixture()
     let fileURL = directory.appendingPathComponent("countdowns.json")

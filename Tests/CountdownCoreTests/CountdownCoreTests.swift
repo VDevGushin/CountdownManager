@@ -99,6 +99,47 @@ final class CountdownCoreTests {
         XCTAssertEqual(data.items[0].subtasks.count, 9)
     }
 
+    func testSubtaskReorderPreservesGroupsAndRejectsStaleMoves() throws {
+        let today = day(2026, 11, 18)
+        let first = try Subtask(text: "Same text")
+        let second = try Subtask(text: "Same text")
+        let doneFirst = try Subtask(text: "Done first", isCompleted: true)
+        let doneSecond = try Subtask(text: "Done second", isCompleted: true)
+        let tasks = [first, doneFirst, second, doneSecond]
+        let retained = Countdown(title: "Retained", note: "Original note", date: day(2026, 11, 17), emoji: "☀️",
+                                 subtasks: tasks, showsWeather: true, keepsAfterDate: true)
+        let neighbor = Countdown(title: "Other event", date: today, emoji: "")
+        var data = CountdownData()
+        data.items = [retained, neighbor]
+        data.primaryID = retained.id
+        let baseline = data
+        let activeMove = SubtaskReorder(subtasks: tasks, subtaskID: second.id)!
+        XCTAssertEqual(activeMove.group, [first, second])
+        XCTAssertEqual(activeMove.reordered(to: 0), [second, doneFirst, first, doneSecond])
+        XCTAssertFalse(try data.reorderSubtask(eventID: retained.id, move: activeMove, to: 1, today: today))
+        XCTAssertFalse(try data.reorderSubtask(eventID: retained.id, move: activeMove, to: 2, today: today))
+        XCTAssertEqual(data, baseline)
+        XCTAssertTrue(try data.reorderSubtask(eventID: retained.id, move: activeMove, to: 0, today: today))
+        let changed = data
+        XCTAssertThrowsError(try data.reorderSubtask(eventID: retained.id, move: activeMove, to: 0, today: today))
+        XCTAssertThrowsError(try data.reorderSubtask(eventID: neighbor.id, move: activeMove, to: 0, today: today))
+        XCTAssertEqual(data, changed)
+        let completedMove = SubtaskReorder(subtasks: data.items[0].subtasks, subtaskID: doneFirst.id)!
+        XCTAssertTrue(try data.reorderSubtask(eventID: retained.id, move: completedMove, to: 1, today: today))
+        var expected = retained
+        expected.subtasks = [second, doneSecond, first, doneFirst]
+        XCTAssertEqual(data.items, [expected, neighbor])
+        XCTAssertEqual(data.primaryID, retained.id)
+        XCTAssertNil(SubtaskReorder(subtasks: [first, first], subtaskID: first.id))
+        XCTAssertNil(SubtaskReorder(subtasks: tasks, subtaskID: UUID()))
+        XCTAssertEqual(try JSONDecoder().decode(CountdownData.self, from: JSONEncoder().encode(data)), data)
+        data.items[0].keepsAfterDate = false
+        let expired = data
+        let expiredMove = SubtaskReorder(subtasks: expected.subtasks, subtaskID: second.id)!
+        XCTAssertThrowsError(try data.reorderSubtask(eventID: retained.id, move: expiredMove, to: 1, today: today))
+        XCTAssertEqual(data, expired)
+    }
+
     func testAllSubtasksCompletedDoesNotFinishEvent() throws {
         let today = day(2026, 9, 5)
         let event = Countdown(
@@ -479,6 +520,7 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
         try checks.testCreationAndFieldValidation()
         try checks.testTodayCreationAndMidnightBoundary()
         try checks.testSubtaskLimitsNormalizationCompletionAndOrder()
+        try checks.testSubtaskReorderPreservesGroupsAndRejectsStaleMoves()
         try checks.testAllSubtasksCompletedDoesNotFinishEvent()
         try checks.testCRUDPrimaryExpiryAndPersistence()
         try checks.testNoteBoundariesNormalizationAndRoundTrip()

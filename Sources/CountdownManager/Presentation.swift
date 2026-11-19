@@ -113,6 +113,10 @@ package func editorEmojiPickerMotion(reduceMotion: Bool) -> EditorEmojiPickerMot
 
 package let editorEmojiValueTransitionDuration: TimeInterval = 0.12
 
+func checklistDisplayOrder(_ subtasks: [Subtask]) -> [Subtask] {
+    subtasks.filter { !$0.isCompleted } + subtasks.filter(\.isCompleted)
+}
+
 package struct CountdownRowPresentation: Equatable {
     package let note: String?
     package let dateLabel: String

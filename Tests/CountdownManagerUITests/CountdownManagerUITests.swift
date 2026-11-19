@@ -14,6 +14,7 @@ enum UIChecks {
 
         try await testMaterialIntake(in: directory.appendingPathComponent("materials"))
         try await testEventLinkWorkflows(in: directory.appendingPathComponent("links"))
+        try await testSubtaskReorderPersistence(in: directory.appendingPathComponent("subtask-reorder"))
         let today = Day(Date())
         let yesterdayDate = Day.calendar.date(byAdding: .day, value: -1, to: today.date())!
         let tomorrowDate = Day.calendar.date(byAdding: .day, value: 1, to: today.date())!

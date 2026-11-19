@@ -17,6 +17,7 @@ package enum DiagnosticPrivacy {
             case .subtaskText: kind = "subtask_text"
             case .subtaskLength: kind = "subtask_length"
             case .subtaskCount: kind = "subtask_count"
+            case .subtaskOrderChanged: kind = "subtask_order_changed"
             case .copyIdentity: kind = "copy_identity"
             }
             return "category=validation validation=\(kind)"

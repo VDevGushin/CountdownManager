@@ -405,6 +405,14 @@ final class CountdownManagerXCUITests: XCTestCase {
             let tasks = try XCTUnwrap(try persistedItems().first?["subtasks"] as? [[String: Any]])
             XCTAssertEqual(tasks.first { $0["id"] as? String == completedSubtaskID }?["isCompleted"] as? Bool, true)
         }
+        let checkedToggle = app.checkBoxes["subtask.toggle.\(completedSubtaskID)"]
+        XCTAssertTrue(checkedToggle.waitForExistence(timeout: 3))
+        checkedToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).click()
+        XCTAssertTrue(waitForSubtaskCompletion(completedSubtaskID, equals: false),
+                      "The only completed row still responds to a checkbox click")
+        checkedToggle.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5)).click()
+        XCTAssertTrue(waitForSubtaskCompletion(completedSubtaskID, equals: true),
+                      "The same row responds to a label click after changing groups")
         let beforeDisclosure = try Data(contentsOf: dataURL)
         let disclosure = app.buttons["subtasks.disclosure.\(eventID)"]
         disclosure.click()

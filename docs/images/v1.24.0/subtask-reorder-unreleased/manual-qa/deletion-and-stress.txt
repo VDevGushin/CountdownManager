@@ -1,0 +1,38 @@
+Isolated QA on 1.24.0/46
+Executable SHA-256: 129fadcea77c1087b8de95472c6059c14073ad3d5fb3b5f8678284476fe45d95
+
+Native editor workflows
+UISmoke
+✓ new editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ new editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ existing editor Cancel/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ existing editor Save/reopen: deleted focused rows, subsequent typing, title/note handoff and hide/show retain intended row input
+✓ automatic titles survive native focus, Save/reopen, repeated custom/auto/date cycles, Cancel, write failure and explicit mode-reset retry
+PASS: 5/5
+
+Native desktop deletion and concurrent actions
+✓ held checklist writes keep rendered sibling controls enabled; rapid actions serialize, editor snapshots wait, external ownership pauses, failures report cancelled follow-ups
+✓ desktop inline deletion Cancel preserves data; selection changes dismiss confirmation; confirmed exact targets serialize after writes, clear favorites, survive duplicate delivery, roll back failures and reach durable empty state
+PASS: 31/31
+
+Seeded checklist model test using the same compiled CountdownCore objects
+add row: 540
+complete/reopen: 537
+copy: 563
+delete event twice: 514
+delete row + stale reorder: 551
+disk round-trip: 692
+edit row: 614
+rejected transfer: 524
+reorder: 1152
+transfer: 589
+PASS 24 seeds × 256 action choices
+
+Combined native workflow build with test-only scenario
+
+Executable SHA-256: 5e898d01b2948bddc00163e2222bbc174e469dee4871524fda02aa45067c256e
+DesktopSmoke
+✓ Reordered subtask moves once to the default receiver and retains its UUID; Cancel preserves the file
+✓ Same-date repeatable copy holds independent UUIDs, resets checkboxes and saves drag; draft row deletion preserves the source
+✓ Cancel preserves the copied event; confirmation deletes only that copy and leaves its same-date source and transferred row intact on reload
+PASS: 3/3

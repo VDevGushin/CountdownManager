@@ -346,7 +346,10 @@ content; forecast availability does not select a different card layout. These fe
 are presentation changes, without another event owner or persisted card state.
 The details checklist retains one UUID-keyed `ForEach`; a local animation on committed completion
 values moves rows between active/completed ordering over 150 ms. Reduce Motion removes the
-animation transaction. Neither mechanism changes shared mini-panel views, Store ownership or FIFO.
+animation transaction. Both saved checklists host `SubtaskReorderRows`, which measures unshifted
+row sizes and offsets stable UUID-keyed rows for in-progress drag feedback. Pointer movement
+updates the lifted row along the group's vertical bounds while the preview slot animates
+neighboring offsets. Drop validation uses the pointer and the source group's row rectangles.
 
 `DesktopRootView` serializes accepted checklist/favorite/deletion actions and editor intents in a
 window-local FIFO, routing mutations through the unchanged Store. Its own writes do not globally
@@ -551,6 +554,16 @@ Date-sensitive event state is refreshed from timers and relevant macOS lifecycle
 Launch at login is integrated through `SMAppService.mainApp`. Settings binds to the existing
 `Store.loginStatus` and actions, including the `requiresApproval` System Settings route; it does
 not maintain another login preference.
+
+### Subtask order
+
+`SubtaskReorder` uses the saved checklist snapshot, dragged UUID and destination index within
+the task's completion group. Replacing only the group's existing slots preserves the other
+group and all task values. `CountdownData.reorderSubtask` revalidates source availability and
+the complete checklist before applying the move. `Store.reorderSubtask` accepts it while the
+shared writer is idle and uses the existing revision and error-recovery path. The checklist
+preview is transient and is discarded on cancellation or a changed source. Both surfaces
+read the saved array, so no new data fields or ordering preference are needed.
 
 ### Subtask transfer
 

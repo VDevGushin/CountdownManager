@@ -20,6 +20,18 @@ struct SubtaskTransferButton: View {
     }
 
     var body: some View {
+        if subtask.isCompleted {
+            // Keep the symbol action's footprint when the row changes completion group.
+            Color.clear
+                .frame(width: 28, height: 28)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        } else {
+            transferButton
+        }
+    }
+
+    private var transferButton: some View {
         AuroraSymbolAction(symbolName: "arrowshape.turn.up.right",
             surface: surface == .panel ? .mini : .desktop, tone: .secondary,
             accessibilityLabel: "Перенести подзадачу: \(subtask.text)", action: open)

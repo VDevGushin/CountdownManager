@@ -1,0 +1,20 @@
+subtask-reorder
+DesktopSmoke
+✓ Desktop drag stays within its column and group, cancels outside, moves neighbors before mouse-up and preserves arrow alignment
+✓ Mini-panel drag is bounded and cancels outside; repeated active/completed reordering saves a shared checklist
+✓ Mini and desktop editors match the reordered checklist; new-row focus, Cancel and text Save preserve stored order
+PASS: 3/3
+
+subtask-completion
+DesktopSmoke
+✓ Mini completion regroup preserves the heading and saved neighbors; sampled early and saved frames record row placement
+✓ Mini-panel completion and reopening preserve label and next-row geometry
+✓ Desktop completion and reopening preserve label and next-row geometry
+PASS: 3/3
+
+subtask-transfer
+DesktopSmoke
+✓ native mini arrow opens an inline form; full editor excluded; Cancel and hide/show preserve saved bytes
+✓ desktop arrow shares inline controls; full receiver blocks Save; one selected task retains identity on move
+✓ empty date creates an ordinary day; failed native confirmation preserves both sides and retries once
+PASS: 3/3

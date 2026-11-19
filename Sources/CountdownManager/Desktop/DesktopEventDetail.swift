@@ -1,5 +1,14 @@
+import AppKit
 import CountdownCore
 import SwiftUI
+
+private extension VerticalAlignment {
+    enum ChecklistFirstLineCenter: AlignmentID {
+        static func defaultValue(in context: ViewDimensions) -> CGFloat { context[VerticalAlignment.center] }
+    }
+
+    static let checklistFirstLineCenter = VerticalAlignment(ChecklistFirstLineCenter.self)
+}
 
 struct DesktopEventDetail: View {
     @ObservedObject var store: Store
@@ -215,35 +224,8 @@ struct DesktopEventDetail: View {
                     .font(.system(size: 13))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             } else {
-                VStack(alignment: .leading, spacing: 13) {
-                    ForEach(presentation.activeSubtasks + presentation.completedSubtasks) { subtask in
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack(alignment: .top, spacing: 0) {
-                                Toggle(isOn: Binding(get: { subtask.isCompleted }, set: { _ in toggleSubtask(subtask.id) })) {
-                                    Text(desktopSearchAttributedText(subtask.text, search: search, color: searchColor))
-                                        .font(.system(size: 13))
-                                        .strikethrough(subtask.isCompleted)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .contentShape(Rectangle())
-                                }
-                                .toggleStyle(.checkbox)
-                                .accessibilityIdentifier("desktop.subtask.toggle.\(subtask.id.uuidString)")
-                                .uiSmokeControl(id: "desktop.subtask.toggle.\(subtask.id.uuidString)",
-                                                action: { toggleSubtask(subtask.id) },
-                                                value: { subtask.isCompleted ? "on" : "off" })
-                                .disabled(!canMutate)
-                                if !subtask.isCompleted {
-                                    SubtaskTransferButton(store: store, editorSession: editorSession,
-                                                          eventID: item.id, subtask: subtask, surface: .desktop,
-                                                          canBegin: canBeginTransfer)
-                                }
-                            }
-                            SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
-                                                subtaskID: subtask.id, surface: .desktop)
-                        }
-                    }
-                }
+                SubtaskReorderRows(subtasks: item.subtasks, spacing: 13, isEnabled: canBeginTransfer(),
+                                   save: saveSubtaskOrder, row: subtaskRow)
                 .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15),
                            value: item.subtasks.map(\.isCompleted))
                 .transaction { transaction in
@@ -263,6 +245,43 @@ struct DesktopEventDetail: View {
             }
         }
         .uiSmokeControl(id: "desktop.detail.checklist")
+    }
+
+    private func subtaskRow(_ subtask: Subtask, _ interaction: SubtaskReorderInteraction?) -> some View {
+        let fontSize: CGFloat = 13
+        let rowFont = NSFont.systemFont(ofSize: fontSize)
+        let firstLineCenter = ceil(rowFont.ascender - rowFont.descender + rowFont.leading) / 2
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .checklistFirstLineCenter, spacing: 0) {
+                Toggle(isOn: Binding(get: { subtask.isCompleted }, set: { _ in toggleSubtask(subtask.id) })) {
+                    Text(desktopSearchAttributedText(subtask.text, search: search, color: searchColor))
+                        .font(.system(size: fontSize))
+                        .strikethrough(subtask.isCompleted)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .uiSmokeControl(id: "desktop.subtask.text.\(subtask.id)")
+                }
+                .toggleStyle(.checkbox)
+                .alignmentGuide(.checklistFirstLineCenter) { _ in firstLineCenter }
+                .modifier(interaction ?? .disabled)
+                .accessibilityIdentifier("desktop.subtask.toggle.\(subtask.id.uuidString)")
+                .uiSmokeControl(id: "desktop.subtask.toggle.\(subtask.id.uuidString)",
+                                action: { toggleSubtask(subtask.id) },
+                                value: { subtask.isCompleted ? "on" : "off" })
+                .disabled(!canMutate)
+                SubtaskTransferButton(store: store, editorSession: editorSession,
+                                      eventID: item.id, subtask: subtask, surface: .desktop,
+                                      canBegin: canBeginTransfer)
+            }
+            SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
+                                subtaskID: subtask.id, surface: .desktop)
+        }
+    }
+
+    private func saveSubtaskOrder(_ move: SubtaskReorder, _ index: Int) async -> Bool {
+        guard canBeginTransfer(), !editorSession.hasActiveEditor else { return false }
+        return await store.reorderSubtask(eventID: item.id, move: move, to: index)
     }
 
     private func sectionLabel(_ title: String) -> some View {

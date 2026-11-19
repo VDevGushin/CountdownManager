@@ -915,11 +915,29 @@ Completed subtasks remain visible.
 
 Incomplete subtasks are displayed before completed subtasks.
 
-Stable user order is preserved inside each group.
+Stable user order is preserved inside each group. The editor shows the same groups and order.
+New editor rows appear at the end of the incomplete group. The editor uses this grouping for
+display, preserving the stored order of existing subtasks when opening or editing the event.
 
 Completing all subtasks does not complete, archive, or expire the parent event.
 
 The event continues to exist until its own calendar date ends.
+
+### Reordering subtasks
+
+In the expanded mini-panel checklist and the desktop event details, drag a saved subtask
+by its existing completion area to move it up or down. An ordinary click there still toggles
+completion. The dragged row follows the pointer vertically in its checklist column and within
+its group. Neighboring rows make space when the pointer crosses their midpoints. The existing
+date-transfer action remains independent from both gestures.
+
+The incomplete group stays above the completed group, with manual ordering inside each group.
+An accepted drop saves one order change and both surfaces show that order. Releasing outside
+the source group, canceling the drag or losing the source checklist restores the previous
+order. A stale move cannot overwrite a newer checklist. A failed save restores the last
+durable order and uses the existing save-error feedback. Search continues to use the first
+match in the displayed checklist order. Assistive technologies can move a row up or down
+using its accessibility actions.
 
 ### Moving a subtask
 
@@ -929,7 +947,8 @@ moving all incomplete subtasks at once.
 
 Each incomplete saved subtask has a separate neutral `arrowshape.turn.up.right` action at the
 trailing edge of its row, with `Перенести на другой день` hover help and an accessible name that
-identifies the subtask. Completed rows have no transfer action. Opening the action reveals the
+identifies the subtask. Completed rows have no transfer action and reserve the same space so
+showing or hiding the arrow cannot resize the row or rewrap its label. Opening the action reveals the
 native date and destination-event controls directly below that row in both the mini-panel and
 desktop details. The checklist heading and progress counter keep their ordinary treatment.
 

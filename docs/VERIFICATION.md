@@ -149,6 +149,44 @@ the mini/editor/settings/completion appearance set; material and attachment nati
 the shared dialog/preview families. A native file-dialog capture establishes its drawing only
 when the system supplies visible pixels; an effective-appearance assertion alone is not a pixel test.
 
+## Subtask reordering
+
+CoreChecks covers movement within active and completed groups, preserved task identities and
+event fields, a retained past event, no-op drops and rejection of a changed or unavailable source.
+UIChecks covers uneven row geometry, outside-group rejection and write failure followed by a
+durable retry. The retry check verifies the original bytes after failure and one accepted write.
+
+Launch a current-source Release bundle with `--ui-smoke-desktop --ui-smoke-subtask-reorder`
+and a fresh marked `COUNTDOWN_MANAGER_TEST_HOME` to exercise the focused native scenario.
+It posts AppKit mouse events to the isolated window and samples both moving row and neighbor
+positions before mouse-up. Both checklists keep the lifted row in its column and inside its
+group when the pointer travels outside the checklist. The outside release restores the original
+positions and preserves saved bytes. The run also compares saved bytes during the drag, verifies the desktop
+first-line and 28-point transfer-target geometry, and reorders twice in the mini-panel before
+checking shared saved order. Both native editors then show the reordered groups. The mini-panel
+focuses a new row at the end of the incomplete group and Cancel preserves saved bytes. Editing
+a completed row in the desktop sheet preserves all task identities, order and completion states.
+The scenario captures both checklist surfaces in Light and Graphite Dark.
+The [development evidence](images/v1.24.0/subtask-reorder-unreleased/PROVENANCE.md) records
+the actual executable and complementary ordinary mouse and accessibility-action checks.
+
+The isolated `--ui-smoke-desktop --ui-smoke-subtask-monkey` route uses a fresh marked
+test home with a `Captures` directory for the manifest. It exercises the combined reorder,
+transfer, copy, reorder-in-copy, row deletion and event deletion path. It checks
+cancellation and fresh repository loads, including preservation of the source and a same-date
+neighbor after the copy is deleted. The route uses AppKit events and the production action
+callbacks available to the native test driver.
+
+The separate `--ui-smoke-desktop --ui-smoke-subtask-completion` scenario uses the mini-panel
+completion action to capture the early and saved frames of a three-row regroup. It checks
+saved UUID order, neighbor states and the position of the checklist heading. It also completes
+and reopens a row in place on each surface, checking label and following-row geometry. The
+mini-panel check also observes the disappearing and returning transfer control. The desktop
+fixture uses wrapped text. The native
+registry action provides render evidence. Ordinary pointer checks for the sole completed
+and remaining incomplete rows live in `testWholeSubtaskRowHitAreasAndDisclosureIsolation`
+and the manual QA report. The drag scenario exercises animated neighbor movement.
+
 ## Single-subtask transfer native evidence
 
 `subtask-transfer` mounts the production mini-panel root in an isolated key-capable 390×600
