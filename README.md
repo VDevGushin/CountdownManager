@@ -9,7 +9,7 @@
 Перетаскивайте подзадачи вверх и вниз в большом окне или раскрытой мини-панели.
 Порядок сохраняется внутри каждой группы и совпадает в карточке и редакторе.
 
-[Скачать 1.25.0](https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.0/CountdownManager-1.25.0-47.zip) · [Что изменилось](docs/releases/v1.25.0-notes.md) · [Проверки выпуска](docs/releases/v1.25.0.md)
+[Скачать последний выпуск](https://github.com/VDevGushin/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.25.0-notes.md) · [Проверки выпуска](docs/releases/v1.25.0.md)
 
 ## Как выглядит приложение
 

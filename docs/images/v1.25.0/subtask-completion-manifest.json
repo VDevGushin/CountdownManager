@@ -1,0 +1,54 @@
+{
+  "applicationBuild": "47",
+  "applicationVersion": "1.25.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-completion-mini-before.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": false,
+      "observationUptime": 439678.4570845,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "498dc6bf990e5c40050ba42ca173d052bd1ada724b89b8dd944b16879fac3a24"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-completion-mini-early.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 439678.538817125,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "9133a2ecd8b0be6b398f81b20ef502b4c10029e36bb083eb8a896de449afb166"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "subtask-completion-mini-saved.png",
+      "height": 1200,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 439678.55133550003,
+      "reduceMotion": false,
+      "scale": 2,
+      "width": 780,
+      "sha256": "9133a2ecd8b0be6b398f81b20ef502b4c10029e36bb083eb8a896de449afb166"
+    }
+  ],
+  "executableSHA256": "355dacf33d3ade566e5fe9707deba41cb98e519a00ba120a98bdd0c68a262148",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true
+}
