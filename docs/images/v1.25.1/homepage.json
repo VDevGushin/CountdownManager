@@ -1,0 +1,17 @@
+{
+  "defaultBranch": "main",
+  "readmeSHA256": "8f6a48b3e84b301689c103f141e8422608b576bd56e6217cf972fddde481efb7",
+  "matchesLocal": true,
+  "images": [
+    {
+      "path": "docs/images/v1.25.1/desktop-note-after-cancel.png",
+      "sha256": "ba0aeae57a2418efa78cbc6fc49600e0e73c692de6c3f9ed6bd30b3f20f8f929",
+      "bytes": 357513
+    },
+    {
+      "path": "docs/images/v1.25.1/subtask-reorder-mini-light.png",
+      "sha256": "219aaa0ee00787343ed4b81199b8bb6f13723da2abed0569c16f4e7a6f727c00",
+      "bytes": 129538
+    }
+  ]
+}

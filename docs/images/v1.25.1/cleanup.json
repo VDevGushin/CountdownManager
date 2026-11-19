@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "removed": [
+    "/private/tmp/countdown-note-monkey.POMLLB",
+    "/private/tmp/countdown-note-visibility.QrKx4y",
+    "/private/tmp/countdown-release-1.25.1.MMkVQh"
+  ],
+  "staleBuildLocksRemoved": 15,
+  "removedRemoteBranch": "codex/publish-v1.25.1",
+  "removedMergedLocalBranch": "codex/desktop-note-visibility",
+  "productionEventAndAttachmentBytesPreserved": true
+}
