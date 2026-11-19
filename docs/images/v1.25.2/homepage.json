@@ -1,0 +1,17 @@
+{
+  "defaultBranch": "main",
+  "readmeSHA256": "7f2ddaebac18eb5e9a50ab5254ba0a9f13f06d14c6b21a299e1ca9b1c689407f",
+  "matchesLocal": true,
+  "images": [
+    {
+      "path": "docs/images/v1.25.2/desktop-title-alignment-dark.png",
+      "sha256": "dd1c7d54e44ea0e2935ff4a188a870362d81af193b23b068b4525913be0e4167",
+      "bytes": 226374
+    },
+    {
+      "path": "docs/images/v1.25.2/subtask-reorder-mini-light.png",
+      "sha256": "219aaa0ee00787343ed4b81199b8bb6f13723da2abed0569c16f4e7a6f727c00",
+      "bytes": 129538
+    }
+  ]
+}

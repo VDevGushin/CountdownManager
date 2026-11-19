@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "removed": [
+    "/private/tmp/countdown-title-alignment.d8LUUd"
+  ],
+  "staleBuildLocksRemoved": 8,
+  "removedRemoteBranch": "codex/publish-v1.25.2",
+  "removedMergedLocalBranch": "codex/desktop-title-alignment",
+  "productionEventAndAttachmentBytesPreserved": true
+}

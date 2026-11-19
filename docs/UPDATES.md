@@ -2,17 +2,17 @@
 
 ## Current published release
 
-Published as Latest is **1.25.1 / build 48** on 2026-11-19 for the desktop note visibility fix.
-[Release status](releases/v1.25.1.md) and [notes](releases/v1.25.1-notes.md) describe the change.
-[Public verification](images/v1.25.1/publication.json) records the audited ZIP, versioned feed
+Published as Latest is **1.25.2 / build 49** on 2026-11-19 for desktop title alignment.
+[Release status](releases/v1.25.2.md) and [notes](releases/v1.25.2-notes.md) describe the change.
+[Public verification](images/v1.25.2/publication.json) records the audited ZIP, versioned feed
 and stable feed. The annotated tag targets frozen main source
-`0ef6a2a51b3f8f29c41fbd19672b6f50047ba6a2`.
-[Package and native evidence](images/v1.25.1/PROVENANCE.md) records signature checks,
-the note rendering regression, release help and the current homepage captures.
+`e70873a69a9e4efee46d5e0e4f182e446017f6f9`.
+[Package and native evidence](images/v1.25.2/PROVENANCE.md) records signature checks,
+the multiline title regression, release help and the current homepage captures.
 
-The previous public release for the owner's manual update is **1.25.0 / build 47**.
-[Handoff](images/v1.25.1/handoff.json) verifies that it is installed and running.
-The prior publication remains recorded under [1.25.0](releases/v1.25.0.md).
+The previous public release for the owner's manual update is **1.25.1 / build 48**.
+[Handoff](images/v1.25.2/handoff.json) verifies that it is installed and running.
+The prior publication remains recorded under [1.25.1](releases/v1.25.1.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
