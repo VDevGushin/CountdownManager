@@ -1,0 +1,54 @@
+{
+  "executableSHA256": "0c8113abdb71b60dbf8c0a242e6ff6c97f05be7891415379da51a98ff840d806",
+  "osVersion": "27.2.1",
+  "osBuild": "26B131",
+  "architecture": "arm64",
+  "passedTests": 3,
+  "failedTests": 0,
+  "skippedTests": 0,
+  "tests": [
+    {
+      "test": "testNativeStatusItemProbe",
+      "result": "passed",
+      "comparison": {
+        "closed": {
+          "file": "status-before-desktop-closed.png",
+          "sha256": "23db22f16861203289c43a7f1fef65e132f05d3169348447b49a1decc4a7028d"
+        },
+        "open": {
+          "file": "status-before-desktop-open.png",
+          "sha256": "a67a33c0fa6c47a76fa6a9c46adf3752436757ab8dad6c81e854fd0e67c90ab1"
+        }
+      }
+    },
+    {
+      "test": "testStaticStatusItemAfterDesktopToPanelTransition",
+      "result": "passed",
+      "comparison": {
+        "closed": {
+          "file": "status-static-closed.png",
+          "sha256": "5dff47758335e8deddae45d5159a003ccb69be717069101a6603ab5a0885e4b6"
+        },
+        "open": {
+          "file": "status-static-open.png",
+          "sha256": "36af1fe8c265f9079421272581dd0ee9a8a86e97d30ee87ac5948a037777fec1"
+        }
+      }
+    },
+    {
+      "test": "testStatusItemAfterDesktopToPanelTransition",
+      "result": "passed",
+      "comparison": {
+        "closed": {
+          "file": "status-mars-closed.png",
+          "sha256": "fffb8e2ee50de6243f89fc44f550d3e89274906695e59b5395b73c88bb8c48bf"
+        },
+        "open": {
+          "file": "status-mars-open.png",
+          "sha256": "b6f5e6d6b8e9d36e4617c421793e1f3385b01679e1900478417bb0d1272a547f"
+        }
+      }
+    }
+  ],
+  "captureMethod": "XCUIScreen screenshot cropped to the status-item frame"
+}

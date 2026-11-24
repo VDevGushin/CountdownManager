@@ -1,0 +1,25 @@
+{
+  "applicationBuild": "50",
+  "applicationVersion": "1.25.3",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "whats-new-dark.png",
+      "height": 1176,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 29115.127982541668,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 860,
+      "sha256": "43d1f4d85feb61e074a292b4681760f1888bea03aad2e2dc984581da320dc003"
+    }
+  ],
+  "executableSHA256": "0c8113abdb71b60dbf8c0a242e6ff6c97f05be7891415379da51a98ff840d806",
+  "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture",
+  "syntheticData": true,
+  "totalCaptureCount": 4
+}

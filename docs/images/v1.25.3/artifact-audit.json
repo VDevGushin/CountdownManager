@@ -1,0 +1,72 @@
+{
+  "status": "passed",
+  "version": "1.25.3",
+  "build": "50",
+  "sourceCommit": "44635f66b0a9f818c637e3b071d5b137e17416a6",
+  "archiveSHA256": "1509b0cb02ccbe004f5f6e4fe531e8ba69ddc09bc53f720285a3fc3851e77b0f",
+  "archiveBytes": 6971796,
+  "feedSHA256": "69f2371dfc9fbd3172bc2cecfed1eb9e7e9dffaba8a816211d6105af82081f07",
+  "feedBytes": 2336,
+  "finalExecutableSHA256": "0c8113abdb71b60dbf8c0a242e6ff6c97f05be7891415379da51a98ff840d806",
+  "publicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "signatureVerifier": "Apple CryptoKit Curve25519.Signing.PublicKey",
+  "signatureChecks": {
+    "archive-valid": true,
+    "archive-changed-payload": false,
+    "archive-changed-signature": false,
+    "feed-valid": true,
+    "feed-changed-payload": false,
+    "feed-changed-signature": false
+  },
+  "feedSignedBytes": 2192,
+  "feedSignedBoundaryVerified": true,
+  "feedMetadata": {
+    "shortVersionString": "1.25.3",
+    "version": "50",
+    "minimumSystemVersion": "13.0",
+    "hardwareRequirements": "arm64",
+    "archiveURL": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.3/CountdownManager-1.25.3-50.zip",
+    "embeddedNotesSHA256": "353f0328625f913b42e2ce2b706bb9c0cf99bccce8ba065fa0b9019ad759cc3b"
+  },
+  "extractedEntriesMatch": true,
+  "comparedEntries": 168,
+  "deepStrictCodesignPassed": true,
+  "nativeBuildContract": {
+    "schemaVersion": 1,
+    "styleVersion": "native-calendar-graphite-v2",
+    "contractSHA256": "1f1b22ae1ab29aa2005f5ca1772c8d2d6ca3b31cb0aa42ef46ee80a2c17361e3",
+    "sourceAuthoritySHA256": {
+      "docs/PRODUCT.md": "4b317149072b8f14748a5cdf5f0f552bb77571205dc84f0b8e834da0393b0c8c",
+      "DESIGN.md": "3b5779a827f604fc6a1b0a4168cff9c49cf24f81d82e5a6087708578378a5cdd",
+      "Sources/CountdownManager/AuroraInstrument.swift": "aedd3b36208832761c9be15dec6f96191d37827c1f59be2ec0324b3d4c907f45"
+    },
+    "compilerSDK": {
+      "path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version": "27.2",
+      "canonicalName": "macosx27.2"
+    },
+    "swiftToolchain": {
+      "executable": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-frontend",
+      "version": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx27.2.0\nswift-driver version: 1.168.6"
+    },
+    "linkedCompatibility": "13.0",
+    "deploymentTarget": "13.0",
+    "createdAtUTC": "2026-11-24T19:53:27.450308+00:00",
+    "application": {
+      "identifier": "local.countdownmanager.app",
+      "version": "1.25.3",
+      "build": "50",
+      "executable": "CountdownManager"
+    },
+    "linkedMachO": [
+      {
+        "architecture": "thin",
+        "command": "LC_BUILD_VERSION",
+        "platform": "1",
+        "minos": "13.0",
+        "sdk": "13.0"
+      }
+    ],
+    "renderedAppearanceVerified": false
+  }
+}
