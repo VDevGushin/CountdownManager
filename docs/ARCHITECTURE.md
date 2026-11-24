@@ -152,7 +152,9 @@ Create the panel and hosting hierarchy once. On every explicit show, calculate t
 
 SwiftUI view-value recomputation is normal and is not root reconstruction. Keep the list structurally alive while the editor or settings is active; retaining only the hosting controller does not preserve a list removed by a conditional branch. A draft belongs to an explicit editing session, not to window visibility. Save success or Cancel ends that session; hiding does not.
 
-Panel positioning and visibility are shell responsibilities. The borderless panel has no arrow, title bar or traffic-light controls; it is not movable, uses no ordering animation and moves to the active Space only during an explicit show. A synchronous requested-visible flag makes every status-item action resolve immediately: hide only when the panel is visibly presented on the active Space, otherwise show it there. When a requested-visible panel becomes fully occluded during a Space transition, its native occlusion callback clears that request and calls `orderOut`; application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` use the same path as fallbacks. These signals are independent of list/editor/timer state and first responder. Returning to an old Space cannot restore the panel; only a later status-item action can show and reposition it. There is no mouse monitor, responder teardown/restoration machine, persisted scroll offset, draft restoration or per-OS shell abstraction. Existing domain, persistence, disclosure preferences, date refresh, login integration and privacy-safe diagnostics retain their responsibilities.
+Panel positioning and visibility are shell responsibilities. The retained, borderless panel has no arrow, title bar or traffic-light controls and moves to the active Space during an explicit show. With the macOS 27 SDK and runtime, AppKit tracks the status item's session and highlight while the app is an accessory. The first desktop opening ends the session and gives the app its persistent Dock role. In that role, the button handles clicks through target-action and mirrors panel visibility with a stable background. Mars rotates on a separate, noninteractive image view. The synchronous visibility request handles toggles before a visible-occlusion acknowledgement. The app associates a deactivation with the closing press so it cannot reopen a just-dismissed panel. With Reduce Motion off, the status gesture fades in using AppKit window opacity and closes with the utility-window ordering animation. A new opening resets any previous opacity transition before ordering the panel. Earlier systems keep the published target-action, visibility checks and instant ordering. Direct opening from the desktop and drag hover retain their existing entry points.
+
+When an acknowledged panel becomes fully occluded during a Space transition, its native occlusion callback clears the request and orders the panel out. Application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` also clear the request. Returning to an old Space cannot restore the panel. These signals are independent of list, editor, timer and first-responder state.
 
 ## Runtime responsibilities
 
@@ -170,9 +172,9 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.2`.
-Its current section describes leading alignment of wrapped desktop card titles and uses
-`text.alignleft`.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.3`.
+Its current section describes the status-item and mini-panel fix on macOS 27 and uses
+`menubar.rectangle`.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic

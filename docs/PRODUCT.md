@@ -13,8 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.25.2 uses the read-only `Что нового` screen to describe left alignment of
-wrapped desktop card titles, with `text.alignleft` as its symbol. The release-help window was
+Release 1.25.3 uses the read-only `Что нового` screen to describe the status item and
+mini-panel fix on macOS 27, with `menubar.rectangle` as its symbol. The release-help window was
 introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -36,7 +36,8 @@ Accepted product contract for the menu-bar panel shell.
 
 The menu-bar entry opens a temporary panel anchored directly below the status item. The application starts as a menu-bar utility without a Dock icon. Launch at login starts the menu-bar entry without opening either interface. The first explicit desktop opening makes the application available in the Dock for the rest of that application session. Closing its window, switching to the mini-panel or dismissing the panel changes visibility, not the application's role; Quit ends the session.
 
-- Clicking the status item shows the panel from that status item on the current active macOS Space if hidden; clicking it while visible hides it. Every distinct click determines the next visible/hidden state even when clicks are rapid.
+- Pressing the status item shows the panel below it on the current active macOS Space or hides it if already open. On macOS 27 and later, each distinct click changes the visibility request during transitions, and application deactivation caused by the same click counts as that click's dismissal. A short transition accompanies opening and closing from the status item. With Reduce Motion, both are immediate.
+- On macOS 27 and later, the status item stays highlighted while the panel it opened is visible. Earlier systems keep their existing status item behavior and instant window ordering.
 - The panel has no arrow, title bar or traffic-light controls. It is not draggable and never behaves as a centered or independently positioned utility window.
 - Closing the panel, including through the standard close command, hides the interface without quitting the application.
 - When the user leaves the panel, including switching to another application or Space, it automatically hides. Returning to the original Space does not show it again; only a new status-item click does.

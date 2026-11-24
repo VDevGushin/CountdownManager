@@ -12,11 +12,17 @@ The surface contains a full SwiftUI event list and text editor, so an `NSMenu` i
 
 ## Decision
 
-Use one strongly retained, borderless, key-capable `NSPanel` and one strongly retained `NSHostingController<ManagerView>` for the application session. The panel has transparent AppKit chrome, a shadow and rounded hosted content, no ordering animation, no title-bar controls and no movement behavior.
+Use one strongly retained, borderless, key-capable `NSPanel` and one strongly retained hosting controller for the application session. The panel has transparent AppKit chrome, a shadow and rounded hosted content, no title-bar controls and no movement behavior. Starting on macOS 27, opening from the status item fades in through AppKit, and closing uses its utility-window transition when Reduce Motion is off. Other ordering paths are immediate.
 
 On every explicit show, derive the anchor rectangle from the current `NSStatusBarButton` in screen coordinates, clamp the panel to that screen's visible frame, and place it immediately below the status item. Use `moveToActiveSpace` so making the hidden panel key moves it to the active Space instead of switching the user to an old one.
 
-Own visibility through a synchronous requested-visible flag. A status-item action hides only a requested, visible panel on the active Space; otherwise it is an explicit show on the current Space. Showing activates the accessory application and orders the retained panel key/front. Hiding clears the request and calls `orderOut`. A requested-visible panel becoming fully occluded, application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` use that same hide path without checking editor, responder or key-window state. The occlusion callback covers a rapid Space transition that is visually entered and reversed before the workspace posts a completed-change notification. Returning to a Space therefore cannot restore the panel; only a later status-item action can show it.
+Own visibility through a synchronous requested-visible flag. Showing activates the accessory application and orders the retained panel key/front. Hiding clears the request and calls `orderOut`. Earlier systems keep the existing target-action, including its current-Space window visibility check and application-deactivation dismissal.
+
+With the macOS 27 SDK and runtime, use `NSStatusItemExpandedInterfaceDelegate` for status-item clicks. AppKit tracks the active session, including button highlight and menu navigation. The delegate orders the same retained panel front or out. Explicit dismissal and application deactivation cancel the tracked session. When deactivation arrives during a press of this item, associate the dismissal with that press even if its session count has not advanced yet. A later key press cannot be mistaken for the closing mouse press. Direct opening from the desktop and drag hover retain their existing entry points, and older systems retain target-action.
+
+On macOS 27.2.1, a regular foreground app can miss the expanded session's end after returning from the desktop. The failure reproduced with both a static status title and a rotating Mars. When the app first takes its persistent Dock role, it cancels the current expanded session and switches the status button to target-action. In that role the button's background follows the retained panel's visibility, independently of the glyph animation. Accessory mode retains the system session.
+
+An acknowledged panel becoming fully occluded, application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` still dismiss without checking editor, responder or key-window state. The occlusion callback covers a rapid Space transition that is visually entered and reversed before the workspace posts a completed-change notification. Returning to a Space therefore cannot restore the panel. An explicit status-item press can show it again.
 
 Hiding changes visibility only. Do not replace the panel, hosting controller or root. The list hierarchy, editor session, draft and scroll position remain owned by the retained SwiftUI hierarchy. Save and Cancel remain the only actions that commit or abandon editor work.
 
@@ -28,6 +34,11 @@ Apple defines `NSPanel` as a specialized `NSWindow`. `orderOut` removes a window
 
 - [NSPanel](https://developer.apple.com/documentation/appkit/nspanel)
 - [NSWindow.orderOut](https://developer.apple.com/documentation/appkit/nswindow/orderout(_:))
+- [NSWindow.AnimationBehavior](https://developer.apple.com/documentation/appkit/nswindow/animationbehavior-swift.enum)
+- [NSControl.sendAction(on:)](https://developer.apple.com/documentation/appkit/nscontrol/sendaction(on:))
+- [NSButton.highlight(_:)](https://developer.apple.com/documentation/appkit/nsbutton/highlight(_:))
+- [NSStatusItemExpandedInterfaceDelegate](https://developer.apple.com/documentation/appkit/nsstatusitemexpandedinterfacedelegate)
+- [CGEventSource.counterForEventType](https://developer.apple.com/documentation/coregraphics/cgeventsource/counterforeventtype(_:eventtype:))
 - [NSWindow.CollectionBehavior.moveToActiveSpace](https://developer.apple.com/documentation/appkit/nswindow/collectionbehavior-swift.struct/movetoactivespace)
 - [NSWindow.didChangeOcclusionStateNotification](https://developer.apple.com/documentation/appkit/nswindow/didchangeocclusionstatenotification)
 - [NSWindow.occlusionState](https://developer.apple.com/documentation/appkit/nswindow/occlusionstate-swift.property)

@@ -18,6 +18,12 @@ final class UISmokeVisualEnvironment: ObservableObject {
     @Published var colorSchemeOverride: ColorScheme?
 }
 
+@MainActor
+private final class UISmokePanelTransitionObservation {
+    var openingOpacity: CGFloat?
+    var closingBehavior: NSWindow.AnimationBehavior?
+}
+
 struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
     static let desktopLaunchArgument = "--ui-smoke-desktop"
@@ -411,15 +417,54 @@ final class UISmokeRuntime {
         let token = controls.value("root.window")
         if usingStatusItem { pressStatusItem() } else { hideSurface() }
         try await waitFor("panel hidden") { !self.isSurfaceShown() }
+        if supportsExpandedStatusItemSessions {
+            try await waitFor("status button unhighlighted") { self.statusButton()?.isHighlighted == false }
+        }
         if usingStatusItem { pressStatusItem() } else { showSurface() }
         try await waitFor("panel visible and key") {
             self.window()?.isVisible == true && self.window()?.isKeyWindow == true
+        }
+        if supportsExpandedStatusItemSessions {
+            try await waitFor("status button highlighted") { self.statusButton()?.isHighlighted == true }
         }
         let shown = try requireValue(window(), "shown window")
         try require(shown.isOnActiveSpace, "shown panel is not on the active Space")
         try require(shown.contentViewController === host && shown.contentView === content,
                     "hosting hierarchy was reconstructed")
         try require(controls.value("root.window") == token, "root State identity changed")
+    }
+
+    private func verifyStatusItemMotionPolicy() async throws {
+        guard supportsExpandedStatusItemSessions else { return }
+        let panel = try requireValue(window(), "status-item motion panel")
+        let contrast = accessibilitySettings.isolatedCaptureOverrideValue
+        let motion = accessibilitySettings.isolatedReduceMotionOverrideValue
+        let observation = UISmokePanelTransitionObservation()
+        let center = NotificationCenter.default
+        let opening = center.addObserver(forName: NSWindow.didBecomeKeyNotification, object: panel, queue: nil) { _ in
+            MainActor.assumeIsolated { observation.openingOpacity = panel.alphaValue }
+        }
+        let closing = center.addObserver(forName: NSWindow.didResignKeyNotification, object: panel, queue: nil) { _ in
+            MainActor.assumeIsolated { observation.closingBehavior = panel.animationBehavior }
+        }
+        defer {
+            center.removeObserver(opening)
+            center.removeObserver(closing)
+            accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: motion)
+        }
+
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: false)
+        try await hideAndShow(usingStatusItem: true)
+        try require(observation.openingOpacity.map { $0 < 1 } == true && observation.closingBehavior == .utilityWindow,
+                    "expected a fade before the panel becomes key and an animated order-out")
+
+        observation.openingOpacity = nil
+        observation.closingBehavior = nil
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: contrast, reduceMotion: true)
+        try await hideAndShow(usingStatusItem: true)
+        try require(observation.openingOpacity == 1 && observation.closingBehavior == NSWindow.AnimationBehavior.none,
+                    "Reduce Motion must order the panel fully opaque and without a closing animation")
+        pass("status-item panel uses native transitions normally and orders immediately under isolated Reduce Motion")
     }
 
     private func runCompletedSubtasksCapture() async throws {
@@ -4142,6 +4187,7 @@ final class UISmokeRuntime {
 
 extension UISmokeRuntime {
     private func runMenuIdentityCapture() async throws {
+        try await verifyStatusItemMotionPolicy()
         for name in ["MarsMenuLight", "MarsMenuDark", "CalendarMenu"] {
             let url = try requireValue(Bundle.main.url(forResource: name, withExtension: "pdf"), "bundled \(name)")
             let loaded = try requireValue(NSImage(contentsOf: url), "vector \(name)")

@@ -2,6 +2,7 @@ import AppKit
 
 @MainActor
 package enum StatusBarImages {
+    static let iconSize = NSSize(width: 18, height: 18)
     private static let marsLight = load("MarsMenuLight", template: false, fallback: "circle.fill")
     private static let marsDark = load("MarsMenuDark", template: false, fallback: "circle.fill")
     private static let calendar = load("CalendarMenu", template: true, fallback: "calendar")
@@ -24,7 +25,7 @@ package enum StatusBarImages {
             DiagnosticLog.shared.record("status.icon load-failure resource=\(name)")
             image = NSImage(systemSymbolName: fallback, accessibilityDescription: nil)
         }
-        image?.size = NSSize(width: 18, height: 18)
+        image?.size = iconSize
         image?.isTemplate = template
         return image
     }

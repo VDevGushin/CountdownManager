@@ -22,7 +22,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.25.2"
+    static let releaseID = "1.25.3"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -38,8 +38,8 @@ struct WhatsNewView: View {
                     Text("Countdown Manager \(Self.releaseID)")
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Длинные заголовки выровнены слева", symbol: "text.alignleft",
-                            text: "В обычных карточках большого окна все строки перенесённого названия начинаются от левого края, в том числе при поиске.")
+                    feature("Мини-панель в строке меню", symbol: "menubar.rectangle",
+                            text: "На macOS 27 значок снова открывает и закрывает мини-панель после возврата из большого окна. Он подсвечен, пока панель открыта. «Уменьшение движения» отключает переходы.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)

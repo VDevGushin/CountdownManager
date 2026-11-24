@@ -3,12 +3,66 @@ import CountdownCore
 
 /// A show request is not a presented panel until WindowServer reports visible occlusion state.
 package struct PanelPresentationState: Equatable {
+    package enum StatusAction: String {
+        case show, hide
+        case alreadyHidden = "already-hidden"
+    }
+
+    package struct StatusPress: Equatable {
+        let session: UInt32
+        let hardware: UInt32
+        let keyboard: UInt32
+
+        package init(session: UInt32, hardware: UInt32, keyboard: UInt32 = 0) {
+            self.session = session
+            self.hardware = hardware
+            self.keyboard = keyboard
+        }
+    }
+
     package private(set) var requestedVisible = false
     package private(set) var hasVisibleAcknowledgement = false
+    private var lastHandledStatusPress: StatusPress?
+    private var statusPressThatDismissedPanel: StatusPress?
 
     package init() {}
 
+    package func hasShowRequestHere(isOnActiveSpace: Bool) -> Bool {
+        // Before the window server acknowledges a show, its Space can still reflect the last presentation.
+        requestedVisible && (!hasVisibleAcknowledgement || isOnActiveSpace)
+    }
+
+    package mutating func statusAction(press: StatusPress?, isOnActiveSpace: Bool) -> StatusAction {
+        let alreadyHidden = matchesDismissingPress(press)
+        statusPressThatDismissedPanel = nil
+        if let press { lastHandledStatusPress = press }
+        if alreadyHidden { return .alreadyHidden }
+        return hasShowRequestHere(isOnActiveSpace: isOnActiveSpace) ? .hide : .show
+    }
+
+    private func matchesDismissingPress(_ press: StatusPress?) -> Bool {
+        guard let press, let dismissed = statusPressThatDismissedPanel,
+              press.keyboard == dismissed.keyboard else { return false }
+        if press == dismissed { return true }
+        // Forwarding a hardware press to the status button can also advance the session counter.
+        return press.hardware != 0 && press.hardware == dismissed.hardware
+            && press.hardware != lastHandledStatusPress?.hardware
+    }
+
+    package mutating func recordStatusPressDuringDeactivation(_ press: StatusPress, buttonIsDown: Bool = false) -> Bool {
+        let hasNewMouseDown = press.session != lastHandledStatusPress?.session
+            || press.hardware != lastHandledStatusPress?.hardware
+        guard requestedVisible, buttonIsDown || hasNewMouseDown else { return false }
+        statusPressThatDismissedPanel = press
+        return true
+    }
+
+    package mutating func clearStatusPressDuringDeactivation() {
+        statusPressThatDismissedPanel = nil
+    }
+
     package mutating func requestShow() {
+        clearStatusPressDuringDeactivation()
         requestedVisible = true
         hasVisibleAcknowledgement = false
     }

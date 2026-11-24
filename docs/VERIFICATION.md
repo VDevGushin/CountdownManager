@@ -1587,7 +1587,7 @@ The current automation cannot faithfully reproduce these system interactions. Ve
 
 1. A fresh-launch status-item click opens an arrowless panel directly below the status item.
 2. Hiding and reopening preserves the same in-memory session when required by the product contract.
-3. Rapid repeated status-item clicks produce one immediate visibility toggle per distinct click.
+3. Rapid repeated presses produce one visibility toggle per distinct click, including during the native transition. Start with another regular macOS app in front, repeat with Countdown already open, and confirm a closing click never immediately reopens it. Check that the panel transitions in and out and that the menu-bar highlight remains until dismissal. With Reduce Motion enabled, the same toggles are immediate.
 4. Switching to another application hides the panel.
 5. Switching Spaces hides the old panel without losing the editor or draft; returning does not reopen it, including after a rapid return.
 6. Clicking the status item from another Space keeps that Space active and opens below its status item.
@@ -1646,12 +1646,27 @@ not establish perceived intermediate smoothness.
 
 ### Panel pending-show acknowledgement regression
 
-`PanelPresentationChecks.swift` covers pending-show/visible acknowledgement, late hidden/visible
-observations, reset on explicit hide and 200 rapid request sequences. These are pure request-state
-checks, not physical Space acceptance. The existing full desktop status-hide→compact flow retains
+`PanelPresentationChecks.swift` covers pending show, visible acknowledgement, rapid toggles, late
+occlusion observations, and deactivation delivered before the same status press. A different press
+or an accessibility action can still reopen the panel. These are pure request-state checks. Real UI
+Smoke checks the native button's highlight after hiding and reopening the retained panel. The
+existing full desktop status-hide→compact flow retains
 its strict visible-panel assertion without adding a settlement wait. A real failure at scenario 10
 was traced to an occlusion callback hiding a newly requested panel before its visible acknowledgement;
 that run must not be labelled a false positive or combined with a subsequent passing campaign.
+
+On macOS 27, `testNativeStatusItemClosesAndReopensRetainedPanel` targets the test application's `statusItems` in an isolated
+visual preview with production lifecycle callbacks. If the system hides the test icon under menu-bar
+overflow, reveal it before running the test. Recheck visibility when diagnosing a skipped test:
+opening the overflow can itself
+deactivate and dismiss the panel. Use screen recordings or cropped display captures for the actual
+menu-bar highlight. Check journal timestamps before drawing conclusions about rapid input from
+XCTest's synthesized double-click, which can deliver actions several seconds apart on this host.
+
+`testStatusItemStillTogglesAfterReturningFromDesktop` covers opening from the status item,
+opening the desktop, returning through its mini-panel button, then closing, reopening and
+closing again through the status item. Check the ordinary and static-glyph paths plus the
+open and closed status pixels against the signed candidate when changing this handoff.
 
 
 ### Desktop sheet update restart

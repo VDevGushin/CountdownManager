@@ -132,8 +132,8 @@ components:
 
 ## Overview
 
-Release 1.25.2 uses one existing release-help section with native `text.alignleft`
-for leading alignment of wrapped desktop card titles. The existing 13-point body,
+Release 1.25.3 uses an existing release-help section with native `menubar.rectangle`
+for the status item and retained mini-panel fix on macOS 27. The existing 13-point body,
 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
@@ -474,6 +474,14 @@ Create action and existing editor Save share `auroraPrimaryAction()` so native b
 Aurora tint, Increase Contrast branch, foreground and typography cannot drift between them.
 
 ### Navigation
+
+On macOS 27 and later, the mini-panel fades in through AppKit when opened from the status item
+and uses the system utility-window transition when closing. It stays anchored below the icon.
+Reduce Motion makes both actions immediate. Each press updates visibility during a transition.
+The status item stays highlighted until the panel closes. AppKit tracks the highlight in accessory
+mode. After the first desktop opening, the button displays the retained panel's visibility on its
+own stable background, and only the Mars glyph rotates. Earlier macOS versions keep the existing
+instant ordering and button appearance.
 
 The mini-panel's fixed list footer carries local-storage reassurance, an `Открыть основное окно` button, a small settings gear, and Quit. The window button opens or brings forward the retained desktop window. The gear symbol is 14 points in a 22-point activation area. Mini-panel settings has an explicit back control and a Georgia heading. The desktop settings pane instead has its Georgia heading on the left and an `xmark` close control on the right; Escape and backdrop clicks also dismiss it. Settings groups are functional labels with native controls; update and diagnostic rows are actions without navigation arrows. Inactive list content is removed from interaction and accessibility while the editor or settings is active.
 

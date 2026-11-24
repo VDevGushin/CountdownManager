@@ -209,6 +209,76 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertTrue(waitForAbsence(root))
     }
 
+    func testNativeStatusItemClosesAndReopensRetainedPanel() throws {
+        guard #available(macOS 27.0, *) else { throw XCTSkip("Native status-item sessions require macOS 27") }
+        try writeItems([], primaryID: nil)
+        try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
+        app.launchArguments = ["--visual-preview"]
+        app.launch()
+
+        let panel = app.windows["main.panel"]
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        let item = app.statusItems.matching(NSPredicate(format: "label == %@", "Countdown Manager")).firstMatch
+        try XCTSkipUnless(item.waitForExistence(timeout: 2) && item.isHittable,
+                          "The test app's status item must be visible in the system menu bar")
+        item.click()
+        XCTAssertTrue(waitForAbsence(panel), "Clicking the status item must close the directly opened panel")
+
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4), "A new click must open a native status-item session")
+        item.click()
+        XCTAssertTrue(waitForAbsence(panel), "A closing click must not open the panel again")
+
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4), "The following click must still open the retained panel")
+
+        XCUIApplication(bundleIdentifier: "com.apple.finder").activate()
+        XCTAssertTrue(waitForAbsence(panel), "Switching to Finder must close the native session")
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4), "The first click after leaving the app must open again")
+    }
+
+    func testStatusItemStillTogglesAfterReturningFromDesktop() throws {
+        guard #available(macOS 27.0, *) else { throw XCTSkip("Requires the macOS 27 status-item handoff") }
+        try writeItems([], primaryID: nil)
+        try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
+        app.launchArguments = ["--visual-preview"]
+        app.launch()
+
+        let panel = app.windows["main.panel"]
+        let desktop = app.windows["desktop.window"]
+        let item = app.statusItems.matching(NSPredicate(format: "label == %@", "Countdown Manager")).firstMatch
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        try XCTSkipUnless(item.waitForExistence(timeout: 2) && item.isHittable,
+                          "The test app's status item must be visible in the system menu bar")
+        item.click()
+        XCTAssertTrue(waitForAbsence(panel))
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+
+        app.buttons["desktop.open"].click()
+        XCTAssertTrue(desktop.waitForExistence(timeout: 4))
+        XCTAssertTrue(waitForAbsence(panel))
+        app.buttons["desktop.panel"].click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        XCTAssertTrue(waitForAbsence(desktop))
+        try XCTSkipUnless(item.isHittable, "The test app's icon is hidden in menu-bar overflow after returning")
+
+        item.click()
+        XCTAssertTrue(waitForAbsence(panel), "The first click after returning must close the panel")
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4), "The next click must reopen the panel")
+        item.click()
+        XCTAssertTrue(waitForAbsence(panel), "The subsequent click must still close the panel")
+
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        XCUIApplication(bundleIdentifier: "com.apple.finder").activate()
+        XCTAssertTrue(waitForAbsence(panel), "Switching apps must still dismiss the panel after returning from desktop")
+        item.click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4), "The first click after leaving must open again in Dock mode")
+    }
+
     func testFirstEventWithoutIconOrFavoriteRemainsNearestAfterRelaunch() throws {
         try writeItems([], primaryID: nil)
         app.launch()
