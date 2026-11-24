@@ -1,0 +1,18 @@
+{
+  "status": "previous-public-release-launched-then-published-release-observed-running",
+  "previousVersion": "1.25.2",
+  "previousBuild": "49",
+  "previousExecutableSHA256": "aea61f646030853bc4ddf8a87ab32aa8b9a44f5d4a37e9a4d0c45666927ad394",
+  "previousLaunchedAtUTC": "2026-11-24T20:08:53.613Z",
+  "installedVersion": "1.25.3",
+  "installedBuild": "50",
+  "installedExecutableSHA256": "0c8113abdb71b60dbf8c0a242e6ff6c97f05be7891415379da51a98ff840d806",
+  "runningExecutable": "/Applications/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "updateInstallObservedAtUTC": "2026-11-24T20:09:11.238Z",
+  "publishedReleaseLaunchedAtUTC": "2026-11-24T20:09:11.493Z",
+  "installedBundleMatchesPublishedZIP": true,
+  "updateInitiatedByReleaseAgent": false,
+  "sameEventCountLoadedBeforeAndAfterUpdate": true,
+  "attachmentBytesPreserved": true,
+  "eventStoreByteEqualityNotEstablished": "Successful event saves were logged after the new version loaded."
+}

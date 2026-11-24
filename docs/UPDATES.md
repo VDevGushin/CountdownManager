@@ -2,17 +2,19 @@
 
 ## Current published release
 
-Published as Latest is **1.25.2 / build 49** on 2026-11-19 for desktop title alignment.
-[Release status](releases/v1.25.2.md) and [notes](releases/v1.25.2-notes.md) describe the change.
-[Public verification](images/v1.25.2/publication.json) records the audited ZIP, versioned feed
+Published as Latest is **1.25.3 / build 50** on 2026-11-24 for the macOS 27
+mini-panel and status-item handoff.
+[Release status](releases/v1.25.3.md) and [notes](releases/v1.25.3-notes.md) describe the change.
+[Public verification](images/v1.25.3/publication.json) records the audited ZIP, versioned feed
 and stable feed. The annotated tag targets frozen main source
-`e70873a69a9e4efee46d5e0e4f182e446017f6f9`.
-[Package and native evidence](images/v1.25.2/PROVENANCE.md) records signature checks,
-the multiline title regression, release help and the current homepage captures.
+`44635f66b0a9f818c637e3b071d5b137e17416a6`.
+[Package and native evidence](images/v1.25.3/PROVENANCE.md) records signature, status-item,
+animation and Reduce Motion checks and the current homepage captures.
 
-The previous public release for the owner's manual update is **1.25.1 / build 48**.
-[Handoff](images/v1.25.2/handoff.json) verifies that it is installed and running.
-The prior publication remains recorded under [1.25.1](releases/v1.25.1.md).
+The previous public release was **1.25.2 / build 49**.
+[Handoff](images/v1.25.3/handoff.json) records its launch and the subsequent observed
+update to the exact published 1.25.3 / build 50.
+The prior publication remains recorded under [1.25.2](releases/v1.25.2.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

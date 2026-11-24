@@ -1,0 +1,27 @@
+{
+  "status": "task-created-artifacts-removed",
+  "removedTemporaryDirectories": [
+    "/private/tmp/countdown-status-xcui.1sI1j4",
+    "/private/tmp/countdown-hotfix-cache.VLViIx",
+    "/private/tmp/countdown-audit-crops.Y6UxKw",
+    "/private/tmp/countdown-native-sdk-contract.Xd4gAU",
+    "/private/tmp/countdown-click-review.awLo2p",
+    "/private/tmp/countdown-release-cycle-audit.yqNIR4",
+    "/private/tmp/countdown-native-keyboard-review.424tbW",
+    "/private/tmp/countdown-expanded-interface-probe.we1Vcr",
+    "/private/tmp/countdown-visual-final-audit.UU7lcY",
+    "/private/tmp/countdown-hotfix-acceptance.zcmPgR",
+    "/private/tmp/countdown-native-sdk-contract.GTMQHp",
+    "/private/tmp/countdown-release-gate.bzg0VJ",
+    "/private/tmp/countdown-sdk-capability-module.nY7DL5",
+    "/private/tmp/countdown-status-audit-crops.I9foHi",
+    "/private/tmp/countdown-hotfix-video.MRRcOt",
+    "/private/tmp/countdown-panel-video.V5tEoJ",
+    "/private/tmp/countdown-release-1.25.3.Zd2Vp6"
+  ],
+  "removedIsolatedXCUITestProfiles": 38,
+  "identifiedXCUITestProfilesAlreadyAbsent": 0,
+  "releaseCandidateAndTrackingQAStopped": true,
+  "installedPublishedBundlePreserved": true,
+  "workingEventStoreAndAttachmentPathsExcluded": true
+}

@@ -1,0 +1,38 @@
+{
+  "status": "published-and-publicly-verified",
+  "version": "1.25.3",
+  "build": "50",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.25.3",
+  "publicationMethod": "Published as Latest through the authenticated GitHub release form in the in-app browser",
+  "verifiedAtUTC": "2026-11-24T20:07:41.807499+00:00",
+  "sourceCommit": "44635f66b0a9f818c637e3b071d5b137e17416a6",
+  "annotatedTagObject": "dc3cb45ca000f61d68c0772b148fc8660eb054eb",
+  "defaultBranch": "main",
+  "assets": {
+    "latest": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest",
+      "status": 200,
+      "sha256": "d014cc130d7dbd928170081326baffe2d7b79a1c6a83cfd13646a9c826315685",
+      "bytes": 146249,
+      "resolvedURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.25.3"
+    },
+    "archive": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.3/CountdownManager-1.25.3-50.zip",
+      "status": 200,
+      "sha256": "1509b0cb02ccbe004f5f6e4fe531e8ba69ddc09bc53f720285a3fc3851e77b0f",
+      "bytes": 6971796
+    },
+    "versionFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/download/v1.25.3/appcast.xml",
+      "status": 200,
+      "sha256": "69f2371dfc9fbd3172bc2cecfed1eb9e7e9dffaba8a816211d6105af82081f07",
+      "bytes": 2336
+    },
+    "stableFeed": {
+      "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+      "status": 200,
+      "sha256": "69f2371dfc9fbd3172bc2cecfed1eb9e7e9dffaba8a816211d6105af82081f07",
+      "bytes": 2336
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "defaultBranch": "main",
+  "checkedCommit": "e26016523ccdcb642cdc119b53b98f4b53a3afa7",
+  "readmeSHA256": "bfb652fee024a62f02386201defce5b167e30e6b493ef5d62d38ac50fb6bb6db",
+  "matchesLocal": true,
+  "renderedInBrowser": true,
+  "downloadURL": "https://github.com/VDevGushin/CountdownManager/releases/latest",
+  "images": [
+    {
+      "path": "docs/images/v1.25.3/desktop-title-alignment-dark.png",
+      "sha256": "2dfbdb125d34e65cda57b6f268adbef232eec21f411107000a9e1e7f1de36a05",
+      "bytes": 225952,
+      "width": 1920,
+      "height": 1416,
+      "displayWidth": 823
+    },
+    {
+      "path": "docs/images/v1.25.3/mini-panel-hotfix-light.png",
+      "sha256": "0095e029bb6ca76717ad7931dbda3d136369dfbaa237aa7c7dc39e6c08e0617f",
+      "bytes": 95779,
+      "width": 780,
+      "height": 1200,
+      "displayWidth": 390
+    }
+  ]
+}
