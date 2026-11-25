@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import CountdownCore
 
 package struct WeatherCoordinates: Equatable, Sendable {
     package let latitude: Double
@@ -37,16 +38,16 @@ package enum WeatherCity: String, CaseIterable, Identifiable, Sendable {
 
     package var title: String {
         switch self {
-        case .moscow: return "Москва"
-        case .saintPetersburg: return "Санкт-Петербург"
-        case .kazan: return "Казань"
-        case .grozny: return "Грозный"
-        case .nizhnyNovgorod: return "Нижний Новгород"
-        case .yekaterinburg: return "Екатеринбург"
-        case .novosibirsk: return "Новосибирск"
-        case .samara: return "Самара"
-        case .rostovOnDon: return "Ростов-на-Дону"
-        case .krasnodar: return "Краснодар"
+        case .moscow: return AppText.string("weather.city.moscow")
+        case .saintPetersburg: return AppText.string("weather.city.saintPetersburg")
+        case .kazan: return AppText.string("weather.city.kazan")
+        case .grozny: return AppText.string("weather.city.grozny")
+        case .nizhnyNovgorod: return AppText.string("weather.city.nizhnyNovgorod")
+        case .yekaterinburg: return AppText.string("weather.city.yekaterinburg")
+        case .novosibirsk: return AppText.string("weather.city.novosibirsk")
+        case .samara: return AppText.string("weather.city.samara")
+        case .rostovOnDon: return AppText.string("weather.city.rostovOnDon")
+        case .krasnodar: return AppText.string("weather.city.krasnodar")
         }
     }
 
@@ -81,7 +82,7 @@ package enum WeatherLocationSelection: Equatable, Hashable, Sendable {
 
     package var title: String {
         switch self {
-        case .automatic: return "Автоматически"
+        case .automatic: return AppText.string("common.automatic")
         case let .city(city): return city.title
         }
     }

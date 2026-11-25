@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import QuartzCore
 import SwiftUI
+import CountdownCore
 
 package let timerCompletionAlertDisplayDuration: TimeInterval = 5
 
@@ -44,8 +45,8 @@ package func makeTimerCompletionIconAnimation(
 private final class TimerCompletionAlertView: NSView {
     var onClick: (() -> Void)?
     private let icon = NSImageView()
-    private let title = NSTextField(labelWithString: "Время вышло")
-    private let detail = NSTextField(labelWithString: "Таймер Countdown Manager завершён")
+    private let title = NSTextField(labelWithString: AppText.string("timer.finished"))
+    private let detail = NSTextField(labelWithString: AppText.string("timer.completionAccessibility"))
     private let accessibilitySettings: AuroraAccessibilitySettings
     private var highContrastSubscription: AnyCancellable?
     private var reduceMotionSubscription: AnyCancellable?

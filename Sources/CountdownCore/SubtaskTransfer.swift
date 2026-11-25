@@ -5,11 +5,11 @@ public enum SubtaskTransferError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .completedSubtask: return "Подзадача уже выполнена. Можно перенести только невыполненную подзадачу."
-        case .sameEvent: return "Выберите другое событие для переноса подзадачи."
-        case .destinationChanged: return "Дата выбранного события изменилась. Выберите событие снова."
-        case .destinationRequired: return "На выбранную дату уже есть событие. Выберите, куда перенести подзадачу."
-        case .destinationContainsSubtask: return "В выбранном событии уже есть эта подзадача. Выберите другое событие."
+        case .completedSubtask: return AppText.string("transfer.error.completed")
+        case .sameEvent: return AppText.string("transfer.error.sameEvent")
+        case .destinationChanged: return AppText.string("transfer.error.dateChanged")
+        case .destinationRequired: return AppText.string("transfer.error.destinationRequired")
+        case .destinationContainsSubtask: return AppText.string("transfer.error.duplicateSubtask")
         }
     }
 }

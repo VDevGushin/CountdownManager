@@ -30,7 +30,7 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Surface | Command | Cost and scope |
 | --- | --- | --- |
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
-| CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
+| CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate including localization key coverage and formatting |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Desktop window Real UI Smoke | `./verify.sh desktop` | Focused isolated native desktop/panel shared-state, editor ownership, window retention and split-layout scenarios |
 | Desktop window captures | `./verify.sh desktop-capture <marked-output-directory>` | The same focused desktop scenarios, retained tested app, native PNGs and executable provenance manifest |

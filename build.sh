@@ -21,11 +21,15 @@ staged_app="$stage/Countdown Manager.app"
 python3 scripts/native_design_contract.py snapshot --compiler-sdk "$compiler_sdk" --swift "$swift_driver" \
     --output "$stage/native-build-context.json"
 mkdir -p "$staged_app/Contents/MacOS" "$staged_app/Contents/Resources" "$staged_app/Contents/Frameworks"
-cp Resources/Info.plist "$staged_app/Contents/Info.plist"
+/bin/bash scripts/prepare_app_info.sh Resources/Info.plist \
+    Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings "$staged_app/Contents/Info.plist"
 python3 scripts/update_tools.py configure "$staged_app/Contents/Info.plist"
 "$swift_driver" build "${build_args[@]}" "${contract_link_args[@]}" --product CountdownManager
 BIN_DIR="$("$swift_driver" build "${build_args[@]}" "${contract_link_args[@]}" --show-bin-path)"
 cp "$BIN_DIR/CountdownManager" "$staged_app/Contents/MacOS/CountdownManager"
+for localization in "$BIN_DIR/CountdownManager_CountdownCore.bundle/"*.lproj; do
+    cp -R "$localization" "$staged_app/Contents/Resources/"
+done
 cp Resources/AppIcon.icns "$staged_app/Contents/Resources/AppIcon.icns"
 cp Resources/Assets.car "$staged_app/Contents/Resources/Assets.car"
 cp Resources/MarsMenu.pdf Resources/CalendarMenu.pdf "$staged_app/Contents/Resources/"

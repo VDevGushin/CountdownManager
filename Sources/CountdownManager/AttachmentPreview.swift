@@ -132,14 +132,14 @@ struct AttachmentPreviewView: View {
     }
     private var index: Int? { item.attachments.firstIndex { $0.id == session.selection?.attachmentID } }
     private var backLabel: String {
-        compact ? "Назад" : (session.selection?.origin == .library ? "Вернуться к вложениям" : "Закрыть просмотр")
+        compact ? AppText.string("common.back") : (session.selection?.origin == .library ? AppText.string("attachment.preview.backToLibrary") : AppText.string("attachment.preview.close"))
     }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if compact { navigationButton }
-                Text(EventUIStrings.attachment).font(.custom("Georgia", size: 21))
+                Text(AppText.string("attachment.title")).font(.custom("Georgia", size: 21))
                 Spacer()
                 if !compact { navigationButton }
             }
@@ -149,18 +149,18 @@ struct AttachmentPreviewView: View {
                 HStack(alignment: .top, spacing: 10) {
                     Text(error).font(.system(size: 12)).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
-                    Button("Понятно", action: dismissError)
+                    Button(AppText.string("common.ok"), action: dismissError)
                 }
                 .padding(12).background(Color.red.opacity(0.1))
                 .uiSmokeControl(id: prefix + ".error", value: { error })
             }
             HStack(alignment: .top, spacing: 12) {
-                Text(attachment?.name ?? EventUIStrings.attachment)
+                Text(attachment?.name ?? AppText.string("attachment.title"))
                     .font(.system(size: 12, weight: .medium)).lineLimit(2).truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .help(attachment?.name ?? EventUIStrings.attachment)
+                    .help(attachment?.name ?? AppText.string("attachment.title"))
                     .uiSmokeControl(id: prefix + ".name", value: { attachment?.name })
-                Text(index.map { "\($0 + 1) из \(item.attachments.count)" } ?? "")
+                Text(index.map { AppText.string("attachment.preview.position", "\($0 + 1)", "\(item.attachments.count)") } ?? "")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize()
                     .uiSmokeControl(id: prefix + ".position", value: {
                         index.map { "\($0 + 1)/\(item.attachments.count)" }
@@ -173,10 +173,10 @@ struct AttachmentPreviewView: View {
                 .padding(.horizontal, 16).padding(.bottom, 12)
             Divider()
             HStack(spacing: 8) {
-                moveButton(distance: -1, symbol: "chevron.left", label: "Предыдущее вложение")
-                moveButton(distance: 1, symbol: "chevron.right", label: "Следующее вложение")
+                moveButton(distance: -1, symbol: "chevron.left", label: AppText.string("attachment.preview.previous"))
+                moveButton(distance: 1, symbol: "chevron.right", label: AppText.string("attachment.preview.next"))
                 Spacer(minLength: 8)
-                Button("Открыть в приложении", action: performExternalOpen)
+                Button(AppText.string("attachment.preview.openExternally"), action: performExternalOpen)
                     .font(.system(size: 12))
                     .accessibilityIdentifier(prefix + ".external")
                     .uiSmokeControl(id: prefix + ".external", action: performExternalOpen)
@@ -200,12 +200,12 @@ struct AttachmentPreviewView: View {
                 AttachmentNativePreview(url: url)
                     .id(session.rendererID)
             } else if session.isResolving {
-                ProgressView("Открываем копию…").font(.system(size: 12))
+                ProgressView(AppText.string("attachment.preview.loading")).font(.system(size: 12))
             } else {
                 VStack(spacing: 10) {
                     Image(systemName: "doc").font(.system(size: 28)).accessibilityHidden(true)
-                    Text("Копия недоступна").font(.system(size: 13, weight: .medium))
-                    Text("Исходный файл не изменён.").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(AppText.string("attachment.preview.unavailable")).font(.system(size: 13, weight: .medium))
+                    Text(AppText.string("attachment.preview.originalPreserved")).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 .padding(20)
             }

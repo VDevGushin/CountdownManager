@@ -22,7 +22,7 @@ struct DesktopEventBrowser: View {
             VStack(alignment: .leading, spacing: 24) {
                 overview
                 if store.isLoading {
-                    ProgressView("Загружаем события…").frame(maxWidth: .infinity).padding(.vertical, 48)
+                    ProgressView(AppText.string("app.loadingEvents")).frame(maxWidth: .infinity).padding(.vertical, 48)
                 } else if collection.events.isEmpty && !store.eventCreationIsAvailable {
                     unavailableState
                 } else if collection.events.isEmpty {
@@ -55,12 +55,12 @@ struct DesktopEventBrowser: View {
                 }
             }
             if !collection.pastItems.isEmpty {
-                Text("Прошедшие")
+                Text(AppText.string("event.past"))
                     .font(.custom("Georgia", size: 20))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("desktop.past")
-                    .uiSmokeControl(id: "desktop.past", value: { "Прошедшие" })
+                    .uiSmokeControl(id: "desktop.past", value: { AppText.string("event.past") })
                     .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
                 ForEach(collection.pastItems) { item in
                     eventButton(item, featured: false)
@@ -73,7 +73,7 @@ struct DesktopEventBrowser: View {
     private var overview: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Впереди").font(.custom("Georgia", size: 32)).tracking(-0.5)
+                Text(AppText.string("desktop.browser.upcoming")).font(.custom("Georgia", size: 32)).tracking(-0.5)
                 Spacer()
                 Text(eventCountLabel(store.active.count))
                     .font(.system(size: 12))
@@ -94,17 +94,17 @@ struct DesktopEventBrowser: View {
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(!search.query.isEmpty ? "Ничего не нашлось" : EventUIStrings.emptyTitle)
+            Text(!search.query.isEmpty ? AppText.string("desktop.browser.noSearchResults") : EventUIStrings.emptyTitle)
                 .font(.custom("Georgia", size: 23))
-            Text(!search.query.isEmpty ? "Попробуйте другое слово или покажите все события."
-                 : "Добавьте событие — заметка и подготовка будут рядом с датой.")
+            Text(!search.query.isEmpty ? AppText.string("desktop.browser.retrySearch")
+                 : AppText.string("desktop.browser.emptyGuidance"))
                 .font(.system(size: 13))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
             if !search.query.isEmpty {
-                Button("Показать все события", action: resetFilters)
+                Button(AppText.string("desktop.browser.showAll"), action: resetFilters)
             } else {
-                Button("Создать день на сегодня", action: create).disabled(!canCreate)
+                Button(AppText.string("desktop.browser.createToday"), action: create).disabled(!canCreate)
             }
         }
         .padding(.vertical, 32)
@@ -113,8 +113,8 @@ struct DesktopEventBrowser: View {
 
     private var unavailableState: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("События пока недоступны").font(.custom("Georgia", size: 23))
-            Text("Не удалось получить доступ к списку событий. Сохранённые данные не заменяются пустым списком.")
+            Text(AppText.string("desktop.browser.unavailable")).font(.custom("Georgia", size: 23))
+            Text(AppText.string("desktop.browser.unavailableExplanation"))
                 .font(.system(size: 13))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
@@ -133,7 +133,7 @@ struct DesktopEventBrowser: View {
         // The opaque card owns its appearance; avoid Plain's additional disabled fade.
         .buttonStyle(.borderless)
         .accessibilityLabel(desktopEventAccessibilityLabel(item)
-            + (match.map { ". \($0.accessibilityLabel)" } ?? ""))
+            + (match?.accessibilitySuffix ?? ""))
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
@@ -334,7 +334,7 @@ private struct DesktopEventCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 20) {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label("Избранное", systemImage: "star.fill")
+                    Label(AppText.string("event.favoriteHeading"), systemImage: "star.fill")
                         .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 6) {
                         Text(desktopSearchAttributedText(item.title, search: search, color: accent))
@@ -458,8 +458,8 @@ private struct DesktopEventCard: View {
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .lineLimit(1)
                 .fixedSize()
-                .accessibilityLabel("Вложения: \(item.attachments.count)")
-                .help("Вложения: \(item.attachments.count)")
+                .accessibilityLabel(AppText.string("attachment.count", "\(item.attachments.count)"))
+                .help(AppText.string("attachment.count", "\(item.attachments.count)"))
                 .accessibilityIdentifier("desktop.attachments.indicator.\(item.id.uuidString)")
                 .uiSmokeControl(id: "desktop.attachments.indicator.\(item.id.uuidString)",
                                 value: { String(item.attachments.count) })
@@ -475,8 +475,8 @@ private struct DesktopEventCard: View {
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .lineLimit(1)
                 .fixedSize()
-                .accessibilityLabel("Ссылки: \(item.links.count)")
-                .help("Ссылки: \(item.links.count)")
+                .accessibilityLabel(AppText.string("link.count", "\(item.links.count)"))
+                .help(AppText.string("link.count", "\(item.links.count)"))
                 .accessibilityIdentifier("desktop.links.indicator.\(item.id)")
                 .uiSmokeControl(id: "desktop.links.indicator.\(item.id)", value: { String(item.links.count) })
         }
@@ -597,7 +597,7 @@ struct DesktopCompletionLabel: View {
                 .foregroundStyle(presentation.allSubtasksCompleted
                     ? AuroraInstrument.todayColor(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
                     : AuroraInstrument.secondaryInk(for: colorScheme))
-                .accessibilityLabel("Подготовка: \(presentation.completedSubtasks.count) из \(presentation.completedSubtasks.count + presentation.activeSubtasks.count)")
+                .accessibilityLabel(AppText.string("desktop.browser.checklistProgress", "\(presentation.completedSubtasks.count)", "\(presentation.completedSubtasks.count + presentation.activeSubtasks.count)"))
         }
     }
 }

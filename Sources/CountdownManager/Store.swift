@@ -30,7 +30,7 @@ private enum StoreAttachmentPersistenceError: LocalizedError {
     case overriddenWriter
 
     var errorDescription: String? {
-        "Тестовая подмена записи не поддерживает сохранение вложений."
+        AppText.string("store.testAttachmentSave")
     }
 }
 
@@ -52,7 +52,7 @@ extension Store {
         } catch {
             attachmentDrafts.remove(draftID)
             recordDiagnostic("attachments.draft failure category=storage")
-            self.error = "Не удалось подготовить вложения. Повторите попытку."
+            self.error = AppText.string("store.prepareAttachmentFailed")
             return false
         }
     }
@@ -72,7 +72,7 @@ extension Store {
         } catch {
             guard attachmentDrafts.contains(draftID) else { return nil }
             recordDiagnostic("attachments.import failure category=storage")
-            self.error = "Не удалось скопировать файл. Проверьте доступ к нему и свободное место на диске."
+            self.error = AppText.string("store.copyAttachmentFailed")
             return nil
         }
     }
@@ -89,14 +89,14 @@ extension Store {
     package func chooseAttachments(draftID: UUID, currentAttachments: [EventAttachment]) async -> [EventAttachment] {
         guard attachmentDrafts.contains(draftID), attachmentPicker == nil, !isImportingAttachments else { return [] }
         guard currentAttachments.count < EventAttachment.maximumCount else {
-            error = "Достигнут лимит \(EventAttachment.maximumCount) файлов. Уберите вложение, чтобы добавить другое."
+            error = AppText.string("store.attachmentLimit", "\(EventAttachment.maximumCount)")
             return []
         }
         let host = NSApp.keyWindow
         let panel = NSOpenPanel()
         panel.appearanceSource = host ?? dialogAppearanceSource
-        panel.title = "Добавить вложения"
-        panel.prompt = "Добавить"
+        panel.title = AppText.string("store.addAttachments")
+        panel.prompt = AppText.string("common.add")
         panel.canChooseFiles = true
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = true
@@ -126,7 +126,7 @@ extension Store {
         guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return [] }
         let remaining = max(0, EventAttachment.maximumCount - currentAttachments.count)
         guard sources.count <= remaining else {
-            error = "Выбрано файлов: \(sources.count). Свободных мест: \(remaining). Ничего не добавлено — уменьшите выбор."
+            error = AppText.string("store.pickerFileLimit", "\(sources.count)", "\(remaining)")
             return []
         }
         var imported: [EventAttachment] = []
@@ -141,23 +141,23 @@ extension Store {
     package func openAttachment(_ attachment: EventAttachment, eventID: UUID) async {
         guard !Task.isCancelled else { return }
         guard attachmentIsActive(attachment, eventID: eventID) else {
-            error = "Вложение больше недоступно для этого события."
+            error = AppText.string("store.attachmentUnavailable")
             return
         }
         do {
             let url = try await repository.attachmentURL(for: attachment)
             guard !Task.isCancelled else { return }
             guard attachmentIsActive(attachment, eventID: eventID) else {
-                error = "Вложение больше недоступно для этого события."
+                error = AppText.string("store.attachmentUnavailable")
                 return
             }
             if !NSWorkspace.shared.open(url) {
-                error = "Не удалось открыть вложение. Проверьте, что на Mac есть приложение для этого файла."
+                error = AppText.string("store.openAttachmentFailed")
             }
         } catch {
             guard !Task.isCancelled else { return }
             recordDiagnostic("attachments.open failure category=storage")
-            self.error = "Копия вложения недоступна. Исходный файл не изменён."
+            self.error = AppText.string("store.attachmentCopyUnavailable")
         }
     }
 
@@ -192,7 +192,7 @@ extension Store {
 
     private func reportAttachmentCleanupFailure() {
         recordDiagnostic("attachments.cleanup failure category=storage")
-        error = "Не удалось удалить неиспользуемые копии вложений. Очистка повторится при следующем сохранении или запуске."
+        error = AppText.string("store.cleanupFailed")
     }
 }
 
@@ -305,7 +305,7 @@ package final class Store: ObservableObject {
             readFailed = true
             isLoading = false
             recordDiagnostic("data.load failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = "Не удалось прочитать сохранённые события. Файл оставлен без изменений: \(fileURL.path)\n\(error.localizedDescription)"
+            self.error = AppText.string("store.storageReadFailed", fileURL.path, error.localizedDescription)
         }
     }
 
@@ -402,7 +402,7 @@ package final class Store: ObservableObject {
 
     private func commit(_ updated: CountdownData, reason: String, publishImmediately: Bool = true) async -> Bool {
         guard !isLoading, !readFailed else {
-            error = "Сохранение недоступно: сначала восстановите файл \(fileURL.path) и перезапустите приложение."
+            error = AppText.string("store.storageRecoveryRequired", fileURL.path)
             return false
         }
         if updated == data { return true }
@@ -449,7 +449,7 @@ package final class Store: ObservableObject {
             isRecoveringPersistence = true
             finishPersistenceRevision(writeRevision)
             recordDiagnostic("data.save failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = "Не удалось сохранить изменения: \(error.localizedDescription)"
+            self.error = AppText.string("store.storageWriteFailed", error.localizedDescription)
             return false
         }
     }
@@ -510,11 +510,11 @@ package final class Store: ObservableObject {
               data.items.contains(where: {
                   $0.id == eventID && $0.isAvailable(on: Day(now())) && $0.links.contains(link)
               }), let url = link.url else {
-            error = "Ссылка больше недоступна для этого события."
+            error = AppText.string("store.linkUnavailable")
             return
         }
         if !openWebURL(url) {
-            error = "Не удалось открыть ссылку. Проверьте браузер по умолчанию и повторите попытку."
+            error = AppText.string("store.openLinkFailed")
         }
     }
 
@@ -524,7 +524,7 @@ package final class Store: ObservableObject {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
         if waitingForTransfer, eventBeforeTransfer != data.items.first(where: { $0.id == countdown.id }) {
-            error = "Событие изменилось во время переноса подзадачи. Откройте его заново перед сохранением."
+            error = AppText.string("store.staleEditor")
             recordDiagnostic("countdown.save rejected id=\(countdown.id.uuidString) category=transfer-conflict")
             return false
         }
@@ -534,7 +534,7 @@ package final class Store: ObservableObject {
         var updated = data
         // Check at the mutation boundary: an editor task may run after expiry/removal.
         if requireExisting && !updated.items.contains(where: { $0.id == countdown.id && $0.isAvailable(on: today) }) {
-            error = "Событие больше недоступно. Черновик не сохранён."
+            error = AppText.string("store.missingEventEditor")
             return false
         }
         do { try updated.save(countdown, primary: primary, today: today) }
@@ -786,7 +786,7 @@ package final class Store: ObservableObject {
             else { try SMAppService.mainApp.unregister() }
         } catch {
             recordDiagnostic("login-item.change failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = "Не удалось изменить автозапуск: \(error.localizedDescription)"
+            self.error = AppText.string("store.loginItemFailed", error.localizedDescription)
         }
         loginStatus = SMAppService.mainApp.status
         recordDiagnostic("login-item.status value=\(loginStatus.rawValue)")
@@ -805,7 +805,7 @@ package final class Store: ObservableObject {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             } catch {
                 recordDiagnostic("diagnostics.open-folder failure \(DiagnosticPrivacy.errorFields(error))")
-                self.error = "Не удалось открыть папку диагностики: \(error.localizedDescription)"
+                self.error = AppText.string("store.diagnosticsOpenFailed", error.localizedDescription)
             }
         }
     }
@@ -818,8 +818,8 @@ package final class Store: ObservableObject {
         panel.allowedContentTypes = [.zip]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = "Countdown-Diagnostics.zip"
-        panel.title = "Сохранить диагностику"
-        panel.message = "Архив содержит техническую сводку и два последних журнала без содержимого событий и файлов настроек."
+        panel.title = AppText.string("store.saveDiagnostics")
+        panel.message = AppText.string("store.diagnosticsContents")
         let completion: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             panel.orderOut(nil)
             guard let self else { return }
@@ -828,7 +828,7 @@ package final class Store: ObservableObject {
                 if response == .cancel { self.recordDiagnostic("diagnostics.export cancelled") }
                 else {
                     self.recordDiagnostic("diagnostics.export failure category=other")
-                    self.error = "Не удалось открыть окно сохранения диагностики. Повторите попытку."
+                    self.error = AppText.string("store.diagnosticsPanelFailed")
                 }
                 return
             }
@@ -849,7 +849,7 @@ package final class Store: ObservableObject {
                     self.recordDiagnostic("diagnostics.export success")
                 } catch {
                     self.recordDiagnostic("diagnostics.export failure \(DiagnosticPrivacy.errorFields(error))")
-                    self.error = "Не удалось сохранить диагностику. Выберите другую папку и повторите попытку."
+                    self.error = AppText.string("store.diagnosticsSaveFailed")
                 }
             }
         }
@@ -880,7 +880,7 @@ extension Store {
             return attachment
         } catch {
             if attachmentDrafts.contains(draftID) {
-                self.error = "Не удалось создать текстовое вложение. " + error.localizedDescription
+                self.error = AppText.string("store.textAttachmentCreateFailed") + error.localizedDescription
             }
             return nil
         }
@@ -901,7 +901,7 @@ extension Store {
         guard !hasPendingPersistence, eventCreationIsAvailable, !materials.isEmpty,
               materials.text == nil,
               let original = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
-            error = "Добавление недоступно. Дождитесь сохранения и выберите действующее событие."
+            error = AppText.string("store.materialAdmissionBlocked")
             return nil
         }
         do { try materials.validateCapacity(for: original) }
@@ -927,7 +927,7 @@ extension Store {
               materials.textFile == nil || textFile != nil,
               var latest = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
             await discardAttachmentDraft(draftID)
-            if error == nil { error = "Событие или материалы больше недоступны. Ничего не добавлено." }
+            if error == nil { error = AppText.string("store.materialBecameUnavailable") }
             return false
         }
         do { try materials.validateCapacity(for: latest) }

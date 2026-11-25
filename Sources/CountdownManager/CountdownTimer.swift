@@ -2,6 +2,7 @@ import AppKit
 import Combine
 import Foundation
 import SwiftUI
+import CountdownCore
 
 package let countdownTimerPresetMinutes = [5, 10, 15, 30, 40, 60, 120]
 package let countdownTimerMaximumMinutes = 120
@@ -93,9 +94,9 @@ final class CountdownTimer: ObservableObject {
         case .idle:
             return nil
         case let .running(remainingSeconds):
-            return "Таймер: \(countdownTimerLabel(remainingSeconds))"
+            return AppText.string("timer.status", "\(countdownTimerLabel(remainingSeconds))")
         case .finished:
-            return "Время вышло"
+            return AppText.string("timer.finished")
         }
     }
 
@@ -231,7 +232,7 @@ struct CountdownTimerStrip: View {
                 deleteButton
                 if layout == .desktop { Spacer() }
             case .finished:
-                Text("Время вышло")
+                Text(AppText.string("timer.finished"))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(
                         AuroraInstrument.finishedColor(
@@ -310,8 +311,8 @@ struct CountdownTimerStrip: View {
                     .contentShape(RoundedRectangle(cornerRadius: 6))
             }
             .buttonStyle(.plain)
-            .help("Запустить")
-            .accessibilityLabel("Запустить таймер")
+            .help(AppText.string("timer.start"))
+            .accessibilityLabel(AppText.string("timer.startAccessibility"))
             .accessibilityIdentifier(controlPrefix + ".start")
             .uiSmokeControl(id: controlPrefix + ".start", action: { timer.start(minutes: selectedMinutes) })
         }
@@ -328,8 +329,8 @@ struct CountdownTimerStrip: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("Удалить таймер")
-        .accessibilityLabel("Удалить таймер")
+        .help(AppText.string("timer.remove"))
+        .accessibilityLabel(AppText.string("timer.remove"))
         .accessibilityIdentifier(controlPrefix + ".delete")
         .uiSmokeControl(id: controlPrefix + ".delete", action: { timer.delete() })
     }

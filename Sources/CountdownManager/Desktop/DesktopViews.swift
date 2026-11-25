@@ -214,7 +214,7 @@ struct DesktopRootView: View {
                 VStack(spacing: 0) {
                     if let error = store.error { errorBanner(error) }
                     TextAttachmentComposer(text: request.text,
-                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? "Событие недоступно",
+                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? AppText.string("event.unavailable"),
                         submit: { text in
                             let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
                             if saved { dismissSheet() }
@@ -287,8 +287,8 @@ struct DesktopRootView: View {
 
     private var unavailableAttachmentScreen: some View {
         VStack(spacing: 12) {
-            Text(EventUIStrings.attachment).font(.custom("Georgia", size: 21))
-            Text("Вложение больше недоступно").font(.system(size: 13))
+            Text(AppText.string("attachment.title")).font(.custom("Georgia", size: 21))
+            Text(AppText.string("attachment.unavailable")).font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -346,7 +346,7 @@ struct DesktopRootView: View {
 
     private var desktopCommandBar: some View {
         HStack(spacing: 12) {
-            Picker("Вид событий", selection: $mode) {
+            Picker(AppText.string("desktop.modeLabel"), selection: $mode) {
                 ForEach(DesktopEventViewMode.allCases, id: \.self) { mode in
                     Label(mode.title, systemImage: mode.systemImage)
                         .labelStyle(.iconOnly)
@@ -358,22 +358,22 @@ struct DesktopRootView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(width: 80)
-            .accessibilityLabel("Вид событий")
+            .accessibilityLabel(AppText.string("desktop.modeLabel"))
             .accessibilityIdentifier("desktop.mode")
             .uiSmokeControl(id: "desktop.mode", action: {
                 mode = mode == .collection ? .feed : .collection
             }, value: { mode.rawValue })
             Spacer(minLength: 12)
-            TextField(EventUIStrings.searchEvents, text: $query)
+            TextField(AppText.string("desktop.search"), text: $query)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 180)
                 .focused($searchFocused)
-                .accessibilityLabel(EventUIStrings.searchEvents)
-                .accessibilityHint(EventUIStrings.searchEventsHint)
+                .accessibilityLabel(AppText.string("desktop.search"))
+                .accessibilityHint(AppText.string("desktop.searchHint"))
                 .accessibilityIdentifier("desktop.search")
                 .uiSmokeControl(id: "desktop.search", action: { searchFocused = true }, value: { query })
             Button { beginEditor() } label: {
-                AuroraToolbarLabel(title: "Событие", systemImage: "plus", showsMenuIndicator: false)
+                AuroraToolbarLabel(title: AppText.string("event.title"), systemImage: "plus", showsMenuIndicator: false)
             }
                 .auroraToolbarAction()
                 .keyboardShortcut("n", modifiers: .command)
@@ -381,16 +381,16 @@ struct DesktopRootView: View {
                 .uiSmokeControl(id: "desktop.create", action: { beginEditor() })
                 .disabled(!canMutate)
             Menu {
-                Button("На сегодня") { beginEditor(preset: .today(store.today)) }
-                Button("На завтра") { beginEditor(preset: .tomorrow(after: store.today)) }
-                Button("Выбрать дату…") {
+                Button(AppText.string("event.createToday")) { beginEditor(preset: .today(store.today)) }
+                Button(AppText.string("event.createTomorrow")) { beginEditor(preset: .tomorrow(after: store.today)) }
+                Button(AppText.string("event.chooseDateMenu")) {
                     beginEditor(preset: .tomorrow(after: store.today), selectDate: true)
                 }
                 Divider()
                 Button(weekCreationTitle(for: store.today) + "…", action: beginWeekDays)
                     .accessibilityIdentifier("desktop.create-week")
             } label: {
-                AuroraToolbarLabel(title: "Создать день", systemImage: "calendar.badge.plus", showsMenuIndicator: true)
+                AuroraToolbarLabel(title: AppText.string("event.createDay"), systemImage: "calendar.badge.plus", showsMenuIndicator: true)
             }
             .menuStyle(.button)
             .menuIndicator(.hidden)
@@ -409,15 +409,15 @@ struct DesktopRootView: View {
 
     private var footer: some View {
         HStack(spacing: 16) {
-            Label("События хранятся на этом Mac", systemImage: "internaldrive")
+            Label(AppText.string("desktop.localStorage"), systemImage: "internaldrive")
                 .font(.system(size: 11))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             Spacer(minLength: 0)
-            Button(action: switchSurfaceToPanel) { Label("В мини-панель", systemImage: "menubar.rectangle") }
+            Button(action: switchSurfaceToPanel) { Label(AppText.string("desktop.miniPanel"), systemImage: "menubar.rectangle") }
                 .accessibilityIdentifier("desktop.panel")
                 .uiSmokeControl(id: "desktop.panel", action: switchSurfaceToPanel)
                 .disabled(!canSwitchToPanel)
-            Button(action: presentSettings) { Label("Настройки", systemImage: "gearshape") }
+            Button(action: presentSettings) { Label(AppText.string("settings.title"), systemImage: "gearshape") }
                 .accessibilityIdentifier("desktop.settings")
                 .keyboardShortcut(",", modifiers: .command)
                 .uiSmokeControl(id: "desktop.settings", action: presentSettings)
@@ -431,12 +431,12 @@ struct DesktopRootView: View {
     private var panelEditorBanner: some View {
         HStack {
             Label(editorSession.subtaskTransfer?.surface == .panel
-                  ? "В мини-панели открыт перенос подзадачи. Завершите или отмените его."
-                  : "В мини-панели открыт редактор. Сначала сохраните или отмените изменения.",
+                  ? AppText.string("desktop.pendingTransfer")
+                  : AppText.string("desktop.pendingEditor"),
                   systemImage: editorSession.subtaskTransfer?.surface == .panel ? "arrowshape.turn.up.right" : "pencil")
                 .font(.system(size: 12))
             Spacer()
-            Button(editorSession.subtaskTransfer?.surface == .panel ? "К переносу" : "К редактору", action: showPanel)
+            Button(editorSession.subtaskTransfer?.surface == .panel ? AppText.string("desktop.returnToTransfer") : AppText.string("desktop.returnToEditor"), action: showPanel)
         }
         .padding(12)
         .background(AuroraInstrument.accentSurface(for: colorScheme,
@@ -448,8 +448,8 @@ struct DesktopRootView: View {
     private var noSelection: some View {
         VStack(spacing: 12) {
             Image(systemName: "calendar").font(.system(size: 28)).accessibilityHidden(true)
-            Text("Выберите событие").font(.custom("Georgia", size: 23))
-            Text("Его заметка и список подготовки появятся здесь.")
+            Text(AppText.string("desktop.chooseEvent")).font(.custom("Georgia", size: 23))
+            Text(AppText.string("desktop.noSelection"))
                 .font(.system(size: 13)).multilineTextAlignment(.center)
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
         }
@@ -463,7 +463,7 @@ struct DesktopRootView: View {
         HStack(alignment: .top) {
             Text(error).font(.system(size: 12)).textSelection(.enabled)
             Spacer()
-            Button("Понятно") { store.error = nil }
+            Button(AppText.string("common.ok")) { store.error = nil }
                 .uiSmokeControl(id: "desktop.error.dismiss", action: { store.error = nil })
         }
         .padding(12)
@@ -727,7 +727,7 @@ struct DesktopRootView: View {
         let hadRemainingActions = !pendingActions.isEmpty
         pendingActions.removeAll()
         if editorSession.desktopIsPresented && !showingEditor { editorSession.endDesktopEditor() }
-        let message = store.error ?? "Событие или подзадача больше недоступны."
-        store.error = hadRemainingActions ? message + " Оставшиеся действия не выполнены; повторите их после проверки события." : message
+        let message = store.error ?? AppText.string("desktop.queuedTargetMissing")
+        store.error = hadRemainingActions ? message + AppText.string("desktop.queuedActionsSkipped") : message
     }
 }

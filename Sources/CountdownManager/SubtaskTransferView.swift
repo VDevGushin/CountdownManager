@@ -34,10 +34,10 @@ struct SubtaskTransferButton: View {
     private var transferButton: some View {
         AuroraSymbolAction(symbolName: "arrowshape.turn.up.right",
             surface: surface == .panel ? .mini : .desktop, tone: .secondary,
-            accessibilityLabel: "Перенести подзадачу: \(subtask.text)", action: open)
+            accessibilityLabel: AppText.string("transfer.namedAction", subtask.text), action: open)
             .font(.system(size: 12))
-            .help("Перенести на другой день")
-            .accessibilityValue(isExpanded ? "Выбор даты открыт" : "Выбор даты закрыт")
+            .help(AppText.string("transfer.action"))
+            .accessibilityValue(isExpanded ? AppText.string("transfer.opened") : AppText.string("transfer.closed"))
             .accessibilityIdentifier("subtask.transfer.open.\(subtask.id.uuidString)")
             .uiSmokeControl(id: "subtask.transfer.open.\(subtask.id.uuidString)", action: open,
                             value: { isExpanded ? "expanded" : "collapsed" })
@@ -95,16 +95,16 @@ struct SubtaskTransferForm: View {
     }
 
     private func notice(for draft: SubtaskTransferDraft, targets: [Countdown], targetID: UUID?) -> String? {
-        if draft.date < store.today { return "Выберите сегодня или будущую дату." }
+        if draft.date < store.today { return AppText.string("transfer.invalidDate") }
         if targets.isEmpty, store.active.contains(where: { $0.date == draft.date }) {
-            return "На этой дате есть только исходное событие. Выберите другую дату."
+            return AppText.string("transfer.sameEventOnly")
         }
         if let targetID, let target = targets.first(where: { $0.id == targetID }) {
             if target.subtasks.count >= Subtask.maximumCount {
-                return "В событии уже 10 подзадач. Выберите другое событие или дату."
+                return AppText.string("transfer.recipientFull")
             }
         } else if targetID != nil {
-            return "Выбранное событие недоступно. Выберите получателя заново."
+            return AppText.string("transfer.recipientUnavailable")
         }
         return nil
     }
@@ -115,7 +115,7 @@ struct SubtaskTransferForm: View {
         let notice = notice(for: draft, targets: targets, targetID: targetID)
         let canSave = notice == nil && (targets.isEmpty || targetID != nil)
         return VStack(alignment: .leading, spacing: 8) {
-            DatePicker("На дату", selection: Binding(
+            DatePicker(AppText.string("transfer.date"), selection: Binding(
                 get: { draft.date.date() },
                 set: { editorSession.updateSubtaskTransfer(date: Day($0)) }
             ), in: store.today.date()..., displayedComponents: [.date])
@@ -125,14 +125,14 @@ struct SubtaskTransferForm: View {
                 .focused($dateIsFocused)
                 .accessibilityIdentifier("subtask.transfer.date")
                 .uiSmokeControl(id: "subtask.transfer.date", value: { humanDateLabel(draft.date) })
-            Picker("В событие", selection: Binding<UUID?>(
+            Picker(AppText.string("transfer.recipient"), selection: Binding<UUID?>(
                 get: { targetID },
                 set: { editorSession.selectSubtaskTransferTarget($0) }
             )) {
                 if targets.isEmpty {
-                    Text("Создать день").tag(nil as UUID?)
+                    Text(AppText.string("event.createDay")).tag(nil as UUID?)
                 } else {
-                    Text("Выберите событие").tag(nil as UUID?)
+                    Text(AppText.string("desktop.chooseEvent")).tag(nil as UUID?)
                     ForEach(targets) { target in
                         Text(target.title).tag(Optional(target.id))
                     }
@@ -141,7 +141,7 @@ struct SubtaskTransferForm: View {
             .accessibilityIdentifier("subtask.transfer.target")
             .uiSmokeControl(id: "subtask.transfer.target", value: { targetID?.uuidString ?? "none" })
             if targets.isEmpty, notice == nil {
-                Text("Будет создан день на выбранную дату.")
+                Text(AppText.string("transfer.createRecipient"))
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
@@ -154,12 +154,12 @@ struct SubtaskTransferForm: View {
             HStack(spacing: 8) {
                 if editorSession.subtaskTransferIsSaving { ProgressView().controlSize(.small) }
                 Spacer(minLength: 0)
-                Button("Отмена", action: editorSession.endSubtaskTransfer)
+                Button(AppText.string("common.cancel"), action: editorSession.endSubtaskTransfer)
                     .auroraSecondaryAction()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("subtask.transfer.cancel")
                     .uiSmokeControl(id: "subtask.transfer.cancel", action: editorSession.endSubtaskTransfer)
-                Button("Перенести") { transfer(draft, targetID: targetID) }
+                Button(AppText.string("transfer.confirm")) { transfer(draft, targetID: targetID) }
                     .auroraPrimaryAction()
                     .accessibilityIdentifier("subtask.transfer.confirm")
                     .uiSmokeControl(id: "subtask.transfer.confirm", action: {

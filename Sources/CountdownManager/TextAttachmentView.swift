@@ -30,26 +30,26 @@ struct TextAttachmentComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Текстовое вложение")
+            Text(AppText.string("textAttachment.title"))
                 .font(.custom("Georgia", size: 21))
                 .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
                 .padding(.horizontal, 16)
             Divider()
             VStack(alignment: .leading, spacing: 10) {
-                Text("В «\(eventTitle)»").font(.system(size: 12)).foregroundStyle(.secondary)
+                Text(AppText.string("textAttachment.destination", eventTitle)).font(.system(size: 12)).foregroundStyle(.secondary)
                     .lineLimit(2)
-                Text("Имя файла").font(.system(size: 12))
-                TextField("Имя файла", text: $draft.name)
+                Text(AppText.string("textAttachment.filename")).font(.system(size: 12))
+                TextField(AppText.string("textAttachment.filename"), text: $draft.name)
                     .textFieldStyle(.roundedBorder)
                     .accessibilityIdentifier("materials.text.name")
                     .uiSmokeControl(id: "materials.text.name", value: { draft.name })
-                Text("Текст").font(.system(size: 12))
+                Text(AppText.string("common.text")).font(.system(size: 12))
                 TextEditor(text: $draft.text)
                     .font(.system(size: 13))
-                    .accessibilityLabel("Текст вложения")
+                    .accessibilityLabel(AppText.string("textAttachment.content"))
                     .accessibilityIdentifier("materials.text.content")
                     .uiSmokeControl(id: "materials.text.content", value: { draft.text })
-                Text("Обычный текст .txt · абзацы и переносы сохранятся.")
+                Text(AppText.string("textAttachment.plainTextHint"))
                     .font(.system(size: 11)).foregroundStyle(.secondary)
                 if let validationMessage {
                     Text(validationMessage).font(.system(size: 12)).foregroundStyle(.secondary)
@@ -62,7 +62,7 @@ struct TextAttachmentComposer: View {
             Divider()
             HStack(spacing: 9) {
                 Spacer(minLength: 0)
-                Button("Отмена", action: cancel)
+                Button(AppText.string("common.cancel"), action: cancel)
                     .auroraSecondaryAction()
                     .keyboardShortcut(.cancelAction)
                     .disabled(saving)
@@ -70,7 +70,7 @@ struct TextAttachmentComposer: View {
                     .uiSmokeControl(id: "materials.text.cancel", action: cancel)
                 Button(action: create) {
                     if saving { ProgressView().controlSize(.small) }
-                    else { Text("Создать вложение") }
+                    else { Text(AppText.string("textAttachment.create")) }
                 }
                     .auroraPrimaryAction()
                     .disabled(saving || !valid)
@@ -95,7 +95,7 @@ struct TextAttachmentComposer: View {
         Task { @MainActor in
             let saved = await submit(draft)
             saving = false
-            if !saved { failure = "Не удалось добавить вложение. Текст сохранён здесь — повторите попытку." }
+            if !saved { failure = AppText.string("textAttachment.saveFailed") }
         }
     }
 }

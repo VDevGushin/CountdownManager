@@ -253,17 +253,17 @@ public enum CountdownError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .title: return "Укажите название события."
-        case .note: return "Новая заметка — до 150 символов. Старую длинную заметку можно сохранить или сократить."
-        case .date: return "Дата события недопустима. Выберите сегодня или будущую дату."
-        case .emoji: return "Выберите один emoji или оставьте значок пустым."
-        case .eventNotFound: return "Событие больше недоступно."
-        case .subtaskNotFound: return "Подзадача больше недоступна."
-        case .subtaskText: return "Введите текст подзадачи."
-        case .subtaskLength: return "Подзадача должна быть не длиннее 50 символов."
-        case .subtaskCount: return "У события может быть не больше десяти подзадач."
-        case .subtaskOrderChanged: return "Список подзадач изменился. Повторите перестановку."
-        case .copyIdentity: return "Копия должна быть новым событием. Откройте создание копии снова."
+        case .title: return AppText.string("event.error.titleRequired")
+        case .note: return AppText.string("event.error.noteTooLong")
+        case .date: return AppText.string("event.error.invalidDate")
+        case .emoji: return AppText.string("event.error.invalidIcon")
+        case .eventNotFound: return AppText.string("event.error.missingEvent")
+        case .subtaskNotFound: return AppText.string("event.error.missingSubtask")
+        case .subtaskText: return AppText.string("event.error.subtaskTextRequired")
+        case .subtaskLength: return AppText.string("event.error.subtaskTooLong")
+        case .subtaskCount: return AppText.string("event.error.subtaskLimit")
+        case .subtaskOrderChanged: return AppText.string("event.error.subtaskOrderChanged")
+        case .copyIdentity: return AppText.string("event.error.copyIdentity")
         }
     }
 }
@@ -437,20 +437,34 @@ public struct CountdownData: Codable, Equatable {
     }
 }
 
+private let automaticEventWeekdayTitles = [
+    AppText.string("calendar.weekday.sunday"),
+    AppText.string("calendar.weekday.monday"),
+    AppText.string("calendar.weekday.tuesday"),
+    AppText.string("calendar.weekday.wednesday"),
+    AppText.string("calendar.weekday.thursday"),
+    AppText.string("calendar.weekday.friday"),
+    AppText.string("calendar.weekday.saturday")
+]
+
 public func automaticEventTitle(for day: Day) -> String {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-    let titles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
-    return titles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
+    return automaticEventWeekdayTitles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
 }
 
 public func dayLabel(_ count: Int) -> String {
     let tail = abs(count) % 100
     let unit = abs(count) % 10
-    let word = (11...14).contains(tail) ? "дней" : (unit == 1 ? "день" : ((2...4).contains(unit) ? "дня" : "дней"))
-    return "\(count) \(word)"
+    let word: String
+    switch unit {
+    case 1 where !(11...14).contains(tail): word = AppText.string("calendar.day.one")
+    case 2...4 where !(11...14).contains(tail): word = AppText.string("calendar.day.few")
+    default: word = AppText.string("calendar.day.many")
+    }
+    return AppText.string("calendar.day.count", String(count), word)
 }
 
 public func countdownLabel(_ count: Int) -> String {
-    count == 0 ? "Сегодня" : dayLabel(count)
+    count == 0 ? AppText.string("calendar.today") : dayLabel(count)
 }

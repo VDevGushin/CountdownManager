@@ -51,6 +51,8 @@ run_fast_checks() {
     echo "Verification: native design source and build contract"
     python3 -B Tests/test_native_design_system.py
     python3 -B Tests/test_native_design_contract.py
+    echo "Verification: localization resources"
+    python3 -B Tests/test_localization_resources.py
     echo "Verification: CoreChecks"
     "${fast_command[@]}" CoreChecks
     echo "Verification: UIChecks"

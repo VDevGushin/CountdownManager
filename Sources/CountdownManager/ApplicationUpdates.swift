@@ -124,9 +124,9 @@ package struct UpdateConfiguration {
 package func updateRestartBlockReason(
     editorIsPresented: Bool, persistenceIsBusy: Bool, timerIsRunning: Bool
 ) -> String? {
-    if editorIsPresented { return "Сохраните изменения или закройте редактор кнопкой «Отмена»." }
-    if persistenceIsBusy { return "Дождитесь сохранения данных." }
-    if timerIsRunning { return "Дождитесь окончания таймера или удалите его." }
+    if editorIsPresented { return AppText.string("update.waitForEditor") }
+    if persistenceIsBusy { return AppText.string("update.waitForSave") }
+    if timerIsRunning { return AppText.string("update.waitForTimer") }
     return nil
 }
 
@@ -290,9 +290,9 @@ package final class ApplicationUpdates: NSObject, ObservableObject, SPUUpdaterDe
         prepareForUpdateUI(source: "deferred-modal")
         let alert = NSAlert()
         alert.window.appearanceSource = dialogAppearanceSource
-        alert.messageText = "Обновление готово. Перезапуск отложен."
-        alert.informativeText = reason + " Затем в настройках нажмите «Обновление готово · установить…»."
-        alert.addButton(withTitle: "Вернуться к работе")
+        alert.messageText = AppText.string("update.restartDeferred")
+        alert.informativeText = reason + AppText.string("update.installInstructions")
+        alert.addButton(withTitle: AppText.string("update.resumeWork"))
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
         returnToApplication()
