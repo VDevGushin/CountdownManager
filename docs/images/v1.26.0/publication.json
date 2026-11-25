@@ -1,0 +1,42 @@
+{
+  "version": "1.26.0",
+  "build": "51",
+  "documents": 163,
+  "localReferences": 775,
+  "homepageImages": 2,
+  "errors": [],
+  "publicChecks": {
+    "latest": {
+      "status": 200,
+      "sha256": "2ea625daf15203b4f06253574e72fabad483d15e185e8bec93943ccb0ad8c46e",
+      "bytes": 146461
+    },
+    "archive": {
+      "status": 200,
+      "sha256": "35773ea109d70a7948c49fa6e6eae1b79e38ba818d3e0bf442ec34592f4b4fc8",
+      "bytes": 7006639
+    },
+    "versionFeed": {
+      "status": 200,
+      "sha256": "f7c5957e56e09ec770cd7012929446d9eb6124de7824d341159ace96ac076d88",
+      "bytes": 2566
+    },
+    "stableFeed": {
+      "status": 200,
+      "sha256": "f7c5957e56e09ec770cd7012929446d9eb6124de7824d341159ace96ac076d88",
+      "bytes": 2566
+    }
+  },
+  "defaultBranch": "main",
+  "status": "published-and-publicly-verified",
+  "verifiedAtUTC": "2026-11-25T11:27:01.233778+00:00",
+  "releaseURL": "https://github.com/VDevGushin/CountdownManager/releases/tag/v1.26.0",
+  "sourceCommit": "0cbe8f9de3ec0f8cd7071614541dbaae0a865ba4",
+  "annotatedTagObject": "c552834f7a93a164b5d30de4acac374fb45cd058",
+  "visibleReleaseLabel": "Latest",
+  "publishedUsing": "GitHub release form in ChatGPT in-app browser",
+  "visibleReleaseAssets": [
+    "appcast.xml",
+    "CountdownManager-1.26.0-51.zip"
+  ]
+}

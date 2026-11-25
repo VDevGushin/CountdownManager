@@ -1,0 +1,10 @@
+{
+  "status": "task-created-artifacts-removed",
+  "removedTemporaryDirectories": [
+    "/private/tmp/countdown-release.r2lmdU"
+  ],
+  "removedIsolatedPreferenceDomains": 12,
+  "candidateProcessesExited": true,
+  "installedPreviousPublicBundlePreserved": true,
+  "workingEventStoreAndAttachmentPathsExcluded": true
+}

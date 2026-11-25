@@ -1,0 +1,26 @@
+{
+  "defaultBranch": "main",
+  "checkedCommit": "52e902e4df3934db259c98ba4380aa751cc87102",
+  "readmeSHA256": "716ea67516aad9207364dc348167c685e292f3ede7e16f4ef06df0c441b3a378",
+  "matchesLocal": true,
+  "renderedInBrowser": true,
+  "downloadURL": "https://github.com/VDevGushin/CountdownManager/releases/latest",
+  "images": [
+    {
+      "path": "docs/images/v1.26.0/material-search-file-dark.png",
+      "sha256": "3b7486d062b6966ca09a7d0ca95a37a794476fbd0f4d4c7c51f854cf881b12be",
+      "bytes": 261448,
+      "width": 2400,
+      "height": 1616,
+      "loadedInBrowser": true
+    },
+    {
+      "path": "docs/images/v1.26.0/identity-panel-favorite-light.png",
+      "sha256": "fc8710ef86042fd2674d20942ab8e477f4586b83f0950c6557d92b98720cf905",
+      "bytes": 96952,
+      "width": 780,
+      "height": 1200,
+      "loadedInBrowser": true
+    }
+  ]
+}
