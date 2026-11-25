@@ -13,9 +13,9 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.25.3 uses the read-only `Что нового` screen to describe the status item and
-mini-panel fix on macOS 27, with `menubar.rectangle` as its symbol. The release-help window was
-introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
+Release 1.26.0 uses the read-only `Что нового` screen to describe desktop search by files and
+links and the move of Russian interface text to localization resources. The release-help window
+was introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
 until a later safe explicit opening; an active timer alone does not block it.

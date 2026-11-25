@@ -185,9 +185,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.3`.
-Its current section describes the status-item and mini-panel fix on macOS 27 and uses
-`menubar.rectangle`.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.26.0`.
+Its sections read localized copy for material search and Russian localization resources.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic

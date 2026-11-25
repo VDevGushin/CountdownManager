@@ -132,9 +132,9 @@ components:
 
 ## Overview
 
-Release 1.25.3 uses an existing release-help section with native `menubar.rectangle`
-for the status item and retained mini-panel fix on macOS 27. The existing 13-point body,
-12-point semibold section labels, Graphite palette and native control families apply.
+Release 1.26.0 uses the existing release-help sections with native `magnifyingglass`
+for file and link search and `text.bubble` for Russian localization resources. The existing
+13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
