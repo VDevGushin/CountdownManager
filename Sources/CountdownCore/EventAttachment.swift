@@ -37,12 +37,12 @@ public enum EventAttachmentError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidMetadata: return "Не удалось прочитать сведения о вложении."
-        case .unsupportedFile: return "Выберите обычный локальный файл, а не папку, пакет или ссылку."
-        case .unknownDraft: return "Редактор вложения уже закрыт. Откройте событие снова."
-        case .unavailableFile: return "Сохранённая копия вложения недоступна."
-        case .unsafeStorage: return "Папка вложений недоступна или содержит неподдерживаемые ссылки."
-        case .limitExceeded: return "К событию можно прикрепить не более \(EventAttachment.maximumCount) файлов."
+        case .invalidMetadata: return AppText.string("attachment.error.invalidMetadata")
+        case .unsupportedFile: return AppText.string("attachment.error.unsupportedFile")
+        case .unknownDraft: return AppText.string("attachment.error.editorClosed")
+        case .unavailableFile: return AppText.string("attachment.error.missingCopy")
+        case .unsafeStorage: return AppText.string("attachment.error.unsafeStorage")
+        case .limitExceeded: return AppText.string("attachment.error.limit", "\(EventAttachment.maximumCount)")
         }
     }
 }

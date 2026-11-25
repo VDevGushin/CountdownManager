@@ -48,6 +48,19 @@ Key files:
 - `EventAttachment.swift`
 - `AttachmentFiles.swift`
 
+### Localized application text
+
+`CountdownCore` provides `AppText` to both the domain errors and the application's views.
+Russian is the source localization. Stable keys and positional arguments decouple the lookup
+sites from the wording in [Localizable.strings](../Sources/CountdownCore/Resources/ru.lproj/Localizable.strings).
+The existing civil-date and Russian plural rules still determine the presentation.
+User-entered event data and diagnostic protocol identifiers keep their existing representations.
+Test fixtures and expected copy in assertions are independent of the localization table.
+
+SwiftPM executables read the module resource bundle. The packaged app reads the same locale
+resources from `Contents/Resources`. `build.sh` copies the `.lproj` directories before signing. Both the shell and Xcode builds derive the base location purpose values
+from the Russian `InfoPlist.strings` table using the same preparation script.
+
 ### `CountdownManagerUI`
 
 Source: `Sources/CountdownManager/`

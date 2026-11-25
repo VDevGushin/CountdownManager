@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import CountdownCore
 
 /// Native draft editing preserves complete input; length validation belongs to Save.
 struct NoteEditor: NSViewRepresentable {
@@ -34,7 +35,7 @@ struct NoteEditor: NSViewRepresentable {
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize = NSSize(width: scroll.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
         editor.setAccessibilityIdentifier("editor.note")
-        editor.setAccessibilityLabel("Заметка · необязательно")
+        editor.setAccessibilityLabel(AppText.string("note.optional"))
         editor.setAccessibilityPlaceholderValue(NoteTextView.placeholder)
         scroll.documentView = editor
         updateNSView(scroll, context: context)
@@ -72,7 +73,7 @@ struct NoteEditor: NSViewRepresentable {
 }
 
 final class NoteTextView: NSTextView {
-    static let placeholder = "Пара слов о событии"
+    static let placeholder = AppText.string("note.prompt")
     var onChange: ((String) -> Void)?
     private var marking = false
 

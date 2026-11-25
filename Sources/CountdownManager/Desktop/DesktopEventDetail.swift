@@ -74,7 +74,7 @@ struct DesktopEventDetail: View {
 
     private var header: some View {
         HStack(spacing: 8) {
-            Text(presentation.isPrimary ? "Избранное событие" : "Выбранное событие")
+            Text(presentation.isPrimary ? AppText.string("desktop.detail.favoriteHeading") : AppText.string("desktop.detail.selectionHeading"))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .lineLimit(1)
@@ -82,32 +82,32 @@ struct DesktopEventDetail: View {
             Spacer(minLength: 0)
             AuroraSymbolAction(symbolName: presentation.isPrimary ? "star.fill" : "star",
                 surface: .desktop, tone: presentation.isPrimary ? .accent : .ink,
-                accessibilityLabel: presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным",
+                accessibilityLabel: presentation.isPrimary ? AppText.string("event.unfavorite") : AppText.string("event.favorite"),
                 action: toggleFavorite)
-            .help(presentation.isPrimary ? "Убрать из избранного" : "Сделать избранным")
+            .help(presentation.isPrimary ? AppText.string("event.unfavorite") : AppText.string("event.favorite"))
             .accessibilityIdentifier("desktop.favorite.\(item.id.uuidString)")
             .uiSmokeControl(id: "desktop.favorite.\(item.id.uuidString)", action: toggleFavorite,
                             value: { presentation.isPrimary ? "on" : "off" })
             .fixedSize()
             .disabled(!canMutate)
             AuroraSymbolAction(symbolName: "pencil", surface: .desktop, tone: .ink,
-                accessibilityLabel: "Редактировать событие", action: edit)
+                accessibilityLabel: AppText.string("event.edit"), action: edit)
                 .fixedSize()
-                .help("Изменить событие")
+                .help(AppText.string("desktop.detail.editHelp"))
                 .accessibilityIdentifier("desktop.detail.edit")
                 .uiSmokeControl(id: "desktop.detail.edit", action: edit)
                 .disabled(!canMutate)
             AuroraSymbolAction(symbolName: "doc.on.doc", surface: .desktop, tone: .ink,
-                accessibilityLabel: "Создать копию события", action: copy)
+                accessibilityLabel: AppText.string("desktop.detail.copy"), action: copy)
                 .fixedSize()
-                .help("Создать копию…")
+                .help(AppText.string("event.copy"))
                 .accessibilityIdentifier("desktop.detail.copy")
                 .uiSmokeControl(id: "desktop.detail.copy", action: copy)
                 .disabled(!canMutate)
             AuroraSymbolAction(symbolName: "trash", surface: .desktop, tone: .ink, role: .destructive,
-                accessibilityLabel: "Удалить событие: \(item.title)", action: requestDeletion)
+                accessibilityLabel: AppText.string("desktop.detail.deleteNamed", item.title), action: requestDeletion)
                 .fixedSize()
-                .help("Удалить событие")
+                .help(AppText.string("event.delete"))
                 .accessibilityIdentifier("desktop.detail.delete")
                 .uiSmokeControl(id: "desktop.detail.delete", action: requestDeletion)
                 .disabled(!canMutate || confirmingDeletion)
@@ -120,19 +120,19 @@ struct DesktopEventDetail: View {
 
     private var deletionConfirmation: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Удалить «\(item.title)»?")
+            Text(AppText.string("desktop.detail.confirmDelete", item.title))
                 .font(.system(size: 13, weight: .semibold))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Событие, все подзадачи и прикреплённые копии файлов будут удалены. Восстановить их нельзя. Исходные файлы сохранятся.")
+            Text(AppText.string("desktop.detail.deleteWarning"))
                 .font(.system(size: 12))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
-                Button("Отмена") { confirmingDeletion = false }
+                Button(AppText.string("common.cancel")) { confirmingDeletion = false }
                     .accessibilityIdentifier("desktop.delete.cancel")
                     .uiSmokeControl(id: "desktop.delete.cancel", action: { confirmingDeletion = false })
-                Button("Удалить", role: .destructive, action: confirmDeletion)
+                Button(AppText.string("common.delete"), role: .destructive, action: confirmDeletion)
                     .accessibilityIdentifier("desktop.delete.confirm")
                     .uiSmokeControl(id: "desktop.delete.confirm", action: confirmDeletion)
                     .disabled(!canMutate)
@@ -198,7 +198,7 @@ struct DesktopEventDetail: View {
     private var note: some View {
         if let note = presentation.note, !note.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                sectionLabel("Заметка")
+                sectionLabel(AppText.string("event.note"))
                 Text(desktopSearchAttributedText(note, search: search, color: searchColor))
                     .font(.system(size: 13)).lineSpacing(5)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
@@ -212,7 +212,7 @@ struct DesktopEventDetail: View {
     private var checklist: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                sectionLabel("Подзадачи")
+                sectionLabel(AppText.string("subtask.heading"))
                     .uiSmokeControl(id: "desktop.subtasks.heading.\(item.id.uuidString)")
                 Spacer()
                 DesktopCompletionLabel(presentation: presentation)
@@ -222,7 +222,7 @@ struct DesktopEventDetail: View {
                     })
             }
             if item.subtasks.isEmpty {
-                Text("У этого события пока нет подзадач.")
+                Text(AppText.string("desktop.detail.noSubtasks"))
                     .font(.system(size: 13))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             } else {
@@ -238,7 +238,7 @@ struct DesktopEventDetail: View {
                 }
             }
             if presentation.allSubtasksCompleted {
-                Label("Всё готово", systemImage: "checkmark.circle.fill")
+                Label(AppText.string("subtask.finished"), systemImage: "checkmark.circle.fill")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(AuroraInstrument.todayColor(for: colorScheme,
                                                                 highContrast: accessibilitySettings.prefersHighContrast))

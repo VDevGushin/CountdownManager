@@ -224,8 +224,8 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             },
             returnToApplication: { [weak self] in self?.returnToActiveEditor() }
         ) { [weak self] in
-            guard let self else { return "Приложение завершает работу." }
-            if self.store.isExportingDiagnostics { return "Дождитесь сохранения диагностики." }
+            guard let self else { return AppText.string("app.lifecycle.terminating") }
+            if self.store.isExportingDiagnostics { return AppText.string("app.lifecycle.waitForDiagnostics") }
             let timerIsRunning: Bool
             if case .running = self.timer.phase { timerIsRunning = true } else { timerIsRunning = false }
             return updateRestartBlockReason(
@@ -271,7 +271,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             backing: .buffered,
             defer: false
         )
-        panel.title = "Countdown Manager"
+        panel.title = AppText.string("app.name")
         panel.identifier = NSUserInterfaceItemIdentifier("main.panel")
         panel.isReleasedWhenClosed = false
         panel.isFloatingPanel = true
@@ -889,53 +889,53 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let menu = NSMenu()
         let appMenu = NSMenu()
         let whatsNewItem = appMenu.addItem(
-            withTitle: "Что нового…", action: #selector(showWhatsNew), keyEquivalent: ""
+            withTitle: AppText.string("app.menu.whatsNew"), action: #selector(showWhatsNew), keyEquivalent: ""
         )
         whatsNewItem.target = self
         appMenu.addItem(.separator())
         let checkItem = appMenu.addItem(
-            withTitle: "Проверить обновления…", action: #selector(ApplicationUpdates.checkForUpdates(_:)), keyEquivalent: ""
+            withTitle: AppText.string("app.menu.checkForUpdates"), action: #selector(ApplicationUpdates.checkForUpdates(_:)), keyEquivalent: ""
         )
         checkItem.target = updates
         let automaticItem = appMenu.addItem(
-            withTitle: "Проверять обновления автоматически",
+            withTitle: AppText.string("app.menu.autoCheckUpdates"),
             action: #selector(ApplicationUpdates.toggleAutomaticChecks(_:)), keyEquivalent: ""
         )
         automaticItem.target = updates
         let installItem = appMenu.addItem(
-            withTitle: "Установить готовое обновление…",
+            withTitle: AppText.string("app.menu.installUpdate"),
             action: #selector(ApplicationUpdates.installDeferredUpdate(_:)), keyEquivalent: ""
         )
         installItem.target = updates
         appMenu.addItem(.separator())
         let quitItem = appMenu.addItem(
-            withTitle: "Выйти из Countdown Manager", action: #selector(ApplicationUpdates.quitApplication(_:)), keyEquivalent: "q"
+            withTitle: AppText.string("app.menu.quit"), action: #selector(ApplicationUpdates.quitApplication(_:)), keyEquivalent: "q"
         )
         quitItem.target = updates
         let appItem = NSMenuItem()
         appItem.submenu = appMenu
         menu.addItem(appItem)
-        let editMenu = NSMenu(title: "Правка")
+        let editMenu = NSMenu(title: AppText.string("app.menu.edit"))
         for (title, action, key) in [
-            ("Отменить", Selector(("undo:")), "z"),
-            ("Вырезать", #selector(NSText.cut(_:)), "x"),
-            ("Копировать", #selector(NSText.copy(_:)), "c"),
-            ("Вставить", #selector(NSText.paste(_:)), "v"),
-            ("Выбрать всё", #selector(NSText.selectAll(_:)), "a")
+            (AppText.string("app.menu.undo"), Selector(("undo:")), "z"),
+            (AppText.string("app.menu.cut"), #selector(NSText.cut(_:)), "x"),
+            (AppText.string("app.menu.copy"), #selector(NSText.copy(_:)), "c"),
+            (AppText.string("app.menu.paste"), #selector(NSText.paste(_:)), "v"),
+            (AppText.string("app.menu.selectAll"), #selector(NSText.selectAll(_:)), "a")
         ] {
             editMenu.addItem(withTitle: title, action: action, keyEquivalent: key)
         }
         let editItem = NSMenuItem()
         editItem.submenu = editMenu
         menu.addItem(editItem)
-        let windowMenu = NSMenu(title: "Окно")
+        let windowMenu = NSMenu(title: AppText.string("app.menu.window"))
         let openItem = windowMenu.addItem(
-            withTitle: "Открыть основное окно", action: #selector(showDesktopWindow), keyEquivalent: "0"
+            withTitle: AppText.string("app.menu.openMainWindow"), action: #selector(showDesktopWindow), keyEquivalent: "0"
         )
         openItem.target = self
         windowMenu.addItem(.separator())
         let closeItem = NSMenuItem(
-            title: "Закрыть",
+            title: AppText.string("app.menu.close"),
             action: #selector(closeKeySurface),
             keyEquivalent: "w"
         )

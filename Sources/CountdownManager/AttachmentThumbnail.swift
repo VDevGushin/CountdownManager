@@ -136,7 +136,7 @@ struct AttachmentThumbnail: View {
                     Image(systemName: fallbackSymbol)
                         .font(.system(size: 20))
                     if showsUnavailableLabel, isUnavailable {
-                        Text("Копия недоступна")
+                        Text(AppText.string("attachment.preview.unavailable"))
                             .font(.system(size: 10))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)

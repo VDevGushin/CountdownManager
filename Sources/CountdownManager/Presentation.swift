@@ -84,16 +84,16 @@ package struct PanelPresentationState: Equatable {
 }
 
 package enum EventUIStrings {
-    package static let addEvent = "Добавить событие"
-    package static let newEvent = "Новое событие"
-    package static let editEvent = "Редактировать событие"
-    package static let createDay = "Создать день"
-    package static let newDay = "Новый день"
-    package static let weekDateChanged = "Наступил новый день. Список обновлён — проверьте даты и нажмите «Создать» ещё раз."
-    package static let todayExpiryNotice = "После окончания дня событие будет удалено, включая незавершённые подзадачи и прикреплённые копии файлов. Исходные файлы сохранятся."
-    package static let deleteEvent = "Удалить событие?"
-    package static let emptyTitle = "Пока нет событий"
-    package static let emptyMessage = "Выбери день события.\nНазвание и детали можно изменить."
+    package static let addEvent = AppText.string("event.add")
+    package static let newEvent = AppText.string("event.new")
+    package static let editEvent = AppText.string("event.edit")
+    package static let createDay = AppText.string("event.createDay")
+    package static let newDay = AppText.string("event.newDay")
+    package static let weekDateChanged = AppText.string("event.weekDateChanged")
+    package static let todayExpiryNotice = AppText.string("event.todayExpiryNotice")
+    package static let deleteEvent = AppText.string("event.deletePrompt")
+    package static let emptyTitle = AppText.string("event.emptyTitle")
+    package static let emptyMessage = AppText.string("event.emptyMessage")
 }
 
 package enum EventEmojiCatalog {
@@ -205,11 +205,11 @@ package struct CountdownRowPresentation: Equatable {
 
 package func relativeCountdownLabel(_ days: Int) -> String {
     switch days {
-    case ..<(-1): return "\(dayLabel(-days)) назад"
-    case -1: return "Вчера"
-    case 0: return "Сегодня"
-    case 1: return "Завтра"
-    default: return "Через \(dayLabel(days))"
+    case ..<(-1): return AppText.string("calendar.pastCountdown", dayLabel(-days))
+    case -1: return AppText.string("calendar.yesterday")
+    case 0: return AppText.string("calendar.today")
+    case 1: return AppText.string("calendar.tomorrow")
+    default: return AppText.string("calendar.futureCountdown", dayLabel(days))
     }
 }
 
@@ -217,12 +217,17 @@ package struct CalendarDateTilePresentation: Equatable {
     package let monthLabel: String
     package let dayLabel: String
 
+    private static let shortMonths = [
+        AppText.string("calendar.month.abbreviated.january"), AppText.string("calendar.month.abbreviated.february"),
+        AppText.string("calendar.month.abbreviated.march"), AppText.string("calendar.month.abbreviated.april"),
+        AppText.string("calendar.month.abbreviated.may"), AppText.string("calendar.month.abbreviated.june"),
+        AppText.string("calendar.month.abbreviated.july"), AppText.string("calendar.month.abbreviated.august"),
+        AppText.string("calendar.month.abbreviated.september"), AppText.string("calendar.month.abbreviated.october"),
+        AppText.string("calendar.month.abbreviated.november"), AppText.string("calendar.month.abbreviated.december")
+    ]
+
     package init(day: Day) {
-        let months = [
-            "ЯНВ", "ФЕВР", "МАРТ", "АПР", "МАЙ", "ИЮНЬ",
-            "ИЮЛЬ", "АВГ", "СЕНТ", "ОКТ", "НОЯБ", "ДЕК"
-        ]
-        monthLabel = months[day.month - 1]
+        monthLabel = Self.shortMonths[day.month - 1]
         dayLabel = String(day.day)
     }
 }
@@ -231,13 +236,18 @@ package func eventListEmoji(_ emoji: String) -> String? {
     emoji.isEmpty || emoji == "📅" ? nil : emoji
 }
 
+private let genitiveMonths = [
+    AppText.string("calendar.month.genitive.january"), AppText.string("calendar.month.genitive.february"),
+    AppText.string("calendar.month.genitive.march"), AppText.string("calendar.month.genitive.april"),
+    AppText.string("calendar.month.genitive.may"), AppText.string("calendar.month.genitive.june"),
+    AppText.string("calendar.month.genitive.july"), AppText.string("calendar.month.genitive.august"),
+    AppText.string("calendar.month.genitive.september"), AppText.string("calendar.month.genitive.october"),
+    AppText.string("calendar.month.genitive.november"), AppText.string("calendar.month.genitive.december")
+]
+
 package func humanDateLabel(_ day: Day) -> String {
-    let months = [
-        "января", "февраля", "марта", "апреля", "мая", "июня",
-        "июля", "августа", "сентября", "октября", "ноября", "декабря"
-    ]
     guard (1...12).contains(day.month) else { return "\(day.day).\(day.month).\(day.year)" }
-    return "\(day.day) \(months[day.month - 1]) \(day.year)"
+    return AppText.string("calendar.fullDate", String(day.day), genitiveMonths[day.month - 1], String(day.year))
 }
 
 package func subtaskDisclosureLabel(isExpanded: Bool, completion: String) -> String {
@@ -267,11 +277,11 @@ package func statusBarPresentation(data: CountdownData, today: Day) -> StatusBar
         return StatusBarPresentation(
             title: "",
             icon: .mars,
-            toolTip: hasEvents ? "Countdown Manager · нет избранного" : "Countdown Manager · нет событий"
+            toolTip: hasEvents ? AppText.string("app.status.noFavorite") : AppText.string("app.status.noEvents")
         )
     }
     let days = favorite.date.days(from: today)
-    let remaining = days < 0 ? relativeCountdownLabel(days) : (days == 1 ? "Завтра" : countdownLabel(days))
+    let remaining = days < 0 ? relativeCountdownLabel(days) : (days == 1 ? AppText.string("calendar.tomorrow") : countdownLabel(days))
     if eventListEmoji(favorite.emoji) == nil {
         return StatusBarPresentation(title: remaining, icon: .calendar, toolTip: "Countdown Manager · \(remaining)")
     }
@@ -342,6 +352,15 @@ package func russianWeekdayTitle(_ day: Day) -> String {
 package struct DayCreationPreset: Equatable {
     package let day: Day
 
+    private static let shortMonths = [
+        AppText.string("calendar.month.abbreviated.january"), AppText.string("calendar.month.abbreviated.february"),
+        AppText.string("calendar.month.abbreviated.march"), AppText.string("calendar.month.abbreviated.april"),
+        AppText.string("calendar.month.abbreviated.may"), AppText.string("calendar.month.abbreviated.june"),
+        AppText.string("calendar.month.abbreviated.july"), AppText.string("calendar.month.abbreviated.august"),
+        AppText.string("calendar.month.abbreviated.september"), AppText.string("calendar.month.abbreviated.october"),
+        AppText.string("calendar.month.abbreviated.november"), AppText.string("calendar.month.abbreviated.december")
+    ]
+
     package init(day: Day) {
         self.day = day
     }
@@ -361,15 +380,15 @@ package struct DayCreationPreset: Equatable {
 package func eventCountLabel(_ count: Int) -> String {
     let noun: String
     if (11...14).contains(count % 100) {
-        noun = "событий"
+        noun = AppText.string("event.count.many")
     } else {
         switch count % 10 {
-        case 1: noun = "событие"
-        case 2...4: noun = "события"
-        default: noun = "событий"
+        case 1: noun = AppText.string("event.count.one")
+        case 2...4: noun = AppText.string("event.count.few")
+        default: noun = AppText.string("event.count.many")
         }
     }
-    return "\(count) \(noun)"
+    return AppText.string("event.count.label", String(count), noun)
 }
 
 package func currentDayHeaderLabel(_ day: Day) -> String {
@@ -385,7 +404,7 @@ package func currentDayHeaderLabel(_ day: Day) -> String {
 package func applicationVersionLabel(bundle: Bundle = .main) -> String? {
     guard let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
           !version.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-    return "Версия \(version)"
+    return AppText.string("app.version", version)
 }
 
 package struct EventEditorDraft: Equatable {
@@ -420,6 +439,15 @@ package struct EventEditorDraft: Equatable {
         updateDayTitle(for: date)
     }
 
+    private static let shortMonths = [
+        AppText.string("calendar.month.abbreviated.january"), AppText.string("calendar.month.abbreviated.february"),
+        AppText.string("calendar.month.abbreviated.march"), AppText.string("calendar.month.abbreviated.april"),
+        AppText.string("calendar.month.abbreviated.may"), AppText.string("calendar.month.abbreviated.june"),
+        AppText.string("calendar.month.abbreviated.july"), AppText.string("calendar.month.abbreviated.august"),
+        AppText.string("calendar.month.abbreviated.september"), AppText.string("calendar.month.abbreviated.october"),
+        AppText.string("calendar.month.abbreviated.november"), AppText.string("calendar.month.abbreviated.december")
+    ]
+
     package init(day: Day) {
         title = russianWeekdayTitle(day)
         note = ""
@@ -452,7 +480,7 @@ package struct EventEditorDraft: Equatable {
     @discardableResult
     package mutating func addSubtask() -> EditorFocusTarget? {
         guard subtasks.count < Subtask.maximumCount,
-              var subtask = try? Subtask(text: "Новая подзадача") else { return nil }
+              var subtask = try? Subtask(text: AppText.string("subtask.new")) else { return nil }
         subtask.text = ""
         subtasks.append(subtask)
         return .subtask(subtask.id)

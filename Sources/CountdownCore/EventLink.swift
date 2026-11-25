@@ -47,9 +47,9 @@ public enum EventLinkError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .limit: "У события может быть не больше десяти ссылок."
-        case .address: "Укажите полный адрес с http:// или https:// без пробелов и данных входа."
-        case .duplicateIdentity: "Список ссылок содержит повторяющиеся идентификаторы."
+        case .limit: AppText.string("link.error.limit")
+        case .address: AppText.string("link.error.invalidAddress")
+        case .duplicateIdentity: AppText.string("link.error.duplicateIdentity")
         }
     }
 }

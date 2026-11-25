@@ -7,8 +7,8 @@ package enum DesktopEventViewMode: String, CaseIterable {
 
     package var title: String {
         switch self {
-        case .collection: "Коллекция"
-        case .feed: "Лента"
+        case .collection: AppText.string("desktop.mode.collection")
+        case .feed: AppText.string("desktop.mode.feed")
         }
     }
 
@@ -125,8 +125,8 @@ package func desktopMinimumPaneWidth(contentWidth: CGFloat) -> CGFloat {
 }
 
 package func desktopEventAccessibilityLabel(_ item: Countdown) -> String {
-    var label = "Открыть событие: \(item.title)"
-    if !item.attachments.isEmpty { label += ". Вложения: \(item.attachments.count)" }
-    if !item.links.isEmpty { label += ". Ссылки: \(item.links.count)" }
+    var label = AppText.string("desktop.accessibility.openEvent", item.title)
+    if !item.attachments.isEmpty { label += AppText.string("desktop.accessibility.attachmentCount", "\(item.attachments.count)") }
+    if !item.links.isEmpty { label += AppText.string("desktop.accessibility.linkCount", "\(item.links.count)") }
     return label
 }

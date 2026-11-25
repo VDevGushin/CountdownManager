@@ -51,8 +51,8 @@ struct SubtaskReorderInteraction: ViewModifier {
         // Rows without a drag still need the native checkbox's own click gesture.
         content.highPriorityGesture(drag, including: drag == nil ? .subviews : .all)
             .accessibilityActions {
-                if let moveUp { Button("Переместить выше", action: moveUp) }
-                if let moveDown { Button("Переместить ниже", action: moveDown) }
+                if let moveUp { Button(AppText.string("subtask.reorderUp"), action: moveUp) }
+                if let moveDown { Button(AppText.string("subtask.reorderDown"), action: moveDown) }
             }
     }
 }

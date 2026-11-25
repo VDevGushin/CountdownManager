@@ -3,11 +3,12 @@ import PackageDescription
 
 let package = Package(
     name: "CountdownManager",
+    defaultLocalization: "ru",
     platforms: [.macOS(.v13)],
     products: [.executable(name: "CountdownManager", targets: ["CountdownManager"])],
     dependencies: [.package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.10.0")],
     targets: [
-        .target(name: "CountdownCore"),
+        .target(name: "CountdownCore", resources: [.process("Resources")]),
         .target(
             name: "CountdownManagerUI",
             dependencies: ["CountdownCore", .product(name: "Sparkle", package: "Sparkle")],

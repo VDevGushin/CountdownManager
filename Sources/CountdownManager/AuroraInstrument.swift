@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import CountdownCore
 
 final class AuroraAccessibilitySettings: ObservableObject {
     @Published private(set) var prefersHighContrast: Bool
@@ -345,7 +346,7 @@ struct AuroraTimerPresetSelector: View {
         .frame(height: 32)
         .onMoveCommand(perform: moveSelection)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Время таймера")
+        .accessibilityLabel(AppText.string("timer.presetLabel"))
     }
 
     private func presetButton(_ minutes: Int) -> some View {
@@ -353,7 +354,7 @@ struct AuroraTimerPresetSelector: View {
         return Button {
             select(minutes)
         } label: {
-            Text(minutes == 60 ? "1 ч" : (minutes == 120 ? "2 ч" : "\(minutes)"))
+            Text(minutes == 60 ? AppText.string("timer.oneHour") : (minutes == 120 ? AppText.string("timer.twoHours") : "\(minutes)"))
                 .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
                 .monospacedDigit()
                 .foregroundStyle(labelColor(isSelected: isSelected))
@@ -382,8 +383,8 @@ struct AuroraTimerPresetSelector: View {
         }
         .buttonStyle(.plain)
         .focused($focusedPreset, equals: minutes)
-        .accessibilityLabel("\(minutes) минут")
-        .accessibilityValue(isSelected ? "Выбрано" : "Не выбрано")
+        .accessibilityLabel(AppText.string("timer.presetMinutes", "\(minutes)"))
+        .accessibilityValue(isSelected ? AppText.string("common.selected") : AppText.string("common.unselected"))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .uiSmokeControl(
             id: "\(controlIDPrefix).\(minutes)",
