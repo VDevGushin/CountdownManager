@@ -44,19 +44,42 @@ class ReleaseChecks(unittest.TestCase):
         self.write('README.md', self.readme + '\n[missing](docs/missing.md)\n')
         self.assertTrue(any('docs/missing.md' in error for error in check_release.local_check(self.root)['errors']))
 
-    def test_wrong_default_branch_readme_is_rejected(self):
+    def public_downloads(self):
         archive, feed = b'archive', b'feed'
         self.write('docs/images/v9.2.1/artifact-audit.json', json.dumps({
             'archiveSHA256': hashlib.sha256(archive).hexdigest(),
             'feedSHA256': hashlib.sha256(feed).hexdigest()}))
-        base = 'https://github.com/VDevGushin/CountdownManager'
-        responses = [(200, base + '/releases/tag/v9.2.1', b'latest'),
-                     (200, '', archive), (200, '', feed), (200, '', feed),
-                     (200, '', b'{"default_branch":"main"}'), (200, '', b'stale homepage')]
+        base = 'https://github.com/MonolitST/CountdownManager'
+        stable = '/releases/latest/download/appcast.xml'
+        versioned = '/releases/download/v9.2.1/'
+        archive_path = versioned + 'CountdownManager-9.2.1-42.zip'
+        return {
+            base + '/releases/latest': (200, base + '/releases/tag/v9.2.1', b'latest'),
+            base + archive_path: (200, '', archive),
+            base + versioned + 'appcast.xml': (200, '', feed),
+            base + stable: (200, '', feed),
+            'https://raw.githubusercontent.com/MonolitST/CountdownManager/HEAD/README.md':
+                (200, '', self.readme.encode()),
+        }
+
+    def run_public_check(self, downloads):
         report = check_release.local_check(self.root)
-        with patch.object(check_release, 'download', side_effect=responses):
+        with patch.object(check_release, 'download', side_effect=downloads.__getitem__):
             check_release.public_check(self.root, report)
-        self.assertTrue(any('default branch main README differs' in error for error in report['errors']))
+        return report
+
+    def test_organization_release_and_assets_are_checked(self):
+        report = self.run_public_check(self.public_downloads())
+        self.assertEqual(report['errors'], [])
+        self.assertEqual(set(report['publicChecks']), {'latest', 'archive', 'versionFeed', 'stableFeed'})
+
+    def test_wrong_default_branch_readme_is_rejected(self):
+        downloads = self.public_downloads()
+        downloads['https://raw.githubusercontent.com/MonolitST/CountdownManager/HEAD/README.md'] = (
+            200, '', b'stale homepage')
+        self.assertEqual(self.run_public_check(downloads)['errors'], [
+            'GitHub default-branch README differs from local current README',
+        ])
 
 
 if __name__ == '__main__':

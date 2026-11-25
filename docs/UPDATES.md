@@ -2,7 +2,8 @@
 
 ## Current published release
 
-Published as Latest is **1.26.0 / build 51** on 2026-11-25. Desktop event search includes
+Published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest) is
+**1.26.0 / build 51** on 2026-11-25. Desktop event search includes
 attached filenames and saved link names and addresses. Russian interface copy and location
 usage descriptions are packaged as localization resources.
 [Release status](releases/v1.26.0.md) and [notes](releases/v1.26.0-notes.md) describe the changes.
@@ -23,8 +24,8 @@ The project release skill is [countdown-release](../.agents/skills/countdown-rel
 ## Stable identity
 
 - Bundle: `local.countdownmanager.app`.
-- Stable feed: `https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml`.
-- Archives: `https://github.com/VDevGushin/CountdownManager/releases/download/v<VERSION>/CountdownManager-<VERSION>-<BUILD>.zip`.
+- Stable feed for new builds: `https://github.com/MonolitST/CountdownManager/releases/latest/download/appcast.xml`.
+- Archives for new releases: `https://github.com/MonolitST/CountdownManager/releases/download/v<VERSION>/CountdownManager-<VERSION>-<BUILD>.zip`.
 - Existing production Keychain account: `local.countdownmanager.app.sparkle.production`;
   service: `https://sparkle-project.org`.
 - Public-key fingerprint, SHA-256 of the decoded 32 bytes:
@@ -35,10 +36,10 @@ Use this named account. Sparkle's default `ed25519` account is not the project's
 replacement key or print/export the private key as part of routine release preparation.
 The current Sparkle tools can sign directly from the named Keychain account.
 
-The default `build.sh` disables the updater. A release must explicitly configure the unchanged
-stable HTTPS feed and public key. The app requires signed feeds and archive verification before
-extraction, with signature-failure fallback disabled. No token, private seed or test preference
-profile belongs in the bundle or release assets.
+The default `build.sh` disables the updater. A release must explicitly configure the organization's
+stable HTTPS feed and the existing public key. The app requires signed feeds and archive
+verification before extraction, with signature-failure fallback disabled. No token, private
+seed or test preference profile belongs in the bundle or release assets.
 
 ## Prepare one candidate
 
@@ -73,9 +74,10 @@ version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Resourc
 build_number=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Resources/Info.plist)
 public_key=$("$sparkle_tools/generate_keys" --account "$key_account" -p)
 release_work=$(mktemp -d /private/tmp/countdown-release.XXXXXX)
+release_repo='https://github.com/MonolitST/CountdownManager'
 
 COUNTDOWN_UPDATE_MODE=release \
-COUNTDOWN_UPDATE_FEED_URL='https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml' \
+COUNTDOWN_UPDATE_FEED_URL="$release_repo/releases/latest/download/appcast.xml" \
 COUNTDOWN_UPDATE_PUBLIC_KEY="$public_key" \
 BUILD_DIR="$build_dir" APP_OUTPUT_PATH="$release_work/Countdown Manager.app" ./build.sh
 
@@ -85,7 +87,7 @@ archive_stem="CountdownManager-$version-$build_number"
   "$release_work/Countdown Manager.app" "$release_work/assets/$archive_stem.zip"
 cp "docs/releases/v$version-notes.html" "$release_work/assets/$archive_stem.html"
 "$sparkle_tools/generate_appcast" --account "$key_account" \
-  --download-url-prefix "https://github.com/VDevGushin/CountdownManager/releases/download/v$version/" \
+  --download-url-prefix "$release_repo/releases/download/v$version/" \
   --maximum-deltas 0 --embed-release-notes "$release_work/assets"
 ```
 

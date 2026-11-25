@@ -10,6 +10,8 @@ import subprocess
 from urllib.parse import unquote
 from urllib.request import Request, urlopen
 
+REPOSITORY = 'MonolitST/CountdownManager'
+
 
 def local_check(root):
     errors = []
@@ -68,28 +70,29 @@ def download(url):
 
 def public_check(root, report):
     version, build = report['version'], report['build']
-    base = 'https://github.com/VDevGushin/CountdownManager'
+    base = f'https://github.com/{REPOSITORY}'
+    version_path = f'/releases/download/v{version}'
+    archive_path = f'{version_path}/CountdownManager-{version}-{build}.zip'
+    stable_path = '/releases/latest/download/appcast.xml'
     audit = json.loads((root / f'docs/images/v{version}/artifact-audit.json').read_text())
-    urls = {'latest': base + '/releases/latest',
-            'archive': base + f'/releases/download/v{version}/CountdownManager-{version}-{build}.zip',
-            'versionFeed': base + f'/releases/download/v{version}/appcast.xml',
-            'stableFeed': base + '/releases/latest/download/appcast.xml'}
+    urls = {'latest': (base + '/releases/latest', None),
+            'archive': (base + archive_path, audit['archiveSHA256']),
+            'versionFeed': (f'{base}{version_path}/appcast.xml', audit['feedSHA256']),
+            'stableFeed': (base + stable_path, audit['feedSHA256'])}
     checks = {}
-    for name, url in urls.items():
+    for name, (url, expected) in urls.items():
         status, resolved, data = download(url)
         digest = hashlib.sha256(data).hexdigest()
-        expected = audit['archiveSHA256'] if name == 'archive' else audit['feedSHA256']
         if status != 200 or (name == 'latest' and resolved != base + f'/releases/tag/v{version}'):
             report['errors'].append(f'Unexpected public response: {name}')
-        elif name != 'latest' and digest != expected:
+        elif expected is not None and digest != expected:
             report['errors'].append(f'Public payload differs from audited bytes: {name}')
         checks[name] = {'status': status, 'sha256': digest, 'bytes': len(data)}
-    _, _, metadata = download('https://api.github.com/repos/VDevGushin/CountdownManager')
-    branch = json.loads(metadata)['default_branch']
-    _, _, readme = download(f'https://raw.githubusercontent.com/VDevGushin/CountdownManager/{branch}/README.md')
+    readme_url = f'https://raw.githubusercontent.com/{REPOSITORY}/HEAD/README.md'
+    _, _, readme = download(readme_url)
     if readme != (root / 'README.md').read_bytes():
-        report['errors'].append(f'GitHub default branch {branch} README differs from local current README')
-    report.update(publicChecks=checks, defaultBranch=branch)
+        report['errors'].append('GitHub default-branch README differs from local current README')
+    report['publicChecks'] = checks
 
 
 def main():

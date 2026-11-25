@@ -9,7 +9,7 @@
 Поиск в большом окне находит имена прикреплённых файлов, названия и адреса ссылок.
 Русские подписи интерфейса собраны в каталоге локализации.
 
-[Скачать последний выпуск](https://github.com/VDevGushin/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.26.0-notes.md) · [Проверки выпуска](docs/releases/v1.26.0.md)
+[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.26.0-notes.md) · [Проверки выпуска](docs/releases/v1.26.0.md)
 
 ## Как выглядит приложение
 
@@ -21,7 +21,7 @@
 ## Установка и обновления
 
 Публичная сборка рассчитана на Mac с Apple Silicon и macOS 13 или новее.
-Откройте [последний релиз](https://github.com/VDevGushin/CountdownManager/releases/latest),
+Откройте [последний релиз](https://github.com/MonolitST/CountdownManager/releases/latest),
 скачайте ZIP, распакуйте и перенесите `Countdown Manager.app` в «Программы».
 Сборка подписана ad-hoc, без нотарификации Apple; при первом запуске может потребоваться
 разрешение в «Системные настройки → Конфиденциальность и безопасность».
@@ -211,7 +211,7 @@ VPN не гарантируются; прогноз и координаты уд
 Нужны Git и Apple Command Line Tools либо Xcode.
 
 ```sh
-git clone https://github.com/VDevGushin/CountdownManager.git
+git clone https://github.com/MonolitST/CountdownManager.git
 cd CountdownManager
 ./build.sh
 open "Countdown Manager.app"

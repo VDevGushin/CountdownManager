@@ -13,7 +13,7 @@ package enum METNorwayWeatherProvider {
         guard let url = components.url else { throw METFailure.invalidData }
         var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 15)
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development"
-        request.setValue("CountdownManager/\(version) https://github.com/VDevGushin/CountdownManager", forHTTPHeaderField: "User-Agent")
+        request.setValue("CountdownManager/\(version) https://github.com/MonolitST/CountdownManager", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         return request
     }

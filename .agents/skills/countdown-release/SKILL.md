@@ -92,9 +92,10 @@ Do not create another tag to work around a stale selector. Save visible publicat
 
 ## Verify publicly, then finish
 
-Check anonymously that Latest resolves to the intended tag, the ZIP/versioned appcast/stable
-appcast return HTTP 200 with audited hashes, and the tag targets the reviewed source. Verify the
-actual default-branch README and its displayed images/download links. Only then mark published,
+Check anonymously that Latest on `MonolitST/CountdownManager` resolves to the intended tag,
+the ZIP/versioned appcast/stable appcast return HTTP 200 with audited hashes, and the tag targets
+the reviewed source. Verify the actual default-branch README and its displayed images/download
+links. Only then mark published,
 write the receipt and push publication documentation. The optional checker `--public` verifies
 these public bytes and default README equality; browser inspection still establishes appearance.
 

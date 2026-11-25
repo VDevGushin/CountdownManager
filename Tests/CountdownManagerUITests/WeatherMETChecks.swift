@@ -15,7 +15,7 @@ func testWeatherMETNormalization() throws {
     let request = try METNorwayWeatherProvider.makeRequest(query)
     precondition(request.url?.scheme == "https" && request.url?.host == "api.met.no")
     precondition(request.url?.path == "/weatherapi/locationforecast/2.0/complete")
-    precondition(request.value(forHTTPHeaderField: "User-Agent")?.contains("github.com/VDevGushin/CountdownManager") == true)
+    precondition(request.value(forHTTPHeaderField: "User-Agent")?.contains("github.com/MonolitST/CountdownManager") == true)
 
     let missingUnits = try metFixture(day, hours: 0..<24, sixHourMaximum: true, units: [:])
     let untyped = try METNorwayWeatherProvider.decode(missingUnits, query: query).forecasts["2026-10-14"]!

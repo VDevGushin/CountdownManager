@@ -61,8 +61,8 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Eval runner checks | `python3 -B Tests/test_agent_evals.py` | Deterministic checks of fixtures, grading and execution; no model calls |
 | Native transport checks | `python3 -B Tests/test_native_hooks.py` | Local protocol/cleanup regression checks; no Codex process or model calls |
 | Update packaging checks | `python3 -B Tests/test_update_tools.py` | Feed/key/output/isolation boundaries; no production keys, application data or publication |
-| Release consistency | `python3 -B .agents/skills/countdown-release/scripts/check_release.py --root .` | Version/help ID, current homepage images and local documentation references; `--public` also checks anonymous release bytes and actual default README equality |
-| Release checker regression | `python3 -B .agents/skills/countdown-release/scripts/test_check_release.py` | Five isolated fixtures for current/stale images, release ID, missing links and default-branch README drift; no publication |
+| Release consistency | `python3 -B .agents/skills/countdown-release/scripts/check_release.py --root .` | Version/help ID, homepage images and local references. `--public` also checks release bytes on the organization's URLs and the actual default-branch README. |
+| Release checker regression | `python3 -B .agents/skills/countdown-release/scripts/test_check_release.py` | Isolated fixtures for homepage images, release ID, local links, organization release downloads, and default-branch README drift. |
 | Agent behaviour evals | `python3 -B evals/run.py run --model <supported-cli-model> --output evals/artifacts/<new-run>` | Opt-in isolated Codex runs plus independent checks and rubric review |
 | Native Codex hooks | `python3 -B evals/native_hooks.py --model <supported-cli-model> --output evals/artifacts/<new-native-run>` | Opt-in real app-server delivery, trusted hooks, lint/fast failures and automatic repair; CLI 0.157.1 |
 

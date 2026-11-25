@@ -29,7 +29,7 @@ class UpdateToolsChecks(unittest.TestCase):
 
     def release_environment(self):
         return {"COUNTDOWN_UPDATE_MODE": "release", "COUNTDOWN_UPDATE_FEED_URL":
-                "https://vdevgushin.github.io/CountdownManager/appcast.xml",
+                "https://github.com/MonolitST/CountdownManager/releases/latest/download/appcast.xml",
                 "COUNTDOWN_UPDATE_PUBLIC_KEY": self.key, "COUNTDOWN_BUILD_NUMBER": "13"}
 
     def test_development_bundle_has_no_network_channel(self):
@@ -45,6 +45,7 @@ class UpdateToolsChecks(unittest.TestCase):
         self.assertEqual(data["CFBundleVersion"], "13")
         self.assertEqual(data["CFBundleIdentifier"], tools.PRODUCTION_ID)
         self.assertEqual(data["LSMinimumSystemVersion"], "13.0")
+        self.assertEqual(data["SUFeedURL"], env["COUNTDOWN_UPDATE_FEED_URL"])
         self.assertTrue(data["SURequireSignedFeed"])
         self.assertTrue(data["SUVerifyUpdateBeforeExtraction"])
         self.assertFalse(data["SUAllowsAutomaticUpdates"])
@@ -144,7 +145,7 @@ class UpdateToolsChecks(unittest.TestCase):
         key.chmod(0o600)
         output = self.root / "release"
         args = argparse.Namespace(app=app, private_key=key, test=False,
-                                  download_url_prefix="https://github.com/VDevGushin/CountdownManager/releases/download/v1.7/",
+                                  download_url_prefix="https://github.com/MonolitST/CountdownManager/releases/download/v1.7/",
                                   output=output, build_dir=self.root / "build")
         with patch.object(tools, "key_public", return_value=base64.b64encode(bytes([1]) * 32).decode()), \
                 patch.object(tools, "run") as commands, \
