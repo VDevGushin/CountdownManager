@@ -1,0 +1,69 @@
+{
+  "applicationBuild": "51",
+  "applicationVersion": "1.26.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "whats-new-light.png",
+      "height": 1176,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 78427.55567483333,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 860,
+      "sha256": "99ba8ac7e1d5bd8743c4356dedd31784c49078bc1323ddfcdf22f551bb0ff265"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "whats-new-dark.png",
+      "height": 1176,
+      "highContrast": false,
+      "isKeyWindow": true,
+      "observationUptime": 78427.674665625,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 860,
+      "sha256": "5686a68407d3894f05e5899d743668a85bfa192e49ee3e0660a5fc0a9dd5779f"
+    },
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "light",
+      "file": "whats-new-light-contrast.png",
+      "height": 1176,
+      "highContrast": true,
+      "isKeyWindow": true,
+      "observationUptime": 78427.80267845833,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 860,
+      "sha256": "8fd2670829da20db8a6fc051d72f06d01f1eab6f3b4622e0dc743a301fd77ecc"
+    },
+    {
+      "appearanceName": "NSAppearanceNameDarkAqua",
+      "canBecomeKey": true,
+      "captureMethod": "NSView.cacheDisplay; in-process render, not compositor presentation capture",
+      "colorSchemeOverride": "dark",
+      "file": "whats-new-dark-contrast.png",
+      "height": 1176,
+      "highContrast": true,
+      "isKeyWindow": true,
+      "observationUptime": 78427.93662354167,
+      "reduceMotion": true,
+      "scale": 2,
+      "width": 860,
+      "sha256": "8de39fafb7267fcba6c4f18495b7b04bf6c9e84d3b1910f789224b2f6df79901"
+    }
+  ],
+  "executableSHA256": "8963a85cba23cd533d829c88857c089e0ff75fd77227a55b941ddac101fb1e59",
+  "scope": "Isolated retained AppKit window render from the extracted release package",
+  "syntheticData": true
+}

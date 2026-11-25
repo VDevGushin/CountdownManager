@@ -1,0 +1,20 @@
+{
+  "applicationBuild": "51",
+  "applicationVersion": "1.26.0",
+  "captures": [
+    {
+      "appearanceName": "NSAppearanceNameAqua",
+      "colorSchemeOverride": "light",
+      "file": "identity-panel-favorite-light.png",
+      "height": 1200,
+      "name": "identity-panel-favorite-light",
+      "opaqueCorners": true,
+      "scale": 2,
+      "width": 780,
+      "windowIdentifier": "main.panel",
+      "sha256": "fc8710ef86042fd2674d20942ab8e477f4586b83f0950c6557d92b98720cf905"
+    }
+  ],
+  "executableSHA256": "8963a85cba23cd533d829c88857c089e0ff75fd77227a55b941ddac101fb1e59",
+  "version": 5
+}

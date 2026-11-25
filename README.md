@@ -13,10 +13,10 @@
 
 ## Как выглядит приложение
 
-Поиск в большом окне и мини-панель на демонстрационных данных в текущей сборке из исходников.
+Поиск в большом окне и мини-панель на демонстрационных данных.
 
-<img src="docs/images/v1.25.3/material-search-unreleased/material-search-file-dark.png" alt="Поиск по имени файла в большом окне. Совпадение выделено в карточке события." width="900">
-<img src="docs/images/v1.25.3/material-search-unreleased/identity-panel-favorite-light.png" alt="Мини-панель со списком событий в светлой теме" width="390">
+<img src="docs/images/v1.26.0/material-search-file-dark.png" alt="Поиск по имени файла в большом окне. Совпадение выделено в карточке события." width="900">
+<img src="docs/images/v1.26.0/identity-panel-favorite-light.png" alt="Мини-панель со списком событий в светлой теме" width="390">
 
 ## Установка и обновления
 
