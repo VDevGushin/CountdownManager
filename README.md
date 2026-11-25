@@ -237,7 +237,7 @@ open "Countdown Manager.app"
 
 ```sh
 swiftlint lint --config .swiftlint.yml --strict --no-cache
-./verify.sh fast       # CoreChecks, UIChecks и контракт оформления
+./verify.sh fast       # CoreChecks, UIChecks, контракт оформления и локализация
 ./verify.sh ui         # мини-панель, редактор и сохранение сеанса
 ./verify.sh desktop    # большое окно и общее состояние
 ./verify.sh attachments

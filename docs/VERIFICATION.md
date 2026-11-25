@@ -80,10 +80,11 @@ SessionStart establishes the verification baseline. Missing, unreadable or malfo
 certify a session: later hooks report a blocking diagnostic instead of silently initializing a new
 baseline or treating the failure as success. A successful gate is cached against Swift contents
 (including `Package.swift`) and the explicit verification dependencies: the hook implementation,
-`.swiftlint.yml`, `verify.sh`, `Package.resolved`, both native-design Python test files,
+`.swiftlint.yml`, `verify.sh`, `Package.resolved`, the native-design and localization Python tests,
+the Xcode project checked for source target membership, `Localizable.strings`, `InfoPlist.strings`,
 `scripts/native_design_contract.py`, `Resources/NativeDesignContract.json`, and the native component
-inventory JSON. Changing, adding or removing one invalidates the cached result; an unreadable
-dependency blocks instead of certifying the old pass. The list in `gate_fingerprint` must grow
+inventory JSON. Changing, adding or removing one invalidates the cached result. An unreadable
+dependency blocks the gate. The list in `gate_fingerprint` must grow
 when the fast route gains another non-Swift dependency.
 Unchanged inputs reuse the successful gate. Ordinary prose changes, including README, DESIGN
 and PRODUCT, do not invalidate it. Sessions with no Swift edits still skip application checks;
