@@ -23,7 +23,8 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.26.0"
+    static let releaseID = "1.27.0"
+    @ObservedObject var appPreferences: ApplicationPreferences
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
@@ -39,10 +40,10 @@ struct WhatsNewView: View {
                     Text(AppText.string("app.releaseVersion", AppText.string("app.name"), Self.releaseID))
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature(AppText.string("whatsNew.materialSearchHeading"), symbol: "magnifyingglass",
-                            text: AppText.string("whatsNew.materialSearchText"))
-                    feature(AppText.string("whatsNew.localizationHeading"), symbol: "text.bubble",
+                    feature(AppText.string("whatsNew.localizationHeading"), symbol: "globe",
                             text: AppText.string("whatsNew.localizationText"))
+                    feature(AppText.string("whatsNew.statusItemHeading"), symbol: "menubar.rectangle",
+                            text: AppText.string("whatsNew.statusItemText"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
@@ -60,6 +61,7 @@ struct WhatsNewView: View {
             .frame(height: 58)
         }
         .frame(width: 430, height: 560)
+        .environment(\.locale, appPreferences.language.locale)
         .background(AuroraPanelCanvas())
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .accessibilityIdentifier("whatsnew.content")
@@ -92,7 +94,8 @@ final class WhatsNewWindowController: NSWindowController, NSWindowDelegate {
     private let history: WhatsNewHistory
     private let didClose: () -> Void
 
-    init(defaults: UserDefaults, accessibilitySettings: AuroraAccessibilitySettings, didClose: @escaping () -> Void) {
+    init(defaults: UserDefaults, accessibilitySettings: AuroraAccessibilitySettings, appPreferences: ApplicationPreferences,
+         didClose: @escaping () -> Void) {
         history = WhatsNewHistory(defaults: defaults, releaseID: WhatsNewView.releaseID)
         self.didClose = didClose
         let window = WhatsNewWindow(contentRect: NSRect(x: 0, y: 0, width: 430, height: 560),
@@ -103,7 +106,8 @@ final class WhatsNewWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
         window.delegate = self
         window.contentViewController = NSHostingController(rootView:
-            WhatsNewView(dismiss: { [weak self] in self?.close() }).environmentObject(accessibilitySettings))
+            WhatsNewView(appPreferences: appPreferences, dismiss: { [weak self] in self?.close() })
+                .environmentObject(accessibilitySettings))
         window.center()
     }
 

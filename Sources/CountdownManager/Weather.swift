@@ -58,7 +58,7 @@ package struct DailyWeatherForecast: Equatable, Sendable {
     }
 
     package var accessibilityDescription: String {
-        AppText.string("weather.maximumAccessibility", conditionDescription, temperatureLabel)
+        AppText.string("weather.maximumAccessibility", conditionDescription, String(Int(maximumTemperature.rounded())))
     }
 }
 

@@ -51,15 +51,19 @@ Key files:
 ### Localized application text
 
 `CountdownCore` provides `AppText` to both the domain errors and the application's views.
-Russian is the source localization. Stable keys and positional arguments decouple the lookup
-sites from the wording in [Localizable.strings](../Sources/CountdownCore/Resources/ru.lproj/Localizable.strings).
-The existing civil-date and Russian plural rules still determine the presentation.
-User-entered event data and diagnostic protocol identifiers keep their existing representations.
-Test fixtures and expected copy in assertions are independent of the localization table.
+Both catalogs use stable keys and positional arguments. English is the default and fallback.
+The launcher reads `AppLanguage` from the active defaults domain before AppKit starts. The shared
+`ApplicationPreferences` model persists the menu selection and updates `AppText` before notifying
+SwiftUI and AppKit. The interface roots supply the locale to their descendants while retaining
+their identity. The app delegate refreshes the application menu, status item and any visible timer
+completion alert. The editor applies the selected locale to its native date field and recomputes
+automatic draft titles when the language changes. User-entered content and diagnostic identifiers
+keep their existing representations.
 
-SwiftPM executables read the module resource bundle. The packaged app reads the same locale
-resources from `Contents/Resources`. `build.sh` copies the `.lproj` directories before signing. Both the shell and Xcode builds derive the base location purpose values
-from the Russian `InfoPlist.strings` table using the same preparation script.
+SwiftPM executables read the module resource bundle. The packaged app reads the English and Russian
+`.lproj` directories from `Contents/Resources`. `build.sh` copies them before signing, and Xcode
+includes them as variant groups. Both build paths derive the base location purposes from English
+`InfoPlist.strings` with the same script. macOS chooses the localized permission descriptions.
 
 ### `CountdownManagerUI`
 
@@ -144,7 +148,7 @@ NSApplication / AppDelegate
 ├── KeepAwakeController → one process-owned IOPM assertion
 ├── WeatherController → location/provider requests and bounded memory cache
 ├── EventEditorSession → optional panel/desktop editor owner
-├── ApplicationAppearance → shared persisted system/light/dark choice
+├── ApplicationPreferences → shared persisted appearance and language choices
 ├── WhatsNewWindowController → read-only release help / WhatsNewHistory → isolated-or-standard UserDefaults
 ├── DesktopWindowController (lazy, retained)
 │   └── NSWindow / NSHostingController<DesktopRootView>
@@ -167,7 +171,7 @@ SwiftUI view-value recomputation is normal and is not root reconstruction. Keep 
 
 Panel positioning and visibility are shell responsibilities. The retained, borderless panel has no arrow, title bar or traffic-light controls and moves to the active Space during an explicit show. With the macOS 27 SDK and runtime, AppKit tracks the status item's session and highlight while the app is an accessory. The first desktop opening ends the session and gives the app its persistent Dock role. In that role, the button handles clicks through target-action and mirrors panel visibility with a stable background. Mars rotates on a separate, noninteractive image view. The synchronous visibility request handles toggles before a visible-occlusion acknowledgement. The app associates a deactivation with the closing press so it cannot reopen a just-dismissed panel. With Reduce Motion off, the status gesture fades in using AppKit window opacity and closes with the utility-window ordering animation. A new opening resets any previous opacity transition before ordering the panel. Earlier systems keep the published target-action, visibility checks and instant ordering. Direct opening from the desktop and drag hover retain their existing entry points.
 
-When an acknowledged panel becomes fully occluded during a Space transition, its native occlusion callback clears the request and orders the panel out. Application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` also clear the request. Returning to an old Space cannot restore the panel. These signals are independent of list, editor, timer and first-responder state.
+When an acknowledged panel becomes fully occluded during a Space transition, its native occlusion callback clears the request and orders the panel out. Application deactivation and `NSWorkspace.activeSpaceDidChangeNotification` also clear the request. A deactivation samples the left button state before associating it with a closing click. Switching apps with the pointer parked over the status item keeps the next click available to reopen the panel. Returning to an old Space cannot restore the panel. These signals are independent of list, editor, timer and first-responder state.
 
 ## Runtime responsibilities
 
@@ -185,8 +189,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.26.0`.
-Its sections read localized copy for material search and Russian localization resources.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.27.0`.
+Its sections read localized copy for the language chooser and the macOS 27 mini-panel reopening fix.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
@@ -477,10 +481,11 @@ It stores the optional explicit favorite in `primaryID`. Normalization expires o
 
 `Countdown.usesAutomaticTitle` is persisted with the plain `title`. Missing metadata defaults to
 false and false is omitted on encode; no weekday-text inference is performed. `automaticEventTitle`
-in Core is the sole Russian Gregorian weekday authority. `CountdownData.save` derives an automatic
-title from the selected civil date before committing the candidate snapshot, so title/date/mode
-share the existing atomic persistence/revision boundary. Reading arbitrary stored content does not
-silently rewrite it; an inconsistent automatic title is corrected on explicit Save.
+in Core derives the localized Gregorian weekday. `Countdown.displayTitle` uses it only for automatic
+titles. Cards, dialogs, editor drafts, and search use the display title. Ordinary Save, week creation,
+and a transfer that creates its destination all use the same canonical Russian title in JSON for readers
+that predate bilingual presentation. The stored values are fixed in Core, independently of the
+interface catalogs and their fallback behavior. Reading an event in another language preserves its bytes.
 
 `DayCreationWeek` in `Sources/CountdownCore/DayCreationWeek.swift` is a transient value containing
 `referenceDay`, `days` and `isNextWeek`. Its failable initializer constructs the full tomorrow–Sunday
@@ -788,9 +793,9 @@ Subtask disclosure state is separate from `CountdownData`.
 
 The timer also uses `UserDefaults`, but its deadline is durable timer state rather than an event or checklist preference.
 
-`ApplicationAppearance` in `SettingsView.swift` owns the `appearance.selection` preference and
-publishes `system`, `light` or `dark`. AppDelegate creates one instance from the same standard or
-isolated defaults used for other local preferences and injects it into both interface roots.
+`ApplicationPreferences` in `SettingsView.swift` owns `appearance.selection` and the shared language
+choice. AppDelegate creates one instance from the same standard or isolated defaults used for other
+local preferences and injects it into both interface roots.
 Both roots resolve SwiftUI color scheme through this owner; AppDelegate applies the matching
 native appearance to the panel and retained desktop window. System removes the explicit override.
 The isolated visual override takes priority without changing the stored choice. `NSApp.appearance`
@@ -894,7 +899,7 @@ Any later distribution requires checking the applicable source attribution/licen
 
 `currentDayHeaderLabel` formats the existing published `Store.today`; the view removes the app name
 and shows a system-15-semibold date above the secondary-11 `eventCountLabel` count, separated by
-3 pt. The helper applies Russian event-count endings without storing another count or date.
+3 pt. The helper applies the current language's count rules without storing another count or date.
 Existing Store refresh boundaries drive midnight/wake/reopen. `applicationVersionLabel` reads the
 running bundle's short version for the small secondary Settings footer; it has no version literal.
 The isolated header scenario substitutes a fresh synthetic Store into the actual retained panel's
@@ -907,7 +912,7 @@ File: `Sources/CountdownManager/Presentation.swift`
 
 Contains deterministic UI-facing transformations and state that do not require SwiftUI view construction, including:
 
-- user-facing strings, including Russian event-count endings;
+- user-facing strings and localized event-count endings;
 - compact emoji presets;
 - row presentation values;
 - human-readable dates;
@@ -916,7 +921,7 @@ Contains deterministic UI-facing transformations and state that do not require S
 - normal event menu-bar title generation;
 - editor validity checks;
 - editor draft representation;
-- day-creation defaults and Russian calendar weekday titles;
+- day-creation defaults and localized calendar weekday titles;
 - disclosure preference persistence.
 
 Timer-specific remaining-time formatting stays with `CountdownTimer.swift` because it is independent of event presentation semantics.
@@ -998,7 +1003,7 @@ The timer strip stays outside this screen navigation at the top of the same 390 
 The header calendar control reveals inline `Сегодня`, `Завтра` and `Выбрать дату` day creation choices,
 followed by `До конца недели…` (`На следующую неделю…` on Sunday);
 the existing `+` still opens ordinary event creation directly. Day creation supplies today's date
-for `Сегодня`, tomorrow for the other routes, no additional emoji, an automatic Russian weekday
+for `Сегодня`, tomorrow for the other routes, no additional emoji, an automatic localized weekday
 title and empty note/subtasks. Ordinary creation initially selects tomorrow and a custom empty title.
 The same native date field accepts today/future dates; an existing retained past event may keep
 its saved date. The core mutation boundary rejects new or changed past dates. Today's expiry notice

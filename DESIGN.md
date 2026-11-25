@@ -132,8 +132,8 @@ components:
 
 ## Overview
 
-Release 1.26.0 uses the existing release-help sections with native `magnifyingglass`
-for file and link search and `text.bubble` for Russian localization resources. The existing
+Release 1.27.0 uses the existing release-help sections with native `globe` for the language
+chooser and `menubar.rectangle` for the mini-panel reopening fix. The existing
 13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
@@ -494,6 +494,9 @@ close through their cross, Escape or an outside click on parent content; editor 
 retains its explicit Save/Cancel policy. The week preview similarly finishes only through Create
 or Cancel and shares the cross-surface editing reservation. Diagnostic Save is nested under Settings and blocks
 Settings dismissal while export is active.
+
+The language setting uses the same native pop-up style as appearance, with options named `English`
+and `Русский`. Selecting a language updates the labels within the current Settings surface immediately.
 
 ### Mars identity and opening motion
 

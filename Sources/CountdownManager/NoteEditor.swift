@@ -1,11 +1,12 @@
 import AppKit
 import SwiftUI
-import CountdownCore
 
 /// Native draft editing preserves complete input; length validation belongs to Save.
 struct NoteEditor: NSViewRepresentable {
     @Binding var text: String
     let focusRequest: Int
+    let placeholder: String
+    let label: String
     @Environment(\.isEnabled) private var isEnabled
 
     final class Coordinator {
@@ -35,8 +36,6 @@ struct NoteEditor: NSViewRepresentable {
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize = NSSize(width: scroll.contentSize.width, height: CGFloat.greatestFiniteMagnitude)
         editor.setAccessibilityIdentifier("editor.note")
-        editor.setAccessibilityLabel(AppText.string("note.optional"))
-        editor.setAccessibilityPlaceholderValue(NoteTextView.placeholder)
         scroll.documentView = editor
         updateNSView(scroll, context: context)
         return scroll
@@ -44,6 +43,12 @@ struct NoteEditor: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let editor = scroll.documentView as? NoteTextView else { return }
+        editor.setAccessibilityLabel(label)
+        if editor.placeholder != placeholder {
+            editor.placeholder = placeholder
+            editor.setAccessibilityPlaceholderValue(placeholder)
+            editor.needsDisplay = true
+        }
         editor.isEditable = isEnabled
         editor.isSelectable = isEnabled
         editor.onChange = { text = $0 }
@@ -73,14 +78,14 @@ struct NoteEditor: NSViewRepresentable {
 }
 
 final class NoteTextView: NSTextView {
-    static let placeholder = AppText.string("note.prompt")
+    var placeholder = ""
     var onChange: ((String) -> Void)?
     private var marking = false
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         if string.isEmpty {
-            (Self.placeholder as NSString).draw(
+            (placeholder as NSString).draw(
                 at: NSPoint(x: textContainerInset.width + 5, y: textContainerInset.height),
                 withAttributes: [.font: font ?? NSFont.systemFont(ofSize: 13), .foregroundColor: NSColor.placeholderTextColor]
             )

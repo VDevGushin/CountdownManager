@@ -48,7 +48,7 @@ extension CountdownData {
             destination = updated.items[targetIndex]
         } else {
             guard !containsEvent(on: targetDay) else { throw SubtaskTransferError.destinationRequired }
-            let day = Countdown(title: automaticEventTitle(for: targetDay), date: targetDay, emoji: "",
+            let day = Countdown(title: storedAutomaticEventTitle(for: targetDay), date: targetDay, emoji: "",
                                 subtasks: [subtask], showsWeather: true, usesAutomaticTitle: true, isDay: true)
             updated.items.append(day)
             destination = day

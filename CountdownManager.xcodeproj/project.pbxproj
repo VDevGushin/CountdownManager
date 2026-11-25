@@ -167,6 +167,8 @@
 		200000000000000000000081 /* AppText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/CountdownCore/AppText.swift; sourceTree = SOURCE_ROOT; };
 		200000000000000000000082 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = Sources/CountdownCore/Resources/ru.lproj/Localizable.strings; sourceTree = SOURCE_ROOT; };
 		200000000000000000000083 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
+		200000000000000000000084 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Sources/CountdownCore/Resources/en.lproj/Localizable.strings; sourceTree = SOURCE_ROOT; };
+		200000000000000000000085 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Sources/CountdownCore/Resources/en.lproj/InfoPlist.strings; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -194,7 +196,7 @@
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		900000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = {300000000000000000000004 = {TestTargetID = 300000000000000000000003; }; }; }; buildConfigurationList = 800000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = ru; hasScannedForEncodings = 0; knownRegions = (ru, Base,); mainGroup = 600000000000000000000001; productRefGroup = 600000000000000000000002; packageReferences = (C00000000000000000000001,); projectDirPath = ""; projectRoot = ""; targets = (300000000000000000000001, 300000000000000000000002, 300000000000000000000003, 300000000000000000000004,); };
+		900000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastSwiftUpdateCheck = 2660; LastUpgradeCheck = 2660; TargetAttributes = {300000000000000000000004 = {TestTargetID = 300000000000000000000003; }; }; }; buildConfigurationList = 800000000000000000000001; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, ru, Base,); mainGroup = 600000000000000000000001; productRefGroup = 600000000000000000000002; packageReferences = (C00000000000000000000001,); projectDirPath = ""; projectRoot = ""; targets = (300000000000000000000001, 300000000000000000000002, 300000000000000000000003, 300000000000000000000004,); };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -202,7 +204,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		720000000000000000000001 /* Prepare App Info.plist */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/scripts/prepare_app_info.sh", "$(SRCROOT)/Resources/Info.plist", "$(SRCROOT)/Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings",); name = "Prepare App Info.plist"; outputPaths = ("$(DERIVED_FILE_DIR)/Countdown-Info.plist",); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/bash; shellScript = "/bin/bash \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_INPUT_FILE_1\" \"$SCRIPT_INPUT_FILE_2\" \"$SCRIPT_OUTPUT_FILE_0\"\n"; };
+		720000000000000000000001 /* Prepare App Info.plist */ = {isa = PBXShellScriptBuildPhase; buildActionMask = 2147483647; files = (); inputPaths = ("$(SRCROOT)/scripts/prepare_app_info.sh", "$(SRCROOT)/Resources/Info.plist", "$(SRCROOT)/Sources/CountdownCore/Resources/en.lproj/InfoPlist.strings",); name = "Prepare App Info.plist"; outputPaths = ("$(DERIVED_FILE_DIR)/Countdown-Info.plist",); runOnlyForDeploymentPostprocessing = 0; shellPath = /bin/bash; shellScript = "/bin/bash \"$SCRIPT_INPUT_FILE_0\" \"$SCRIPT_INPUT_FILE_1\" \"$SCRIPT_INPUT_FILE_2\" \"$SCRIPT_OUTPUT_FILE_0\" \"$PRODUCT_BUNDLE_IDENTIFIER\"\n"; };
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -220,8 +222,8 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		610000000000000000000001 /* Localizable.strings */ = {isa = PBXVariantGroup; children = (200000000000000000000082 /* ru */,); name = Localizable.strings; sourceTree = "<group>"; };
-		610000000000000000000002 /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (200000000000000000000083 /* ru */,); name = InfoPlist.strings; sourceTree = "<group>"; };
+		610000000000000000000001 /* Localizable.strings */ = {isa = PBXVariantGroup; children = (200000000000000000000082 /* ru */, 200000000000000000000084 /* en */,); name = Localizable.strings; sourceTree = "<group>"; };
+		610000000000000000000002 /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (200000000000000000000083 /* ru */, 200000000000000000000085 /* en */,); name = InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -231,8 +233,8 @@
 		B00000000000000000000004 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; }; name = Release; };
 		B00000000000000000000005 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
 		B00000000000000000000006 = {isa = XCBuildConfiguration; buildSettings = {GENERATE_INFOPLIST_FILE = YES; MACH_O_TYPE = staticlib; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
-		B00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = "$(DERIVED_FILE_DIR)/Countdown-Info.plist"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
-		B00000000000000000000008 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = "$(DERIVED_FILE_DIR)/Countdown-Info.plist"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
+		B00000000000000000000007 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = "$(DERIVED_FILE_DIR)/Countdown-Info.plist"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; COUNTDOWN_APP_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_BUNDLE_IDENTIFIER = "$(COUNTDOWN_APP_BUNDLE_IDENTIFIER)"; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Debug; };
+		B00000000000000000000008 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; EXECUTABLE_NAME = CountdownManager; INFOPLIST_FILE = "$(DERIVED_FILE_DIR)/Countdown-Info.plist"; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks"; OTHER_SWIFT_FLAGS = "-package-name CountdownManager"; COUNTDOWN_APP_BUNDLE_IDENTIFIER = local.countdownmanager.app; PRODUCT_BUNDLE_IDENTIFIER = "$(COUNTDOWN_APP_BUNDLE_IDENTIFIER)"; PRODUCT_NAME = "Countdown Manager"; SWIFT_INCLUDE_PATHS = "$(BUILT_PRODUCTS_DIR)"; SWIFT_VERSION = 5.0; }; name = Release; };
 		B00000000000000000000009 = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.xcuitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TEST_TARGET_NAME = CountdownManager; }; name = Debug; };
 		B0000000000000000000000A = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_IDENTITY = "-"; CODE_SIGN_STYLE = Manual; GENERATE_INFOPLIST_FILE = YES; MACOSX_DEPLOYMENT_TARGET = 13.0; PRODUCT_BUNDLE_IDENTIFIER = local.countdownmanager.xcuitests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TEST_TARGET_NAME = CountdownManager; }; name = Release; };
 /* End XCBuildConfiguration section */

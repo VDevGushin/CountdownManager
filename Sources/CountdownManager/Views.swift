@@ -26,6 +26,7 @@ struct ManagerView: View {
     @State private var selectDayDate = false
     @State private var rootIdentity = UUID()
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
 
     private var attachmentListEvent: Countdown? {
@@ -67,7 +68,7 @@ struct ManagerView: View {
                 }
                 if let request = textAttachmentRequest {
                     TextAttachmentComposer(text: request.text,
-                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? AppText.string("event.unavailable"),
+                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.displayTitle ?? AppText.string("event.unavailable"),
                         submit: { text in
                             let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
                             if saved { finishEditor() }
@@ -175,7 +176,7 @@ struct ManagerView: View {
         VStack(spacing: 0) {
             PlannerCalendarDateTile(monthControlID: "event.empty.month", day: store.today, isFeatured: false)
                 .accessibilityHidden(true)
-                .uiSmokeControl(id: "event.empty.date", value: { currentDayHeaderLabel(store.today) })
+                .uiSmokeControl(id: "event.empty.date", value: { currentDayHeaderLabel(store.today, locale: locale) })
                 .padding(.bottom, 16)
             Text(EventUIStrings.emptyTitle)
                 .font(.custom("Georgia", size: 24)).tracking(-0.5)
@@ -233,10 +234,10 @@ struct ManagerView: View {
     private func header(activeCount: Int) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 3) {
-                Text(currentDayHeaderLabel(store.today))
+                Text(currentDayHeaderLabel(store.today, locale: locale))
                     .font(.system(size: 15, weight: .semibold))
                     .accessibilityIdentifier("header.today")
-                    .uiSmokeControl(id: "header.today", value: { currentDayHeaderLabel(store.today) })
+                    .uiSmokeControl(id: "header.today", value: { currentDayHeaderLabel(store.today, locale: locale) })
                 Text(eventCountLabel(activeCount))
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -353,7 +354,7 @@ struct ManagerView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("event.card.\(item.id.uuidString)")
-        .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.title })
+        .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.displayTitle })
         .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
             enabled: !showingSettings && attachmentListEventID == nil,
             showText: { presentTextAttachment(eventID: item.id, text: $0) }))
@@ -371,13 +372,13 @@ struct ManagerView: View {
             }
             HStack(alignment: .center, spacing: 13) {
                 VStack(alignment: .leading, spacing: 7) {
-                    Text((eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.title)
+                    Text((eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.displayTitle)
                         .font(.custom("Georgia", size: 23))
                         .tracking(-0.6)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
+                        .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.displayTitle })
                         .uiSmokeControl(id: "event.featured.title.\(item.id.uuidString)")
                     eventDate(item, label: presentation.dateLabel)
                 }
@@ -407,7 +408,7 @@ struct ManagerView: View {
                 calendarTile(item, isFeatured: false)
                     .uiSmokeControl(id: "event.secondary.calendar.\(item.id.uuidString)")
                 GeometryReader { geometry in
-                    let title = (eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.title
+                    let title = (eventListEmoji(item.emoji).map { $0 + " " } ?? "") + item.displayTitle
                     let textWidth = max(0, geometry.size.width - 87)
                     let wraps = title.contains(where: \.isNewline) || (title as NSString).size(withAttributes: [
                         .font: NSFont.systemFont(ofSize: 14, weight: .semibold)
@@ -420,10 +421,10 @@ struct ManagerView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(height: wraps ? 34 : 17, alignment: .topLeading)
-                                .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.title })
+                                .uiSmokeControl(id: "event.title.\(item.id.uuidString)", value: { item.displayTitle })
                                 .uiSmokeControl(id: "event.secondary.title.\(item.id.uuidString)")
                             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                Text(compactDateLabel(item.date))
+                                Text(humanDateLabel(item.date, includesYear: false))
                                     .fixedSize()
                                     .uiSmokeControl(id: "event.date.\(item.id.uuidString)", value: { presentation.dateLabel })
                                 Text("·").accessibilityHidden(true)
@@ -462,10 +463,6 @@ struct ManagerView: View {
         }
     }
 
-    private func compactDateLabel(_ day: Day) -> String {
-        humanDateLabel(day).split(separator: " ").prefix(2).joined(separator: " ")
-    }
-
     private func calendarTile(_ item: Countdown, isFeatured: Bool) -> some View {
         let role = isFeatured ? "featured" : "secondary"
         return PlannerCalendarDateTile(monthControlID: "event.\(role).month.\(item.id.uuidString)", day: item.date, isFeatured: isFeatured)
@@ -497,7 +494,7 @@ struct ManagerView: View {
             .font(.system(size: 11))
             .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(forecast.conditionDescription), \(forecast.temperatureLabel)")
+            .accessibilityLabel(forecast.accessibilityDescription)
             .accessibilityIdentifier("event.weather.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
             .uiSmokeControl(id: "event.\(role).weather.\(item.id.uuidString)", value: { forecast.temperatureLabel })
@@ -522,7 +519,7 @@ struct ManagerView: View {
             AuroraSymbolAction(symbolName: presentation.isPrimary ? "star.fill" : "star",
                 surface: .mini, tone: presentation.isPrimary ? .accent : .secondary,
                 accessibilityLabel: presentation.isPrimary
-                    ? AppText.string("panel.removeFavoriteNamed", item.title) : AppText.string("panel.favoriteNamed", item.title),
+                    ? AppText.string("panel.removeFavoriteNamed", item.displayTitle) : AppText.string("panel.favoriteNamed", item.displayTitle),
                 action: { togglePrimary(item.id) })
             .help(presentation.isPrimary ? AppText.string("panel.removeFavorite") : AppText.string("panel.favorite"))
             .accessibilityIdentifier("event.primary.\(item.id.uuidString)")
@@ -533,11 +530,11 @@ struct ManagerView: View {
                 value: { presentation.isPrimary ? AppText.string("common.selected") : AppText.string("common.unselected") }
             )
             AuroraSymbolAction(symbolName: "pencil", surface: .mini, tone: .secondary,
-                accessibilityLabel: AppText.string("panel.editNamed", item.title), action: { edit(item.id) })
+                accessibilityLabel: AppText.string("panel.editNamed", item.displayTitle), action: { edit(item.id) })
             .accessibilityIdentifier("event.edit.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.edit.\(item.id.uuidString)", action: { edit(item.id) })
             AuroraSymbolAction(symbolName: "doc.on.doc", surface: .mini, tone: .secondary,
-                accessibilityLabel: AppText.string("panel.copyNamed", item.title), action: { copyEvent(item.id) })
+                accessibilityLabel: AppText.string("panel.copyNamed", item.displayTitle), action: { copyEvent(item.id) })
             .help(AppText.string("event.copy"))
             .accessibilityIdentifier("event.copy.\(item.id.uuidString)")
             .uiSmokeControl(id: "event.copy.\(item.id.uuidString)", action: { copyEvent(item.id) })
@@ -994,9 +991,13 @@ struct EditorView: View {
     @State private var noteFocusRequest = 0
     @FocusState private var focusedField: EditorFocusTarget?
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @EnvironmentObject private var appPreferences: ApplicationPreferences
     @Environment(\.colorScheme) private var colorScheme
 
-    private static let emojiPageTitles = [AppText.string("icon.page.general"), AppText.string("icon.page.children"), AppText.string("icon.page.work"), AppText.string("icon.page.transport"), AppText.string("icon.page.celebrations")]
+    private static var emojiPageTitles: [String] { [
+        AppText.string("icon.page.general"), AppText.string("icon.page.children"), AppText.string("icon.page.work"),
+        AppText.string("icon.page.transport"), AppText.string("icon.page.celebrations")
+    ] }
     private static let emojiRows = [
         ["☀️", "✈️", "🎉", "🎂", "🎄", "❤️", "🚀", "🏖️", "👶", "🍼", "🧸", "🎈", "🎁", "🎂", "🎉", "🥳", "💼", "💻", "🖥️", "⌨️", "🖱️", "📱", "📞", "📧", "✈️", "🚗", "🚕", "🚌", "🚎", "🏎️", "🚓", "🚑", "🎉", "🎊", "🎈", "🎂", "🎁", "🎄", "🎃", "🎆"],
         ["😀", "😄", "😊", "😍", "🥳", "😎", "🤩", "😂", "🎒", "📚", "✏️", "🖍️", "🎨", "🧩", "🧱", "🎓", "📊", "📈", "📉", "💰", "💳", "🧾", "💵", "🏦", "🚲", "🛴", "🏍️", "🚂", "🚆", "🚇", "🚁", "🚢", "🎇", "🪩", "🥳", "🎶", "🎵", "🎤", "🎸", "🥁"],
@@ -1188,8 +1189,11 @@ struct EditorView: View {
                                       return true
                                   }, finishReceiving: { isImportingAttachments = false },
                                   receive: receiveMaterials, reportError: { store.error = $0 }))
-        .environment(\.locale, Locale(identifier: "ru_RU"))
+        .environment(\.locale, appPreferences.language.locale)
         .environment(\.calendar, Day.calendar)
+        .onChange(of: appPreferences.language) { _ in
+            draft.updateDayTitle(for: Day(date))
+        }
         .onChange(of: date) { newDate in
             draft.updateDayTitle(for: Day(newDate))
         }
@@ -1237,7 +1241,8 @@ struct EditorView: View {
             Text(AppText.string("note.optional"))
                 .font(.caption)
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-            NoteEditor(text: $draft.note, focusRequest: noteFocusRequest)
+            NoteEditor(text: $draft.note, focusRequest: noteFocusRequest,
+                       placeholder: AppText.string("note.prompt"), label: AppText.string("note.optional"))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("editor.note")
                 .uiSmokeControl(id: "editor.note", action: { focus(.note, id: "editor.note") }, value: { draft.note })

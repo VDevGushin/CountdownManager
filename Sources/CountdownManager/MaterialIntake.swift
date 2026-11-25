@@ -66,8 +66,7 @@ package func resolveEventMaterials(_ providers: [NSItemProvider]) async throws -
         else { throw MaterialIntakeError.message(AppText.string("material.allowedTypes")) }
         let value: NSSecureCoding = try await withCheckedThrowingContinuation { continuation in
             provider.loadItem(forTypeIdentifier: type.identifier, options: nil) { item, error in
-                if let error { continuation.resume(throwing: error) }
-                else if let item { continuation.resume(returning: item) }
+                if let item, error == nil { continuation.resume(returning: item) }
                 else { continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.dropFailed"))) }
             }
         }

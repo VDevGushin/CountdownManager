@@ -2,6 +2,10 @@ import CountdownCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+package func attachmentSizeLabel(_ byteCount: Int64) -> String {
+    ByteCountFormatStyle(style: .file, locale: AppText.language.locale).format(byteCount)
+}
+
 private func attachmentFileSymbol(_ attachment: EventAttachment) -> String {
     guard let type = UTType(filenameExtension: (attachment.name as NSString).pathExtension) else { return "doc" }
     if type.conforms(to: .image) { return "photo" }
@@ -119,7 +123,7 @@ struct AttachmentFileLabel: View {
     private var fileText: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(attachment.name).lineLimit(2).truncationMode(.middle)
-            Text(ByteCountFormatter.string(fromByteCount: attachment.byteCount, countStyle: .file))
+            Text(attachmentSizeLabel(attachment.byteCount))
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }
@@ -226,7 +230,7 @@ private struct AttachmentShelfTile: View {
     private var identity: String { "\(eventID.uuidString).\(attachment.id.uuidString)" }
     private var previewHeight: CGFloat { compact ? 68 : 88 }
     private var metadata: String {
-        let size = ByteCountFormatter.string(fromByteCount: attachment.byteCount, countStyle: .file)
+        let size = attachmentSizeLabel(attachment.byteCount)
         let fileExtension = (attachment.name as NSString).pathExtension.uppercased()
         return fileExtension.isEmpty ? size : "\(fileExtension) · \(size)"
     }
@@ -331,7 +335,7 @@ struct AttachmentListView: View {
                 .accessibilityIdentifier("\(prefix).error.\(item.id)")
                 .uiSmokeControl(id: "\(prefix).error.\(item.id)", value: { error })
             }
-            Text(item.title).font(.system(size: 12, weight: .medium)).lineLimit(1)
+            Text(item.displayTitle).font(.system(size: 12, weight: .medium)).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, 12)
             HStack(spacing: 8) {

@@ -123,7 +123,7 @@ package struct DesktopEventCollection: Equatable {
         let matching = items.enumerated().filter { entry in
             let item = entry.element
             return item.isAvailable(on: today)
-                && (search.query.isEmpty || search.matches(item.title)
+                && (search.query.isEmpty || search.matches(item.displayTitle)
                     || item.note.map(search.matches) == true
                     || item.subtasks.contains { search.matches($0.text) }
                     || search.firstMaterialMatch(in: item) != nil)
@@ -144,7 +144,7 @@ package struct DesktopEventCollection: Equatable {
 
     private static func groupedByMonth(_ items: [Countdown]) -> [DesktopEventMonthSection] {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = AppText.language.locale
         formatter.calendar = Day.calendar
         formatter.timeZone = Day.calendar.timeZone
         formatter.dateFormat = "LLLL yyyy"
@@ -171,7 +171,7 @@ package func desktopMinimumPaneWidth(contentWidth: CGFloat) -> CGFloat {
 }
 
 package func desktopEventAccessibilityLabel(_ item: Countdown) -> String {
-    var label = AppText.string("desktop.accessibility.openEvent", item.title)
+    var label = AppText.string("desktop.accessibility.openEvent", item.displayTitle)
     if !item.attachments.isEmpty { label += AppText.string("desktop.accessibility.attachmentCount", "\(item.attachments.count)") }
     if !item.links.isEmpty { label += AppText.string("desktop.accessibility.linkCount", "\(item.links.count)") }
     return label

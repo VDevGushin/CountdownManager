@@ -305,7 +305,7 @@ package final class Store: ObservableObject {
             readFailed = true
             isLoading = false
             recordDiagnostic("data.load failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = AppText.string("store.storageReadFailed", fileURL.path, error.localizedDescription)
+            self.error = AppText.string("store.storageReadFailed", fileURL.path)
         }
     }
 
@@ -449,7 +449,7 @@ package final class Store: ObservableObject {
             isRecoveringPersistence = true
             finishPersistenceRevision(writeRevision)
             recordDiagnostic("data.save failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = AppText.string("store.storageWriteFailed", error.localizedDescription)
+            self.error = AppText.string("store.storageWriteFailed")
             return false
         }
     }
@@ -595,7 +595,12 @@ package final class Store: ObservableObject {
         } catch {
             if attachmentDrafts.contains(draftID), !Task.isCancelled {
                 recordDiagnostic("countdown.copy failure \(DiagnosticPrivacy.errorFields(error))")
-                self.error = error.localizedDescription
+                switch error {
+                case let validation as CountdownError: self.error = validation.errorDescription
+                case let validation as EventLinkError: self.error = validation.errorDescription
+                case let attachment as EventAttachmentError: self.error = attachment.errorDescription
+                default: self.error = AppText.string("store.copyEventFailed")
+                }
             }
         }
         do { try await repository.discardAttachmentDraft(copyDraftID) }
@@ -786,7 +791,7 @@ package final class Store: ObservableObject {
             else { try SMAppService.mainApp.unregister() }
         } catch {
             recordDiagnostic("login-item.change failure \(DiagnosticPrivacy.errorFields(error))")
-            self.error = AppText.string("store.loginItemFailed", error.localizedDescription)
+            self.error = AppText.string("store.loginItemFailed", String((error as NSError).code))
         }
         loginStatus = SMAppService.mainApp.status
         recordDiagnostic("login-item.status value=\(loginStatus.rawValue)")
@@ -805,7 +810,7 @@ package final class Store: ObservableObject {
                 NSWorkspace.shared.activateFileViewerSelecting([url])
             } catch {
                 recordDiagnostic("diagnostics.open-folder failure \(DiagnosticPrivacy.errorFields(error))")
-                self.error = AppText.string("store.diagnosticsOpenFailed", error.localizedDescription)
+                self.error = AppText.string("store.diagnosticsOpenFailed", String((error as NSError).code))
             }
         }
     }
@@ -880,7 +885,9 @@ extension Store {
             return attachment
         } catch {
             if attachmentDrafts.contains(draftID) {
-                self.error = AppText.string("store.textAttachmentCreateFailed") + error.localizedDescription
+                self.error = (error as? TextAttachmentError)?.errorDescription
+                    ?? (error as? EventAttachmentError)?.errorDescription
+                    ?? AppText.string("store.textAttachmentCreateFailed")
             }
             return nil
         }

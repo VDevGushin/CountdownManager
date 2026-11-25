@@ -38,7 +38,7 @@ extension CountdownData {
         var updated = self
         var created: [Countdown] = []
         for day in missing {
-            let item = Countdown(title: automaticEventTitle(for: day), date: day, emoji: "",
+            let item = Countdown(title: storedAutomaticEventTitle(for: day), date: day, emoji: "",
                                  showsWeather: true, usesAutomaticTitle: true, isDay: true)
             try updated.save(item, primary: false, today: today)
             created.append(item)

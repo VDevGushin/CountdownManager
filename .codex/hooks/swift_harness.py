@@ -175,6 +175,8 @@ def gate_fingerprint(root: Path, snapshot: dict[str, str]) -> str:
         "CountdownManager.xcodeproj/project.pbxproj",
         "Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings",
         "Sources/CountdownCore/Resources/ru.lproj/Localizable.strings",
+        "Sources/CountdownCore/Resources/en.lproj/InfoPlist.strings",
+        "Sources/CountdownCore/Resources/en.lproj/Localizable.strings",
         "scripts/native_design_contract.py",
         "Resources/NativeDesignContract.json",
         "docs/qa/native-component-families-2026-10-28.json",

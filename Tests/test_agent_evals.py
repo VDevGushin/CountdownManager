@@ -240,7 +240,9 @@ class AgentEvalChecks(unittest.TestCase):
                         "swiftc --version", "swiftc -h", "swiftc -print-target-info", "swift build --help"):
             with self.subTest(command=command):
                 self.assertEqual(runner.verification_invocations(command), set())
-        self.assertEqual(runner.verification_invocations("xcodebuild test"), {"xcui", "app-build"})
+        for action in ("test", "test-without-building"):
+            self.assertEqual(runner.verification_invocations(f"xcodebuild {action}"), {"xcui", "app-build"})
+        self.assertEqual(runner.verification_invocations("xcodebuild build-for-testing"), {"app-build"})
 
     def test_all_focused_ui_modes_are_rejected_by_negative_controls(self):
         cases = [case for case in runner.load_suite()["cases"]
@@ -330,7 +332,7 @@ class AgentEvalChecks(unittest.TestCase):
             tests = root / "Tests"
             tests.mkdir()
             # Protocol fixtures isolate cache forwarding from the independently tested native gates.
-            for guard in ("test_native_design_system.py", "test_native_design_contract.py"):
+            for guard in ("test_native_design_system.py", "test_native_design_contract.py", "test_localization_resources.py"):
                 (tests / guard).write_text('import os\nwith open(os.environ["NATIVE_GUARD_LOG"], "a") as log:\n'
                                           '    log.write("' + guard + '\\n")\n')
             swift = root / "swift"
@@ -348,14 +350,15 @@ class AgentEvalChecks(unittest.TestCase):
                                         env=environment, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 lines = log.read_text().splitlines()
-                self.assertEqual(len(lines), 2)
-                self.assertTrue(lines[0].endswith("CoreChecks"))
-                self.assertTrue(lines[1].endswith("UIChecks"))
+                self.assertEqual(len(lines), 3)
+                self.assertTrue(lines[0].endswith("CoreChecks -CountdownLaunchLanguage ru"))
+                self.assertTrue(lines[1].endswith("UIChecks -CountdownLaunchLanguage ru"))
+                self.assertTrue(lines[2].endswith("UIChecks --check-english-localization"))
                 self.assertEqual(all("--cache-path" in line for line in lines), cached)
                 self.assertEqual(all("--force-resolved-versions" in line for line in lines), cached)
                 self.assertEqual(all("--build-system native" in line for line in lines), cached)
                 self.assertEqual(native_log.read_text().splitlines(), [
-                    "test_native_design_system.py", "test_native_design_contract.py"])
+                    "test_native_design_system.py", "test_native_design_contract.py", "test_localization_resources.py"])
 
     def test_fast_verification_stops_before_swift_when_a_native_design_gate_fails(self):
         for failed_gate in ("test_native_design_system.py", "test_native_design_contract.py"):

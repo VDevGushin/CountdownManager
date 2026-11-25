@@ -27,8 +27,14 @@ private final class UISmokePanelTransitionObservation {
 struct UISmokeConfiguration {
     static let launchArgument = "--ui-smoke"
     static let desktopLaunchArgument = "--ui-smoke-desktop"
+    static let localizationLaunchArgument = "--ui-smoke-localization"
+    private static let localizationBundleIdentifier = "local.countdownmanager.localization-capture"
+    private static let xcuiBundleIdentifier = "local.countdownmanager.ui-test"
+    static var localizationWasRequested: Bool {
+        ProcessInfo.processInfo.arguments.contains(localizationLaunchArgument)
+    }
     static var desktopWasRequested: Bool {
-        ProcessInfo.processInfo.arguments.contains(desktopLaunchArgument)
+        ProcessInfo.processInfo.arguments.contains(desktopLaunchArgument) || localizationWasRequested
     }
     static let collapseRegressionLaunchArgument = "--ui-smoke-collapse-regression"
     static let editorScrollRegressionLaunchArgument = "--ui-smoke-editor-scroll-regression"
@@ -143,13 +149,21 @@ struct UISmokeConfiguration {
     }
 
     static func load() throws -> UISmokeConfiguration? {
+        let bundleIdentifier = Bundle.main.bundleIdentifier
+        guard (bundleIdentifier == localizationBundleIdentifier) == localizationWasRequested else {
+            throw Failure("localization capture requires its separate bundle and launch flag")
+        }
+        guard bundleIdentifier != xcuiBundleIdentifier || xcuiTestWasRequested || visualPreviewWasRequested else {
+            throw Failure("XCUITest bundle requires an isolated test or preview launch")
+        }
         guard requiresIsolatedTestHome else { return nil }
-        guard Bundle.main.bundleIdentifier != "local.countdownmanager.update-test" || updateTestWasRequested else {
+        guard bundleIdentifier != "local.countdownmanager.update-test" || updateTestWasRequested else {
             throw Failure("update-test bundle is missing its mandatory isolated configuration")
         }
         let smokeArguments = [
             launchArgument,
             desktopLaunchArgument,
+            localizationLaunchArgument,
             collapseRegressionLaunchArgument,
             editorScrollRegressionLaunchArgument,
             editorWorkflowLaunchArgument,
@@ -942,7 +956,7 @@ final class UISmokeRuntime {
             try await press("event.empty.\(action)")
             try await waitForElement("editor.new")
             try await waitForFirstResponder("editor.title")
-            try await waitForValue("editor.title", equals: russianWeekdayTitle(date))
+            try await waitForValue("editor.title", equals: automaticEventTitle(for: date))
             try await waitForValue("editor.date", equals: dateValue(date))
             try require(controls.value("editor.emoji")?.isEmpty == true && controls.value("editor.weather") == "on"
                         && controls.value("editor.primary") == "Не выбрано" && editorSubtaskFieldIDs().isEmpty,
@@ -962,7 +976,7 @@ final class UISmokeRuntime {
             if action == "chooseDate" {
                 let future = Day(Day.calendar.date(byAdding: .day, value: 4, to: today.date())!)
                 try await selectEditorDate(future)
-                try await waitForValue("editor.title", equals: russianWeekdayTitle(future))
+                try await waitForValue("editor.title", equals: automaticEventTitle(for: future))
             }
             try await focusAndReplace("editor.title", with: "Unsaved \(action)")
             let customDate = Day(Day.calendar.date(byAdding: .day, value: 5, to: today.date())!)
@@ -980,7 +994,7 @@ final class UISmokeRuntime {
         }
         try await press("event.empty.today")
         try await waitForFirstResponder("editor.title")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: today))
         try await waitFor("day draft can save without typing") { self.controls.entries["editor.save"]?.isEnabled == true }
         try await press("editor.save")
         try await waitFor("first saved event restores header") {
@@ -988,7 +1002,7 @@ final class UISmokeRuntime {
                 && self.controls.value("header.active-count") == "1 событие"
         }
         let first = try requireValue(store.active.first, "first saved event")
-        try require(first.date == today && first.title == russianWeekdayTitle(today) && first.emoji.isEmpty && first.subtasks.isEmpty
+        try require(first.date == today && first.title == automaticEventTitle(for: today) && first.emoji.isEmpty && first.subtasks.isEmpty
                     && first.showsWeather && store.data.primaryID == nil, "first Save changed day defaults")
         try require(controls.entries["event.empty"] == nil, "saved event kept the empty state")
         try await press("event.add")
@@ -998,7 +1012,7 @@ final class UISmokeRuntime {
         try await waitFor("ordinary plus Cancel") { self.controls.entries["editor.new"] == nil }
         try await press("day.add")
         try await press("creation.day.today")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: today))
         try await waitForValue("editor.weather", equals: "on")
         try await press("editor.cancel")
         try await waitFor("day Cancel") { self.controls.entries["editor.new"] == nil }
@@ -1054,7 +1068,7 @@ final class UISmokeRuntime {
             timer: timer, store: fixture, updates: updates, editorSession: EventEditorSession(),
             keepAwake: fixtureKeepAwake, weather: fixtureWeather,
             accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults)
+            appPreferences: ApplicationPreferences(defaults: defaults)
         ))
         defer {
             fixtureWeather.shutdown()
@@ -1486,7 +1500,7 @@ final class UISmokeRuntime {
             timer: timer, store: fixtureStore, updates: updates, editorSession: EventEditorSession(),
             keepAwake: fixtureKeepAwake, weather: fixtureWeather,
             accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults)
+            appPreferences: ApplicationPreferences(defaults: defaults)
         )
         let fixtureHost = NSHostingController(rootView: fixtureRoot)
         panel.contentViewController = fixtureHost
@@ -1752,7 +1766,7 @@ final class UISmokeRuntime {
         try requireDayCreationLayout()
         try capture(name: "13-day-choices")
         try await press("creation.day.tomorrow")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(Day(store.tomorrow)))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: Day(store.tomorrow)))
         try await settleLayout()
         try capture(name: "14-day-editor")
         try await press("editor.cancel")
@@ -2800,7 +2814,7 @@ final class UISmokeRuntime {
         try requireDayCreationLayout()
         try await press("creation.day.tomorrow")
         try await waitForElement("editor.new")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: tomorrow))
         try await waitForValue("editor.emoji", equals: "")
         try await requireEmptyEditorNoteVisible()
         try require(editorSubtaskFieldIDs().isEmpty, "new day inherited subtasks")
@@ -2810,7 +2824,7 @@ final class UISmokeRuntime {
 
         let chosenDay = Day(Day.calendar.date(byAdding: .day, value: 2, to: store.today.date())!)
         try await selectEditorDate(chosenDay)
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(chosenDay))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: chosenDay))
         try await focusAndReplace("editor.title", with: "Personal day plan")
         let finalDay = Day(Day.calendar.date(byAdding: .day, value: 3, to: store.today.date())!)
         try await selectEditorDate(finalDay)
@@ -2851,7 +2865,7 @@ final class UISmokeRuntime {
         try await press("day.add")
         try await press("creation.day.chooseDate")
         try await waitForElement("editor.new")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: tomorrow))
         try require(controls.value("editor.date") == dateValue(tomorrow), "choose-date default is not tomorrow")
         try await requireEmptyEditorNoteVisible()
         try require(controls.value("editor.emoji")?.isEmpty == true
@@ -2859,7 +2873,7 @@ final class UISmokeRuntime {
                     "choose-date day inherited the previously saved plan")
         let selectedDay = Day(Day.calendar.date(byAdding: .day, value: 4, to: store.today.date())!)
         try await selectEditorDate(selectedDay)
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(selectedDay))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: selectedDay))
         try await hideAndShow()
         try await press("editor.cancel")
         try await waitFor("day cancelled") { self.controls.entries["editor.new"] == nil }
@@ -2892,18 +2906,18 @@ final class UISmokeRuntime {
         try await press("day.add")
         try await press("creation.day.today")
         try await waitForElement("editor.new")
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: today))
         try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
         try await requireEmptyEditorNoteVisible()
         try require(controls.value("editor.date") == dateValue(today)
                     && controls.value("editor.emoji")?.isEmpty == true && editorSubtaskFieldIDs().isEmpty,
                     "today day shortcut inherited fields or the wrong date")
         try await selectEditorDate(tomorrow)
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(tomorrow))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: tomorrow))
         try require(controls.value("editor.date.help") != EventUIStrings.todayExpiryNotice,
                     "today expiry notice remained on a future date")
         try await selectEditorDate(today)
-        try await waitForValue("editor.title", equals: russianWeekdayTitle(today))
+        try await waitForValue("editor.title", equals: automaticEventTitle(for: today))
         try await waitForValue("editor.date.help", equals: EventUIStrings.todayExpiryNotice)
         try await replaceEditorNote(with: "Today draft note")
         let field = try await addEditorSubtaskAndWait()
@@ -2915,7 +2929,7 @@ final class UISmokeRuntime {
         try await hideAndShow(usingStatusItem: true)
         try require(controls.entries["editor.new"]?.ownerID == owner
                     && controls.value("editor.date") == dateValue(today)
-                    && controls.value("editor.title") == russianWeekdayTitle(today)
+                    && controls.value("editor.title") == automaticEventTitle(for: today)
                     && controls.value("editor.note") == "Today draft note"
                     && controls.value(field) == "Today checklist",
                     "today day draft changed during hide/show")
@@ -2926,7 +2940,7 @@ final class UISmokeRuntime {
             self.controls.entries["editor.new"] == nil && self.store.active.count == savedData.items.count + 1
         }
         let day = try requireValue(store.active.first(where: { $0.note == "Today draft note" }), "saved today day")
-        try require(day.date == today && day.title == russianWeekdayTitle(today) && day.emoji.isEmpty
+        try require(day.date == today && day.title == automaticEventTitle(for: today) && day.emoji.isEmpty
                     && day.subtasks.count == 1 && day.subtasks[0].text == "Today checklist"
                     && !day.subtasks[0].isCompleted && store.data.primaryID == nil,
                     "today day Save changed its date, fields or favorite")
@@ -3334,7 +3348,7 @@ final class UISmokeRuntime {
             else { try await press("event.empty.tomorrow") }
             try await waitForElement(editorID)
             try await waitForValue("editor.subtasks", equals: existing ? "2" : "0")
-            try await waitForValue("editor.title", equals: existing ? original.title : russianWeekdayTitle(Day(store.tomorrow)))
+            try await waitForValue("editor.title", equals: existing ? original.title : automaticEventTitle(for: Day(store.tomorrow)))
             if existing {
                 try await waitForValue(removed, equals: original.subtasks[0].text)
                 try await waitForValue(retained, equals: original.subtasks[1].text)
@@ -3564,7 +3578,7 @@ final class UISmokeRuntime {
         try await focusAndReplace("editor.note", with: text)
         try await waitForValue("editor.note.count", equals: "\(text.count)/150")
         let nativeField = NSApp.keyWindow?.firstResponder as? NoteTextView
-        try require(nativeField != nil && NoteTextView.placeholder == "Пара слов о событии", "native note placeholder changed")
+        try require(nativeField?.placeholder == AppText.string("note.prompt"), "native note placeholder changed")
     }
 
     private func focusAndReplace(_ id: String, with text: String) async throws {

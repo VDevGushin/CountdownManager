@@ -210,14 +210,17 @@ def verification_invocations(command):
             if mode in {"ui", "full", "capture", "weather", "weather-capture",
                         "empty-state", "empty-state-capture", "compact-capture", "editor", "automatic-title-capture",
                         "desktop", "desktop-capture", "attachments", "attachments-capture",
-                        "menu-identity-capture", "completed-subtasks-capture"}:
+                        "menu-identity-capture", "completed-subtasks-capture", "localization-capture",
+                        "week", "week-capture", "event-copy", "event-copy-capture", "subtask-transfer",
+                        "subtask-transfer-capture", "editor-stability", "editor-stability-capture"}:
                 checks.update({"real-ui", "app-build"})
         information_query = program in {"swift", "swiftc", "xcodebuild"} and any(
             arg in {"--version", "-version", "--help", "-help", "-h", "-list", "-showsdks",
                     "-showBuildSettings", "-showdestinations", "-print-target-info", "-print-supported-features"}
             for arg in arguments
         )
-        if program == "run-xcui-tests.sh" or (program == "xcodebuild" and "test" in arguments and not information_query):
+        if program == "run-xcui-tests.sh" or (program == "xcodebuild" and not information_query
+                                               and {"test", "test-without-building"}.intersection(arguments)):
             checks.update({"xcui", "app-build"})
         if not information_query and ((program == "swift" and "build" in arguments) or program in {"swiftc", "xcodebuild"}):
             checks.add("app-build")

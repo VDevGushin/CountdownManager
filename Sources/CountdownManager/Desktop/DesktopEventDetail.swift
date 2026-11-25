@@ -105,7 +105,7 @@ struct DesktopEventDetail: View {
                 .uiSmokeControl(id: "desktop.detail.copy", action: copy)
                 .disabled(!canMutate)
             AuroraSymbolAction(symbolName: "trash", surface: .desktop, tone: .ink, role: .destructive,
-                accessibilityLabel: AppText.string("desktop.detail.deleteNamed", item.title), action: requestDeletion)
+                accessibilityLabel: AppText.string("desktop.detail.deleteNamed", item.displayTitle), action: requestDeletion)
                 .fixedSize()
                 .help(AppText.string("event.delete"))
                 .accessibilityIdentifier("desktop.detail.delete")
@@ -120,7 +120,7 @@ struct DesktopEventDetail: View {
 
     private var deletionConfirmation: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(AppText.string("desktop.detail.confirmDelete", item.title))
+            Text(AppText.string("desktop.detail.confirmDelete", item.displayTitle))
                 .font(.system(size: 13, weight: .semibold))
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
@@ -143,7 +143,7 @@ struct DesktopEventDetail: View {
         .padding(.vertical, 16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityIdentifier("desktop.delete.confirmation")
-        .uiSmokeControl(id: "desktop.delete.confirmation", value: { item.title })
+        .uiSmokeControl(id: "desktop.delete.confirmation", value: { item.displayTitle })
     }
 
     private func requestDeletion() {
@@ -160,7 +160,7 @@ struct DesktopEventDetail: View {
     private var eventIdentity: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 12) {
-                Text(desktopSearchAttributedText(item.title, search: search, color: searchColor))
+                Text(desktopSearchAttributedText(item.displayTitle, search: search, color: searchColor))
                     .font(.custom("Georgia", size: 27)).tracking(-0.5)
                     .fixedSize(horizontal: false, vertical: true)
                     .textSelection(.enabled)

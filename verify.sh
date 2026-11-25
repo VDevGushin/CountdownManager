@@ -7,7 +7,7 @@ mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
     fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|subtask-transfer-capture|editor-stability-capture)
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|subtask-transfer-capture|editor-stability-capture|localization-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|subtask-transfer-capture <directory>|editor-stability-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|subtask-transfer-capture <directory>|editor-stability-capture <directory>|localization-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -54,9 +54,11 @@ run_fast_checks() {
     echo "Verification: localization resources"
     python3 -B Tests/test_localization_resources.py
     echo "Verification: CoreChecks"
-    "${fast_command[@]}" CoreChecks
+    "${fast_command[@]}" CoreChecks -CountdownLaunchLanguage ru
     echo "Verification: UIChecks"
-    "${fast_command[@]}" UIChecks
+    "${fast_command[@]}" UIChecks -CountdownLaunchLanguage ru
+    echo "Verification: English localization"
+    "${fast_command[@]}" UIChecks --check-english-localization
 }
 
 run_with_timeout() {
@@ -82,12 +84,24 @@ run_with_timeout() {
 run_smoke() {
     local label=$1
     local launch_argument=$2
+    local language="${3:-ru}"
+    local system_language="$language"
     local test_home="$verify_root/$label"
     local result_path="$test_home/ui-smoke-result.txt"
     local stdout_path="$test_home/ui-smoke.stdout"
     local stderr_path="$test_home/ui-smoke.stderr"
     local timeout_seconds=45
     local launch_arguments=("$launch_argument")
+    if [[ "$launch_argument" == "--ui-smoke-localization" ]]; then
+        if [[ "$language" == en ]]; then system_language=ru; else system_language=en; fi
+        local bundle_identifier
+        bundle_identifier=$(/usr/bin/plutil -extract CFBundleIdentifier raw "$app_path/Contents/Info.plist")
+        if [[ "$bundle_identifier" != local.countdownmanager.localization-capture ]]; then
+            echo "Refusing to launch localization capture without its separate bundle identifier" >&2
+            return 64
+        fi
+        timeout_seconds=70
+    fi
     if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" || "$launch_argument" == "--ui-smoke-event-copy" || "$launch_argument" == "--ui-smoke-subtask-transfer" ]]; then timeout_seconds=70; fi
     if [[ "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-attachment-preview)
@@ -118,7 +132,7 @@ run_smoke() {
         --env "COUNTDOWN_MANAGER_TEST_HOME=$test_home" \
         --stdout "$stdout_path" \
         --stderr "$stderr_path" \
-        "$app_path" --args "${launch_arguments[@]}"; then
+        "$app_path" --args "${launch_arguments[@]}" -CountdownLaunchLanguage "$language" -AppleLanguages "($system_language)"; then
         echo "UISmoke could not launch through LaunchServices. Run it from a normal logged-in Aqua session, not a restricted shell." >&2
         [[ -f "$stderr_path" ]] && /bin/cat "$stderr_path" >&2
         return 69
@@ -146,7 +160,7 @@ build_ui_app() {
     # Use the same verified native build path as delivered apps; do not prebuild via a
     # second toolchain/SDK route that may select different linked-on-or-after behavior.
     app_path="$verify_root/Countdown Manager.app"
-    BUILD_DIR="$scratch_path" APP_OUTPUT_PATH="$app_path" COUNTDOWN_UPDATE_MODE=disabled \
+    BUILD_DIR="$scratch_path" APP_OUTPUT_PATH="$app_path" COUNTDOWN_UPDATE_MODE=disabled COUNTDOWN_LOCALIZATION_CAPTURE="${1:-0}" \
         COUNTDOWN_UPDATE_FEED_URL= COUNTDOWN_UPDATE_PUBLIC_KEY= ./build.sh
 }
 
@@ -294,6 +308,16 @@ copy_focused_desktop_evidence() {
 }
 
 case "$mode" in
+    localization-capture)
+        build_ui_app 1
+        for language in en ru; do
+            if ! run_smoke "localization-$language" --ui-smoke-localization "$language"; then
+                copy_focused_desktop_evidence "localization-$language" failed "localization-$language"
+                exit 1
+            fi
+            copy_focused_desktop_evidence "localization-$language" captures "localization-$language"
+        done
+        ;;
     editor-stability|editor-stability-capture)
         build_ui_app
         if ! run_smoke editor-stability-smoke --ui-smoke-editor-stability; then

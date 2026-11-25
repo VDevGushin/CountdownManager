@@ -115,7 +115,7 @@ struct WeekDayCreationView: View {
             PlannerCalendarDateTile(monthControlID: "creation.week.month.\(index)", day: row.day, isFeatured: false)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text(russianWeekdayTitle(row.day)).font(.system(size: 13, weight: .semibold))
+                Text(automaticEventTitle(for: row.day)).font(.system(size: 13, weight: .semibold))
                 Text(humanDateLabel(row.day)).font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }

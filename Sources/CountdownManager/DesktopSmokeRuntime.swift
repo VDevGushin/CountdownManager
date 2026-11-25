@@ -85,7 +85,7 @@ final class DesktopSmokeRuntime {
     private let weather: WeatherController
     private let accessibilitySettings: AuroraAccessibilitySettings
     private let visualEnvironment: UISmokeVisualEnvironment
-    private let appearanceSettings: ApplicationAppearance
+    private let appPreferences: ApplicationPreferences
     private let desktopWindow: () -> NSWindow?
     private let panelWindow: () -> NSWindow?
     private let statusButton: () -> NSStatusBarButton?
@@ -104,7 +104,7 @@ final class DesktopSmokeRuntime {
     init(configuration: UISmokeConfiguration, store: Store, timer: CountdownTimer,
          editorSession: EventEditorSession, keepAwake: KeepAwakeController, weather: WeatherController,
          accessibilitySettings: AuroraAccessibilitySettings, visualEnvironment: UISmokeVisualEnvironment,
-         appearanceSettings: ApplicationAppearance,
+         appPreferences: ApplicationPreferences,
          desktopWindow: @escaping () -> NSWindow?, panelWindow: @escaping () -> NSWindow?,
          statusButton: @escaping () -> NSStatusBarButton?,
          showDesktop: @escaping () -> Void, hideDesktop: @escaping () -> Void, showPanel: @escaping () -> Void,
@@ -118,7 +118,7 @@ final class DesktopSmokeRuntime {
         self.weather = weather
         self.accessibilitySettings = accessibilitySettings
         self.visualEnvironment = visualEnvironment
-        self.appearanceSettings = appearanceSettings
+        self.appPreferences = appPreferences
         self.desktopWindow = desktopWindow
         self.panelWindow = panelWindow
         self.statusButton = statusButton
@@ -138,7 +138,9 @@ final class DesktopSmokeRuntime {
         }
         Task { @MainActor in
             do {
-                if ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new") {
+                if UISmokeConfiguration.localizationWasRequested {
+                    try await verifyLocalizationPresentation()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new") {
                     try await verifyWhatsNew()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-material-intake") {
                     try await verifyMaterialIntakeWithoutStatus()
@@ -184,6 +186,115 @@ final class DesktopSmokeRuntime {
                 finish("DesktopSmoke\nFAIL after \(passed.count) scenarios: \(error.localizedDescription)", status: 1)
             }
         }
+    }
+
+    private func verifyLocalizationPresentation() async throws {
+        let language = AppText.language
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: nil, reduceMotion: true)
+        try await wait("isolated localization store ready") { !self.store.isLoading }
+        try require(store.active.isEmpty, "localization fixture must start empty")
+        let day = store.today
+        let note = language == .english ? "Collect the tickets before leaving." : "Забрать билеты перед выходом."
+        let task = try Subtask(text: language == .english ? "Check train times" : "Проверить расписание")
+        let mainEvent = Countdown(title: "", note: note, date: day, emoji: "🚆", subtasks: [task], usesAutomaticTitle: true)
+        let nextDay = Day(store.tomorrow)
+        let nextEvent = Countdown(title: language == .english ? "Museum visit" : "Поход в музей", date: nextDay, emoji: "🏛️")
+        let savedMain = await store.save(mainEvent, primary: false)
+        let savedNext = await store.save(nextEvent, primary: false)
+        try require(savedMain && savedNext, "cannot seed localization fixture")
+        let fileName = language == .english ? "Tickets.txt" : "Билеты.txt"
+        let file = TextAttachment(name: fileName, text: note)
+        let attached = await store.appendMaterials(EventMaterials(textFile: file), to: mainEvent.id)
+        try require(attached, "cannot seed the localization attachment")
+        visualEnvironment.colorSchemeOverride = .dark
+        showDesktop()
+        let window = try value(desktopWindow(), "localized desktop")
+        window.setContentSize(NSSize(width: 960, height: 680))
+        try await wait("localized desktop controls") { window.isKeyWindow && self.controls.frame("desktop.search") != nil }
+        try await expect("desktop.attachments.\(mainEvent.id.uuidString)", "1")
+        try require(NSApp.windowsMenu?.title == (language == .english ? "Window" : "Окно"), "application menu language mismatch")
+        try capture("desktop-\(language.rawValue)", window: window)
+
+        visualEnvironment.colorSchemeOverride = .light
+        try await wait("status item attached to screen") { self.statusButton()?.window?.screen != nil }
+        try await press("desktop.panel")
+        let panel = try value(panelWindow(), "localized mini panel")
+        try await expect("event.title.\(mainEvent.id.uuidString)", automaticEventTitle(for: day))
+        try await wait("localized mini panel is visible") { panel.isKeyWindow && panel.isVisible }
+        await store.makePrimary(mainEvent.id)
+        try await wait("localized favorite shown in the light panel") {
+            panel.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
+                && self.controls.frame("event.featured.title.\(mainEvent.id.uuidString)") != nil
+        }
+        // The cached bitmap must show the settled colors and card layout after the surface switch.
+        try await Task.sleep(nanoseconds: 300_000_000)
+        try capture("mini-panel-\(language.rawValue)", window: panel)
+        try await press("settings.open")
+        try await wait("language menu laid out") { self.controls.frame("settings.language") != nil }
+        try capture("language-settings-\(language.rawValue)", window: panel)
+        try await press("settings.back")
+        showDesktop()
+        try await wait("desktop visible for localized editor") { window.isKeyWindow && window.isVisible }
+        try await captureLocalizedEditor(in: window, date: day, language: language)
+        passed.append("Rendered \(language.title) desktop, mini panel, Settings, AppKit menu and date editor using isolated events")
+    }
+
+    private func captureLocalizedEditor(in window: NSWindow, date: Day, language: AppLanguage) async throws {
+        try await press("desktop.detail.edit")
+        try await wait("native date picker in the editor sheet") {
+            guard let root = window.attachedSheet?.contentView else { return false }
+            return self.copyDatePicker(in: root) != nil
+        }
+        let sheet = try value(window.attachedSheet, "localized editor sheet")
+        let root = try value(sheet.contentView, "localized editor view")
+        let picker = try value(copyDatePicker(in: root), "localized date picker")
+        try require(Day(picker.dateValue) == date, "the localized date picker must retain the event date")
+        try capture("editor-\(language.rawValue)", window: sheet)
+        try require(picker.locale?.identifier.hasPrefix(language.rawValue) == true,
+                    "date picker follows \(String(describing: picker.locale)) instead of \(language.locale.identifier)")
+        try await verifyLiveLanguageInEditor(sheet: sheet, picker: picker, date: date, initialLanguage: language)
+        try await press("editor.cancel")
+        try await wait("localized editor dismissed") { window.attachedSheet == nil && !self.editorSession.hasActiveEditor }
+    }
+
+    private func verifyLiveLanguageInEditor(
+        sheet: NSWindow, picker: NSDatePicker, date: Day, initialLanguage: AppLanguage
+    ) async throws {
+        let nextLanguage: AppLanguage = initialLanguage == .english ? .russian : .english
+        let draftNote = "Unsaved localization test note"
+        try await wait("localized editor sheet is key") { sheet.isKeyWindow }
+        try await press("editor.note")
+        try await wait("native note editor received focus") { (sheet.firstResponder as? NoteTextView)?.isEditable == true }
+        let note = try value(sheet.firstResponder as? NoteTextView, "focused native note editor")
+        note.selectAll(nil)
+        note.insertText(draftNote, replacementRange: note.selectedRange())
+        try await expect("editor.note", draftNote)
+        let original = try Data(contentsOf: configuration.dataURL)
+        timer.start(minutes: 5)
+        let deadline = timer.deadline
+        defer {
+            timer.delete()
+            appPreferences.setLanguage(initialLanguage)
+        }
+
+        // Settings cannot cover an active editor. Exercise the shared preference directly here.
+        appPreferences.setLanguage(nextLanguage)
+        let translatedTitle = automaticEventTitle(for: date)
+        try await wait("localization reaches the open native date field") {
+            picker.locale?.identifier.hasPrefix(nextLanguage.rawValue) == true
+        }
+        try await wait("localization reaches the native note placeholder") { note.placeholder == AppText.string("note.prompt") }
+        try await expect("editor.title", translatedTitle)
+        try require(sheet.isVisible && sheet.firstResponder === note && note.string == draftNote,
+                    "switching language changed the editor's focus or note")
+        try require(Day(picker.dateValue) == date && timer.deadline == deadline,
+                    "switching language changed the date or timer deadline")
+        try require(NSApp.windowsMenu?.title == (nextLanguage == .english ? "Window" : "Окно"),
+                    "AppKit menu did not switch language")
+        try require(statusButton()?.toolTip == timer.statusToolTip, "status item did not switch language")
+        let current = try Data(contentsOf: configuration.dataURL)
+        try require(current == original, "switching language rewrote saved events")
+        passed.append("Switched language in an open editor while retaining its date, draft, focus and timer")
     }
 
     private func verifyDesktopTitleAlignment() async throws {
@@ -426,7 +537,7 @@ final class DesktopSmokeRuntime {
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            appPreferences: ApplicationPreferences(defaults: defaults), showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: prefix
         ), editorSession: session)
@@ -769,12 +880,12 @@ final class DesktopSmokeRuntime {
         let initialFiles = try FileManager.default.subpathsOfDirectory(atPath: attachmentRoot.path).sorted()
         let session = EventEditorSession()
         let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
-        let appearance = ApplicationAppearance(defaults: defaults)
+        let appearance = ApplicationPreferences(defaults: defaults)
         let scope = "copy."
         let miniScope = "copy-mini."
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
-            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appearanceSettings: appearance,
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appPreferences: appearance,
             showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: scope
@@ -786,7 +897,7 @@ final class DesktopSmokeRuntime {
         mini.isReleasedWhenClosed = false
         mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
             timer: timer, store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
-            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appearanceSettings: appearance
+            accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment, appPreferences: appearance
         ).uiSmokeControlScope(miniScope))
         var completed = false
         defer {
@@ -973,13 +1084,13 @@ final class DesktopSmokeRuntime {
         try await wait("\(name) fixture loaded") { !fixture.hasPendingPersistence }
         let session = EventEditorSession()
         let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
-        let appearance = ApplicationAppearance(defaults: defaults)
+        let appearance = ApplicationPreferences(defaults: defaults)
         let prefix = "week-\(name)."
         let miniPrefix = "week-\(name)-mini."
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: appearance, showPanel: {}, switchToPanel: {},
+            appPreferences: appearance, showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: prefix
         ), editorSession: session)
@@ -991,7 +1102,7 @@ final class DesktopSmokeRuntime {
         mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
             timer: timer, store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: appearance
+            appPreferences: appearance
         ).uiSmokeControlScope(miniPrefix))
         controller.show()
         mini.makeKeyAndOrderFront(nil)
@@ -1799,7 +1910,7 @@ final class DesktopSmokeRuntime {
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            appPreferences: ApplicationPreferences(defaults: defaults), showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: prefix
         ), editorSession: session)
@@ -2154,7 +2265,7 @@ final class DesktopSmokeRuntime {
         try await press("desktop.settings")
         let diagnosticCaptureOverride = visualEnvironment.colorSchemeOverride
         visualEnvironment.colorSchemeOverride = nil
-        appearanceSettings.setSelection(.dark)
+        appPreferences.setSelection(.dark)
         let diagnosticHost = try await requireNativeSheet(host: window, paneID: "desktop.settings.pane",
                                                          size: NSSize(width: 430, height: 560))
         try await wait("settings sheet becomes the diagnostic input host") {
@@ -2194,12 +2305,12 @@ final class DesktopSmokeRuntime {
         passed.append("desktop settings disable forecast supply through the shared weather owner")
         showPanel()
         try await press("settings.open")
-        try await expect("settings.appearance", appearanceSettings.selection.rawValue)
-        appearanceSettings.setSelection(.dark)
+        try await expect("settings.appearance", appPreferences.selection.rawValue)
+        appPreferences.setSelection(.dark)
         try await expect("settings.appearance", "dark")
         try await press("settings.back")
         showDesktop()
-        appearanceSettings.setSelection(.system)
+        appPreferences.setSelection(.system)
         passed.append("system, light and dark preferences propagate through both native windows and both settings hosts")
 
         try await press("desktop.event.\(today.id)")
@@ -2728,7 +2839,7 @@ final class DesktopSmokeRuntime {
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            appPreferences: ApplicationPreferences(defaults: defaults), showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: scope
         ), editorSession: session)
@@ -2909,12 +3020,12 @@ final class DesktopSmokeRuntime {
         try require(retainedBytes == sourceBytes, "retention expiry removed attachment bytes")
         let session = EventEditorSession()
         let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
-        let appearance = ApplicationAppearance(defaults: defaults)
+        let appearance = ApplicationPreferences(defaults: defaults)
         let prefix = "retention."
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: appearance, showPanel: {}, switchToPanel: {},
+            appPreferences: appearance, showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: prefix
         ), editorSession: session)
@@ -2926,7 +3037,7 @@ final class DesktopSmokeRuntime {
         mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
             timer: timer, store: fixture, updates: updates, editorSession: session,
             keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
-            visualEnvironment: visualEnvironment, appearanceSettings: appearance
+            visualEnvironment: visualEnvironment, appPreferences: appearance
         ).uiSmokeControlScope(miniPrefix))
         retainedWindow.orderOut(nil)
         controller.show()
@@ -4028,7 +4139,7 @@ final class DesktopSmokeRuntime {
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: fixtureUpdates, editorSession: session, keepAwake: keepAwake,
             weather: fixtureWeather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            appPreferences: ApplicationPreferences(defaults: defaults), showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: fixtureUpdates, weather: fixtureWeather) },
             smokeControlScope: "weather-fixture."
         ), editorSession: session)
@@ -4277,7 +4388,7 @@ final class DesktopSmokeRuntime {
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake,
             weather: weather, accessibilitySettings: accessibilitySettings, visualEnvironment: visualEnvironment,
-            appearanceSettings: ApplicationAppearance(defaults: defaults), showPanel: {}, switchToPanel: {},
+            appPreferences: ApplicationPreferences(defaults: defaults), showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: scope
         ), editorSession: session)
@@ -4552,10 +4663,10 @@ final class DesktopSmokeRuntime {
         let statusAppearance = statusButton()?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua])
         visualEnvironment.colorSchemeOverride = nil
         for selection in [ApplicationAppearanceSelection.dark, .light, .system] {
-            appearanceSettings.setSelection(selection)
+            appPreferences.setSelection(selection)
             try await expect("settings.appearance", selection.rawValue)
             try await wait("shared native appearance \(selection.rawValue)") {
-                let expected = self.appearanceSettings.nativeAppearance(overriding: nil)?.name
+                let expected = self.appPreferences.nativeAppearance(overriding: nil)?.name
                 return NSApp.appearance?.name == expected && window.appearance?.name == expected
                     && self.panelWindow()?.appearance?.name == expected
             }
@@ -4707,7 +4818,7 @@ final class DesktopSmokeRuntime {
         let fixtureController = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: fixtureUpdates, editorSession: session,
             keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
-            visualEnvironment: visualEnvironment, appearanceSettings: ApplicationAppearance(defaults: defaults),
+            visualEnvironment: visualEnvironment, appPreferences: ApplicationPreferences(defaults: defaults),
             showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: finishedTimer, updates: fixtureUpdates, weather: self.weather) }
         ), editorSession: session)

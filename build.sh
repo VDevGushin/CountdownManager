@@ -22,8 +22,16 @@ python3 scripts/native_design_contract.py snapshot --compiler-sdk "$compiler_sdk
     --output "$stage/native-build-context.json"
 mkdir -p "$staged_app/Contents/MacOS" "$staged_app/Contents/Resources" "$staged_app/Contents/Frameworks"
 /bin/bash scripts/prepare_app_info.sh Resources/Info.plist \
-    Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings "$staged_app/Contents/Info.plist"
+    Sources/CountdownCore/Resources/en.lproj/InfoPlist.strings "$staged_app/Contents/Info.plist"
 python3 scripts/update_tools.py configure "$staged_app/Contents/Info.plist"
+if [[ "${COUNTDOWN_LOCALIZATION_CAPTURE:-0}" == 1 ]]; then
+    if [[ "${COUNTDOWN_UPDATE_MODE:-disabled}" != disabled ]]; then
+        echo "Localization capture requires the updater to be disabled" >&2
+        exit 64
+    fi
+    /usr/bin/plutil -replace CFBundleIdentifier -string local.countdownmanager.localization-capture \
+        "$staged_app/Contents/Info.plist"
+fi
 "$swift_driver" build "${build_args[@]}" "${contract_link_args[@]}" --product CountdownManager
 BIN_DIR="$("$swift_driver" build "${build_args[@]}" "${contract_link_args[@]}" --show-bin-path)"
 cp "$BIN_DIR/CountdownManager" "$staged_app/Contents/MacOS/CountdownManager"

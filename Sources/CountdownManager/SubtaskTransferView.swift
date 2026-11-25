@@ -120,6 +120,8 @@ struct SubtaskTransferForm: View {
                 set: { editorSession.updateSubtaskTransfer(date: Day($0)) }
             ), in: store.today.date()..., displayedComponents: [.date])
                 .datePickerStyle(.field)
+                .environment(\.locale, AppText.language.locale)
+                .environment(\.calendar, Day.calendar)
                 .controlSize(.regular)
                 .frame(minHeight: 28)
                 .focused($dateIsFocused)
@@ -134,7 +136,7 @@ struct SubtaskTransferForm: View {
                 } else {
                     Text(AppText.string("desktop.chooseEvent")).tag(nil as UUID?)
                     ForEach(targets) { target in
-                        Text(target.title).tag(Optional(target.id))
+                        Text(target.displayTitle).tag(Optional(target.id))
                     }
                 }
             }

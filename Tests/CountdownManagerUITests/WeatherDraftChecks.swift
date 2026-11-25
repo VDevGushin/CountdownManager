@@ -12,9 +12,9 @@ func testWeatherEditorDraftBoundaries() throws {
     precondition(!ordinary.showsWeather, "Weekday-looking titles must not opt into weather")
 
     var newDay = EventEditorDraft(day: day)
-    precondition(newDay.showsWeather && newDay.title == russianWeekdayTitle(day))
+    precondition(newDay.showsWeather && newDay.title == automaticEventTitle(for: day))
     newDay.updateDayTitle(for: nextDay)
-    precondition(newDay.showsWeather && newDay.title == russianWeekdayTitle(nextDay))
+    precondition(newDay.showsWeather && newDay.title == automaticEventTitle(for: nextDay))
     newDay.setTitle("Outdoor plan")
     newDay.updateDayTitle(for: day)
     precondition(newDay.showsWeather && newDay.title == "Outdoor plan")

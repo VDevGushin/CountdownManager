@@ -13,8 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.26.0 uses the read-only `Что нового` screen to describe desktop search by files and
-links and the move of Russian interface text to localization resources. The release-help window
+Release 1.27.0 uses the read-only `What’s New` / `Что нового` screen to describe the language
+chooser and the macOS 27 mini-panel reopening fix. The release-help window
 was introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -72,8 +72,9 @@ Event deletion uses an explicit inline confirmation with a cancel action. Launch
 
 Use ordinary controls inside the panel. The event interface uses a warm ivory palette with a terracotta accent and serif titles, with a neutral graphite dark appearance and an Increase Contrast adaptation. The same dark palette applies to the desktop, mini-panel, editors, settings, material libraries/previews, application-owned dialogs and timer completion alert. Native controls use the matching system appearance; document contents keep their own colors. Native macOS date popovers and file dialogs may retain desktop/wallpaper tinting; selecting Graphite does not promise fixed RGB colors for those system-owned surfaces. Only an explicitly selected favorite receives the featured event treatment and larger calendar leaf on its right; other events have smaller calendar leaves on their left. Without a favorite, every event uses the ordinary compact card, including the nearest event and events dated today; every star is unfilled and no featured heading is shown. Each leaf shows the event's actual month and day, without a leading zero. A selected additional emoji appears immediately before the event title. Empty emoji and legacy `📅` are omitted from the list because the leaf already conveys the date; legacy stored values remain available in the editor.
 
-Event cards express their civil-day distance as `Сегодня`, `Завтра`, then `Через N дней`
-with correct Russian day forms. The exact date and event title remain visible and unchanged.
+Event cards express their civil-day distance as `Today`, `Tomorrow`, then `In N days` in
+English, and as `Сегодня`, `Завтра`, then `Через N дней` in Russian. Each language uses its own
+plural rules and date format. Custom event titles are displayed as entered.
 A featured card uses one 21-point Georgia line below the date: green for today and the
 existing terracotta accent for future days. Retained past events use `Вчера` or `N дней назад` in neutral secondary ink, never a negative countdown or overdue warning. Secondary metadata is ordered `date · relative label`,
 including today; only today's relative label is green. The menu bar uses `Сегодня`, `Завтра`, then its
@@ -293,7 +294,7 @@ creation controls.
 
 Settings arranges existing controls into three groups:
 
-1. `Приложение`: launch at login, automatic update checks, and `Не давать Mac и экрану засыпать`,
+1. `Приложение`: language, appearance, launch at login, automatic update checks, and `Не давать Mac и экрану засыпать`,
    with the existing saved-intent explanation and recovery actions;
 2. `Погода`: `Показывать погоду в днях` and the existing location choice;
 3. `Обслуживание`: `Проверить обновления…`, replaced by `Обновление готово · установить…`
@@ -319,7 +320,13 @@ follows macOS; an explicit choice applies immediately to both desktop and mini-p
 their settings/editor surfaces, and persists across launches in the same preferences domain.
 Changing application theme does not change macOS appearance or the system menu-bar background.
 
-Settings changes apply immediately without Save/Cancel. In the mini-panel, `Назад` returns to the same list and its
+The shared `Language` / `Язык` pop-up offers `English` and `Русский` in both Settings surfaces.
+English is the default. Changing the selection immediately updates app-owned UI, dates, counts,
+application menus and automatic event titles, and persists the choice across launches. Open surfaces,
+event selection, draft input, stored events and the running timer retain their state. The native date field uses US English month/day/year or Russian day.month.year.
+macOS-owned and third-party UI can use their own language choice.
+
+Other Settings changes apply immediately without Save/Cancel. In the mini-panel, `Назад` returns to the same list and its
 browsing position. Hiding and showing the panel retains the current settings screen. Entry is
 available only from the list; it cannot replace an open editor or discard its draft. Settings is
 not an event editor and does not itself block an update restart. Existing timer, editor and
@@ -414,9 +421,9 @@ Changes entered in the editor do not become event data until the user explicitly
 
 The header calendar control, labelled `Создать день`, reveals inline `Сегодня`, `Завтра` and `Выбрать дату` choices inside the event list. The existing `+` control still opens ordinary event creation directly. These choices do not open an action popover.
 
-The single-day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the Russian weekday name for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
+The single-day choices open the existing editor as `Новый день`. `Сегодня` initially selects today; `Завтра` and `Выбрать дату` initially select tomorrow. `Выбрать дату` asks the user to choose today's date or a future date in the ordinary date field. A day draft starts without an additional emoji, with the weekday name in the app language for its selected date, an empty note and no subtasks. Its `Показывать погоду для этого дня` checkbox is initially on; ordinary `+` drafts start with it off.
 
-Day drafts start with automatic titles enabled. Changing the selected event date updates the Russian
+Day drafts start with automatic titles enabled. Changing the selected event date updates the localized
 weekday title until a real manual text change switches the draft to a custom title. All ordinary
 event fields remain editable. The title mode is saved with the event and restored when editing it.
 
@@ -521,10 +528,10 @@ hide/show continuity and desktop native-sheet protections.
 
 ### Automatic event titles
 
-An event's title is either automatic or custom. Automatic means the Russian weekday of its selected
-event date, including after Save, reopening or application restart. Changing the date of an automatic
-event updates the draft title immediately; successful Save commits date, title and mode together.
-The mutation boundary derives the canonical automatic title from the saved date.
+An event's title is either automatic or custom. An automatic title shows the weekday of the selected
+event date in the app language, including after Save, reopening or application restart. Desktop search
+matches the displayed title. Changing the date of an automatic event updates the draft title immediately.
+Successful Save commits date, the backward-compatible stored title and mode together.
 
 Ordinary `+` drafts start with a custom empty title; day-creation drafts start automatic. Existing
 events restore their saved mode. Events whose JSON lacks the mode remain custom, even when their
@@ -854,10 +861,11 @@ The fixed manual list is Москва, Санкт-Петербург, Казан
 
 ## Current date in the list header
 
-For a nonempty list, the app name is removed from the list header. A compact Russian date, such as `Пт, 16 октября`,
+For a nonempty list, the app name is removed from the list header. A compact date, such as `Fri, October 16`
+or `Пт, 16 октября`,
 comes first in system 15-point semibold type, without a year. A secondary 11-point event count
-follows with a 3-point gap: `1 событие`, `2 события`, `6 событий`, with the corresponding Russian
-endings for other counts. The existing 31 × 31 calendar and add buttons remain beside these lines.
+follows with a 3-point gap. The count uses the display language's plural rules. The existing 31 × 31
+calendar and add buttons remain beside these lines.
 The header uses horizontal 16-point and vertical 12-point padding. The date reads `Store.today`
 and updates through existing midnight, wake, clock/calendar changes and reopening refresh boundaries.
 No timer or duplicate date owner is added to the view. Both lines remain visible at panel width 390.
@@ -1027,7 +1035,7 @@ When the timer is idle, only an active explicitly selected favorite supplies the
 Its normal event representation contains:
 
 - the event emoji, or the monochrome K1 outline calendar when no additional emoji is stored or the legacy `📅` is stored;
-- `Сегодня` for today, `Завтра` for tomorrow, otherwise remaining calendar days with Russian day forms.
+- Today, tomorrow or the remaining calendar days, formatted in the app language.
 
 The menu-bar Mars uses native vector PDFs for Light and Dark appearance: a neutral planet with a terracotta stripe. Light appearance uses body `#303038` and stripe `#b44e38`; Dark uses body `#f0eee9` and stripe `#ef9b81`. Craters remain transparent. Its colors follow the status button's effective appearance, including live appearance changes while no other state changes. K1 remains a native monochrome template image. Stored event emoji remains unchanged. The application icon preserves the same Mars geometry and colored stripe. Its Default appearance uses a warm light tile `#f5f1e8`, planet `#303038` and stripe `#b44e38`; Dark uses tile `#211c19`, planet `#f0eee9` and stripe `#ef9b81`. The three craters reveal the tile beneath the planet. A system icon catalog provides Default/Dark on macOS 26, alongside compatible legacy renditions and an ICNS fallback. The system icon style may differ from the appearance of application windows.
 
@@ -1065,7 +1073,7 @@ The ordinary Georgia title and shared Light/Graphite Dark/Increase Contrast pale
 
 A 260 × 34 accent `На сегодня` button is followed, 8 points below, by equally wide secondary
 `На завтра` and `Выбрать дату` buttons, 32 points high and separated by 8 points. Each starts an
-`Новый день` draft using the existing day-creation defaults: Russian weekday title, empty note,
+`Новый день` draft using the existing day-creation defaults: localized weekday title, empty note,
 additional emoji and checklist, weather ON, and favorite OFF. The initial dates are today, tomorrow
 and tomorrow respectively. The choose-date route uses the existing native editor date field, with a
 prompt to select a date. Date changes update the weekday title until its first manual edit; a custom

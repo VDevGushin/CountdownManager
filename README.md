@@ -5,18 +5,23 @@
 Учётная запись не нужна. События, файлы, ссылки и таймер доступны без интернета;
 опциональный прогноз погоды требует сети.
 
-**1.26.0 · сборка 51 · Apple Silicon · macOS 13+.**
-Поиск в большом окне находит имена прикреплённых файлов, названия и адреса ссылок.
-Русские подписи интерфейса собраны в каталоге локализации.
+**1.27.0 · сборка 52 · Apple Silicon · macOS 13+.**
+Английский теперь язык по умолчанию. Выберите **Settings → Language → Русский**, чтобы
+вернуться к русскому. Язык меняется сразу. Автоматические названия дней следуют
+языку интерфейса, а введённые названия, заметки и подзадачи сохраняются как есть.
 
-[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.26.0-notes.md) · [Проверки выпуска](docs/releases/v1.26.0.md)
+[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.27.0-notes.md) · [Проверки выпуска](docs/releases/v1.27.0.md)
 
 ## Как выглядит приложение
 
-Поиск в большом окне и мини-панель на демонстрационных данных.
+Большое окно и мини-панель на демонстрационных данных.
 
-<img src="docs/images/v1.26.0/material-search-file-dark.png" alt="Поиск по имени файла в большом окне. Совпадение выделено в карточке события." width="900">
-<img src="docs/images/v1.26.0/identity-panel-favorite-light.png" alt="Мини-панель со списком событий в светлой теме" width="390">
+<img src="docs/images/v1.27.0/desktop-en.png" alt="Большое окно Countdown Manager на английском в тёмной теме" width="900">
+<img src="docs/images/v1.27.0/mini-panel-en.png" alt="Мини-панель на английском в светлой теме" width="390">
+
+Настройки в тестовой сборке с отключёнными обновлениями.
+[Settings → Language](docs/images/v1.27.0/language-settings-en.png) ·
+[Настройки → Язык](docs/images/v1.27.0/language-settings-ru.png)
 
 ## Установка и обновления
 
@@ -221,9 +226,9 @@ open "Countdown Manager.app"
 подписанное приложение с выключенным автообновлением; подписанный канал задаётся
 при подготовке релиза.
 
-Русские тексты приложения хранятся в [Localizable.strings](Sources/CountdownCore/Resources/ru.lproj/Localizable.strings).
-Системные пояснения разрешений лежат рядом в [InfoPlist.strings](Sources/CountdownCore/Resources/ru.lproj/InfoPlist.strings).
-Сборка переносит локализацию в пакет приложения.
+Тексты приложения хранятся в каталогах [English](Sources/CountdownCore/Resources/en.lproj/Localizable.strings)
+и [Русский](Sources/CountdownCore/Resources/ru.lproj/Localizable.strings). Системные пояснения
+разрешений находятся в соседних `InfoPlist.strings`. Сборка переносит обе локализации в пакет приложения.
 
 Продуктовые фичи и исправления разрабатываются в отдельных ветках от `main`, затем
 после проверок включаются в `main`. Самостоятельное сопровождение скиллов, харнеса,

@@ -27,7 +27,7 @@ struct DesktopRootView: View {
     @ObservedObject var weather: WeatherController
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
-    @ObservedObject var appearanceSettings: ApplicationAppearance
+    @ObservedObject var appPreferences: ApplicationPreferences
     let showPanel: () -> Void
     let switchToPanel: () -> Void
     let diagnosticsContext: () -> DiagnosticExportContext
@@ -57,7 +57,7 @@ struct DesktopRootView: View {
     @Environment(\.colorScheme) private var systemColorScheme
 
     private var colorScheme: ColorScheme {
-        appearanceSettings.colorScheme(overriding: visualEnvironment.colorSchemeOverride) ?? systemColorScheme
+        appPreferences.colorScheme(overriding: visualEnvironment.colorSchemeOverride) ?? systemColorScheme
     }
     private var collection: DesktopEventCollection {
         DesktopEventCollection(items: store.data.items, today: store.today, primaryID: store.data.primaryID,
@@ -136,7 +136,8 @@ struct DesktopRootView: View {
                 .accessibilityHidden(sheetIsClosing)
         }
         .environmentObject(accessibilitySettings)
-        .environmentObject(appearanceSettings)
+        .environmentObject(appPreferences)
+        .environment(\.locale, appPreferences.language.locale)
         .environment(\.colorScheme, colorScheme)
         .onAppear {
             reconcileSelection(visibleIDs)
@@ -214,7 +215,7 @@ struct DesktopRootView: View {
                 VStack(spacing: 0) {
                     if let error = store.error { errorBanner(error) }
                     TextAttachmentComposer(text: request.text,
-                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.title ?? AppText.string("event.unavailable"),
+                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.displayTitle ?? AppText.string("event.unavailable"),
                         submit: { text in
                             let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
                             if saved { dismissSheet() }

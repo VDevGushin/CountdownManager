@@ -211,6 +211,10 @@ public struct Countdown: Identifiable, Codable, Equatable {
     public func isAvailable(on today: Day) -> Bool {
         keepsAfterDate || date >= today
     }
+
+    package var displayTitle: String {
+        usesAutomaticTitle ? automaticEventTitle(for: date) : title
+    }
 }
 
 package struct SubtaskReorder {
@@ -323,8 +327,9 @@ public struct CountdownData: Codable, Equatable {
         var cleaned = item
         cleaned.links = item.links.map { $0.normalized() }
         try EventLink.validate(cleaned.links)
+        // Keep the persisted title compatible with older versions. The UI derives its localized title from the date.
         cleaned.title = item.usesAutomaticTitle
-            ? automaticEventTitle(for: item.date) : item.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            ? storedAutomaticEventTitle(for: item.date) : item.title.trimmingCharacters(in: .whitespacesAndNewlines)
         cleaned.note = item.note?.trimmingCharacters(in: .whitespacesAndNewlines)
         if cleaned.note?.isEmpty == true { cleaned.note = nil }
         cleaned.emoji = item.emoji.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -437,30 +442,37 @@ public struct CountdownData: Codable, Equatable {
     }
 }
 
-private let automaticEventWeekdayTitles = [
-    AppText.string("calendar.weekday.sunday"),
-    AppText.string("calendar.weekday.monday"),
-    AppText.string("calendar.weekday.tuesday"),
-    AppText.string("calendar.weekday.wednesday"),
-    AppText.string("calendar.weekday.thursday"),
-    AppText.string("calendar.weekday.friday"),
-    AppText.string("calendar.weekday.saturday")
-]
-
 public func automaticEventTitle(for day: Day) -> String {
+    switch weekdayNumber(for: day) {
+    case 1: return AppText.string("calendar.weekday.sunday")
+    case 2: return AppText.string("calendar.weekday.monday")
+    case 3: return AppText.string("calendar.weekday.tuesday")
+    case 4: return AppText.string("calendar.weekday.wednesday")
+    case 5: return AppText.string("calendar.weekday.thursday")
+    case 6: return AppText.string("calendar.weekday.friday")
+    default: return AppText.string("calendar.weekday.saturday")
+    }
+}
+
+// These values belong to the persisted JSON contract for older readers.
+private let historicalWeekdayTitles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
+
+func storedAutomaticEventTitle(for day: Day) -> String {
+    historicalWeekdayTitles[weekdayNumber(for: day) - 1]
+}
+
+private func weekdayNumber(for day: Day) -> Int {
     var calendar = Calendar(identifier: .gregorian)
     calendar.timeZone = TimeZone(secondsFromGMT: 0)!
-    return automaticEventWeekdayTitles[calendar.component(.weekday, from: day.date(calendar: calendar)) - 1]
+    return calendar.component(.weekday, from: day.date(calendar: calendar))
 }
 
 public func dayLabel(_ count: Int) -> String {
-    let tail = abs(count) % 100
-    let unit = abs(count) % 10
     let word: String
-    switch unit {
-    case 1 where !(11...14).contains(tail): word = AppText.string("calendar.day.one")
-    case 2...4 where !(11...14).contains(tail): word = AppText.string("calendar.day.few")
-    default: word = AppText.string("calendar.day.many")
+    switch AppText.pluralCategory(count) {
+    case .one: word = AppText.string("calendar.day.one")
+    case .few: word = AppText.string("calendar.day.few")
+    case .many: word = AppText.string("calendar.day.many")
     }
     return AppText.string("calendar.day.count", String(count), word)
 }

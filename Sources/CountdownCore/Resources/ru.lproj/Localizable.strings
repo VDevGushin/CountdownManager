@@ -300,6 +300,7 @@
 "settings.keepAwake" = "Не давать Mac и экрану засыпать";
 "settings.keepAwakeDoNotRestore" = "Не включать при запуске";
 "settings.keepAwakeRestores" = "Выбор сохраняется. Включённый режим восстановится при следующем запуске.";
+"settings.language" = "Язык";
 "settings.loginItem" = "Запускать при входе в macOS";
 "settings.loginPermission" = "Разрешить в настройках macOS…";
 "settings.saveDiagnostics" = "Сохранить диагностику…";
@@ -317,12 +318,13 @@
 "store.attachmentUnavailable" = "Вложение больше недоступно для этого события.";
 "store.cleanupFailed" = "Не удалось удалить неиспользуемые копии вложений. Очистка повторится при следующем сохранении или запуске.";
 "store.copyAttachmentFailed" = "Не удалось скопировать файл. Проверьте доступ к нему и свободное место на диске.";
+"store.copyEventFailed" = "Не удалось создать копию события. Проверьте доступ к папке вложений и свободное место на диске.";
 "store.diagnosticsContents" = "Архив содержит техническую сводку и два последних журнала без содержимого событий и файлов настроек.";
-"store.diagnosticsOpenFailed" = "Не удалось открыть папку диагностики: %1$@";
+"store.diagnosticsOpenFailed" = "Не удалось открыть папку диагностики (код %1$@).";
 "store.diagnosticsPanelFailed" = "Не удалось открыть окно сохранения диагностики. Повторите попытку.";
 "store.diagnosticsSaveFailed" = "Не удалось сохранить диагностику. Выберите другую папку и повторите попытку.";
 "store.linkUnavailable" = "Ссылка больше недоступна для этого события.";
-"store.loginItemFailed" = "Не удалось изменить автозапуск: %1$@";
+"store.loginItemFailed" = "Не удалось изменить автозапуск (код %1$@).";
 "store.materialAdmissionBlocked" = "Добавление недоступно. Дождитесь сохранения и выберите действующее событие.";
 "store.materialBecameUnavailable" = "Событие или материалы больше недоступны. Ничего не добавлено.";
 "store.missingEventEditor" = "Событие больше недоступно. Черновик не сохранён.";
@@ -332,11 +334,11 @@
 "store.prepareAttachmentFailed" = "Не удалось подготовить вложения. Повторите попытку.";
 "store.saveDiagnostics" = "Сохранить диагностику";
 "store.staleEditor" = "Событие изменилось во время переноса подзадачи. Откройте его заново перед сохранением.";
-"store.storageReadFailed" = "Не удалось прочитать сохранённые события. Файл оставлен без изменений: %1$@\n%2$@";
+"store.storageReadFailed" = "Не удалось прочитать сохранённые события. Исходный файл сохранён по адресу %1$@.";
 "store.storageRecoveryRequired" = "Сохранение недоступно: сначала восстановите файл %1$@ и перезапустите приложение.";
-"store.storageWriteFailed" = "Не удалось сохранить изменения: %1$@";
+"store.storageWriteFailed" = "Не удалось сохранить изменения. Проверьте доступ к папке и свободное место на диске, затем повторите попытку.";
 "store.testAttachmentSave" = "Тестовая подмена записи не поддерживает сохранение вложений.";
-"store.textAttachmentCreateFailed" = "Не удалось создать текстовое вложение. ";
+"store.textAttachmentCreateFailed" = "Не удалось создать текстовое вложение. Проверьте доступ к папке и свободное место на диске.";
 
 "subtask.add" = "Добавить подзадачу";
 "subtask.completed" = "Выполнена";
@@ -427,7 +429,7 @@
 "weather.forecastUnavailable" = "Прогноз недоступен для выбранных дат.";
 "weather.locationLoading" = "Определяем местоположение…";
 "weather.locationUnavailable" = "Местоположение недоступно. Выберите город вручную.";
-"weather.maximumAccessibility" = "%1$@. Максимальная температура за день: %2$@ Цельсия.";
+"weather.maximumAccessibility" = "%1$@. Максимальная температура за день по шкале Цельсия: %2$@.";
 "weather.retry" = "Прогноз недоступен. Попробуем позже.";
 
 "week.createCount" = "Создать %1$@ %2$@";
@@ -439,15 +441,16 @@
 "week.planned" = "Будет создан";
 "week.remaining" = "До конца недели";
 
-"whatsNew.localizationHeading" = "Русские тексты в каталоге локализации";
-"whatsNew.localizationText" = "Подписи интерфейса и системные пояснения перенесены в каталог локализации. Интерфейс остаётся русскоязычным.";
-"whatsNew.materialSearchHeading" = "Поиск по файлам и ссылкам";
-"whatsNew.materialSearchText" = "В большом окне можно искать по именам прикреплённых файлов, названиям и адресам ссылок. Фрагмент совпадения виден в карточке события.";
+"whatsNew.localizationHeading" = "Английский и русский";
+"whatsNew.localizationText" = "Английский теперь язык по умолчанию. Выберите язык в настройках. Интерфейс и автоматические названия дней изменятся сразу.";
+"whatsNew.statusItemHeading" = "Повторное открытие мини-панели";
+"whatsNew.statusItemText" = "На macOS 27 первый клик по значку после переключения в другое приложение снова открывает мини-панель.";
 "whatsNew.title" = "Что нового";
 
 "app.name" = "Countdown Manager";
 "app.releaseVersion" = "%1$@ %2$@";
 "calendar.day.count" = "%1$@ %2$@";
 "calendar.fullDate" = "%1$@ %2$@ %3$@";
+"calendar.shortDate" = "%1$@ %2$@";
 "event.count.label" = "%1$@ %2$@";
 "icon.emojiAccessibility" = "Emoji: %1$@";

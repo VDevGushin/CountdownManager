@@ -69,8 +69,16 @@ package func makeTimerRunningPulseAnimation() -> CABasicAnimation {
 
 public enum CountdownManagerApplication {
     @MainActor public static func run() {
+        let configuration: UISmokeConfiguration?
+        do {
+            configuration = try UISmokeConfiguration.load()
+        } catch {
+            fputs("UISmoke refused to start: \(error.localizedDescription)\n", stderr)
+            Darwin.exit(64)
+        }
+        AppText.prepareLaunch(defaults: configuration?.defaults ?? .standard)
         let app = NSApplication.shared
-        let delegate = AppDelegate()
+        let delegate = AppDelegate(uiSmokeConfiguration: configuration)
         app.delegate = delegate
         app.setActivationPolicy(.accessory)
         withExtendedLifetime(delegate) { app.run() }
@@ -134,6 +142,7 @@ private final class StatusItemMarsGlyph: NSImageView {
 
 @MainActor
 private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSMenuItemValidation {
+    private let uiSmokeConfiguration: UISmokeConfiguration?
     private var statusItem: NSStatusItem!
     private var panel: CountdownStatusPanel!
     private var hostingController: NSHostingController<CountdownManagerRootView>!
@@ -150,8 +159,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private let visualEnvironment = UISmokeVisualEnvironment()
     private let marsOpeningAnimation = MarsOpeningAnimation()
     private var regularStatusMarsGlyph: StatusItemMarsGlyph?
-    private var appearanceSettings: ApplicationAppearance!
+    private var appPreferences: ApplicationPreferences!
     private var appearanceSubscription: AnyCancellable?
+    private var languageSubscription: AnyCancellable?
     private var subscription: AnyCancellable?
     private var timerCompletionSubscription: AnyCancellable?
     private var weatherSubscription: AnyCancellable?
@@ -168,14 +178,12 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
     private var panelUsesNativeStatusSession = false
     private var isPanelRequestedVisible: Bool { panelPresentation.requestedVisible }
 
+    init(uiSmokeConfiguration: UISmokeConfiguration?) {
+        self.uiSmokeConfiguration = uiSmokeConfiguration
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let uiSmokeConfiguration: UISmokeConfiguration?
-        do {
-            uiSmokeConfiguration = try UISmokeConfiguration.load()
-        } catch {
-            fputs("UISmoke refused to start: \(error.localizedDescription)\n", stderr)
-            Darwin.exit(64)
-        }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
         DiagnosticLog.shared.record("app.launch version=\(version) build=\(build) os=\(ProcessInfo.processInfo.operatingSystemVersionString)")
@@ -183,8 +191,9 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         let defaults = uiSmokeConfiguration?.defaults ?? .standard
         automaticWhatsNewIsEnabled = uiSmokeConfiguration == nil
             || ProcessInfo.processInfo.arguments.contains("--ui-smoke-whats-new")
-        appearanceSettings = ApplicationAppearance(defaults: defaults)
-        whatsNewController = WhatsNewWindowController(defaults: defaults, accessibilitySettings: accessibilitySettings) { [weak self] in
+        appPreferences = ApplicationPreferences(defaults: defaults)
+        whatsNewController = WhatsNewWindowController(defaults: defaults, accessibilitySettings: accessibilitySettings,
+                                                      appPreferences: appPreferences) { [weak self] in
             guard let self, NSApp.isActive, self.canShowWhatsNew,
                   self.desktopController?.window?.isVisible != true else { return }
             self.showPanel()
@@ -262,7 +271,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 showWhatsNew: { [weak self] in self?.showWhatsNew() },
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment,
-                appearanceSettings: appearanceSettings
+                appPreferences: appPreferences
             )
         )
         panel = CountdownStatusPanel(
@@ -293,7 +302,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
         hostingController.view.wantsLayer = true
         hostingController.view.layer?.cornerRadius = 12
         hostingController.view.layer?.masksToBounds = true
-        appearanceSubscription = appearanceSettings.$selection.combineLatest(visualEnvironment.$colorSchemeOverride)
+        appearanceSubscription = appPreferences.$selection.combineLatest(visualEnvironment.$colorSchemeOverride)
             .sink { [weak self] selection, captureOverride in
                 let scheme = captureOverride ?? selection.colorScheme
                 let appearance = scheme.flatMap { NSAppearance(named: $0 == .dark ? .darkAqua : .aqua) }
@@ -323,6 +332,11 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             }
         }
         installApplicationMenu()
+        languageSubscription = appPreferences.$language.dropFirst().sink { [weak self] _ in
+            self?.installApplicationMenu()
+            self?.updateTitle()
+            self?.timerCompletionAlert.updateLanguage()
+        }
         subscription = Publishers.Merge(store.objectWillChange, timer.objectWillChange)
             .sink { [weak self] _ in
                 DispatchQueue.main.async { self?.updateTitle() }
@@ -361,7 +375,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 weather: weather,
                 accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment,
-                appearanceSettings: appearanceSettings,
+                appPreferences: appPreferences,
                 desktopWindow: { [weak self] in self?.desktopController?.window },
                 panelWindow: { [weak self] in self?.panel },
                 statusButton: { [weak self] in self?.statusItem.button },
@@ -735,7 +749,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 store: store, updates: updates, editorSession: editorSession,
                 keepAwake: keepAwake, weather: weather, accessibilitySettings: accessibilitySettings,
                 visualEnvironment: visualEnvironment,
-                appearanceSettings: appearanceSettings,
+                appPreferences: appPreferences,
                 showPanel: { [weak self] in self?.showPanel() },
                 switchToPanel: { [weak self] in self?.switchToPanel() },
                 diagnosticsContext: {
@@ -744,7 +758,7 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
                 showWhatsNew: { [weak self] in self?.showWhatsNew() }
             )
             desktopController = DesktopWindowController(rootView: rootView, editorSession: editorSession)
-            desktopController?.window?.appearance = appearanceSettings.nativeAppearance(
+            desktopController?.window?.appearance = appPreferences.nativeAppearance(
                 overriding: visualEnvironment.colorSchemeOverride
             )
         }
@@ -830,20 +844,15 @@ private final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelega
             hidePanel(source: "application-deactivation")
             return
         }
-        let trackedStatusMouseDown = panelUsesNativeStatusSession && NSEvent.pressedMouseButtons & 1 != 0
-        if panelUsesNativeStatusSession, !trackedStatusMouseDown {
-            // A settled native session can deactivate with the pointer still parked on its item.
-            // A sampled counter change alone must not make that focus change consume the next click.
-            panelPresentation.clearStatusPressDuringDeactivation()
-            hidePanel(source: "application-deactivation")
-            return
-        }
+        let leftMouseDown = NSEvent.pressedMouseButtons & 1 != 0
         if isPointerOnStatusItem, panelPresentation.hasShowRequestHere(isOnActiveSpace: panel.isOnActiveSpace),
-           panelPresentation.recordStatusPressDuringDeactivation(currentLeftMousePress, buttonIsDown: trackedStatusMouseDown) {
+           panelPresentation.recordStatusPressDuringDeactivation(currentLeftMousePress, buttonIsDown: leftMouseDown,
+                                                                 usesNativeSession: panelUsesNativeStatusSession) {
             // WindowServer can deliver deactivation before dispatching the status button's action.
             // The action from that same press must not undo this dismissal.
             hidePanel(source: "status-item-deactivation", fromStatusItem: true)
         } else {
+            panelPresentation.clearStatusPressDuringDeactivation()
             hidePanel(source: "application-deactivation")
         }
     }

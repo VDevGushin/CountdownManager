@@ -78,10 +78,10 @@ final class SubtaskTransferSmokeScenario {
         fixture.setSubtasksExpanded(true, for: source.id)
         let session = EventEditorSession()
         let updates = ApplicationUpdates(info: [:], enabled: false) { nil }
-        let appearance = ApplicationAppearance(defaults: defaults)
+        let appearance = ApplicationPreferences(defaults: defaults)
         let controller = DesktopWindowController(rootView: DesktopRootView(
             store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
-            accessibilitySettings: accessibility, visualEnvironment: visualEnvironment, appearanceSettings: appearance,
+            accessibilitySettings: accessibility, visualEnvironment: visualEnvironment, appPreferences: appearance,
             showPanel: {}, switchToPanel: {},
             diagnosticsContext: { makeDiagnosticExportContext(timer: self.timer, updates: updates, weather: self.weather) },
             smokeControlScope: desktopScope
@@ -93,7 +93,7 @@ final class SubtaskTransferSmokeScenario {
         mini.isReleasedWhenClosed = false
         mini.contentViewController = NSHostingController(rootView: CountdownManagerRootView(
             timer: timer, store: fixture, updates: updates, editorSession: session, keepAwake: keepAwake, weather: weather,
-            accessibilitySettings: accessibility, visualEnvironment: visualEnvironment, appearanceSettings: appearance
+            accessibilitySettings: accessibility, visualEnvironment: visualEnvironment, appPreferences: appearance
         ).uiSmokeControlScope(miniScope))
         let previousScheme = visualEnvironment.colorSchemeOverride
         let previousContrast = accessibility.isolatedCaptureOverrideValue

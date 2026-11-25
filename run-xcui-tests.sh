@@ -12,9 +12,19 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-xcodebuild \
+bundle_identifier="local.countdownmanager.ui-test"
+build_settings=(
     -project CountdownManager.xcodeproj \
     -scheme CountdownManager \
     -destination 'platform=macOS' \
     -derivedDataPath "$derived_data" \
-    test
+    COUNTDOWN_APP_BUNDLE_IDENTIFIER="$bundle_identifier"
+)
+xcodebuild "${build_settings[@]}" build-for-testing
+target_info="$derived_data/Build/Products/Debug/Countdown Manager.app/Contents/Info.plist"
+actual_identifier=$(/usr/bin/plutil -extract CFBundleIdentifier raw "$target_info")
+if [[ "$actual_identifier" != "$bundle_identifier" ]]; then
+    echo "Refusing to run XCUITest without its separate application bundle identifier" >&2
+    exit 64
+fi
+xcodebuild "${build_settings[@]}" "$@" test-without-building

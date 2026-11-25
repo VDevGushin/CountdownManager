@@ -337,7 +337,7 @@ private struct DesktopEventCard: View {
                     Label(AppText.string("event.favoriteHeading"), systemImage: "star.fill")
                         .font(.system(size: 11, weight: .medium)).foregroundStyle(accent)
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(desktopSearchAttributedText(item.title, search: search, color: accent))
+                        Text(desktopSearchAttributedText(item.displayTitle, search: search, color: accent))
                             .font(.custom("Georgia", size: 27)).tracking(-0.5)
                             .fixedSize(horizontal: false, vertical: true)
                         searchMatch
@@ -367,7 +367,7 @@ private struct DesktopEventCard: View {
             DesktopCalendarLeaf(item: item, featured: false, role: "browser")
                 .uiSmokeControl(id: "desktop.card.leaf.\(item.id)")
             VStack(alignment: .leading, spacing: 6) {
-                Text(desktopSearchAttributedText(item.title, search: search, color: accent))
+                Text(desktopSearchAttributedText(item.displayTitle, search: search, color: accent))
                     .font(.system(size: 15, weight: .semibold))
                     .multilineTextAlignment(.leading)
                     .lineLimit(3).fixedSize(horizontal: false, vertical: true)

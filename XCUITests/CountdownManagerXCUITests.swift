@@ -28,7 +28,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         try writeFixture()
 
         app = XCUIApplication()
-        app.launchArguments = ["--xcui-testing"]
+        app.launchArguments = ["--xcui-testing", "-CountdownLaunchLanguage", "ru", "-AppleLanguages", "(ru)"]
         app.launchEnvironment = ["COUNTDOWN_MANAGER_TEST_HOME": testHome.path]
     }
 
@@ -213,7 +213,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         guard #available(macOS 27.0, *) else { throw XCTSkip("Native status-item sessions require macOS 27") }
         try writeItems([], primaryID: nil)
         try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
-        app.launchArguments = ["--visual-preview"]
+        app.launchArguments = ["--visual-preview", "-CountdownLaunchLanguage", "ru", "-AppleLanguages", "(ru)"]
         app.launch()
 
         let panel = app.windows["main.panel"]
@@ -242,7 +242,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         guard #available(macOS 27.0, *) else { throw XCTSkip("Requires the macOS 27 status-item handoff") }
         try writeItems([], primaryID: nil)
         try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
-        app.launchArguments = ["--visual-preview"]
+        app.launchArguments = ["--visual-preview", "-CountdownLaunchLanguage", "ru", "-AppleLanguages", "(ru)"]
         app.launch()
 
         let panel = app.windows["main.panel"]
@@ -1290,7 +1290,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         replace(title, with: "Черновик сохранённого события")
         let keep = app.checkBoxes["editor.keep"]
         revealInEditor(keep, fullyInViewport: true)
-        XCTAssertEqual(keep.value as? String, "1")
+        XCTAssertTrue(waitForCheckboxValue(keep, equals: "1"))
         keep.click()
         XCTAssertTrue(app.buttons["editor.save"].isEnabled)
         app.buttons["editor.save"].click()
@@ -1301,7 +1301,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         app.buttons["event.delete.cancel"].click()
         XCTAssertEqual(title.value as? String, "Черновик сохранённого события")
         revealInEditor(keep, fullyInViewport: true)
-        XCTAssertEqual(keep.value as? String, "1", "Cancel must restore retention and keep the rest of the draft")
+        XCTAssertTrue(waitForCheckboxValue(keep, equals: "1"), "Cancel must restore retention and keep the rest of the draft")
         XCTAssertEqual(try Data(contentsOf: dataURL), original)
         for file in files {
             XCTAssertEqual(try Data(contentsOf: file.copy), file.bytes)
@@ -1358,8 +1358,8 @@ final class CountdownManagerXCUITests: XCTestCase {
         calendar.timeZone = .autoupdatingCurrent
         let today = calendar.startOfDay(for: Date())
         let weekday = calendar.component(.weekday, from: today)
-        let expectedCount = weekday == 1 ? 7 : 8 - weekday
-        let dates = try (1...expectedCount).map { offset in
+        let reviewedCount = weekday == 1 ? 7 : 8 - weekday
+        let dates = try (1...reviewedCount).map { offset in
             try XCTUnwrap(calendar.date(byAdding: .day, value: offset, to: today))
         }
         let ordinaryID = "44444444-4444-4444-4444-444444444444"
@@ -1367,11 +1367,14 @@ final class CountdownManagerXCUITests: XCTestCase {
         baseline.append([
             "id": ordinaryID, "title": "Ordinary on week date", "note": "Preserve ordinary event",
             "date": try weekDateFields(XCTUnwrap(dates.first), calendar: calendar),
-            "emoji": "", "subtasks": [], "isDay": false
+            "emoji": "", "subtasks": [["id": "55555555-5555-4555-8555-555555555555",
+                                        "text": "Preserve the existing checklist", "isCompleted": true]], "isDay": false
         ])
         try writeItems(baseline, primaryID: eventID)
         let originalBytes = try Data(contentsOf: dataURL)
         let command = weekday == 1 ? "На следующую неделю…" : "До конца недели…"
+        let missingDates = Array(dates.dropFirst())
+        let expectedCount = missingDates.count
         let noun = expectedCount == 1 ? "день" : ((2...4).contains(expectedCount) ? "дня" : "дней")
         app.launch()
         let openDesktop = app.buttons["desktop.open"]
@@ -1396,10 +1399,12 @@ final class CountdownManagerXCUITests: XCTestCase {
         let cancel = sheet.buttons["creation.week.cancel"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         XCTAssertTrue(cancel.waitForExistence(timeout: 3))
-        XCTAssertTrue(confirm.isHittable, "The native confirmation must be reachable in the settled sheet")
+        if expectedCount > 0 {
+            XCTAssertTrue(confirm.isHittable, "The native confirmation must be reachable in the settled sheet")
+        }
         XCTAssertTrue(cancel.isHittable, "The native cancellation must be reachable in the settled sheet")
-        XCTAssertEqual(confirm.label, "Создать \(expectedCount) \(noun)")
-        XCTAssertTrue(confirm.isEnabled, "An ordinary event on the first date must not block creation of its day")
+        XCTAssertEqual(confirm.label, expectedCount == 0 ? "Нет новых дней" : "Создать \(expectedCount) \(noun)")
+        XCTAssertEqual(confirm.isEnabled, expectedCount > 0, "Confirmation creates only days on unoccupied dates")
         let dateFormatter = DateFormatter()
         dateFormatter.calendar = calendar
         dateFormatter.timeZone = calendar.timeZone
@@ -1422,13 +1427,18 @@ final class CountdownManagerXCUITests: XCTestCase {
             XCTAssertTrue(actualText.contains(expectedDate),
                           "Preview must show each actual civil date: expected=\(expectedDate.debugDescription) "
                           + "actualValue=\(actualValue.debugDescription) actualText=\(actualText.debugDescription)\n\(row.debugDescription)")
-            XCTAssertTrue(actualText.contains("Будет создан"))
+            XCTAssertTrue(actualText.contains(index == 0 ? "Уже есть" : "Будет создан"),
+                          "An ordinary event on the first date must be marked as existing")
         }
         attachDesktopMotionSnapshot("Native week preview before explicit confirmation")
         XCTAssertTrue(cancel.isHittable)
         cancel.click()
         XCTAssertTrue(waitForAbsence(sheet))
         XCTAssertEqual(try Data(contentsOf: dataURL), originalBytes, "Cancel must leave the isolated durable bytes unchanged")
+        guard !missingDates.isEmpty else {
+            XCTAssertEqual(calendar.startOfDay(for: Date()), today)
+            return
+        }
         menu.click()
         XCTAssertTrue(weekItem.waitForExistence(timeout: 3))
         weekItem.click()
@@ -1450,7 +1460,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         let originalIDs = Set(baseline.compactMap { $0["id"] as? String })
         let created = saved.filter { !originalIDs.contains($0["id"] as? String ?? "") }
         let weekdayTitles = ["Воскресенье", "Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
-        for (item, date) in zip(created, dates) {
+        for (item, date) in zip(created, missingDates) {
             XCTAssertEqual(item["date"] as? [String: Int], try weekDateFields(date, calendar: calendar))
             XCTAssertEqual(item["title"] as? String, weekdayTitles[calendar.component(.weekday, from: date) - 1])
             XCTAssertEqual(item["isDay"] as? Bool, true)
@@ -1483,6 +1493,83 @@ final class CountdownManagerXCUITests: XCTestCase {
         let components = calendar.dateComponents([.year, .month, .day], from: date)
         return ["year": try XCTUnwrap(components.year), "month": try XCTUnwrap(components.month),
                 "day": try XCTUnwrap(components.day)]
+    }
+
+    func testLanguageMenuAppliesSelectionImmediately() throws {
+        app.launchArguments = ["--visual-preview", "--desktop-preview", "-AppleLanguages", "(ru)"]
+        try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
+        var items = try persistedItems()
+        items[0]["usesAutomaticTitle"] = true
+        try writeItems(items, primaryID: nil)
+        let original = try Data(contentsOf: dataURL)
+
+        app.launch()
+        let main = app.windows["desktop.window"]
+        let desktopSettings = app.buttons["desktop.settings"]
+        let card = app.buttons["desktop.event.\(eventID)"]
+        let edit = main.buttons.matching(NSPredicate(format: "label == %@", "Редактировать событие")).firstMatch
+        let picker = app.popUpButtons["settings.language"]
+        XCTAssertTrue(card.waitForExistence(timeout: 3))
+        card.click()
+        XCTAssertTrue(waitForLabel(card, containing: "Thursday"))
+        desktopSettings.click()
+        let sheet = main.sheets.firstMatch
+        XCTAssertTrue(sheet.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Settings"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForValue(picker, equals: "English"))
+        XCTAssertEqual(picker.label, "Language")
+
+        chooseLanguage("Русский", in: picker)
+        XCTAssertTrue(sheet.exists)
+        XCTAssertTrue(sheet.staticTexts["Настройки"].waitForExistence(timeout: 3))
+        XCTAssertEqual(picker.label, "Язык")
+        let close = sheet.buttons.matching(NSPredicate(format: "label == %@", "Закрыть настройки")).firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 3))
+        close.click()
+        XCTAssertTrue(waitForAbsence(sheet))
+        XCTAssertTrue(waitForLabel(card, containing: "Четверг"))
+        XCTAssertTrue(card.isSelected)
+        XCTAssertTrue(edit.waitForExistence(timeout: 3))
+
+        app.buttons["desktop.panel"].click()
+        let settings = app.buttons["settings.open"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 3))
+        let start = app.buttons["timer.start"]
+        XCTAssertTrue(start.waitForExistence(timeout: 3))
+        XCTAssertEqual(start.label, "Запустить таймер")
+        start.click()
+        let running = app.staticTexts["timer.running"]
+        XCTAssertTrue(running.waitForExistence(timeout: 3))
+        settings.click()
+        XCTAssertTrue(app.staticTexts["Настройки"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForValue(picker, equals: "Русский"))
+
+        chooseLanguage("English", in: picker)
+        XCTAssertTrue(app.staticTexts["Settings"].waitForExistence(timeout: 3))
+        XCTAssertEqual(picker.label, "Language")
+        XCTAssertTrue(running.exists, "Switching language must retain the running timer")
+        XCTAssertEqual(app.buttons["timer.delete"].label, "Remove Timer")
+        XCTAssertTrue(app.buttons["Back"].exists)
+        chooseLanguage("Русский", in: picker)
+        XCTAssertTrue(app.staticTexts["Настройки"].waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(desktopSettings.waitForExistence(timeout: 3))
+        desktopSettings.click()
+        XCTAssertTrue(app.staticTexts["Настройки"].waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForValue(picker, equals: "Русский"))
+        XCTAssertEqual(picker.label, "Язык")
+        XCTAssertEqual(try Data(contentsOf: dataURL), original)
+    }
+
+    private func chooseLanguage(_ language: String, in picker: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        picker.click()
+        let item = app.menuItems[language]
+        XCTAssertTrue(item.waitForExistence(timeout: 3), file: file, line: line)
+        item.click()
+        XCTAssertTrue(waitForValue(picker, equals: language), file: file, line: line)
     }
 
     func testWeatherCityMenuSupportsNativeSelection() throws {

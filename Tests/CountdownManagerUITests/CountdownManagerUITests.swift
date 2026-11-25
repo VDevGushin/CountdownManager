@@ -6,6 +6,11 @@ import CountdownManagerUI
 @main
 enum UIChecks {
     static func main() async throws {
+        try await testLocalizedStoreFailures()
+        if CommandLine.arguments.contains("--check-english-localization") {
+            try testEnglishLocalization()
+            return
+        }
         testPanelPresentationRequestLifecycle()
         await testWhatsNewHistory()
         let directory = FileManager.default.temporaryDirectory
@@ -427,7 +432,7 @@ enum UIChecks {
             let preset = DayCreationPreset.today(day)
             precondition(preset.day == day)
             let draft = EventEditorDraft(day: preset.day)
-            precondition(russianWeekdayTitle(day) == title)
+            precondition(automaticEventTitle(for: day) == title)
             precondition(draft.title == title && draft.emoji.isEmpty)
             precondition(draft.note.isEmpty && draft.subtasks.isEmpty)
             let event = draft.countdown(id: UUID(), date: day)

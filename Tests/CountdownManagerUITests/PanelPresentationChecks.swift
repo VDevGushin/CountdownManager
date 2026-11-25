@@ -74,51 +74,61 @@ func testPanelPresentationRequestLifecycle() {
     }
     precondition(state.statusAction(press: press(41), isOnActiveSpace: true) == .show)
     state.requestShow()
-    precondition(!state.recordStatusPressDuringDeactivation(press(41)))
-    precondition(state.recordStatusPressDuringDeactivation(press(42)))
+    precondition(!state.recordStatusPressDuringDeactivation(press(41), buttonIsDown: true))
+    precondition(state.recordStatusPressDuringDeactivation(press(42), buttonIsDown: true))
     state.requestHide()
     precondition(state.statusAction(press: press(42), isOnActiveSpace: true) == .alreadyHidden)
     precondition(!state.requestedVisible)
     precondition(state.statusAction(press: press(43), isOnActiveSpace: true) == .show)
     state.requestShow()
-    precondition(state.recordStatusPressDuringDeactivation(press(44)))
+    precondition(state.recordStatusPressDuringDeactivation(press(44), buttonIsDown: true))
     state.requestHide()
     precondition(state.statusAction(press: .init(session: 45, hardware: 44), isOnActiveSpace: true) == .alreadyHidden)
 
     // A new session-only press must not be mistaken for the previous hardware press.
     state.requestShow()
-    precondition(state.recordStatusPressDuringDeactivation(.init(session: 46, hardware: 44)))
+    precondition(state.recordStatusPressDuringDeactivation(.init(session: 46, hardware: 44), buttonIsDown: true))
     state.requestHide()
     precondition(state.statusAction(press: .init(session: 47, hardware: 44), isOnActiveSpace: true) == .show)
 
     // A pending dismissal association never consumes a different click or an accessibility action.
     for nextPress in [press(49), nil] {
         state.requestShow()
-        precondition(state.recordStatusPressDuringDeactivation(press(48)))
+        precondition(state.recordStatusPressDuringDeactivation(press(48), buttonIsDown: true))
         state.requestHide()
         precondition(state.statusAction(press: nextPress, isOnActiveSpace: true) == .show)
     }
     state.requestShow()
-    precondition(state.recordStatusPressDuringDeactivation(press(50)))
+    precondition(state.recordStatusPressDuringDeactivation(press(50), buttonIsDown: true))
     state.requestHide()
     state.clearStatusPressDuringDeactivation()
     precondition(state.statusAction(press: press(50), isOnActiveSpace: true) == .show)
 
     // AppKit can deliver a native menu-bar press before the synthetic session count advances.
     state.requestShow()
-    precondition(state.recordStatusPressDuringDeactivation(press(50), buttonIsDown: true))
+    precondition(state.recordStatusPressDuringDeactivation(press(50), buttonIsDown: true, usesNativeSession: true))
     state.requestHide()
     precondition(state.statusAction(press: press(50), isOnActiveSpace: true) == .alreadyHidden)
     precondition(state.statusAction(press: press(51), isOnActiveSpace: true) == .show)
 
     // A tracked close can end without another begin callback for the same click.
     state.requestShow()
-    precondition(state.recordStatusPressDuringDeactivation(press(52), buttonIsDown: true))
+    precondition(state.recordStatusPressDuringDeactivation(press(52), buttonIsDown: true, usesNativeSession: true))
     state.requestHide()
     let keyboardPress = PanelPresentationState.StatusPress(session: 52, hardware: 52, keyboard: 1)
     precondition(state.statusAction(press: keyboardPress, isOnActiveSpace: true) == .show)
     state.requestShow()
-    precondition(!state.recordStatusPressDuringDeactivation(.init(session: 52, hardware: 52, keyboard: 2)))
+    precondition(!state.recordStatusPressDuringDeactivation(.init(session: 52, hardware: 52, keyboard: 2), buttonIsDown: true))
+
+    // Switching to Finder with the pointer parked on the status item leaves no click to consume.
+    let parkedPointerSample = press(53)
+    for usesNativeSession in [false, true] {
+        state.requestShow()
+        precondition(!state.recordStatusPressDuringDeactivation(parkedPointerSample, buttonIsDown: false,
+                                                               usesNativeSession: usesNativeSession))
+        state.requestHide()
+    }
+    precondition(state.statusAction(press: parkedPointerSample, isOnActiveSpace: true) == .show)
 
     print("PASS panel presentation: pending show, native visibility, rapid toggles and deactivation before status action")
 }

@@ -24,21 +24,30 @@ package enum ApplicationAppearanceSelection: String, CaseIterable {
 }
 
 @MainActor
-package final class ApplicationAppearance: ObservableObject {
+package final class ApplicationPreferences: ObservableObject {
     package static let preferenceKey = "appearance.selection"
     @Published package private(set) var selection: ApplicationAppearanceSelection
+    @Published package private(set) var language: AppLanguage
     private let defaults: UserDefaults
 
     package init(defaults: UserDefaults) {
         self.defaults = defaults
         selection = defaults.string(forKey: Self.preferenceKey)
             .flatMap(ApplicationAppearanceSelection.init(rawValue:)) ?? .system
+        language = AppText.language
     }
 
     package func setSelection(_ selection: ApplicationAppearanceSelection) {
         guard self.selection != selection else { return }
         defaults.set(selection.rawValue, forKey: Self.preferenceKey)
         self.selection = selection
+    }
+
+    package func setLanguage(_ language: AppLanguage) {
+        guard self.language != language else { return }
+        language.save(to: defaults)
+        AppText.setLanguage(language)
+        self.language = language
     }
 
     package func colorScheme(overriding captureOverride: ColorScheme?) -> ColorScheme? {
@@ -64,7 +73,7 @@ struct SettingsView: View {
     var showsCloseButton = false
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
-    @EnvironmentObject private var appearanceSettings: ApplicationAppearance
+    @EnvironmentObject private var appPreferences: ApplicationPreferences
 
     var body: some View {
         VStack(spacing: 0) {
@@ -81,6 +90,7 @@ struct SettingsView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     settingsGroup(AppText.string("settings.app")) {
+                        languageChoice
                         appearanceChoice
                         loginChoice
                         Toggle(AppText.string("settings.updates"), isOn: Binding(
@@ -174,17 +184,32 @@ struct SettingsView: View {
 
     private var appearanceChoice: some View {
         Picker(AppText.string("settings.theme"), selection: Binding(
-            get: { appearanceSettings.selection }, set: { appearanceSettings.setSelection($0) }
+            get: { appPreferences.selection }, set: { appPreferences.setSelection($0) }
         )) {
             ForEach(ApplicationAppearanceSelection.allCases, id: \.self) { selection in
                 Text(selection.title).tag(selection)
                     .uiSmokeControl(id: "settings.appearance.\(selection.rawValue)",
-                                    action: { appearanceSettings.setSelection(selection) })
+                                    action: { appPreferences.setSelection(selection) })
             }
         }
         .pickerStyle(.menu)
         .accessibilityIdentifier("settings.appearance")
-        .uiSmokeControl(id: "settings.appearance", value: { appearanceSettings.selection.rawValue })
+        .uiSmokeControl(id: "settings.appearance", value: { appPreferences.selection.rawValue })
+    }
+
+    private var languageChoice: some View {
+        Picker(AppText.string("settings.language"), selection: Binding(
+            get: { appPreferences.language }, set: { appPreferences.setLanguage($0) }
+        )) {
+            ForEach(AppLanguage.allCases, id: \.self) { language in
+                Text(language.title).tag(language)
+                    .uiSmokeControl(id: "settings.language.\(language.rawValue)", action: { appPreferences.setLanguage(language) })
+            }
+        }
+        .pickerStyle(.menu)
+        .accessibilityLabel(AppText.string("settings.language"))
+        .accessibilityIdentifier("settings.language")
+        .uiSmokeControl(id: "settings.language", value: { appPreferences.language.rawValue })
     }
 
     private var loginChoice: some View {

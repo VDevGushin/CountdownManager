@@ -152,7 +152,7 @@ struct CountdownManagerRootView: View {
     var showWhatsNew: () -> Void = {}
     @ObservedObject var accessibilitySettings: AuroraAccessibilitySettings
     @ObservedObject var visualEnvironment: UISmokeVisualEnvironment
-    @ObservedObject var appearanceSettings: ApplicationAppearance
+    @ObservedObject var appPreferences: ApplicationPreferences
     @Environment(\.colorScheme) private var systemColorScheme
 
     var body: some View {
@@ -165,9 +165,10 @@ struct CountdownManagerRootView: View {
         .frame(width: 390, height: 600)
         .background(AuroraPanelCanvas())
         .environmentObject(accessibilitySettings)
-        .environmentObject(appearanceSettings)
+        .environmentObject(appPreferences)
+        .environment(\.locale, appPreferences.language.locale)
         .environment(\.colorScheme,
-                     appearanceSettings.colorScheme(overriding: visualEnvironment.colorSchemeOverride) ?? systemColorScheme)
+                     appPreferences.colorScheme(overriding: visualEnvironment.colorSchemeOverride) ?? systemColorScheme)
     }
 
     private func makeDiagnosticsContext() -> DiagnosticExportContext {

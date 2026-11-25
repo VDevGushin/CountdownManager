@@ -131,6 +131,11 @@ private final class TimerCompletionAlertView: NSView {
         updatePalette(highContrast: accessibilitySettings.prefersHighContrast)
     }
 
+    func updateLanguage() {
+        title.stringValue = AppText.string("timer.finished")
+        detail.stringValue = AppText.string("timer.completionAccessibility")
+    }
+
     private func updatePalette(highContrast: Bool) {
         let scheme: ColorScheme = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .dark : .light
         layer?.backgroundColor = NSColor(AuroraInstrument.canvas(for: scheme)).cgColor
@@ -211,6 +216,7 @@ final class TimerCompletionAlertPresenter {
     func present() {
         let panel = panel ?? makePanel()
         self.panel = panel
+        updateLanguage()
         presentationGeneration += 1
         dismissWorkItem?.cancel()
         position(panel)
@@ -236,6 +242,10 @@ final class TimerCompletionAlertPresenter {
             execute: workItem
         )
         DiagnosticLog.shared.record("timer.completion-alert presented")
+    }
+
+    func updateLanguage() {
+        (panel?.contentView as? TimerCompletionAlertView)?.updateLanguage()
     }
 
     func dismiss() {

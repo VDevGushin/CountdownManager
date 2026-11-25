@@ -52,6 +52,7 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Single-subtask transfer captures | `./verify.sh subtask-transfer-capture <marked-output-directory>` | The same focused scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
 | Event copying | `./verify.sh event-copy` | Focused isolated mini/desktop copy actions, native date focus, Save/Cancel, editor ownership and independent files |
 | Event-copy captures | `./verify.sh event-copy-capture <marked-output-directory>` | The focused copy scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
+| Localization captures | `./verify.sh localization-capture <marked-output-directory>` | Native desktop, mini-panel and Settings captures for both languages with isolated events and the tested app |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
 | Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
 | Combined | `./verify.sh full` | `fast`, then Real UI Smoke |
@@ -81,7 +82,7 @@ certify a session: later hooks report a blocking diagnostic instead of silently 
 baseline or treating the failure as success. A successful gate is cached against Swift contents
 (including `Package.swift`) and the explicit verification dependencies: the hook implementation,
 `.swiftlint.yml`, `verify.sh`, `Package.resolved`, the native-design and localization Python tests,
-the Xcode project checked for source target membership, `Localizable.strings`, `InfoPlist.strings`,
+the Xcode project checked for source target membership, both languages' `Localizable.strings` and `InfoPlist.strings`,
 `scripts/native_design_contract.py`, `Resources/NativeDesignContract.json`, and the native component
 inventory JSON. Changing, adding or removing one invalidates the cached result. An unreadable
 dependency blocks the gate. The list in `gate_fingerprint` must grow
@@ -1589,6 +1590,31 @@ These within-control coordinates do not establish status-item, app-switch or Spa
 
 Do not treat Finder anchoring, coordinate clicks, repeated timing loops, or custom driver machinery as reliable proof of status-item activation, application switching, or Spaces lifecycle. Those approaches can change the lifecycle under test and remain diagnostic only.
 
+## English and Russian localization
+
+The fast route compares all runtime keys and positional format arguments across both catalogs and
+checks the permission resources. The established Russian assertions run with an explicit language.
+A separate default-English process exercises date, count and file-size formatting, automatic titles
+in the editor and desktop search, custom titles, and compatible save, transfer and week snapshots.
+Read and write failures exercise localized banners in both languages with isolated storage.
+
+The native capture route checks a separate bundle identifier before launch. The same shell-built
+bundle opens twice with distinct isolated homes and the opposite macOS language selection. The
+scenario opens the mini-panel with a short status item and selects a favorite after it is visible.
+It checks the desktop, mini-panel, Settings, AppKit menu and native editor date field.
+The capture scenario also changes the shared language while a native editor is open. It checks the
+date field's locale, the automatic title and note placeholder, and retains the note's native focus,
+unsaved content, date, timer deadline and exact event bytes.
+
+`./run-xcui-tests.sh -only-testing:CountdownManagerXCUITests/CountdownManagerXCUITests/testLanguageMenuAppliesSelectionImmediately`
+builds the XCUITest target under a distinct application ID and checks the actual `Info.plist`
+before running the suite. The test opens the existing desktop preview in its isolated profile.
+It checks immediate language changes and accessibility labels in both Settings surfaces, the
+selected event's automatic title, the running timer, and exact event bytes. A final relaunch checks
+that the selected language persists. It requests Russian macOS strings at launch and uses a profile
+without a favorite to keep favorite status-item placement outside the language scenario.
+macOS-owned location prompts and Sparkle's own UI have separate localization owners.
+
 ## Manual-only macOS acceptance
 
 The current automation cannot faithfully reproduce these system interactions. Verify only the scenarios relevant to the changed contract:
@@ -1655,8 +1681,9 @@ not establish perceived intermediate smoothness.
 ### Panel pending-show acknowledgement regression
 
 `PanelPresentationChecks.swift` covers pending show, visible acknowledgement, rapid toggles, late
-occlusion observations, and deactivation delivered before the same status press. A different press
-or an accessibility action can still reopen the panel. These are pure request-state checks. Real UI
+occlusion observations, and deactivation delivered before the same status press. Switching to
+another app with the pointer parked and the left button released cannot consume the next click.
+A different press or an accessibility action can still reopen the panel. These are pure request-state checks. Real UI
 Smoke checks the native button's highlight after hiding and reopening the retained panel. The
 existing full desktop status-hide→compact flow retains
 its strict visible-panel assertion without adding a settlement wait. A real failure at scenario 10

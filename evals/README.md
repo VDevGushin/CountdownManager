@@ -199,6 +199,9 @@ be identified separately from earlier runs blocked by unavailable dependencies.
 The focused `verify.sh editor` and `automatic-title-capture` routes are also classified as UI/build operations; read-only
 negative controls reject it even when its process fails.
 
+All current focused UI modes, including `localization-capture`, are covered by the same negative
+controls. `xcodebuild test-without-building` also counts as XCUITest activity.
+
 If a recognizer defect is found in a completed version-2 run, `recheck` creates a separate assessment
 of the same frozen prompts, traces, snapshots and oracle results without making new model calls:
 
