@@ -48,6 +48,19 @@ Key files:
 - `EventAttachment.swift`
 - `AttachmentFiles.swift`
 
+### Localized application text
+
+`CountdownCore` provides `AppText` to both the domain errors and the application's views.
+Russian is the source localization. Stable keys and positional arguments decouple the lookup
+sites from the wording in [Localizable.strings](../Sources/CountdownCore/Resources/ru.lproj/Localizable.strings).
+The existing civil-date and Russian plural rules still determine the presentation.
+User-entered event data and diagnostic protocol identifiers keep their existing representations.
+Test fixtures and expected copy in assertions are independent of the localization table.
+
+SwiftPM executables read the module resource bundle. The packaged app reads the same locale
+resources from `Contents/Resources`. `build.sh` copies the `.lproj` directories before signing. Both the shell and Xcode builds derive the base location purpose values
+from the Russian `InfoPlist.strings` table using the same preparation script.
+
 ### `CountdownManagerUI`
 
 Source: `Sources/CountdownManager/`
@@ -172,9 +185,8 @@ own native close delegate, an `NSHostingController<WhatsNewView>` and no Store/t
 panel/desktop opening offers the unseen release; drag-hover and background startup do not.
 The delegate checks editor, native sheet, updater and shared persistence/import/export blockers
 before presentation. `WhatsNewHistory` records the release ID after `window.isVisible`, using
-the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.25.3`.
-Its current section describes the status-item and mini-panel fix on macOS 27 and uses
-`menubar.rectangle`.
+the same isolated defaults selection as the rest of the runtime. `WhatsNewView.releaseID` is `1.26.0`.
+Its sections read localized copy for material search and Russian localization resources.
 Manual menu entry bypasses only
 the seen check, never the blockers. Appearance subscription and accessibility settings are shared;
 the controller never promotes activation policy. Other automated routes suppress the automatic
@@ -208,9 +220,11 @@ uses native SwiftUI controls directly, without an independent toolbar owner or c
 `DesktopEventCollection`
 derives the active filtered stable-date ordering, favorite/ordinary partition and month/year sections
 from Store data; it does not persist or mutate another copy. Section identity includes the year.
-`desktopSelection` reconciles missing visible IDs.
-`DesktopEventSearch` derives locale-aware title/note/subtask matches and a short first-task
-fragment from the window query. `desktopSearchAttributedText` adds only foreground-color
+One derived collection per root render drives the browser and selected details. `desktopSelection`
+reconciles the ordered visible IDs.
+`DesktopEventSearch` derives locale-aware matches for titles, notes, subtasks, attachment filenames
+and link names/addresses from the window query. The card and its accessibility label share one
+derived subtask or material match. `desktopSearchAttributedText` adds only foreground-color
 attributes to those ranges; the existing SwiftUI text roles own every font metric. The root
 passes the same derived query to collection cards and details without another saved state owner.
 `DesktopEventFlowLayout` places all month headings and ordinary event buttons in one coordinate

@@ -163,12 +163,12 @@ struct SavedAttachmentSection: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Вложения: \(item.attachments.count), \(expanded ? "свернуть" : "раскрыть")")
+                    .accessibilityLabel(AppText.string("attachment.disclosure", "\(item.attachments.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
                     .accessibilityIdentifier("panel.attachments.toggle.\(item.id.uuidString)")
                     .uiSmokeControl(id: "panel.attachments.toggle.\(item.id.uuidString)",
                                     action: { expanded.toggle() }, value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    SavedMaterialHeading(title: "Вложения", count: item.attachments.count, symbolName: "paperclip",
+                    SavedMaterialHeading(title: AppText.string("attachment.titlePlural"), count: item.attachments.count, symbolName: "paperclip",
                                          controlPrefix: "desktop.attachments", eventID: item.id)
                 }
                 if !compact || expanded {
@@ -181,7 +181,7 @@ struct SavedAttachmentSection: View {
                                                     thumbnailURL: thumbnailURL.map { resolve in { await resolve(attachment) } })
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Просмотреть вложение: \(attachment.name)")
+                            .accessibilityLabel(AppText.string("attachment.previewItem", attachment.name))
                             .accessibilityIdentifier("attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)")
                             .uiSmokeControl(id: "\(surface).attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)",
                                             action: { open(attachment) })
@@ -190,7 +190,7 @@ struct SavedAttachmentSection: View {
                     .frame(maxWidth: compact ? .infinity : 490, alignment: .leading)
                     .uiSmokeControl(id: "\(surface).attachments.shelf.\(item.id.uuidString)")
                     if item.attachments.count > summaryCount {
-                        Button("Показать все \(item.attachments.count)", action: showAll)
+                        Button(AppText.string("attachment.showAll", "\(item.attachments.count)"), action: showAll)
                             .buttonStyle(.plain)
                             .foregroundStyle(AuroraInstrument.accent(
                                 for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
@@ -207,7 +207,7 @@ struct SavedAttachmentSection: View {
     }
 
     private var heading: some View {
-        Text("Вложения")
+        Text(AppText.string("attachment.titlePlural"))
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
             .uiSmokeControl(id: "\(surface).attachments.heading.\(item.id.uuidString)")
@@ -298,17 +298,17 @@ struct AttachmentListView: View {
 
     private var summary: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? "Файлов: \(item.attachments.count)"
-            : "Найдено: \(filtered.count) из \(item.attachments.count)"
+            ? AppText.string("attachment.fileCount", "\(item.attachments.count)")
+            : AppText.string("attachment.searchCount", "\(filtered.count)", "\(item.attachments.count)")
     }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if compact { navigationButton }
-                Text(compact ? "Вложения" : "Вложение")
+                Text(compact ? AppText.string("attachment.titlePlural") : AppText.string("attachment.title"))
                     .font(.custom("Georgia", size: 21))
-                    .uiSmokeControl(id: "\(prefix).title.\(item.id)", value: { compact ? "Вложения" : "Вложение" })
+                    .uiSmokeControl(id: "\(prefix).title.\(item.id)", value: { compact ? AppText.string("attachment.titlePlural") : AppText.string("attachment.title") })
                 Spacer()
                 if !compact { navigationButton }
             }
@@ -322,7 +322,7 @@ struct AttachmentListView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .textSelection(.enabled)
                     Spacer(minLength: 0)
-                    Button("Понятно", action: dismissError)
+                    Button(AppText.string("common.ok"), action: dismissError)
                         .accessibilityIdentifier("\(prefix).error.dismiss.\(item.id)")
                         .uiSmokeControl(id: "\(prefix).error.dismiss.\(item.id)", action: dismissError)
                 }
@@ -335,13 +335,13 @@ struct AttachmentListView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, 12)
             HStack(spacing: 8) {
-                TextField("Найти файл", text: $query)
+                TextField(AppText.string("attachment.search"), text: $query)
                     .textFieldStyle(.roundedBorder)
                     .focused($searchFocused)
-                    .accessibilityLabel("Найти файл")
+                    .accessibilityLabel(AppText.string("attachment.search"))
                     .accessibilityIdentifier("\(prefix).search.\(item.id)")
                     .uiSmokeControl(id: "\(prefix).search.\(item.id)", action: { searchFocused = true }, value: { query })
-                Button("Очистить") { query = "" }
+                Button(AppText.string("common.clear")) { query = "" }
                     .disabled(query.isEmpty)
                     .accessibilityIdentifier("\(prefix).clear.\(item.id)")
                     .uiSmokeControl(id: "\(prefix).clear.\(item.id)", action: { query = "" })
@@ -349,8 +349,8 @@ struct AttachmentListView: View {
             .padding(16)
             if filtered.isEmpty {
                 VStack(spacing: 8) {
-                    Text("Ничего не найдено").font(.system(size: 13, weight: .medium))
-                    Text("Измените запрос или очистите поиск.").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text(AppText.string("attachment.noSearchResults")).font(.system(size: 13, weight: .medium))
+                    Text(AppText.string("attachment.retrySearch")).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .accessibilityIdentifier("\(prefix).empty.\(item.id)")
@@ -370,7 +370,7 @@ struct AttachmentListView: View {
                                 .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Открыть вложение: \(attachment.name)")
+                            .accessibilityLabel(AppText.string("attachment.openItem", attachment.name))
                             .accessibilityIdentifier("\(prefix).open.\(item.id).\(attachment.id)")
                             .uiSmokeControl(id: "\(prefix).open.\(item.id).\(attachment.id)", action: { open(attachment) })
                         }
@@ -401,8 +401,8 @@ struct AttachmentListView: View {
                 .contentShape(Rectangle())
         }
         .keyboardShortcut(.cancelAction)
-        .accessibilityLabel(compact ? "Назад" : "Закрыть вложения")
-        .help(compact ? "Назад" : "Закрыть вложения")
+        .accessibilityLabel(compact ? AppText.string("common.back") : AppText.string("attachment.closeLibrary"))
+        .help(compact ? AppText.string("common.back") : AppText.string("attachment.closeLibrary"))
         .accessibilityIdentifier("\(prefix).\(compact ? "back" : "close").\(item.id)")
         .uiSmokeControl(id: "\(prefix).\(compact ? "back" : "close").\(item.id)", action: back)
     }
@@ -422,7 +422,7 @@ struct EditorAttachmentSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Вложения").font(.system(size: 12, weight: .semibold))
+                Text(AppText.string("attachment.titlePlural")).font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
                     .uiSmokeControl(id: "editor.attachments.heading")
                 Spacer()
@@ -433,19 +433,19 @@ struct EditorAttachmentSection: View {
                     })
             }
             HStack {
-                Button("Добавить файлы…", action: add)
+                Button(AppText.string("attachment.addFiles"), action: add)
                     .accessibilityIdentifier("editor.attachments.add")
                     .uiSmokeControl(id: "editor.attachments.add", action: add)
                     .disabled(isImporting || atLimit)
                 if isImporting {
                     ProgressView().controlSize(.small)
-                    Text("Добавляем копии…").font(.caption).foregroundStyle(.secondary)
+                    Text(AppText.string("attachment.copying")).font(.caption).foregroundStyle(.secondary)
                 }
             }
             if atLimit {
                 Text(attachments.count > EventAttachment.maximumCount
-                     ? "Сохранённые файлы останутся. Чтобы добавить новые, оставьте меньше \(EventAttachment.maximumCount)."
-                     : "Достигнут лимит \(EventAttachment.maximumCount) файлов. Уберите файл, чтобы добавить другой.")
+                     ? AppText.string("attachment.legacyLimit", "\(EventAttachment.maximumCount)")
+                     : AppText.string("attachment.fileLimit", "\(EventAttachment.maximumCount)"))
                     .font(.caption2).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .uiSmokeControl(id: "editor.attachments.limit", value: { String(attachments.count) })
@@ -463,7 +463,7 @@ struct EditorAttachmentSection: View {
                         Image(systemName: "minus.circle").frame(width: 24, height: 24)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Убрать вложение: \(attachment.name)")
+                    .accessibilityLabel(AppText.string("attachment.removeItem", attachment.name))
                     .accessibilityIdentifier("editor.attachments.remove.\(attachment.id.uuidString)")
                     .uiSmokeControl(id: "editor.attachments.remove.\(attachment.id.uuidString)", action: {
                         guard !isImporting else { return }
@@ -483,8 +483,8 @@ struct EditorAttachmentSection: View {
 
 private func attachmentExpiryFootnote(keepsAfterDate: Bool) -> some View {
     Text(keepsAfterDate
-         ? "Прикреплённые копии останутся после даты события, пока вы не удалите событие или вложения. Исходные файлы сохранятся."
-         : "Прикреплённые копии удалятся вместе с событием после его даты. Исходные файлы сохранятся.")
+         ? AppText.string("attachment.retainNotice")
+         : AppText.string("attachment.expiryNotice"))
         .font(.caption2).foregroundStyle(.secondary)
         .fixedSize(horizontal: false, vertical: true)
 }

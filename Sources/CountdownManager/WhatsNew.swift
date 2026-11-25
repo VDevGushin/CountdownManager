@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import CountdownCore
 
 @MainActor
 package final class WhatsNewHistory {
@@ -22,24 +23,26 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.25.3"
+    static let releaseID = "1.26.0"
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("Что нового")
+            Text(AppText.string("whatsNew.title"))
                 .font(.custom("Georgia", size: 21))
                 .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
                 .padding(.horizontal, 16)
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Countdown Manager \(Self.releaseID)")
+                    Text(AppText.string("app.releaseVersion", AppText.string("app.name"), Self.releaseID))
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature("Мини-панель в строке меню", symbol: "menubar.rectangle",
-                            text: "На macOS 27 значок снова открывает и закрывает мини-панель после возврата из большого окна. Он подсвечен, пока панель открыта. «Уменьшение движения» отключает переходы.")
+                    feature(AppText.string("whatsNew.materialSearchHeading"), symbol: "magnifyingglass",
+                            text: AppText.string("whatsNew.materialSearchText"))
+                    feature(AppText.string("whatsNew.localizationHeading"), symbol: "text.bubble",
+                            text: AppText.string("whatsNew.localizationText"))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
@@ -47,7 +50,7 @@ struct WhatsNewView: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Понятно", action: dismiss)
+                Button(AppText.string("common.ok"), action: dismiss)
                     .auroraPrimaryAction()
                     .keyboardShortcut(.defaultAction)
                     .accessibilityIdentifier("whatsnew.dismiss")
@@ -94,7 +97,7 @@ final class WhatsNewWindowController: NSWindowController, NSWindowDelegate {
         self.didClose = didClose
         let window = WhatsNewWindow(contentRect: NSRect(x: 0, y: 0, width: 430, height: 560),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "Countdown Manager"
+        window.title = AppText.string("app.name")
         window.identifier = NSUserInterfaceItemIdentifier("whatsnew.window")
         window.isReleasedWhenClosed = false
         super.init(window: window)

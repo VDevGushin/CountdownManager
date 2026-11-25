@@ -8,14 +8,12 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>CFBundleIconName</key><string>AppIcon</string>
-<key>CFBundleShortVersionString</key><string>1.25.3</string>
-<key>CFBundleVersion</key><string>50</string>
+<key>CFBundleShortVersionString</key><string>1.26.0</string>
+<key>CFBundleVersion</key><string>51</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
 <key>CFBundleDevelopmentRegion</key><string>ru</string>
-<key>NSLocationUsageDescription</key><string>Для автоматического выбора города используется примерное местоположение. Город можно выбрать вручную.</string>
-<key>NSLocationWhenInUseUsageDescription</key><string>Для автоматического выбора города используется примерное местоположение. Город можно выбрать вручную.</string>
 <key>SUEnableAutomaticChecks</key><true/>
 <key>SUAutomaticallyUpdate</key><false/>
 <key>SUAllowsAutomaticUpdates</key><false/>

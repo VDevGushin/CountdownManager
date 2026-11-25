@@ -132,9 +132,9 @@ components:
 
 ## Overview
 
-Release 1.25.3 uses an existing release-help section with native `menubar.rectangle`
-for the status item and retained mini-panel fix on macOS 27. The existing 13-point body,
-12-point semibold section labels, Graphite palette and native control families apply.
+Release 1.26.0 uses the existing release-help sections with native `magnifyingglass`
+for file and link search and `text.bubble` for Russian localization resources. The existing
+13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
 height, 16-point insets), system 13-point explanatory text, standard SF Symbols for each release’s explanatory sections, `AuroraPanelCanvas`, and the shared primary `Понятно` action in a fixed
@@ -333,11 +333,13 @@ hit targets and keyboard/accessibility actions.
 
 ### Desktop search matches
 
-The existing 180-point command-bar field uses `Поиск событий и дел` and searches title, note and
-subtask text in collection and feed. A matching subtask adds one 12-point secondary-ink line,
-6 points below the existing card title. The first match follows the displayed active/completed
-checklist order. Long text starts near the match; completed text retains strikethrough. The
-card's existing padding, calendar leaf, metadata, count and selected outline supply its structure.
+The existing 180-point command-bar field uses `Поиск по событиям` in collection and feed. A matching
+subtask, filename or link adds one 12-point secondary-ink line, 6 points below the existing card
+title. The displayed active/completed checklist order takes priority, followed by filenames and
+links in saved order. Long text starts near the match. The snippet displays hard line breaks as
+spaces and shows the matching text by itself when the available width cannot fit the context.
+Completed subtasks retain strikethrough.
+The card's existing padding, calendar leaf, metadata, count and selected outline supply its structure.
 The featured favorite uses the same text line beneath its Georgia title.
 
 Matching ranges in titles, snippets and detail notes/checklists receive only the shared accent

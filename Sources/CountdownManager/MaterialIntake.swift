@@ -20,7 +20,7 @@ package struct EventMaterials {
     package func validateCapacity(for event: Countdown) throws {
         let count = files.count + (textFile == nil ? 0 : 1)
         if count > 0, count > max(0, EventAttachment.maximumCount - event.attachments.count) {
-            throw MaterialIntakeError.message("Выбрано файлов: \(count). Свободных мест: \(max(0, 15 - event.attachments.count)). Ничего не добавлено.")
+            throw MaterialIntakeError.message(AppText.string("material.mixedFileLimit", "\(count)", "\(max(0, 15 - event.attachments.count))"))
         }
         if !links.isEmpty { try EventLink.validate(event.links + links) }
         try textFile?.validate()
@@ -28,7 +28,7 @@ package struct EventMaterials {
 
     package static func classify(_ text: String) throws -> EventMaterials {
         let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !cleaned.isEmpty else { throw MaterialIntakeError.message("Нет текста для добавления.") }
+        guard !cleaned.isEmpty else { throw MaterialIntakeError.message(AppText.string("material.emptyText")) }
         let link = EventLink(address: cleaned)
         if link.url != nil { return EventMaterials(links: [link.normalized()]) }
         if cleaned.range(of: #"^[a-zA-Z][a-zA-Z0-9+.-]*://"#, options: .regularExpression) != nil {
@@ -63,12 +63,12 @@ package func resolveEventMaterials(_ providers: [NSItemProvider]) async throws -
         else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) { type = .url }
         else if provider.hasItemConformingToTypeIdentifier(UTType.utf8PlainText.identifier) { type = .utf8PlainText }
         else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) { type = .plainText }
-        else { throw MaterialIntakeError.message("Перетащите обычный файл, изображение, HTTP/HTTPS-ссылку или текст.") }
+        else { throw MaterialIntakeError.message(AppText.string("material.allowedTypes")) }
         let value: NSSecureCoding = try await withCheckedThrowingContinuation { continuation in
             provider.loadItem(forTypeIdentifier: type.identifier, options: nil) { item, error in
                 if let error { continuation.resume(throwing: error) }
                 else if let item { continuation.resume(returning: item) }
-                else { continuation.resume(throwing: MaterialIntakeError.message("Не удалось получить перетаскиваемый материал.")) }
+                else { continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.dropFailed"))) }
             }
         }
         try Task.checkCancellation()
@@ -77,7 +77,7 @@ package func resolveEventMaterials(_ providers: [NSItemProvider]) async throws -
         else if let text = value as? String { string = text }
         else if let data = value as? Data { string = String(data: data, encoding: .utf8) }
         else { string = nil }
-        guard let string else { throw MaterialIntakeError.message("Перетащите обычный файл, HTTP/HTTPS-ссылку или текст.") }
+        guard let string else { throw MaterialIntakeError.message(AppText.string("material.allowedTypesWithoutImage")) }
         if type == .fileURL {
             guard let url = URL(string: string), url.isFileURL else { throw EventAttachmentError.unsupportedFile }
             result.files.append(url)
@@ -86,15 +86,15 @@ package func resolveEventMaterials(_ providers: [NSItemProvider]) async throws -
             if type == .url, item.links.isEmpty { throw EventLinkError.address }
             result.links += item.links
             if let text = item.text {
-                guard result.text == nil else { throw MaterialIntakeError.message("Добавляйте один фрагмент текста за раз.") }
+                guard result.text == nil else { throw MaterialIntakeError.message(AppText.string("material.singleText")) }
                 result.text = text
             }
         }
     }
     if result.text != nil, !result.files.isEmpty || !result.links.isEmpty {
-        throw MaterialIntakeError.message("Перетащите текст отдельно от файлов и ссылок.")
+        throw MaterialIntakeError.message(AppText.string("material.separateText"))
     }
-    guard !result.isEmpty else { throw MaterialIntakeError.message("Нет материалов для добавления.") }
+    guard !result.isEmpty else { throw MaterialIntakeError.message(AppText.string("material.empty")) }
     return result
 }
 
@@ -200,11 +200,11 @@ struct EventMaterialTarget: ViewModifier {
                 else { store.scheduleMaterialAddition(materials, to: eventID) }
             }, reportError: { store.error = $0 }))
             .contextMenu {
-                Button("Вставить текст как вложение…") {
+                Button(AppText.string("material.pasteText")) {
                     guard available else { return }
                     if let text = NSPasteboard.general.string(forType: .string),
                        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { showText(text) }
-                    else { store.error = "Сначала скопируйте текст, который хотите сохранить во вложении." }
+                    else { store.error = AppText.string("material.pasteTextHint") }
                 }
                 .disabled(!available)
             }

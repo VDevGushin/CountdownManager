@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import IOKit.pwr_mgt
+import CountdownCore
 
 @MainActor
 package protocol KeepAwakeAssertionAdapter: AnyObject {
@@ -15,7 +16,7 @@ private final class SystemKeepAwakeAssertionAdapter: KeepAwakeAssertionAdapter {
         let status = IOPMAssertionCreateWithName(
             kIOPMAssertionTypePreventUserIdleDisplaySleep as CFString,
             IOPMAssertionLevel(kIOPMAssertionLevelOn),
-            "Countdown Manager: пользователь включил «Не засыпать»" as CFString,
+            AppText.string("keepAwake.assertionReason") as CFString,
             &id
         )
         return (status, id)
@@ -68,7 +69,7 @@ package final class KeepAwakeController: ObservableObject {
     private func createAssertion() -> Bool {
         let result = adapter.create()
         guard result.status == kIOReturnSuccess else {
-            error = "Не удалось включить «Не засыпать» (код \(result.status))."
+            error = AppText.string("keepAwake.enableFailed", "\(result.status)")
             return false
         }
         assertionID = result.id
@@ -82,7 +83,7 @@ package final class KeepAwakeController: ObservableObject {
         let status = adapter.release(assertionID)
         guard status == kIOReturnSuccess else {
             // Keep ownership after failure so another attempt releases the same assertion.
-            error = "Не удалось выключить «Не засыпать» (код \(status)). Попробуйте ещё раз."
+            error = AppText.string("keepAwake.disableFailed", "\(status)")
             return false
         }
         self.assertionID = nil

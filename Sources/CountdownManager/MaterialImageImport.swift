@@ -1,5 +1,6 @@
 import AppKit
 import UniformTypeIdentifiers
+import CountdownCore
 
 // Concrete types also work when an external source advertises an encoded image without
 // registering its broader image conformance with the item provider.
@@ -27,12 +28,12 @@ package final class StagedMaterialFile: Sendable {
     static func copy(from source: URL, suggestedName: String?, type: UTType) throws -> StagedMaterialFile {
         let manager = FileManager.default
         guard source.isFileURL else {
-            throw MaterialIntakeError.message("Не удалось получить локальный файл изображения.")
+            throw MaterialIntakeError.message(AppText.string("material.image.sourceUnavailable"))
         }
         let values = try source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .isPackageKey])
         guard values.isRegularFile == true,
               values.isSymbolicLink != true, values.isPackage != true else {
-            throw MaterialIntakeError.message("Не удалось получить обычный файл изображения.")
+            throw MaterialIntakeError.message(AppText.string("material.image.regularFileRequired"))
         }
         let folder = manager.temporaryDirectory.appendingPathComponent("CountdownMaterial-\(UUID().uuidString)", isDirectory: true)
         try manager.createDirectory(at: folder, withIntermediateDirectories: false)
@@ -51,7 +52,7 @@ package final class StagedMaterialFile: Sendable {
         let name = [suggestedName, source.lastPathComponent].compactMap { $0 }.first { candidate in
             !candidate.isEmpty && candidate != "." && candidate != ".." && candidate.utf8.count < 220 &&
                 !candidate.contains("/") && !candidate.contains("\\") && !candidate.contains("\0")
-        } ?? "Изображение"
+        } ?? AppText.string("material.image.defaultFilename")
         let ext = (name as NSString).pathExtension.lowercased()
         if UTType(filenameExtension: ext) == type || matchingExtension(ext, type: type) { return name }
         let stem = (name as NSString).deletingPathExtension
@@ -90,7 +91,7 @@ func loadMaterialImage(_ provider: NSItemProvider, type: UTType) async throws ->
                 // Progress cancellation and a late source callback may both complete this load.
                 guard request.claimCompletion() else { return }
                 guard let source, error == nil else {
-                    continuation.resume(throwing: MaterialIntakeError.message("Не удалось получить изображение. Повторите перетаскивание."))
+                    continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.image.dropFailed")))
                     return
                 }
                 do {
@@ -98,7 +99,7 @@ func loadMaterialImage(_ provider: NSItemProvider, type: UTType) async throws ->
                     let staged = try StagedMaterialFile.copy(from: source, suggestedName: suggestedName, type: type)
                     continuation.resume(returning: staged)
                 } catch {
-                    continuation.resume(throwing: MaterialIntakeError.message("Не удалось подготовить изображение. Проверьте доступ и свободное место на диске."))
+                    continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.image.prepareFailed")))
                 }
             }
             request.install(progress)

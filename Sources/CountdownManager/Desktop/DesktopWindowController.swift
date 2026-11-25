@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import CountdownCore
 
 @MainActor
 final class DesktopWindowController: NSWindowController, NSWindowDelegate {
@@ -16,7 +17,7 @@ final class DesktopWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Countdown Manager"
+        window.title = AppText.string("app.name")
         window.identifier = NSUserInterfaceItemIdentifier("desktop.window")
         window.contentMinSize = NSSize(width: 960, height: 640)
         window.isReleasedWhenClosed = false

@@ -37,16 +37,16 @@ package struct DailyWeatherForecast: Equatable, Sendable {
 
     package var conditionDescription: String {
         switch weatherCode {
-        case 0: return "Ясно"
-        case 1, 2: return "Переменная облачность"
-        case 3: return "Пасмурно"
-        case 45, 48: return "Туман"
-        case 51, 53, 55: return "Морось"
-        case 56, 57: return "Ледяная морось"
-        case 61, 63, 65, 80, 81, 82: return "Дождь"
-        case 66, 67: return "Ледяной дождь"
-        case 71, 73, 75, 77, 85, 86: return "Снег"
-        default: return "Гроза"
+        case 0: return AppText.string("weather.condition.clear")
+        case 1, 2: return AppText.string("weather.condition.partlyCloudy")
+        case 3: return AppText.string("weather.condition.overcast")
+        case 45, 48: return AppText.string("weather.condition.fog")
+        case 51, 53, 55: return AppText.string("weather.condition.drizzle")
+        case 56, 57: return AppText.string("weather.condition.freezingDrizzle")
+        case 61, 63, 65, 80, 81, 82: return AppText.string("weather.condition.rain")
+        case 66, 67: return AppText.string("weather.condition.freezingRain")
+        case 71, 73, 75, 77, 85, 86: return AppText.string("weather.condition.snow")
+        default: return AppText.string("weather.condition.storm")
         }
     }
 
@@ -58,7 +58,7 @@ package struct DailyWeatherForecast: Equatable, Sendable {
     }
 
     package var accessibilityDescription: String {
-        "\(conditionDescription). Максимальная температура за день: \(temperatureLabel) Цельсия."
+        AppText.string("weather.maximumAccessibility", conditionDescription, temperatureLabel)
     }
 }
 
@@ -392,7 +392,7 @@ package final class WeatherController: ObservableObject {
     private func requestLocation(allowPrompt: Bool) {
         guard allowLocationRequests else {
             recordLocation("result=disabled")
-            settingsStatus = "Для прогноза выберите город вручную."
+            settingsStatus = AppText.string("weather.chooseCity")
             return
         }
         guard !locationIsPending else { return }
@@ -403,7 +403,7 @@ package final class WeatherController: ObservableObject {
         locationIsPending = true
         recordLocation("result=requested prompt=\(allowPrompt)")
         locationAttemptDate = monotonicNow()
-        settingsStatus = "Определяем местоположение…"
+        settingsStatus = AppText.string("weather.locationLoading")
         let expectedGeneration = generation
         locationProvider.request(allowPrompt: allowPrompt) { [weak self] result in
             guard let self, self.generation == expectedGeneration, self.enabled, !self.stopped, !self.demand.isEmpty else { return }
@@ -417,14 +417,14 @@ package final class WeatherController: ObservableObject {
                 self.loadForecasts(at: coordinates)
             case .failure(.permissionRequired):
                 self.recordLocation("result=permission_required")
-                self.settingsStatus = "Для геолокации включите погоду или выберите «Автоматически» в настройках."
+                self.settingsStatus = AppText.string("weather.enableLocation")
             case let .failure(failure):
                 switch failure {
                 case .denied: self.recordLocation("result=denied")
                 case .unavailable: self.recordLocation("result=unavailable")
                 case .permissionRequired: break
                 }
-                self.settingsStatus = "Местоположение недоступно. Выберите город вручную."
+                self.settingsStatus = AppText.string("weather.locationUnavailable")
                 self.scheduleRefresh(at: self.monotonicNow() + Self.failureBackoff)
             }
         }
@@ -457,7 +457,7 @@ package final class WeatherController: ObservableObject {
             scheduleNextRefresh(key: key)
             return
         }
-        if forecasts.isEmpty { settingsStatus = "Получаем прогноз…" }
+        if forecasts.isEmpty { settingsStatus = AppText.string("weather.forecastLoading") }
         let expectedGeneration = generation
         let provider = provider
         var modifications: [WeatherSource: WeatherHTTPMetadata.Validators] = [:]
@@ -687,8 +687,8 @@ package final class WeatherController: ObservableObject {
         forecasts = forecasts.filter { demand.contains($0.key) }
         recordPublication()
         if !forecasts.isEmpty { settingsStatus = nil }
-        else if entries.values.contains(where: \.failed) { settingsStatus = "Прогноз недоступен. Попробуем позже." }
-        else if !entries.isEmpty { settingsStatus = "Прогноз недоступен для выбранных дат." }
+        else if entries.values.contains(where: \.failed) { settingsStatus = AppText.string("weather.retry") }
+        else if !entries.isEmpty { settingsStatus = AppText.string("weather.forecastUnavailable") }
         guard computationInput != input else { return }
         cancelComputation()
         computationInput = input
@@ -716,7 +716,7 @@ package final class WeatherController: ObservableObject {
             } catch {
                 guard let self, !Task.isCancelled, self.computationRevision == expectedRevision else { return }
                 self.computationTask = nil
-                self.settingsStatus = "Прогноз недоступен. Попробуем позже."
+                self.settingsStatus = AppText.string("weather.retry")
                 self.diagnostics.emit("weather.computation \(WeatherDiagnostics.errorFields(error))")
                 self.recordDiagnosticSnapshot(reason: .settled)
             }

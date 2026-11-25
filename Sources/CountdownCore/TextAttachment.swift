@@ -13,11 +13,11 @@ public struct TextAttachment: Equatable {
     public static func suggestedName(for text: String) -> String {
         let first = text.split(whereSeparator: \.isNewline).first(where: {
             !$0.trimmingCharacters(in: .whitespaces).isEmpty
-        }).map(String.init) ?? "Текст"
+        }).map(String.init) ?? AppText.string("common.text")
         let clean = first.components(separatedBy: CharacterSet.controlCharacters
             .union(CharacterSet(charactersIn: "/\\:"))).joined(separator: " ")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return String((clean.isEmpty ? "Текст" : clean).prefix(50)) + ".txt"
+        return String((clean.isEmpty ? AppText.string("common.text") : clean).prefix(50)) + ".txt"
     }
 
     public var filename: String {
@@ -44,9 +44,9 @@ public enum TextAttachmentError: LocalizedError {
     case emptyText, invalidName, longName
     public var errorDescription: String? {
         switch self {
-        case .emptyText: "Вставьте или введите текст вложения."
-        case .invalidName: "Укажите имя файла без слешей, двоеточия и управляющих символов."
-        case .longName: "Имя файла слишком длинное. Сократите его."
+        case .emptyText: AppText.string("textAttachment.emptyContent")
+        case .invalidName: AppText.string("textAttachment.invalidFilename")
+        case .longName: AppText.string("textAttachment.filenameTooLong")
         }
     }
 }

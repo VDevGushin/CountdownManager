@@ -30,7 +30,7 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Surface | Command | Cost and scope |
 | --- | --- | --- |
 | SwiftLint | `swiftlint lint --config .swiftlint.yml --strict --no-cache` | Fast static checks over `Sources`, `Tests`, and `XCUITests` |
-| CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate |
+| CoreChecks + UIChecks | `./verify.sh fast` | Fast deterministic regression gate including localization key coverage and formatting |
 | Real UI Smoke | `./verify.sh ui` | Release build plus isolated in-process SwiftUI/AppKit runtime scenarios |
 | Desktop window Real UI Smoke | `./verify.sh desktop` | Focused isolated native desktop/panel shared-state, editor ownership, window retention and split-layout scenarios |
 | Desktop window captures | `./verify.sh desktop-capture <marked-output-directory>` | The same focused desktop scenarios, retained tested app, native PNGs and executable provenance manifest |
@@ -953,7 +953,7 @@ file/editor paths, not represented as a new external run for this visual-only re
 
 Run full SwiftLint and `./verify.sh fast` before the focused `./verify.sh desktop` runtime.
 UIChecks adds deterministic desktop collection/feed presentation coverage: active-day filtering,
-stable equal-date ordering, trimmed case-insensitive title/note/subtask search, favorite pinning without a favorite-only filter,
+stable equal-date ordering, trimmed case-insensitive title/note/subtask/material search, favorite pinning without a favorite-only filter,
 no substitute favorite for nil/invalid/expired IDs, visible selection reconciliation and
 one-third/320-point pane constraints. Editor-session checks exercise exclusive panel/desktop
 admission, repeated requests, wrong-owner cleanup, compatibility setters and updater postponement,
@@ -972,6 +972,13 @@ preservation. Captures include collection/feed/completed/empty, favorite and lon
 in Light and Graphite Dark, plus both Increase Contrast appearances for the feed.
 The fixture uses an injected 17 November 2026 civil date and in-process input/rendering.
 It does not require foreground-app activation and does not certify physical keyboard delivery.
+The same route checks material-only results through the native search field: a copied filename in
+collection, link name and address in feed, a single snippet with the matching event's details,
+and restoration after clearing. UIChecks also covers unnamed links, retained and expired events,
+multiple material hits in one event, and an existing subtask match taking priority in the snippet.
+It checks that LF, CRLF and Unicode line separators in saved filenames are flattened for the
+one-line fragment, that flattening cannot create extra highlighted matches, and that a long address
+provides the exact matching text for a narrow card.
 
 The focused `--ui-smoke-desktop --ui-smoke-desktop-title-alignment` route uses two
 ordinary grid cards with unequal wrapped lines on an isolated profile. It inspects

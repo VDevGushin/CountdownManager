@@ -60,10 +60,10 @@ func testDesktopPresentation() throws {
     precondition(DesktopEventCollection(
         items: items, today: tomorrow, primaryID: nil, query: " \n"
     ).events == [favorite])
-    precondition(desktopSelection(current: second.id, available: selected.events) == second.id)
-    precondition(desktopSelection(current: nil, available: selected.events) == favorite.id)
-    precondition(desktopSelection(current: UUID(), available: selected.events) == favorite.id)
-    precondition(desktopSelection(current: favorite.id, available: matchingTitle.events) == second.id)
+    precondition(desktopSelection(current: second.id, available: selected.events.map(\.id)) == second.id)
+    precondition(desktopSelection(current: nil, available: selected.events.map(\.id)) == favorite.id)
+    precondition(desktopSelection(current: UUID(), available: selected.events.map(\.id)) == favorite.id)
+    precondition(desktopSelection(current: favorite.id, available: matchingTitle.events.map(\.id)) == second.id)
     precondition(desktopSelection(current: second.id, available: []) == nil)
     precondition(desktopMinimumPaneWidth(contentWidth: 960) == 320)
     precondition(desktopMinimumPaneWidth(contentWidth: 1_201) == 400)
@@ -76,6 +76,7 @@ func testDesktopPresentation() throws {
     precondition(DesktopEventViewMode.feed.systemImage == "list.bullet")
     testDesktopMonthGrouping()
     try testDesktopSubtaskSearch()
+    try testDesktopMaterialSearch()
     try testSubtaskDropGeometry()
 }
 
@@ -141,7 +142,7 @@ private func testDesktopSubtaskSearch() throws {
     precondition(DesktopEventCollection(items: items, today: today, primaryID: nil, query: "без совпадений").events.isEmpty)
     let plain = DesktopEventCollection(items: items, today: today, primaryID: nil, query: " \n")
     precondition(plain.events == [items[0], second, other, past])
-    precondition(desktopSelection(current: second.id, available: collection.events) == second.id)
+    precondition(desktopSelection(current: second.id, available: collection.events.map(\.id)) == second.id)
 
     let repeated = "👨‍👩‍👧‍👦 страховка, СТРАХОВКА и е\u{301}"
     let repeatedSearch = DesktopEventSearch("страховка")
@@ -152,12 +153,12 @@ private func testDesktopSubtaskSearch() throws {
     precondition(DesktopEventSearch("👨‍👩‍👧‍👦").ranges(in: repeated).count == 1)
     precondition(DesktopEventSearch(" ").ranges(in: repeated).isEmpty)
     let longText = String(repeating: "👨‍👩‍👧‍👦 ", count: 20) + "страховка" + String(repeating: " дорога", count: 20)
-    let snippet = repeatedSearch.snippet(in: longText)
+    let snippet = repeatedSearch.snippet(in: longText)!.context
     precondition(snippet.hasPrefix("…") && snippet.hasSuffix("…") && snippet.contains("страховка"))
     precondition(snippet.count == 8 + "страховка".count + 24 + 2)
-    precondition(repeatedSearch.snippet(in: "страховка") == "страховка")
-    precondition(DesktopEventSearch("страховку").snippet(in: "Продлить страховку") == "Продлить страховку")
-    precondition(repeatedSearch.snippet(in: "Без совпадения") == "Без совпадения")
+    precondition(repeatedSearch.snippet(in: "страховка")?.context == "страховка")
+    precondition(DesktopEventSearch("страховку").snippet(in: "Продлить страховку")?.context == "Продлить страховку")
+    precondition(repeatedSearch.snippet(in: "Без совпадения") == nil)
 
     let attributed = desktopSearchAttributedText(repeated, search: repeatedSearch, color: .red)
     precondition(String(attributed.characters) == repeated)
@@ -165,6 +166,73 @@ private func testDesktopSubtaskSearch() throws {
     precondition(attributed.runs.allSatisfy { $0.font == nil && $0.kern == nil && $0.tracking == nil })
     let plainText = desktopSearchAttributedText(repeated, search: DesktopEventSearch(""), color: .red)
     precondition(plainText.runs.allSatisfy { $0.foregroundColor == nil && $0.font == nil })
+}
+
+private func testDesktopMaterialSearch() throws {
+    let today = Day(Date())
+    let yesterday = Day(Day.calendar.date(byAdding: .day, value: -1, to: today.date())!)
+    let firstFile = try EventAttachment(name: "Билеты.pdf", byteCount: 42)
+    let secondFile = try EventAttachment(name: "Билеты обратно.pdf", byteCount: 42)
+    let namedLink = EventLink(name: "Схема вокзала", address: "https://rail.example/путешествие/схема-выходов")
+    let unnamedLink = EventLink(address: "https://hotel.example/check-in")
+    let trip = Countdown(title: "Поездка", date: today, emoji: "", attachments: [firstFile, secondFile], links: [namedLink])
+    let past = Countdown(title: "Встреча", date: yesterday, emoji: "", keepsAfterDate: true,
+                         attachments: [secondFile], links: [unnamedLink])
+    let expired = Countdown(title: "Старое событие", date: yesterday, emoji: "", links: [namedLink, unnamedLink])
+    let task = try Subtask(text: "Билеты распечатаны", isCompleted: true)
+    let mixed = Countdown(title: "Дела", date: today, emoji: "", subtasks: [task], attachments: [firstFile],
+                          links: [EventLink(name: "Билеты", address: "https://rail.example/tickets")])
+    let items = [past, trip, expired, mixed]
+    func results(_ query: String) -> [Countdown] {
+        DesktopEventCollection(items: items, today: today, primaryID: trip.id, query: query).events
+    }
+
+    let files = DesktopEventSearch(" \nБиЛеТы  ")
+    precondition(results(files.query) == [trip, mixed, past])
+    precondition(files.cardMatch(in: trip)?.text == firstFile.name)
+    precondition(files.cardMatch(in: mixed)?.text == task.text)
+    precondition(files.cardMatch(in: trip)?.accessibilitySuffix == ". Вложение: Билеты.pdf")
+    precondition(files.cardMatch(in: mixed)?.accessibilitySuffix == ". Подзадача: Билеты распечатаны")
+    precondition(results(".PDF") == [trip, mixed, past])
+    let name = DesktopEventSearch("СХЕМА")
+    precondition(results(name.query) == [trip])
+    precondition(name.cardMatch(in: trip)?.text == namedLink.name)
+    precondition(name.cardMatch(in: trip)?.accessibilitySuffix == ". Ссылка: Схема вокзала")
+    let path = DesktopEventSearch("выходов")
+    precondition(results(path.query) == [trip])
+    precondition(path.cardMatch(in: trip)?.text == namedLink.address)
+    precondition(results("HOTEL.EXAMPLE") == [past])
+    precondition(DesktopEventSearch("check-in").cardMatch(in: past)?.text == unnamedLink.address)
+    precondition(results("не найдено").isEmpty)
+    precondition(results(" \n") == [trip, mixed, past])
+    precondition(DesktopEventSearch(" ").cardMatch(in: trip) == nil)
+
+    let control = DesktopEventSearch("контроль")
+    for separator in ["\n", "\r\n", "\u{2028}"] {
+        let attachment = try EventAttachment(name: "Маршрут\(separator)КОНТРОЛЬ.txt", byteCount: 42)
+        let event = Countdown(title: "Поездка", date: today, emoji: "", attachments: [attachment])
+        let match = control.cardMatch(in: event)!
+        let snippet = control.snippet(in: match.text)!
+        precondition(match.text == attachment.name)
+        let shown = desktopSearchAttributedText(snippet.context, search: control, color: .red, singleLine: true)
+        precondition(String(shown.characters) == "Маршрут КОНТРОЛЬ.txt")
+        precondition(snippet.matchingText == "КОНТРОЛЬ")
+    }
+    let wideAddress = "https://rail.example/" + String(repeating: "W", count: 120) + "/PLATFORM-MAP?section=1"
+    let wideSnippet = DesktopEventSearch("platform-map").snippet(in: wideAddress)!
+    precondition(wideSnippet.context.hasPrefix("…WWWWWWW/PLATFORM-MAP"))
+    precondition(wideSnippet.matchingText == "PLATFORM-MAP")
+
+    let filename = "A\nB A B.txt"
+    for (query, expected) in [("A B", ["A B ", "A B", ".txt"]), ("A\nB", ["A B", " A B.txt"])] {
+        let search = DesktopEventSearch(query)
+        let snippet = search.snippet(in: filename)!
+        let shown = desktopSearchAttributedText(snippet.context, search: search, color: .red, singleLine: true)
+        precondition(String(shown.characters) == "A B A B.txt")
+        precondition(shown.runs.map { String(shown[$0.range].characters) } == expected)
+        let highlighted = shown.runs.filter { $0.foregroundColor == .red }.map { String(shown[$0.range].characters) }
+        precondition(highlighted == ["A B"])
+    }
 }
 
 private func testDesktopMonthGrouping() {

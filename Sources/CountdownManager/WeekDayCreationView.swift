@@ -2,7 +2,7 @@ import CountdownCore
 import SwiftUI
 
 package func weekCreationTitle(for today: Day) -> String {
-    DayCreationWeek(today: today)?.isNextWeek == true ? "На следующую неделю" : "До конца недели"
+    DayCreationWeek(today: today)?.isNextWeek == true ? AppText.string("week.next") : AppText.string("week.remaining")
 }
 
 private struct WeekDayCreationRow: Identifiable {
@@ -43,13 +43,13 @@ struct WeekDayCreationView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(week.isNextWeek ? "На следующую неделю" : "До конца недели")
+            Text(week.isNextWeek ? AppText.string("week.next") : AppText.string("week.remaining"))
                 .font(.custom("Georgia", size: 21)).tracking(-0.5)
                 .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
                 .padding(.horizontal, 16)
                 .accessibilityIdentifier("creation.week.title")
                 .uiSmokeControl(id: "creation.week.title",
-                                value: { week.isNextWeek ? "На следующую неделю" : "До конца недели" })
+                                value: { week.isNextWeek ? AppText.string("week.next") : AppText.string("week.remaining") })
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
@@ -71,8 +71,8 @@ struct WeekDayCreationView: View {
                             if index < rows.count - 1 { Divider() }
                         }
                     }
-                    Text(missingCount == 0 ? "На всех датах уже есть события."
-                         : "Даты с событиями будут пропущены. Остальные дни будут созданы.")
+                    Text(missingCount == 0 ? AppText.string("week.noMissing")
+                         : AppText.string("week.datesSkipped"))
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                         .uiSmokeControl(id: "creation.week.count", value: { String(missingCount) })
@@ -84,13 +84,13 @@ struct WeekDayCreationView: View {
             HStack(spacing: 10) {
                 if isSaving { ProgressView().controlSize(.small) }
                 Spacer()
-                Button("Отмена", action: cancelPreview)
+                Button(AppText.string("common.cancel"), action: cancelPreview)
                     .auroraSecondaryAction()
                     .keyboardShortcut(.cancelAction)
                     .accessibilityIdentifier("creation.week.cancel")
                     .uiSmokeControl(id: "creation.week.cancel", action: cancelPreview)
                     .disabled(isSaving)
-                Button(missingCount == 0 ? "Нет новых дней" : "Создать \(missingCount) \(dayCountNoun(missingCount))",
+                Button(missingCount == 0 ? AppText.string("week.createDisabled") : AppText.string("week.createCount", "\(missingCount)", "\(dayCountNoun(missingCount))"),
                        action: create)
                     .auroraPrimaryAction()
                     .keyboardShortcut(.defaultAction)
@@ -120,7 +120,7 @@ struct WeekDayCreationView: View {
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             }
             Spacer(minLength: 4)
-            Text(row.alreadyExists ? "Уже есть" : "Будет создан")
+            Text(row.alreadyExists ? AppText.string("week.existing") : AppText.string("week.planned"))
                 .font(.system(size: 11))
                 .foregroundStyle(row.alreadyExists ? AuroraInstrument.secondaryInk(for: colorScheme)
                                  : AuroraInstrument.accent(for: colorScheme,
@@ -155,6 +155,6 @@ struct WeekDayCreationView: View {
     }
 
     private func dayCountNoun(_ count: Int) -> String {
-        count == 1 ? "день" : ((2...4).contains(count) ? "дня" : "дней")
+        count == 1 ? AppText.string("calendar.day.one") : ((2...4).contains(count) ? AppText.string("calendar.day.few") : AppText.string("calendar.day.many"))
     }
 }

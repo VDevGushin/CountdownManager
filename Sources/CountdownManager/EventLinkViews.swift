@@ -56,12 +56,12 @@ struct SavedLinkSection: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Ссылки: \(item.links.count), \(expanded ? "свернуть" : "раскрыть")")
+                    .accessibilityLabel(AppText.string("link.disclosure", "\(item.links.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
                     .accessibilityIdentifier("panel.links.toggle.\(item.id)")
                     .uiSmokeControl(id: "panel.links.toggle.\(item.id)", action: { expanded.toggle() },
                                     value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    SavedMaterialHeading(title: "Ссылки", count: item.links.count, symbolName: "link",
+                    SavedMaterialHeading(title: AppText.string("link.titlePlural"), count: item.links.count, symbolName: "link",
                                          controlPrefix: "desktop.links", eventID: item.id)
                 }
                 if !compact || expanded {
@@ -74,7 +74,7 @@ struct SavedLinkSection: View {
     }
 
     private var heading: some View {
-        Text("Ссылки")
+        Text(AppText.string("link.titlePlural"))
             .font(.system(size: 12, weight: .semibold))
             .uiSmokeControl(id: "\(surface).links.heading.\(item.id)")
     }
@@ -104,7 +104,7 @@ struct SavedLinkSection: View {
             .foregroundStyle(AuroraInstrument.accentInk(
                 for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
             .help(link.address)
-            .accessibilityLabel("Открыть ссылку: \(link.displayName), \(link.domain)")
+            .accessibilityLabel(AppText.string("link.open", link.displayName, link.domain))
             .accessibilityIdentifier("\(surface).links.open.\(link.id)")
             .uiSmokeControl(id: "\(surface).links.open.\(link.id)", action: { open(link) },
                             value: { link.displayName })
@@ -128,7 +128,7 @@ struct EditorLinkSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Ссылки").font(.system(size: 12, weight: .semibold))
+                Text(AppText.string("link.titlePlural")).font(.system(size: 12, weight: .semibold))
                 Spacer()
                 Text("\(links.count)/\(EventLink.maximumCount)").font(.caption2)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
@@ -136,13 +136,13 @@ struct EditorLinkSection: View {
             ForEach($links) { $link in
                 linkRow($link)
             }
-            Button("Добавить ссылку", action: add)
+            Button(AppText.string("link.add"), action: add)
                 .accessibilityIdentifier("editor.links.add")
                 .uiSmokeControl(id: "editor.links.add", action: add)
                 .disabled(links.count >= EventLink.maximumCount)
             Text(links.count >= EventLink.maximumCount
-                 ? "Добавлено 10 ссылок. Уберите одну, чтобы добавить другую."
-                 : "Название необязательно. Адрес начинается с https:// или http://.")
+                 ? AppText.string("link.limitHint")
+                 : AppText.string("link.editorHint"))
                 .font(.caption2)
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
@@ -163,7 +163,7 @@ struct EditorLinkSection: View {
         let invalid = link.url == nil && touched.contains(link.id)
         return VStack(alignment: .leading, spacing: 7) {
             HStack {
-                Text("Ссылка \((links.firstIndex(where: { $0.id == link.id }) ?? 0) + 1)")
+                Text(AppText.string("link.numbered", "\((links.firstIndex(where: { $0.id == link.id }) ?? 0) + 1)"))
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 Spacer()
@@ -171,22 +171,22 @@ struct EditorLinkSection: View {
                     Image(systemName: "trash").frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Удалить ссылку: \(link.displayName.isEmpty ? "без адреса" : link.displayName)")
+                .accessibilityLabel(AppText.string("link.remove", "\(link.displayName.isEmpty ? AppText.string("link.missingAddress") : link.displayName)"))
                 .accessibilityIdentifier("editor.links.remove.\(link.id)")
                 .uiSmokeControl(id: "editor.links.remove.\(link.id)", action: { remove(link.id) })
             }
-            Text("Название · необязательно").font(.caption)
-            TextField("Например, маршрут до отеля", text: binding.name)
+            Text(AppText.string("link.optionalName")).font(.caption)
+            TextField(AppText.string("link.namePrompt"), text: binding.name)
                 .textFieldStyle(.roundedBorder)
                 .focused($focused, equals: .name(link.id))
-                .accessibilityLabel("Название ссылки")
+                .accessibilityLabel(AppText.string("link.name"))
                 .accessibilityIdentifier("editor.links.name.\(link.id)")
                 .uiSmokeControl(id: "editor.links.name.\(link.id)", action: { focused = .name(link.id) }, value: { binding.wrappedValue.name })
-            Text("Адрес").font(.caption)
+            Text(AppText.string("link.address")).font(.caption)
             TextField("https://example.com", text: binding.address)
                 .textFieldStyle(.roundedBorder)
                 .focused($focused, equals: .address(link.id))
-                .accessibilityLabel("Адрес ссылки")
+                .accessibilityLabel(AppText.string("link.addressAccessibility"))
                 .accessibilityIdentifier("editor.links.address.\(link.id)")
                 .uiSmokeControl(id: "editor.links.address.\(link.id)", action: { focused = .address(link.id) }, value: { binding.wrappedValue.address })
             if invalid {
