@@ -1,0 +1,50 @@
+{
+  "version": "1.27.0",
+  "build": "52",
+  "documents": 166,
+  "localReferences": 785,
+  "homepageImages": 2,
+  "errors": [],
+  "publicChecks": {
+    "latest": {
+      "status": 200,
+      "sha256": "6352f8df589c6dc45e446b587c88512548f796e2f56d481af2ad1a20e0168210",
+      "bytes": 145846
+    },
+    "archive": {
+      "status": 200,
+      "sha256": "050b6f2846016704172ab65ca749aa0eb44f97953c855ca15754e0408ca45cf6",
+      "bytes": 7062712
+    },
+    "versionFeed": {
+      "status": 200,
+      "sha256": "b1818bcf5694d2f5d6d24eab4a14f353dbeb988c4b52465ff5c07a75a4ff67af",
+      "bytes": 2834
+    },
+    "stableFeed": {
+      "status": 200,
+      "sha256": "b1818bcf5694d2f5d6d24eab4a14f353dbeb988c4b52465ff5c07a75a4ff67af",
+      "bytes": 2834
+    }
+  },
+  "status": "published-and-publicly-verified",
+  "verifiedAtUTC": "2026-11-25T23:52:00.301479+00:00",
+  "releaseURL": "https://github.com/MonolitST/CountdownManager/releases/tag/v1.27.0",
+  "defaultBranch": "main",
+  "sourceCommit": "fb0a765d23378b61c758dc9ee046820d8dc5138a",
+  "annotatedTagObject": "c8c8e105eb1c66dad2f8c3f0a06367d97eda3874",
+  "visibleReleaseLabel": "Latest",
+  "publishedUsing": "GitHub release form in ChatGPT in-app browser",
+  "visibleReleaseAssets": [
+    "appcast.xml",
+    "CountdownManager-1.27.0-52.zip"
+  ],
+  "homepageCaptureImagesLoaded": true,
+  "installedPreviousFeed": {
+    "url": "https://github.com/VDevGushin/CountdownManager/releases/latest/download/appcast.xml",
+    "status": 200,
+    "sha256": "b1818bcf5694d2f5d6d24eab4a14f353dbeb988c4b52465ff5c07a75a4ff67af",
+    "bytes": 2834,
+    "matchesOrganizationFeed": true
+  }
+}

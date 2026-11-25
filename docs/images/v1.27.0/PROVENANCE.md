@@ -13,3 +13,15 @@ during an open edit, preserving the draft, focus, date, timer deadline and saved
 The [English desktop](desktop-en.png), [English mini-panel](mini-panel-en.png) and both Settings
 captures ([English](language-settings-en.png), [Russian](language-settings-ru.png)) were visually
 inspected for the README.
+
+## Published package
+
+The final ZIP was built from `fb0a765d23378b61c758dc9ee046820d8dc5138a`. The [package audit](artifact-audit.json)
+records matching extracted bytes, modes and symlinks, independent verification of the Ed25519
+archive and feed signatures, rejection of altered data and signature bytes, and the unchanged
+updater key. Both packaged catalogs contain 431 localized strings. Strict/deep codesign passed.
+
+The [release-help test](release-help-result.txt) ran on the exact extracted ZIP in a marked isolated
+profile. The language and menu-bar regression tests used their separate test bundles described in
+[Verification](../../VERIFICATION.md). [Public checks](publication.json) include the update URL
+embedded in the installed 1.26.0. The owner can perform the actual update from that installation.

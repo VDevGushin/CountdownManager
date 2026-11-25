@@ -3,19 +3,19 @@
 ## Current published release
 
 Published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest) is
-**1.26.0 / build 51** on 2026-11-25. Desktop event search includes
-attached filenames and saved link names and addresses. Russian interface copy and location
-usage descriptions are packaged as localization resources.
-[Release status](releases/v1.26.0.md) and [notes](releases/v1.26.0-notes.md) describe the changes.
-[Public verification](images/v1.26.0/publication.json) records the audited ZIP, versioned feed
-and stable feed. The annotated tag targets frozen main source
-`0cbe8f9de3ec0f8cd7071614541dbaae0a865ba4`.
-[Package and native evidence](images/v1.26.0/PROVENANCE.md) records signing, localization,
-search, desktop checks and the current homepage captures.
+**1.27.0 / build 52** on 2026-11-26. English is the default and the app switches between English
+and Russian immediately. The release fixes reopening the mini-panel after switching apps on macOS 27.
+[Release status](releases/v1.27.0.md) and [notes](releases/v1.27.0-notes.md) describe the changes.
+[Public verification](images/v1.27.0/publication.json) records the audited ZIP, versioned feed and
+stable feed. The annotated tag targets frozen main source
+`fb0a765d23378b61c758dc9ee046820d8dc5138a`.
+[Package and native evidence](images/v1.27.0/PROVENANCE.md) records signing, localization, release
+help and the homepage captures.
 
-The previous public release is **1.25.3 / build 50**. [Handoff](images/v1.26.0/handoff.json)
+The previous public release is **1.26.0 / build 51**. [Handoff](images/v1.27.0/handoff.json)
 records that the exact previous public package remains installed and running for the owner's
-manual update. Its publication is recorded under [1.25.3](releases/v1.25.3.md).
+manual update. The URL embedded in 1.26.0 resolves to the same signed 1.27.0 feed as the
+organization URL. Its previous publication is recorded under [1.26.0](releases/v1.26.0.md).
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
