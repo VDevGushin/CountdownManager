@@ -2049,7 +2049,7 @@ private struct EditorSubtaskRow: View {
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .accessibilityLabel("Выполнена")
             }
-            TextField("Подзадача", text: text)
+            TextField(EventUIStrings.subtask, text: text)
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 12))
                 .frame(minHeight: 28)

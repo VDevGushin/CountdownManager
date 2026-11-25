@@ -106,12 +106,14 @@ struct DesktopRootView: View {
     }
 
     var body: some View {
+        let collection = collection
+        let visibleIDs = collection.events.map(\.id)
         VStack(spacing: 0) {
             desktopCommandBar
             Divider()
             if let error = store.error, !showingEditor, attachmentsEventID == nil { errorBanner(error) }
             if editorSession.isPresented || editorSession.subtaskTransfer?.surface == .panel { panelEditorBanner }
-            splitContent
+            splitContent(collection)
             Divider()
             footer
         }
@@ -137,7 +139,7 @@ struct DesktopRootView: View {
         .environmentObject(appearanceSettings)
         .environment(\.colorScheme, colorScheme)
         .onAppear {
-            reconcileSelection()
+            reconcileSelection(visibleIDs)
             registerPasteAction?({
                 guard canMutate, !(NSApp.keyWindow?.firstResponder is NSTextView), let selectedID,
                       let text = NSPasteboard.general.string(forType: .string) else { return }
@@ -145,7 +147,7 @@ struct DesktopRootView: View {
             })
         }
         .onDisappear { registerPasteAction?(nil) }
-        .onChange(of: collection.events.map(\.id)) { _ in reconcileSelection() }
+        .onChange(of: visibleIDs) { reconcileSelection($0) }
         .onChange(of: editorSession.hasActiveEditor) { _ in processPendingActions() }
         .onChange(of: store.hasPendingPersistence) { _ in processPendingActions() }
         .onChange(of: store.eventCreationIsAvailable) { _ in processPendingActions() }
@@ -285,7 +287,7 @@ struct DesktopRootView: View {
 
     private var unavailableAttachmentScreen: some View {
         VStack(spacing: 12) {
-            Text("Вложение").font(.custom("Georgia", size: 21))
+            Text(EventUIStrings.attachment).font(.custom("Georgia", size: 21))
             Text("Вложение больше недоступно").font(.system(size: 13))
                 .foregroundStyle(.secondary)
         }
@@ -293,7 +295,7 @@ struct DesktopRootView: View {
         .background(AuroraPanelCanvas())
     }
 
-    private var splitContent: some View {
+    private func splitContent(_ collection: DesktopEventCollection) -> some View {
         GeometryReader { geometry in
             let minimum = desktopMinimumPaneWidth(contentWidth: geometry.size.width)
             HSplitView {
@@ -308,7 +310,7 @@ struct DesktopRootView: View {
                 .layoutPriority(1)
                 .uiSmokeControl(id: "desktop.overview")
                 VStack(spacing: 0) {
-                    if let selection {
+                    if let selection = collection.events.first(where: { $0.id == selectedID }) {
                         DesktopEventDetail(
                             store: store, editorSession: editorSession, item: selection, today: store.today, primaryID: store.data.primaryID,
                             weather: weather, search: DesktopEventSearch(query),
@@ -362,11 +364,12 @@ struct DesktopRootView: View {
                 mode = mode == .collection ? .feed : .collection
             }, value: { mode.rawValue })
             Spacer(minLength: 12)
-            TextField("Поиск событий и дел", text: $query)
+            TextField(EventUIStrings.searchEvents, text: $query)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 180)
                 .focused($searchFocused)
-                .accessibilityLabel("Поиск событий и дел")
+                .accessibilityLabel(EventUIStrings.searchEvents)
+                .accessibilityHint(EventUIStrings.searchEventsHint)
                 .accessibilityIdentifier("desktop.search")
                 .uiSmokeControl(id: "desktop.search", action: { searchFocused = true }, value: { query })
             Button { beginEditor() } label: {
@@ -469,8 +472,8 @@ struct DesktopRootView: View {
         .uiSmokeControl(id: "desktop.error", value: { error })
     }
 
-    private func reconcileSelection() {
-        selectedID = desktopSelection(current: selectedID, available: collection.events)
+    private func reconcileSelection(_ visibleIDs: [UUID]) {
+        selectedID = desktopSelection(current: selectedID, available: visibleIDs)
     }
 
     private func resetFilters() { query = "" }

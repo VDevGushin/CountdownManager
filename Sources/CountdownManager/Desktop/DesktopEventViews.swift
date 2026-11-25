@@ -124,15 +124,16 @@ struct DesktopEventBrowser: View {
     }
 
     private func eventButton(_ item: Countdown, featured: Bool) -> some View {
-        Button { select(item.id) } label: {
+        let match = search.cardMatch(in: item)
+        return Button { select(item.id) } label: {
             DesktopEventCard(item: item, today: store.today, primaryID: store.data.primaryID,
                              weather: weather, featured: featured, feed: !featured && mode == .feed,
-                             selected: item.id == selectedID, search: search)
+                             selected: item.id == selectedID, search: search, match: match)
         }
         // The opaque card owns its appearance; avoid Plain's additional disabled fade.
         .buttonStyle(.borderless)
         .accessibilityLabel(desktopEventAccessibilityLabel(item)
-            + (search.firstSubtask(in: item).map { ". Подзадача: \($0.text)" } ?? ""))
+            + (match.map { ". \($0.accessibilityLabel)" } ?? ""))
         .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
         .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
         .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
@@ -295,6 +296,7 @@ private struct DesktopEventCard: View {
     let feed: Bool
     let selected: Bool
     let search: DesktopEventSearch
+    let match: DesktopSearchMatch?
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
@@ -338,7 +340,7 @@ private struct DesktopEventCard: View {
                         Text(desktopSearchAttributedText(item.title, search: search, color: accent))
                             .font(.custom("Georgia", size: 27)).tracking(-0.5)
                             .fixedSize(horizontal: false, vertical: true)
-                        subtaskMatch
+                        searchMatch
                     }
                 }
                 Spacer(minLength: 0)
@@ -370,7 +372,7 @@ private struct DesktopEventCard: View {
                     .multilineTextAlignment(.leading)
                     .lineLimit(3).fixedSize(horizontal: false, vertical: true)
                     .transaction { $0.animation = nil }
-                subtaskMatch
+                searchMatch
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .clipped()
@@ -414,17 +416,22 @@ private struct DesktopEventCard: View {
     }
 
     @ViewBuilder
-    private var subtaskMatch: some View {
-        if let subtask = search.firstSubtask(in: item) {
-            let snippet = search.snippet(in: subtask.text)
-            Text(desktopSearchAttributedText(snippet, search: search, color: accent))
-                .font(.system(size: 12))
-                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                .strikethrough(subtask.isCompleted)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .transaction { $0.animation = nil }
-                .uiSmokeControl(id: "desktop.search.snippet.\(item.id)", value: { snippet })
+    private var searchMatch: some View {
+        if let match, let snippet = search.snippet(in: match.text) {
+            let highlighted = desktopSearchAttributedText(snippet.context, search: search, color: accent, singleLine: true)
+            ViewThatFits(in: .horizontal) {
+                Text(highlighted)
+                    .strikethrough(match.isCompleted)
+                Text(String(snippet.matchingText.map { $0.isNewline ? " " : $0 }))
+                    .foregroundColor(accent)
+                    .strikethrough(match.isCompleted)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { $0.animation = nil }
+            .uiSmokeControl(id: "desktop.search.snippet.\(item.id)", value: { String(highlighted.characters) })
         }
     }
 
@@ -483,14 +490,22 @@ private struct DesktopEventCard: View {
     }
 }
 
-package func desktopSearchAttributedText(_ value: String, search: DesktopEventSearch, color: Color) -> AttributedString {
+package func desktopSearchAttributedText(_ value: String, search: DesktopEventSearch,
+                                         color: Color, singleLine: Bool = false) -> AttributedString {
     var text = AttributedString(value)
     for match in search.ranges(in: value) {
         if let range = Range(match, in: text) {
             text[range].foregroundColor = color
         }
     }
-    return text
+    guard singleLine, value.contains(where: \.isNewline) else { return text }
+    // Keep the original match ranges when line breaks become display spaces.
+    var flattened = AttributedString()
+    for run in text.runs {
+        let line = String(text[run.range].characters.map { $0.isNewline ? " " : $0 })
+        flattened.append(AttributedString(line, attributes: run.attributes))
+    }
+    return flattened
 }
 
 struct DesktopCalendarLeaf: View {

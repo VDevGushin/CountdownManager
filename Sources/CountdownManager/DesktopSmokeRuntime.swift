@@ -2687,6 +2687,7 @@ final class DesktopSmokeRuntime {
     private func verifySubtaskSearch() async throws {
         let parent = try value(desktopWindow(), "search parent window")
         let directory = configuration.homeURL.appendingPathComponent("SubtaskSearch", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let suite = configuration.defaultsSuiteName + ".subtask-search"
         let defaults = try value(UserDefaults(suiteName: suite), "search preferences")
         var now = try value(Day.calendar.date(from: DateComponents(year: 2026, month: 11, day: 15, hour: 12)), "search clock")
@@ -2699,8 +2700,16 @@ final class DesktopSmokeRuntime {
         let first = Countdown(title: "Вторник", note: "Спокойно закрыть бытовые дела.", date: today, emoji: "",
                               subtasks: [task, try Subtask(text: "Забрать посылку"),
                                          try Subtask(text: "Записаться на сервис", isCompleted: true)])
+        let ticketSource = directory.appendingPathComponent("Билеты.txt")
+        try Data("Демонстрационный билет".utf8).write(to: ticketSource)
+        let draftID = UUID()
+        let began = await fixture.beginAttachmentDraft(draftID)
+        try require(began, "cannot prepare search attachment")
+        let ticket = try value(await fixture.importAttachment(from: ticketSource, draftID: draftID), "search attachment")
+        let link = EventLink(name: "Схема вокзала", address: "https://rail.example/visitors/platform-map")
         let trip = Countdown(title: "Подготовка к поездке", note: "Проверить документы перед выездом.", date: tomorrow, emoji: "",
-                             subtasks: [try Subtask(text: "Проверить страховку перед поездкой"), try Subtask(text: "Скачать билеты")])
+                             subtasks: [try Subtask(text: "Проверить страховку перед поездкой"), try Subtask(text: "Скачать билеты")],
+                             attachments: [ticket], links: [link])
         let completed = try Subtask(text: "Сохранить страховку в телефон", isCompleted: true)
         let past = Countdown(title: "Подготовка мотоцикла", date: fixture.today, emoji: "", subtasks: [completed], keepsAfterDate: true)
         let long = try Subtask(text: "Проверить все документы и продлить страховку")
@@ -2710,6 +2719,7 @@ final class DesktopSmokeRuntime {
             let saved = await fixture.save(event, primary: false)
             try require(saved, "cannot seed search fixture")
         }
+        await fixture.discardAttachmentDraft(draftID)
         now = today.date().addingTimeInterval(12 * 60 * 60)
         fixture.refresh()
         let session = EventEditorSession()
@@ -2772,8 +2782,10 @@ final class DesktopSmokeRuntime {
         passed.append("search typing preserves native detail geometry with inherited font metrics and color-only highlighting")
         try await replaceFocusedText(control: scope + "desktop.search", text: "страховку", inputWindow: window)
         for event in [first, trip, dense, past] {
-            try await expect(scope + "desktop.search.snippet.\(event.id)", DesktopEventSearch("страховку").snippet(in:
-                try value(DesktopEventSearch("страховку").firstSubtask(in: event), "matched task").text))
+            let search = DesktopEventSearch("страховку")
+            let task = try value(search.firstSubtask(in: event), "matched task")
+            let snippet = try value(search.snippet(in: task.text), "matched task snippet")
+            try await expect(scope + "desktop.search.snippet.\(event.id)", snippet.context)
         }
         try await captureWindowThemes("subtask-search-collection", window: window)
         try await press(scope + "desktop.mode")
@@ -2818,11 +2830,42 @@ final class DesktopSmokeRuntime {
         try await captureWindowThemes("subtask-search-empty", window: window)
         try await replaceFocusedText(control: scope + "desktop.search", text: "", inputWindow: window)
         try await wait("clear removes every search snippet") { self.controls.ids(withPrefix: scope + "desktop.search.snippet.").isEmpty }
+        try await verifyMaterialSearch(trip: trip, ticket: ticket, link: link, in: window, scope: scope)
         try await requireDivider(divider, in: window, after: "search changes", controlScope: scope)
         let finalBytes = try Data(contentsOf: directory.appendingPathComponent("events.json"))
         try require(finalBytes == initialBytes, "search or reversible completion altered saved fixture bytes")
         passed.append("subtask search renders collection/feed, retained completed matches, ten-task context, completion retention and empty/clear without changing saved event bytes")
         succeeded = true
+    }
+
+    private func verifyMaterialSearch(trip: Countdown, ticket: EventAttachment, link: EventLink,
+                                      in window: NSWindow, scope: String) async throws {
+        func search(_ query: String, snippet: String) async throws {
+            try await replaceFocusedText(control: scope + "desktop.search", text: query, inputWindow: window)
+            try await wait("only the event with the matching material is visible") {
+                self.controls.ids(withPrefix: scope + "desktop.event.") == [scope + "desktop.event.\(trip.id)"]
+            }
+            try await expect(scope + "desktop.search.snippet.\(trip.id)", snippet)
+            try await wait("material search reveals the matching event's details") {
+                self.controls.entries[scope + "desktop.detail.\(trip.id)"] != nil
+            }
+        }
+
+        try await press(scope + "desktop.mode")
+        try await expect(scope + "desktop.mode", "collection")
+        try await search("  бИЛЕТЫ.TXT ", snippet: ticket.name)
+        try await captureWindowThemes("material-search-file", window: window)
+        try await press(scope + "desktop.mode")
+        try await expect(scope + "desktop.mode", "feed")
+        try await search("вокзала", snippet: link.name)
+        try await search("PLATFORM-MAP", snippet: "…isitors/platform-map")
+        try await captureWindowThemes("material-search-link", window: window)
+        try await replaceFocusedText(control: scope + "desktop.search", text: "", inputWindow: window)
+        try await wait("clearing material search restores the events and removes the snippet") {
+            self.controls.ids(withPrefix: scope + "desktop.event.").count == 4
+                && self.controls.ids(withPrefix: scope + "desktop.search.snippet.").isEmpty
+        }
+        passed.append("desktop material search finds one event by stored filename, link name and address in grid and feed and clears cleanly")
     }
 
     private func verifyRetainedEvents() async throws {

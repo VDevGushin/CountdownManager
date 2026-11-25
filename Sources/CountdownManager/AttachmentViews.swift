@@ -306,9 +306,9 @@ struct AttachmentListView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if compact { navigationButton }
-                Text(compact ? "Вложения" : "Вложение")
+                Text(compact ? "Вложения" : EventUIStrings.attachment)
                     .font(.custom("Georgia", size: 21))
-                    .uiSmokeControl(id: "\(prefix).title.\(item.id)", value: { compact ? "Вложения" : "Вложение" })
+                    .uiSmokeControl(id: "\(prefix).title.\(item.id)", value: { compact ? "Вложения" : EventUIStrings.attachment })
                 Spacer()
                 if !compact { navigationButton }
             }

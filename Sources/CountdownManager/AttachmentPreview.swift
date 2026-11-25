@@ -139,7 +139,7 @@ struct AttachmentPreviewView: View {
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if compact { navigationButton }
-                Text("Вложение").font(.custom("Georgia", size: 21))
+                Text(EventUIStrings.attachment).font(.custom("Georgia", size: 21))
                 Spacer()
                 if !compact { navigationButton }
             }
@@ -155,10 +155,10 @@ struct AttachmentPreviewView: View {
                 .uiSmokeControl(id: prefix + ".error", value: { error })
             }
             HStack(alignment: .top, spacing: 12) {
-                Text(attachment?.name ?? "Вложение")
+                Text(attachment?.name ?? EventUIStrings.attachment)
                     .font(.system(size: 12, weight: .medium)).lineLimit(2).truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .help(attachment?.name ?? "Вложение")
+                    .help(attachment?.name ?? EventUIStrings.attachment)
                     .uiSmokeControl(id: prefix + ".name", value: { attachment?.name })
                 Text(index.map { "\($0 + 1) из \(item.attachments.count)" } ?? "")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize()

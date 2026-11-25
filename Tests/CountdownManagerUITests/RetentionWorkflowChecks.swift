@@ -99,7 +99,7 @@ private func testRetainedPresentationAndEditorDrafts() {
     precondition(selected.events.filter { $0.id == old.id }.count == 1)
     let searched = DesktopEventCollection(items: data.items, today: today, primaryID: old.id, query: "RETAINED NOTE")
     precondition(searched.events == [recent] && searched.monthSections.isEmpty && searched.pastItems == [recent])
-    precondition(desktopSelection(current: recent.id, available: selected.events) == recent.id)
+    precondition(desktopSelection(current: recent.id, available: selected.events.map(\.id)) == recent.id)
     let labels = [(-1, "Вчера"), (-2, "2 дня назад"), (-5, "5 дней назад"), (-11, "11 дней назад"),
                   (-21, "21 день назад"), (-22, "22 дня назад"), (0, "Сегодня"), (1, "Завтра"), (2, "Через 2 дня")]
     for (offset, label) in labels {

@@ -208,9 +208,11 @@ uses native SwiftUI controls directly, without an independent toolbar owner or c
 `DesktopEventCollection`
 derives the active filtered stable-date ordering, favorite/ordinary partition and month/year sections
 from Store data; it does not persist or mutate another copy. Section identity includes the year.
-`desktopSelection` reconciles missing visible IDs.
-`DesktopEventSearch` derives locale-aware title/note/subtask matches and a short first-task
-fragment from the window query. `desktopSearchAttributedText` adds only foreground-color
+One derived collection per root render drives the browser and selected details. `desktopSelection`
+reconciles the ordered visible IDs.
+`DesktopEventSearch` derives locale-aware matches for titles, notes, subtasks, attachment filenames
+and link names/addresses from the window query. The card and its accessibility label share one
+derived subtask or material match. `desktopSearchAttributedText` adds only foreground-color
 attributes to those ranges; the existing SwiftUI text roles own every font metric. The root
 passes the same derived query to collection cards and details without another saved state owner.
 `DesktopEventFlowLayout` places all month headings and ordinary event buttons in one coordinate

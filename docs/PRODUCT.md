@@ -138,16 +138,21 @@ the status-item icon does not hide the desktop window; toggling it again hides o
 Returning through `Открыть основное окно` hides the panel and restores the retained window state.
 
 The in-window command bar uses an icon-only native segmented control for collection (grid) and
-feed (list), with a visible selected state, hover help and accessible names, search by event title,
-note or subtask text, and event creation. The `Поиск событий и дел` field filters while typing,
-ignores surrounding whitespace and matches case-insensitively using the current locale.
-Completed subtasks participate in the same search, including those in retained past events.
-Each event appears once and keeps its ordinary favorite/date placement. When a subtask matches,
-the existing card shows one secondary-text line below its title, using the first match in the
-displayed checklist order (active tasks before completed tasks). A long match uses a fragment
-around the matched text; a completed match retains strikethrough. The full checklist remains
-visible in the details. All matching fragments in event titles, detail notes and subtasks use
-only the shared accent text color, inheriting their existing font, weight, spacing and line height.
+feed (list), with a visible selected state, hover help and accessible names, search and event
+creation. The `Поиск по событиям` field matches event titles, notes, subtask text, saved attachment
+filenames, and link names and addresses. It filters while typing, ignores surrounding whitespace
+and matches case-insensitively using the current locale. Completed subtasks and materials in
+retained past events participate in the same search. Material matching uses saved metadata and
+requires no file reads or network access.
+Each event appears once and keeps its ordinary favorite/date placement. The card shows at most
+one secondary-text line below its title. It uses the first matching subtask in the displayed
+checklist order (active tasks before completed tasks), then the first matching filename, then the
+first matching link in saved order. If both fields of that link match, the card shows its name.
+A long match uses a fragment around the matched text. On a narrow card, the matched text takes
+priority over surrounding context. Saved line breaks display as spaces in the snippet. A completed
+subtask retains strikethrough.
+Matching fragments in card snippets and titles, detail notes and subtasks use the shared accent
+text color with inherited font, weight, spacing and line height. The details remain fully available.
 Completing a matching task keeps the event in the results. Clearing the query removes search
 fragments and color highlighting. Search itself changes no saved event content.
 There is no separate favorite-only filter: only one event can be

@@ -94,6 +94,11 @@ package enum EventUIStrings {
     package static let deleteEvent = "Удалить событие?"
     package static let emptyTitle = "Пока нет событий"
     package static let emptyMessage = "Выбери день события.\nНазвание и детали можно изменить."
+    static let subtask = "Подзадача"
+    static let attachment = "Вложение"
+    static let link = "Ссылка"
+    static let searchEvents = "Поиск по событиям"
+    static let searchEventsHint = "Поиск по названиям, заметкам, подзадачам, файлам и ссылкам"
 }
 
 package enum EventEmojiCatalog {

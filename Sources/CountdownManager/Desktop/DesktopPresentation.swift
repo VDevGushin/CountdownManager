@@ -26,6 +26,26 @@ package struct DesktopEventMonthSection: Equatable, Identifiable {
     package let items: [Countdown]
 }
 
+package struct DesktopSearchMatch {
+    enum Kind {
+        case subtask, attachment, link
+
+        var label: String {
+            switch self {
+            case .subtask: EventUIStrings.subtask
+            case .attachment: EventUIStrings.attachment
+            case .link: EventUIStrings.link
+            }
+        }
+    }
+
+    let kind: Kind
+    package let text: String
+    let isCompleted: Bool
+
+    var accessibilityLabel: String { "\(kind.label): \(text)" }
+}
+
 package struct DesktopEventSearch {
     package let query: String
 
@@ -54,12 +74,37 @@ package struct DesktopEventSearch {
         checklistDisplayOrder(item.subtasks).first { matches($0.text) }
     }
 
-    package func snippet(in text: String) -> String {
-        guard let match = ranges(in: text).first else { return text }
+    package func cardMatch(in item: Countdown) -> DesktopSearchMatch? {
+        guard !query.isEmpty else { return nil }
+        if let task = firstSubtask(in: item) {
+            return DesktopSearchMatch(kind: .subtask, text: task.text, isCompleted: task.isCompleted)
+        }
+        return firstMaterialMatch(in: item)
+    }
+
+    fileprivate func firstMaterialMatch(in item: Countdown) -> DesktopSearchMatch? {
+        if let file = item.attachments.first(where: { matches($0.name) }) {
+            return DesktopSearchMatch(kind: .attachment, text: file.name, isCompleted: false)
+        }
+        for link in item.links {
+            if matches(link.name) {
+                return DesktopSearchMatch(kind: .link, text: link.name, isCompleted: false)
+            }
+            if matches(link.address) {
+                return DesktopSearchMatch(kind: .link, text: link.address, isCompleted: false)
+            }
+        }
+        return nil
+    }
+
+    package func snippet(in text: String) -> (context: String, matchingText: String)? {
+        guard !query.isEmpty,
+              let match = text.range(of: query, options: .caseInsensitive, locale: .current), !match.isEmpty else { return nil }
         let start = text.distance(from: text.startIndex, to: match.lowerBound) <= 12 ? text.startIndex
             : text.index(match.lowerBound, offsetBy: -8, limitedBy: text.startIndex) ?? text.startIndex
         let end = text.index(match.upperBound, offsetBy: 24, limitedBy: text.endIndex) ?? text.endIndex
-        return (start > text.startIndex ? "…" : "") + text[start..<end] + (end < text.endIndex ? "…" : "")
+        let context = (start > text.startIndex ? "…" : "") + text[start..<end] + (end < text.endIndex ? "…" : "")
+        return (context, String(text[match]))
     }
 }
 
@@ -80,7 +125,8 @@ package struct DesktopEventCollection: Equatable {
             return item.isAvailable(on: today)
                 && (search.query.isEmpty || search.matches(item.title)
                     || item.note.map(search.matches) == true
-                    || item.subtasks.contains { search.matches($0.text) })
+                    || item.subtasks.contains { search.matches($0.text) }
+                    || search.firstMaterialMatch(in: item) != nil)
         }.sorted { first, second in
             let firstIsPast = first.element.date < today
             let secondIsPast = second.element.date < today
@@ -115,9 +161,9 @@ package struct DesktopEventCollection: Equatable {
     }
 }
 
-package func desktopSelection(current: UUID?, available: [Countdown]) -> UUID? {
-    if let current, available.contains(where: { $0.id == current }) { return current }
-    return available.first?.id
+package func desktopSelection(current: UUID?, available: [UUID]) -> UUID? {
+    if let current, available.contains(current) { return current }
+    return available.first
 }
 
 package func desktopMinimumPaneWidth(contentWidth: CGFloat) -> CGFloat {
