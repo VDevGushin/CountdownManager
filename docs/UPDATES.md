@@ -2,26 +2,22 @@
 
 ## Current published release
 
-Published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest) is
-**1.27.0 / build 52** on 2026-11-26. English is the default and the app switches between English
-and Russian immediately. The release fixes reopening the mini-panel after switching apps on macOS 27.
-[Release status](releases/v1.27.0.md) and [notes](releases/v1.27.0-notes.md) describe the changes.
-[Public verification](images/v1.27.0/publication.json) records the audited ZIP, versioned feed and
-stable feed. The annotated tag targets frozen main source
-`fb0a765d23378b61c758dc9ee046820d8dc5138a`.
-[Package and native evidence](images/v1.27.0/PROVENANCE.md) records signing, localization, release
-help and the homepage captures.
+[Countdown Manager 1.28.0 / build 53](https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.0)
+was published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest) on
+2026-11-28. Undated Records are available in the desktop window and mini-panel.
+[Release status](releases/v1.28.0.md) and [notes](releases/v1.28.0-notes.md) describe the changes.
+[Public verification](images/v1.28.0/publication.json) records matching ZIP and feed bytes
+and verifies the default-branch homepage. The annotated tag targets frozen main source
+`ad4489bd4f7072ec2fb608493bca07757e7c6b94`. [Package and native evidence](images/v1.28.0/PROVENANCE.md)
+records signing, release-help checks and current homepage captures.
 
-The previous public release is **1.26.0 / build 51**. [Handoff](images/v1.27.0/handoff.json)
-records that the exact previous public package remains installed and running for the owner's
-manual update. The URL embedded in 1.26.0 resolves to the same signed 1.27.0 feed as the
-organization URL. Its previous publication is recorded under [1.26.0](releases/v1.26.0.md).
+[The previous public release, 1.27.0 / build 52](releases/v1.27.0.md), remains
+installed and running for the owner's manual update. Its embedded feed URL matches the
+verified stable feed. [Handoff](images/v1.28.0/handoff.json)
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
 The project release skill is [countdown-release](../.agents/skills/countdown-release/SKILL.md).
-
-The next candidate is [1.28.0 / build 53](releases/v1.28.0.md), with undated Records.
 
 ## Stable identity
 
