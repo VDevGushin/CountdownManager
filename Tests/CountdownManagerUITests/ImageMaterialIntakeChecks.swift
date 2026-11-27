@@ -75,6 +75,25 @@ private func testImageRepresentationPriority(in directory: URL) async throws {
                  "A file plus image representation must produce only the preferred original file")
     let bytes = try Data(contentsOf: result.files[0])
     precondition(bytes == fileBytes)
+
+    let generic = materialImageProvider()
+    generic.registerItem(forTypeIdentifier: UTType.url.identifier, loadHandler: { callback, _, _ in
+        callback?(source as NSURL, nil)
+    })
+    precondition(!generic.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier))
+    let stagedGeneric = try await releasedImageSource(generic)
+    precondition(stagedGeneric != source)
+    let genericResult = try await resolveEventMaterials([generic], nativeFileIndices: [0])
+    precondition(genericResult.files == [source] && genericResult.stagedFiles.isEmpty && genericResult.links.isEmpty)
+    let genericBytes = try Data(contentsOf: genericResult.files[0])
+    precondition(genericBytes == fileBytes)
+
+    let imageAndWebURL = materialImageProvider()
+    imageAndWebURL.registerItem(forTypeIdentifier: UTType.url.identifier, loadHandler: { callback, _, _ in
+        callback?(NSURL(string: "https://example.com/image-source"), nil)
+    })
+    let staged = try await releasedImageSource(imageAndWebURL)
+    precondition(staged != source)
 }
 
 

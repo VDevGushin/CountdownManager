@@ -152,7 +152,7 @@ NSApplication / AppDelegate
 ├── WhatsNewWindowController → read-only release help / WhatsNewHistory → isolated-or-standard UserDefaults
 ├── DesktopWindowController (lazy, retained)
 │   └── NSWindow / NSHostingController<DesktopRootView>
-│       ├── window-local mode/search/filter/selection
+│       ├── window-local section and layout, with independent event and record search/selection
 │       ├── native split browser + event details
 │       └── one native sheet: EditorView / SettingsView / attachment library + quick preview
 └── NSPanel (one strong reference, session lifetime, transient visibility)
@@ -512,12 +512,22 @@ File: `Sources/CountdownCore/CountdownRepository.swift`
 `CountdownRepository` is an actor that serializes production filesystem reads and writes outside the main UI actor.
 
 It decodes and atomically writes `CountdownData` and rejects an older revision when a newer revision has already been accepted by the repository.
+`UndatedRecord` has its own snapshot in the sibling `records.json`. Record mutations finish
+through the same actor and atomically replace only the record snapshot. The Store publishes
+the resulting newest-first collection after a successful write. A failed record read keeps
+its snapshot and attachments intact and leaves the independent event store available.
+If record metadata is missing while potential owned copies remain, the backend also treats
+the collection as unavailable. Before the first actual attachment copy in a confirmed
+new collection, it writes an intentional empty snapshot so an abandoned first draft can
+be cleaned up on a subsequent restart.
 
 `EventAttachment` contains only an identity, original filename and import-time byte count.
 `AttachmentFiles`, used exclusively by the same repository actor, stores separate regular-file
 copies in `Attachments/<attachment UUID>/<original filename>` beside the event JSON. Validated
 filenames and per-folder ownership metadata constrain cleanup to application-owned copies;
 original source URLs are never persisted or removed.
+Record attachments use the same ownership checks with an independent `RecordAttachments`
+directory, so event writes and event attachment cleanup cannot remove record files.
 
 Editor-generated draft UUIDs pin imported copies until successful Save or Cancel releases them.
 Repository cleanup protects both the last durable attachment references and all active draft
@@ -538,7 +548,10 @@ Timer state is intentionally outside this repository. `CountdownTimer` stores on
 
 File: `Sources/CountdownManager/Store.swift`
 
-`Store` is a `@MainActor` `ObservableObject` and is the primary event-state coordinator between UI, domain model, platform services, and event persistence.
+`Store` is a `@MainActor` `ObservableObject` and coordinates event and record state between the
+UI, domain model, platform services and repository. Event and record load admission is tracked
+independently. The retained editor session reserves either surface for a single draft regardless of
+which collection it belongs to.
 
 It owns or exposes:
 
@@ -1241,9 +1254,15 @@ durable attachment copies and their existing draft/commit cleanup. Provider Prog
 is coordinated across cancellation before or after request installation. This is an image intake
 boundary, not a general AppKit file-promise receiver.
 
-Store owns pending quick additions and their admission locks. It imports into a temporary repository
-draft, revalidates the current event and capacities after awaits, merges only new materials into the
-latest event and commits through existing revision/recovery handling. There is no addition receipt,
+The desktop browser presents both types in one collection/feed layout and card shell. The
+desktop inspector and mini cards reuse their respective shared chrome, checklist and materials
+components. The content slots define the owner-specific presentation.
+
+The two saved owner types share `SavedMaterialContent` and the `SavedMaterialTarget` modifier.
+`SavedMaterialOwnerID` includes the collection alongside the UUID. Store owns admission and
+the attachment draft, imports in the owner's collection and revalidates the latest owner and
+capacities after awaits. It merges new materials through the same path and commits the resulting
+value through its collection's existing persistence boundary. There is no addition receipt,
 result-message state or Undo API/view. Existing errors retain their established owner and presentation.
 `TextAttachment` defines plain-text filename/content
 validation; `AttachmentFiles` writes UTF-8 text using the same owned-folder/marker boundary as copies.
@@ -1257,7 +1276,7 @@ the panel without application activation, preserving the source application's dr
 
 
 The desktop Paste action follows AppKit's responder chain through its existing window controller.
-The hosted root registers the current selected-event action while mounted. Native text responders
+The hosted root registers the current selected-owner action while mounted. Native text responders
 handle Paste first; the window controller only offers attachment composition for its key window
 without a sheet. This avoids introducing a root-level SwiftUI paste hit target over a blocked
 background. See Apple's [event architecture](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/EventArchitecture/EventArchitecture.html).

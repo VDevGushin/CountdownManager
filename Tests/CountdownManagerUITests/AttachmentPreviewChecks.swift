@@ -9,11 +9,32 @@ func testAttachmentPreviewSessions(in directory: URL) async throws {
     await testPreviewDismissalEffects(fixture: fixture)
     try await testPreviewOriginsAndIndependentSurfaces(fixture: fixture)
     try await testPreviewExternalOpenGuards(fixture: fixture)
+    await testRecordPreviewOwner(fixture: fixture)
     for seed: UInt64 in [0x10, 0xCAFE, 0xBAD5EED, 0xFFFF] {
         try await testPreviewCommandSequence(fixture: fixture, seed: seed)
     }
     try fixture.requireUnchangedFiles()
     print("PASS attachment preview: late/cancelled/same-ID resolution, missing copy, independent surfaces, owner/current-file removal and four seeded 180-command identity sequences")
+}
+
+@MainActor
+private func testRecordPreviewOwner(fixture: PreviewSessionFixture) async {
+    let event = fixture.events[0]
+    let file = event.attachments[0]
+    let record = UndatedRecord(id: event.id, title: "Record with a separate material owner", attachments: [file])
+    let owner = SavedMaterialOwner(record)
+    let session = AttachmentPreviewSession()
+    session.open(owner: owner, attachmentID: file.id, origin: .summary) { attachment, ownerID in
+        precondition(ownerID == record.id)
+        return fixture.url(for: attachment)
+    }
+    await requirePreviewEventually("record attachment resolves") { !session.isResolving }
+    precondition(session.selection?.collection == .records && session.url == fixture.url(for: file))
+    session.reconcile(owner: owner)
+    precondition(session.selection != nil)
+    session.reconcile(event: event)
+    precondition(session.selection == nil && session.url == nil,
+                 "An event never takes over a record preview, even with equal owner and file IDs")
 }
 
 /// Intentionally ignores cancellation so a closed or replaced request can finish late.

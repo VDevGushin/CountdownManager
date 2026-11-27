@@ -333,17 +333,21 @@ package func editorCanSave(
     savedDate: Day? = nil
 ) -> Bool {
     let cleanedEmoji = emoji.trimmingCharacters(in: .whitespacesAndNewlines)
-    let dateIsValid = date >= today || date == savedDate
-    let subtasksAreValid = subtasks.count <= Subtask.maximumCount
+    return (date >= today || date == savedDate)
+        && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
+        && editorContentCanSave(title: title, note: note, subtasks: subtasks, links: links, savedNote: savedNote)
+}
+
+func editorContentCanSave(
+    title: String, note: String, subtasks: [Subtask], links: [EventLink], savedNote: String? = nil
+) -> Bool {
+    !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        && CountdownNote.isAllowed(note, savedNote: savedNote)
+        && subtasks.count <= Subtask.maximumCount
         && subtasks.allSatisfy {
             let cleaned = $0.text.trimmingCharacters(in: .whitespacesAndNewlines)
             return !cleaned.isEmpty && cleaned.count <= Subtask.maximumTextLength
         }
-    return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        && dateIsValid
-        && CountdownNote.isAllowed(note, savedNote: savedNote)
-        && (cleanedEmoji.isEmpty || CountdownData.isEmoji(cleanedEmoji))
-        && subtasksAreValid
         && (try? EventLink.validate(links)) != nil
 }
 
@@ -423,6 +427,15 @@ package struct EventEditorDraft: Equatable {
         keepsAfterDate = item?.keepsAfterDate ?? false
         usesAutomaticTitle = item?.usesAutomaticTitle ?? false
         isDay = item?.isDay ?? false
+    }
+
+    init(record: UndatedRecord?) {
+        self.init(item: nil)
+        title = record?.title ?? ""
+        note = record?.note ?? ""
+        subtasks = record?.subtasks ?? []
+        links = record?.links ?? []
+        attachments = record?.attachments ?? []
     }
 
     package init(copying source: Countdown, date: Day) {

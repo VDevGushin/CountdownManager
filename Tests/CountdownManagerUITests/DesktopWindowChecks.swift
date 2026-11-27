@@ -77,7 +77,34 @@ func testDesktopPresentation() throws {
     testDesktopMonthGrouping()
     try testDesktopSubtaskSearch()
     try testDesktopMaterialSearch()
+    try testDesktopRecordSearch()
     try testSubtaskDropGeometry()
+}
+
+private func testDesktopRecordSearch() throws {
+    let file = try EventAttachment(name: "Осмотр.pdf", byteCount: 42)
+    let link = EventLink(name: "Каталог", address: "https://example.com/Rack-Catalog")
+    let completed = try Subtask(text: "Сохранить осмотр", isCompleted: true)
+    let active = try Subtask(text: "Повторить осмотр")
+    let newer = UndatedRecord(title: "Ящик", note: "Паспорт детали", subtasks: [completed, active],
+                              attachments: [file], links: [link])
+    let older = UndatedRecord(title: "Автомобиль", note: "Осмотр завершён")
+    let records = [newer, older]
+    let search = DesktopEventSearch("  осМоТр\n")
+    precondition(search.matchingRecords(in: records) == records)
+    precondition(search.cardMatch(in: newer)?.text == active.text)
+    precondition(search.cardMatch(in: older) == nil)
+    precondition(DesktopEventSearch("осмотр.pdf").matchingRecords(in: records) == [newer])
+    precondition(DesktopEventSearch("осмотр.pdf").cardMatch(in: newer)?.text == file.name)
+    precondition(DesktopEventSearch("КАТАЛОГ").matchingRecords(in: records) == [newer])
+    precondition(DesktopEventSearch("RACK-CATALOG").cardMatch(in: newer)?.text == link.address)
+    precondition(DesktopEventSearch("автомобиль").matchingRecords(in: records) == [older])
+    precondition(DesktopEventSearch("нет совпадений").matchingRecords(in: records).isEmpty)
+    precondition(DesktopEventSearch(" \n").matchingRecords(in: records) == records)
+
+    let today = Day(Date())
+    let dated = Countdown(title: newer.title, date: today, emoji: "")
+    precondition(DesktopEventCollection(items: [dated], today: today, primaryID: nil, query: "осмотр").events.isEmpty)
 }
 
 private func testSubtaskDropGeometry() throws {

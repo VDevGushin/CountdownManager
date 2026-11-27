@@ -3,7 +3,7 @@ import SwiftUI
 
 struct TextAttachmentRequest: Identifiable, Equatable {
     let id = UUID()
-    let eventID: UUID
+    let ownerID: SavedMaterialOwnerID
     let text: String
 }
 

@@ -516,6 +516,7 @@ private func XCTAssertThrowsError<T>(_ expression: @autoclosure () throws -> T) 
     static func main() async throws {
         try testEventLinkValidationAndCompatibility()
         try await testEventLinkRepositoryBoundaries()
+        try await testRecordRepositoryAndAttachmentIsolation()
         let checks = CountdownCoreTests()
         try checks.testCreationAndFieldValidation()
         try checks.testTodayCreationAndMidnightBoundary()

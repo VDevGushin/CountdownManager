@@ -212,7 +212,8 @@ def verification_invocations(command):
                         "desktop", "desktop-capture", "attachments", "attachments-capture",
                         "menu-identity-capture", "completed-subtasks-capture", "localization-capture",
                         "week", "week-capture", "event-copy", "event-copy-capture", "subtask-transfer",
-                        "subtask-transfer-capture", "editor-stability", "editor-stability-capture"}:
+                        "subtask-transfer-capture", "editor-stability", "editor-stability-capture",
+                        "records", "records-capture", "records-monkey", "records-monkey-capture"}:
                 checks.update({"real-ui", "app-build"})
         information_query = program in {"swift", "swiftc", "xcodebuild"} and any(
             arg in {"--version", "-version", "--help", "-help", "-h", "-list", "-showsdks",

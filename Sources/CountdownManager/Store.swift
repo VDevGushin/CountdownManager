@@ -34,23 +34,70 @@ private enum StoreAttachmentPersistenceError: LocalizedError {
     }
 }
 
+package enum SavedMaterialOwnerID: Equatable {
+    case event(UUID), record(UUID)
+
+    var id: UUID {
+        switch self {
+        case let .event(id), let .record(id): id
+        }
+    }
+
+    var collection: StoredAttachmentCollection {
+        switch self {
+        case .event: .events
+        case .record: .records
+        }
+    }
+
+    var unavailableAttachment: String {
+        switch self {
+        case .event: AppText.string("store.attachmentUnavailable")
+        case .record: AppText.string("record.error.attachmentUnavailable")
+        }
+    }
+
+    var unavailableLink: String {
+        switch self {
+        case .event: AppText.string("store.linkUnavailable")
+        case .record: AppText.string("record.error.linkUnavailable")
+        }
+    }
+
+    var unavailableTitle: String {
+        switch self {
+        case .event: AppText.string("event.unavailable")
+        case .record: AppText.string("record.error.unavailable")
+        }
+    }
+}
+
 extension Store {
     package func beginAttachmentDraft(_ draftID: UUID) async -> Bool {
         guard eventCreationIsAvailable else { return false }
-        if attachmentDrafts.contains(draftID) { return true }
-        attachmentDrafts.insert(draftID)
+        return await prepareAttachmentDraft(draftID, in: .events)
+    }
+
+    package func beginRecordAttachmentDraft(_ draftID: UUID) async -> Bool {
+        guard recordCreationIsAvailable, !isWritingRecords else { return false }
+        return await prepareAttachmentDraft(draftID, in: .records)
+    }
+
+    private func prepareAttachmentDraft(_ draftID: UUID, in collection: StoredAttachmentCollection) async -> Bool {
+        if let existing = attachmentDrafts[draftID] { return existing == collection }
+        attachmentDrafts[draftID] = collection
         attachmentOperationCount += 1
         defer { attachmentOperationCount -= 1 }
         do {
-            try await repository.beginAttachmentDraft(draftID)
-            guard attachmentDrafts.contains(draftID) else {
+            try await repository.beginAttachmentDraft(draftID, in: collection)
+            guard attachmentDrafts[draftID] == collection else {
                 do { try await repository.discardAttachmentDraft(draftID) }
                 catch { reportAttachmentCleanupFailure() }
                 return false
             }
             return true
         } catch {
-            attachmentDrafts.remove(draftID)
+            attachmentDrafts.removeValue(forKey: draftID)
             recordDiagnostic("attachments.draft failure category=storage")
             self.error = AppText.string("store.prepareAttachmentFailed")
             return false
@@ -58,7 +105,7 @@ extension Store {
     }
 
     package func importAttachment(from source: URL, draftID: UUID) async -> EventAttachment? {
-        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        guard !Task.isCancelled, attachmentDrafts[draftID] != nil else { return nil }
         attachmentOperationCount += 1
         let scopedAccess = source.startAccessingSecurityScopedResource()
         defer {
@@ -67,10 +114,10 @@ extension Store {
         }
         do {
             let attachment = try await repository.importAttachment(from: source, draftID: draftID)
-            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            guard !Task.isCancelled, attachmentDrafts[draftID] != nil else { return nil }
             return attachment
         } catch {
-            guard attachmentDrafts.contains(draftID) else { return nil }
+            guard attachmentDrafts[draftID] != nil else { return nil }
             recordDiagnostic("attachments.import failure category=storage")
             self.error = AppText.string("store.copyAttachmentFailed")
             return nil
@@ -78,7 +125,7 @@ extension Store {
     }
 
     package func discardAttachmentDraft(_ draftID: UUID) async {
-        guard attachmentDrafts.remove(draftID) != nil else { return }
+        guard attachmentDrafts.removeValue(forKey: draftID) != nil else { return }
         if attachmentPicker?.draftID == draftID { attachmentPicker?.panel.cancel(nil) }
         attachmentOperationCount += 1
         defer { attachmentOperationCount -= 1 }
@@ -87,7 +134,7 @@ extension Store {
     }
 
     package func chooseAttachments(draftID: UUID, currentAttachments: [EventAttachment]) async -> [EventAttachment] {
-        guard attachmentDrafts.contains(draftID), attachmentPicker == nil, !isImportingAttachments else { return [] }
+        guard attachmentDrafts[draftID] != nil, attachmentPicker == nil, !isImportingAttachments else { return [] }
         guard currentAttachments.count < EventAttachment.maximumCount else {
             error = AppText.string("store.attachmentLimit", "\(EventAttachment.maximumCount)")
             return []
@@ -117,13 +164,13 @@ extension Store {
                 panel.begin(completionHandler: completion)
             }
         }
-        guard response == .OK, !Task.isCancelled, attachmentDrafts.contains(draftID) else { return [] }
+        guard response == .OK, !Task.isCancelled, attachmentDrafts[draftID] != nil else { return [] }
         return await importAttachments(from: panel.urls, draftID: draftID, currentAttachments: currentAttachments)
     }
 
     package func importAttachments(from sources: [URL], draftID: UUID,
                                    currentAttachments: [EventAttachment]) async -> [EventAttachment] {
-        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return [] }
+        guard !Task.isCancelled, attachmentDrafts[draftID] != nil else { return [] }
         let remaining = max(0, EventAttachment.maximumCount - currentAttachments.count)
         guard sources.count <= remaining else {
             error = AppText.string("store.pickerFileLimit", "\(sources.count)", "\(remaining)")
@@ -131,24 +178,32 @@ extension Store {
         }
         var imported: [EventAttachment] = []
         for source in sources {
-            guard attachmentDrafts.contains(draftID) else { return [] }
+            guard attachmentDrafts[draftID] != nil else { return [] }
             guard let attachment = await importAttachment(from: source, draftID: draftID) else { break }
             imported.append(attachment)
         }
-        return !Task.isCancelled && attachmentDrafts.contains(draftID) ? imported : []
+        return !Task.isCancelled && attachmentDrafts[draftID] != nil ? imported : []
     }
 
     package func openAttachment(_ attachment: EventAttachment, eventID: UUID) async {
+        await openSavedAttachment(attachment, owner: .event(eventID))
+    }
+
+    package func openAttachment(_ attachment: EventAttachment, recordID: UUID) async {
+        await openSavedAttachment(attachment, owner: .record(recordID))
+    }
+
+    func openSavedAttachment(_ attachment: EventAttachment, owner: SavedMaterialOwnerID) async {
         guard !Task.isCancelled else { return }
-        guard attachmentIsActive(attachment, eventID: eventID) else {
-            error = AppText.string("store.attachmentUnavailable")
+        guard attachmentIsActive(attachment, owner: owner) else {
+            error = owner.unavailableAttachment
             return
         }
         do {
-            let url = try await repository.attachmentURL(for: attachment)
+            let url = try await repository.attachmentURL(for: attachment, in: owner.collection)
             guard !Task.isCancelled else { return }
-            guard attachmentIsActive(attachment, eventID: eventID) else {
-                error = AppText.string("store.attachmentUnavailable")
+            guard attachmentIsActive(attachment, owner: owner) else {
+                error = owner.unavailableAttachment
                 return
             }
             if !NSWorkspace.shared.open(url) {
@@ -162,13 +217,30 @@ extension Store {
     }
 
     package func editorAttachmentThumbnailURL(_ attachment: EventAttachment, eventID: UUID?, draftID: UUID) async -> URL? {
-        if let eventID, attachmentIsActive(attachment, eventID: eventID) {
-            return await attachmentThumbnailURL(attachment, eventID: eventID)
+        await editorAttachmentThumbnailURL(
+            attachment, owner: eventID.map(SavedMaterialOwnerID.event), draftID: draftID, in: .events
+        )
+    }
+
+    package func editorAttachmentThumbnailURL(_ attachment: EventAttachment, recordID: UUID?, draftID: UUID) async -> URL? {
+        await editorAttachmentThumbnailURL(
+            attachment, owner: recordID.map(SavedMaterialOwnerID.record), draftID: draftID, in: .records
+        )
+    }
+
+    private func editorAttachmentThumbnailURL(
+        _ attachment: EventAttachment,
+        owner: SavedMaterialOwnerID?,
+        draftID: UUID,
+        in collection: StoredAttachmentCollection
+    ) async -> URL? {
+        if let owner, attachmentIsActive(attachment, owner: owner) {
+            return await attachmentThumbnailURL(attachment, owner: owner)
         }
-        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        guard !Task.isCancelled, attachmentDrafts[draftID] == collection else { return nil }
         do {
             let url = try await repository.draftAttachmentURL(for: attachment, draftID: draftID)
-            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            guard !Task.isCancelled, attachmentDrafts[draftID] == collection else { return nil }
             return url
         } catch {
             return nil
@@ -176,23 +248,170 @@ extension Store {
     }
 
     func attachmentThumbnailURL(_ attachment: EventAttachment, eventID: UUID) async -> URL? {
-        guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else { return nil }
+        await attachmentThumbnailURL(attachment, owner: .event(eventID))
+    }
+
+    package func attachmentThumbnailURL(_ attachment: EventAttachment, recordID: UUID) async -> URL? {
+        await attachmentThumbnailURL(attachment, owner: .record(recordID))
+    }
+
+    func attachmentThumbnailURL(_ attachment: EventAttachment, owner: SavedMaterialOwnerID) async -> URL? {
+        guard !Task.isCancelled, attachmentIsActive(attachment, owner: owner) else { return nil }
         do {
-            let url = try await repository.attachmentURL(for: attachment)
-            guard !Task.isCancelled, attachmentIsActive(attachment, eventID: eventID) else { return nil }
+            let url = try await repository.attachmentURL(for: attachment, in: owner.collection)
+            guard !Task.isCancelled, attachmentIsActive(attachment, owner: owner) else { return nil }
             return url
         } catch {
             return nil
         }
     }
 
-    private func attachmentIsActive(_ attachment: EventAttachment, eventID: UUID) -> Bool {
-        data.items.contains { $0.id == eventID && $0.isAvailable(on: Day(now())) && $0.attachments.contains(attachment) }
+    private func attachmentIsActive(_ attachment: EventAttachment, owner: SavedMaterialOwnerID) -> Bool {
+        switch owner {
+        case .event(let id):
+            data.items.contains { $0.id == id && $0.isAvailable(on: Day(now())) && $0.attachments.contains(attachment) }
+        case .record(let id):
+            records.contains { $0.id == id && $0.attachments.contains(attachment) }
+        }
     }
 
     private func reportAttachmentCleanupFailure() {
         recordDiagnostic("attachments.cleanup failure category=storage")
         error = AppText.string("store.cleanupFailed")
+    }
+}
+
+extension Store {
+    private func loadRecords() async {
+        defer { isLoadingRecords = false }
+        do {
+            records = try await repository.loadRecords()
+            if await repository.attachmentCleanupFailed(in: .records) { reportAttachmentCleanupFailure() }
+            recordDiagnostic("records.load success count=\(records.count)")
+        } catch {
+            recordReadFailed = true
+            recordDiagnostic("records.load failure \(DiagnosticPrivacy.errorFields(error))")
+            let url = CountdownRepository.recordsFileURL(beside: fileURL)
+            if (error as? CocoaError)?.code == .fileReadNoSuchFile {
+                self.error = AppText.string("record.storageMissing", url.path)
+            } else {
+                self.error = AppText.string("record.storageReadFailed", url.path)
+            }
+        }
+    }
+
+    package func saveRecord(_ record: UndatedRecord, requireExisting: Bool = false) async -> Bool {
+        let saved = await changeRecords { candidate in
+            let normalized = try record.normalized()
+            if let index = candidate.firstIndex(where: { $0.id == record.id }) {
+                guard requireExisting else { throw UndatedRecordError.identity }
+                candidate[index] = normalized
+            } else {
+                guard !requireExisting else { throw UndatedRecordError.unavailable }
+                candidate.insert(normalized, at: 0)
+            }
+            return true
+        }
+        if saved, record.subtasks.isEmpty { recordDisclosureCache.remove(eventID: record.id) }
+        return saved
+    }
+
+    package func deleteRecord(_ recordID: UUID) async -> Bool {
+        let deleted = await changeRecords { candidate in
+            guard let index = candidate.firstIndex(where: { $0.id == recordID }) else {
+                throw UndatedRecordError.unavailable
+            }
+            candidate.remove(at: index)
+            return true
+        }
+        if deleted { recordDisclosureCache.remove(eventID: recordID) }
+        return deleted
+    }
+
+    package func toggleRecordSubtask(recordID: UUID, subtaskID: UUID) async -> Bool {
+        await changeRecords { candidate in
+            guard let index = candidate.firstIndex(where: { $0.id == recordID }) else {
+                throw UndatedRecordError.unavailable
+            }
+            try candidate[index].subtasks.toggleCompletion(id: subtaskID)
+            return true
+        }
+    }
+
+    package var canEnqueuePanelRecordSubtaskToggle: Bool {
+        recordCreationIsAvailable && (isApplyingPanelRecordToggles || !hasPendingPersistence)
+    }
+
+    package func enqueuePanelRecordSubtaskToggle(recordID: UUID, subtaskID: UUID) {
+        guard canEnqueuePanelRecordSubtaskToggle else { return }
+        panelRecordToggles.append((recordID, subtaskID))
+        guard !isApplyingPanelRecordToggles else { return }
+        isApplyingPanelRecordToggles = true
+        Task {
+            defer { isApplyingPanelRecordToggles = false }
+            while !panelRecordToggles.isEmpty {
+                let next = panelRecordToggles.removeFirst()
+                guard await toggleRecordSubtask(recordID: next.recordID, subtaskID: next.subtaskID) else {
+                    let hadRemainingActions = !panelRecordToggles.isEmpty
+                    panelRecordToggles.removeAll()
+                    reportQueuedActionFailure(fallback: AppText.string("record.error.unavailable"),
+                                              hadRemainingActions: hadRemainingActions)
+                    return
+                }
+            }
+        }
+    }
+
+    package func reorderRecordSubtask(recordID: UUID, move: SubtaskReorder, to index: Int) async -> Bool {
+        await changeRecords { candidate in
+            guard let recordIndex = candidate.firstIndex(where: { $0.id == recordID }) else {
+                throw UndatedRecordError.unavailable
+            }
+            return try candidate[recordIndex].subtasks.applyReorder(move, to: index)
+        }
+    }
+
+    private func changeRecords(_ mutate: (inout [UndatedRecord]) throws -> Bool) async -> Bool {
+        guard !Task.isCancelled, recordCreationIsAvailable, !isWritingRecords else { return false }
+        var candidate = records
+        do {
+            guard try mutate(&candidate) else { return false }
+            guard candidate != records else {
+                clearRecordWriteError()
+                return true
+            }
+        } catch {
+            self.error = error.localizedDescription
+            return false
+        }
+        isWritingRecords = true
+        defer { isWritingRecords = false }
+        do {
+            try await repository.saveRecords(candidate)
+            records = candidate
+            if await repository.attachmentCleanupFailed(in: .records) { reportAttachmentCleanupFailure() }
+            clearRecordWriteError()
+            recordDiagnostic("records.save success count=\(records.count)")
+            return true
+        } catch {
+            recordDiagnostic("records.save failure \(DiagnosticPrivacy.errorFields(error))")
+            let message = AppText.string("record.storageWriteFailed")
+            recordWriteError = message
+            self.error = message
+            return false
+        }
+    }
+
+    private func clearRecordWriteError() {
+        if let recordWriteError, error == recordWriteError { error = nil }
+        recordWriteError = nil
+    }
+
+    func reportQueuedActionFailure(fallback: String, hadRemainingActions: Bool) {
+        let message = error ?? fallback
+        let annotated = hadRemainingActions ? message + AppText.string("store.queuedActionsSkipped") : message
+        if let recordWriteError, error == recordWriteError { self.recordWriteError = annotated }
+        error = annotated
     }
 }
 
@@ -223,8 +442,10 @@ package final class SubtaskDisclosureCache {
 @MainActor
 package final class Store: ObservableObject {
     @Published package private(set) var data = CountdownData()
+    @Published package private(set) var records: [UndatedRecord] = []
     @Published private(set) var today: Day
     @Published package private(set) var isLoading = true
+    @Published package private(set) var isLoadingRecords = true
     @Published package private(set) var isExportingDiagnostics = false
     @Published package var error: String?
     @Published package private(set) var loginStatus: SMAppService.Status
@@ -236,7 +457,13 @@ package final class Store: ObservableObject {
     private let now: () -> Date
     private let recordDiagnostic: @Sendable (String) -> Void
     private let disclosureCache: SubtaskDisclosureCache
+    private let recordDisclosureCache: SubtaskDisclosureCache
     private var readFailed = false
+    private var recordReadFailed = false
+    @Published private var isWritingRecords = false
+    @Published private var isApplyingPanelRecordToggles = false
+    private var panelRecordToggles: [(recordID: UUID, subtaskID: UUID)] = []
+    private var recordWriteError: String?
     private var revision = 0
     private var durableRevision = 0
     private var durableData = CountdownData()
@@ -251,7 +478,7 @@ package final class Store: ObservableObject {
     private var midnightTimer: Timer?
     @Published package private(set) var isResolvingMaterials = false
     @Published package private(set) var isReceivingMaterials = false
-    private var attachmentDrafts: Set<UUID> = []
+    private var attachmentDrafts: [UUID: StoredAttachmentCollection] = [:]
     private var savingCopyDrafts: Set<UUID> = []
     private var attachmentPicker: (draftID: UUID, panel: NSOpenPanel)?
     package weak var dialogAppearanceSource: NSWindow?
@@ -280,7 +507,11 @@ package final class Store: ObservableObject {
         disclosureCache = SubtaskDisclosureCache(
             persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults)
         )
+        recordDisclosureCache = SubtaskDisclosureCache(
+            persistence: SubtaskDisclosurePersistence(defaults: disclosureDefaults, key: "expandedSubtasksByRecord")
+        )
         Task { await load() }
+        Task { await loadRecords() }
         rescheduleMidnightTimer()
         Timer.publish(every: 30, on: .main, in: .common).autoconnect()
             .sink { [weak self] _ in self?.refresh() }.store(in: &subscriptions)
@@ -318,10 +549,13 @@ package final class Store: ObservableObject {
     var tomorrow: Date { Day.calendar.date(byAdding: .day, value: 1, to: today.date())! }
 
     package var hasPendingPersistence: Bool {
-        isLoading || !inFlightPersistenceRevisions.isEmpty || isRecoveringPersistence || recoveryMutationInFlight
+        isLoading || isWritingRecords || isApplyingPanelRecordToggles || !inFlightPersistenceRevisions.isEmpty
+            || isRecoveringPersistence || recoveryMutationInFlight
             || isTransferringSubtask
-            || isImportingAttachments || isReceivingMaterials || isResolvingMaterials
+            || isImportingAttachments || isHandlingMaterials
     }
+
+    var isHandlingMaterials: Bool { isReceivingMaterials || isResolvingMaterials }
 
     package var isImportingAttachments: Bool { attachmentOperationCount > 0 }
 
@@ -331,12 +565,27 @@ package final class Store: ObservableObject {
 
     package var showsEmptyEventList: Bool { eventCreationIsAvailable && active.isEmpty }
 
+    package var recordCreationIsAvailable: Bool { !isLoadingRecords && !recordReadFailed }
+
+    package var showsEmptyRecordList: Bool { recordCreationIsAvailable && records.isEmpty }
+
     func subtasksAreExpanded(for eventID: UUID) -> Bool {
         disclosureState(for: eventID).isExpanded
     }
 
     func disclosureState(for eventID: UUID) -> SubtaskDisclosureState {
         disclosureCache.state(for: eventID)
+    }
+
+    package func recordDisclosureState(for recordID: UUID) -> SubtaskDisclosureState {
+        recordDisclosureCache.state(for: recordID)
+    }
+
+    func disclosureState(for owner: SavedMaterialOwnerID) -> SubtaskDisclosureState {
+        switch owner {
+        case let .event(id): disclosureState(for: id)
+        case let .record(id): recordDisclosureState(for: id)
+        }
     }
 
     func setSubtasksExpanded(_ isExpanded: Bool, for eventID: UUID) {
@@ -352,7 +601,7 @@ package final class Store: ObservableObject {
             if updated != data {
                 let removedEventIDs = Set(data.items.map(\.id)).subtracting(updated.items.map(\.id))
                 recordDiagnostic("data.normalize removed=\(data.items.count - updated.items.count)")
-                if isRecoveringPersistence || isTransferringSubtask {
+                if isRecoveringPersistence || isTransferringSubtask || isHandlingMaterials {
                     needsDeferredNormalization = true
                 } else {
                     stagePersistence(
@@ -493,7 +742,7 @@ package final class Store: ObservableObject {
     }
 
     private func persistDeferredNormalizationIfNeeded() {
-        guard needsDeferredNormalization, !isTransferringSubtask else { return }
+        guard needsDeferredNormalization, !isTransferringSubtask, !isHandlingMaterials, !isRecoveringPersistence else { return }
         needsDeferredNormalization = false
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
@@ -506,11 +755,27 @@ package final class Store: ObservableObject {
     }
 
     package func openLink(_ link: EventLink, eventID: UUID) {
-        guard !isLoading, !readFailed,
-              data.items.contains(where: {
-                  $0.id == eventID && $0.isAvailable(on: Day(now())) && $0.links.contains(link)
-              }), let url = link.url else {
-            error = AppText.string("store.linkUnavailable")
+        openSavedLink(link, owner: .event(eventID))
+    }
+
+    package func openLink(_ link: EventLink, recordID: UUID) {
+        openSavedLink(link, owner: .record(recordID))
+    }
+
+    func openSavedLink(_ link: EventLink, owner: SavedMaterialOwnerID) {
+        let isSaved: Bool
+        switch owner {
+        case .event(let id):
+            isSaved = !isLoading && !readFailed && data.items.contains {
+                $0.id == id && $0.isAvailable(on: Day(now())) && $0.links.contains(link)
+            }
+        case .record(let id):
+            isSaved = !isLoadingRecords && !recordReadFailed && records.contains {
+                $0.id == id && $0.links.contains(link)
+            }
+        }
+        guard isSaved, let url = link.url else {
+            error = owner.unavailableLink
             return
         }
         if !openWebURL(url) {
@@ -551,7 +816,7 @@ package final class Store: ObservableObject {
     }
 
     package func saveCopy(_ countdown: Countdown, sourceID: UUID, draftID: UUID, primary: Bool) async -> Countdown? {
-        guard !Task.isCancelled, attachmentDrafts.contains(draftID),
+        guard !Task.isCancelled, attachmentDrafts[draftID] == .events,
               savingCopyDrafts.insert(draftID).inserted else { return nil }
         error = nil
         attachmentOperationCount += 1
@@ -566,7 +831,7 @@ package final class Store: ObservableObject {
         do {
             let currentDay = Day(now())
             if currentDay != today { today = currentDay }
-            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { throw CancellationError() }
+            guard !Task.isCancelled, attachmentDrafts[draftID] == .events else { throw CancellationError() }
             guard let source = data.items.first(where: { $0.id == sourceID && $0.isAvailable(on: today) }) else {
                 throw CountdownError.eventNotFound
             }
@@ -576,7 +841,7 @@ package final class Store: ObservableObject {
                 countdown.attachments, inheritedFrom: source.attachments,
                 editorDraftID: draftID, copyDraftID: copyDraftID
             )
-            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { throw CancellationError() }
+            guard !Task.isCancelled, attachmentDrafts[draftID] == .events else { throw CancellationError() }
             let commitDay = Day(now())
             if commitDay != today { today = commitDay }
             guard let latestSource = data.items.first(where: { $0.id == sourceID && $0.isAvailable(on: today) }),
@@ -593,7 +858,7 @@ package final class Store: ObservableObject {
             let normalizedCopy = candidate.items[index]
             if await commit(candidate, reason: "countdown.copy") { savedCopy = normalizedCopy }
         } catch {
-            if attachmentDrafts.contains(draftID), !Task.isCancelled {
+            if attachmentDrafts[draftID] == .events, !Task.isCancelled {
                 recordDiagnostic("countdown.copy failure \(DiagnosticPrivacy.errorFields(error))")
                 switch error {
                 case let validation as CountdownError: self.error = validation.errorDescription
@@ -722,6 +987,7 @@ package final class Store: ObservableObject {
     func toggleSubtask(eventID: UUID, subtaskID: UUID) async -> Bool {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
+        guard !isHandlingMaterials else { return false }
         recordDiagnostic("subtask.toggle begin event=\(eventID.uuidString) id=\(subtaskID.uuidString)")
         var updated = data
         do {
@@ -749,6 +1015,20 @@ package final class Store: ObservableObject {
         return await commit(updated, reason: "subtask.reorder")
     }
 
+    func toggleSubtask(owner: SavedMaterialOwnerID, subtaskID: UUID) async -> Bool {
+        switch owner {
+        case let .event(id): await toggleSubtask(eventID: id, subtaskID: subtaskID)
+        case let .record(id): await toggleRecordSubtask(recordID: id, subtaskID: subtaskID)
+        }
+    }
+
+    func reorderSubtask(owner: SavedMaterialOwnerID, move: SubtaskReorder, to index: Int) async -> Bool {
+        switch owner {
+        case let .event(id): await reorderSubtask(eventID: id, move: move, to: index)
+        case let .record(id): await reorderRecordSubtask(recordID: id, move: move, to: index)
+        }
+    }
+
     func makePrimary(_ id: UUID) async {
         await setPrimarySelection(id)
     }
@@ -760,6 +1040,7 @@ package final class Store: ObservableObject {
     private func setPrimarySelection(_ id: UUID?) async {
         let isRecoveryMutation = await waitForPersistenceRecoveryIfNeeded()
         defer { if isRecoveryMutation { finishRecoveryMutation() } }
+        guard !isHandlingMaterials else { return }
         let currentDay = Day(now())
         if currentDay != today { today = currentDay }
         var updated = data
@@ -873,18 +1154,41 @@ extension Store {
         return true
     }
 
-    package func endMaterialResolution() { isResolvingMaterials = false }
+    func beginMaterialResolution(for ownerID: SavedMaterialOwnerID) -> Bool {
+        guard !hasPendingPersistence, savedMaterialOwner(ownerID) != nil else { return false }
+        isResolvingMaterials = true
+        return true
+    }
+
+    func savedMaterialOwner(_ ownerID: SavedMaterialOwnerID) -> SavedMaterialOwner? {
+        switch ownerID {
+        case let .event(id):
+            guard eventCreationIsAvailable else { return nil }
+            return data.items.first { $0.id == id && $0.isAvailable(on: Day(now())) }.map(SavedMaterialOwner.init)
+        case let .record(id):
+            guard recordCreationIsAvailable else { return nil }
+            return records.first { $0.id == id }.map(SavedMaterialOwner.init)
+        }
+    }
+
+    package func endMaterialResolution() {
+        isResolvingMaterials = false
+        if needsDeferredNormalization {
+            // The synchronous handoff can acquire the next material reservation before normalization runs.
+            Task { [weak self] in self?.persistDeferredNormalizationIfNeeded() }
+        }
+    }
 
     package func createTextAttachment(_ text: TextAttachment, draftID: UUID) async -> EventAttachment? {
-        guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+        guard !Task.isCancelled, attachmentDrafts[draftID] != nil else { return nil }
         attachmentOperationCount += 1
         defer { attachmentOperationCount -= 1 }
         do {
             let attachment = try await repository.createTextAttachment(text, draftID: draftID)
-            guard !Task.isCancelled, attachmentDrafts.contains(draftID) else { return nil }
+            guard !Task.isCancelled, attachmentDrafts[draftID] != nil else { return nil }
             return attachment
         } catch {
-            if attachmentDrafts.contains(draftID) {
+            if attachmentDrafts[draftID] != nil {
                 self.error = (error as? TextAttachmentError)?.errorDescription
                     ?? (error as? EventAttachmentError)?.errorDescription
                     ?? AppText.string("store.textAttachmentCreateFailed")
@@ -894,61 +1198,90 @@ extension Store {
     }
 
     package func scheduleMaterialAddition(_ materials: EventMaterials, to eventID: UUID) {
-        guard let original = reserveMaterialAddition(materials, to: eventID) else { return }
-        Task { await appendReservedMaterials(materials, to: eventID, original: original) }
+        scheduleMaterialAddition(materials, to: .event(eventID))
+    }
+
+    func scheduleMaterialAddition(_ materials: EventMaterials, to ownerID: SavedMaterialOwnerID) {
+        guard let original = reserveMaterialAddition(materials, to: ownerID) else { return }
+        Task { await appendReservedMaterials(materials, to: ownerID, original: original) }
     }
 
     @discardableResult
     package func appendMaterials(_ materials: EventMaterials, to eventID: UUID) async -> Bool {
-        guard let original = reserveMaterialAddition(materials, to: eventID) else { return false }
-        return await appendReservedMaterials(materials, to: eventID, original: original)
+        await appendMaterials(materials, to: .event(eventID))
     }
 
-    private func reserveMaterialAddition(_ materials: EventMaterials, to eventID: UUID) -> Countdown? {
-        guard !hasPendingPersistence, eventCreationIsAvailable, !materials.isEmpty,
-              materials.text == nil,
-              let original = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
+    @discardableResult
+    package func appendMaterials(_ materials: EventMaterials, to ownerID: SavedMaterialOwnerID) async -> Bool {
+        guard let original = reserveMaterialAddition(materials, to: ownerID) else { return false }
+        return await appendReservedMaterials(materials, to: ownerID, original: original)
+    }
+
+    private func reserveMaterialAddition(_ materials: EventMaterials, to ownerID: SavedMaterialOwnerID) -> SavedMaterialOwner? {
+        guard !hasPendingPersistence, !materials.isEmpty, materials.text == nil,
+              let original = savedMaterialOwner(ownerID) else {
             error = AppText.string("store.materialAdmissionBlocked")
             return nil
         }
-        do { try materials.validateCapacity(for: original) }
+        do { try materials.validateCapacity(attachments: original.attachments, existingLinks: original.links) }
         catch { self.error = error.localizedDescription; return nil }
         isReceivingMaterials = true
         return original
     }
 
     @discardableResult
-    private func appendReservedMaterials(_ materials: EventMaterials, to eventID: UUID,
-                                         original: Countdown) async -> Bool {
+    private func appendReservedMaterials(_ materials: EventMaterials, to ownerID: SavedMaterialOwnerID,
+                                         original: SavedMaterialOwner) async -> Bool {
         defer { withExtendedLifetime(materials.stagedFiles) {} }
-        defer { isReceivingMaterials = false }
+        defer {
+            isReceivingMaterials = false
+            persistDeferredNormalizationIfNeeded()
+        }
         let draftID = UUID()
-        guard await beginAttachmentDraft(draftID) else { return false }
+        guard await prepareAttachmentDraft(draftID, in: ownerID.collection) else { return false }
         let imported = await importAttachments(from: materials.files, draftID: draftID,
                                                 currentAttachments: original.attachments)
         let textFile: EventAttachment?
         if let text = materials.textFile, imported.count == materials.files.count {
             textFile = await createTextAttachment(text, draftID: draftID)
         } else { textFile = nil }
+        let latestOwner = savedMaterialOwner(ownerID)
         guard !Task.isCancelled, imported.count == materials.files.count,
               materials.textFile == nil || textFile != nil,
-              var latest = data.items.first(where: { $0.id == eventID && $0.isAvailable(on: Day(now())) }) else {
+              let latest = latestOwner else {
             await discardAttachmentDraft(draftID)
-            if error == nil { error = AppText.string("store.materialBecameUnavailable") }
+            if latestOwner == nil || error == nil { error = AppText.string("store.materialBecameUnavailable") }
             return false
         }
-        do { try materials.validateCapacity(for: latest) }
+        do { try materials.validateCapacity(attachments: latest.attachments, existingLinks: latest.links) }
         catch {
             self.error = error.localizedDescription
             await discardAttachmentDraft(draftID)
             return false
         }
         let files = imported + (textFile.map { [$0] } ?? [])
-        latest.attachments += files
-        latest.links += materials.links.map { $0.normalized() }
-        let saved = await save(latest, primary: data.primaryID == eventID, requireExisting: true)
+        let links = materials.links.map { $0.normalized() }
+        let saved = await saveAddedMaterials(files, links: links, to: ownerID)
         await discardAttachmentDraft(draftID)
         return saved
+    }
+
+    private func saveAddedMaterials(_ files: [EventAttachment], links: [EventLink],
+                                    to ownerID: SavedMaterialOwnerID) async -> Bool {
+        func appending<Owner: SavedMaterialContent>(_ owner: Owner) -> Owner {
+            var updated = owner
+            updated.attachments += files
+            updated.links += links
+            return updated
+        }
+        switch ownerID {
+        case let .event(id):
+            guard let event = data.items.first(where: { $0.id == id }) else { return false }
+            return await save(appending(event), primary: data.primaryID == id, requireExisting: true)
+        case let .record(id):
+            guard let record = records.first(where: { $0.id == id }) else { return false }
+            return await saveRecord(appending(record), requireExisting: true)
+        }
     }
 
 }

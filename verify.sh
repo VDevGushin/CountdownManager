@@ -6,8 +6,8 @@ cd "$(dirname "$0")"
 mode="${1:-full}"
 capture_output_dir=""
 case "$mode" in
-    fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability) ;;
-    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|subtask-transfer-capture|editor-stability-capture|localization-capture)
+    fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|records|records-monkey) ;;
+    capture|weather-capture|empty-state-capture|compact-capture|completed-subtasks-capture|menu-identity-capture|automatic-title-capture|desktop-capture|attachments-capture|week-capture|event-copy-capture|subtask-transfer-capture|editor-stability-capture|localization-capture|records-capture|records-monkey-capture)
         if [[ $# -ne 2 ]]; then
             echo "Usage: ./verify.sh $mode <marked-output-directory>" >&2
             exit 64
@@ -19,7 +19,7 @@ case "$mode" in
         fi
         ;;
     *)
-        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|subtask-transfer-capture <directory>|editor-stability-capture <directory>|localization-capture <directory>]" >&2
+        echo "Usage: ./verify.sh [fast|ui|full|weather|empty-state|editor|desktop|attachments|week|event-copy|subtask-transfer|editor-stability|records|records-monkey|capture <directory>|weather-capture <directory>|empty-state-capture <directory>|compact-capture <directory>|completed-subtasks-capture <directory>|menu-identity-capture <directory>|automatic-title-capture <directory>|desktop-capture <directory>|attachments-capture <directory>|week-capture <directory>|event-copy-capture <directory>|subtask-transfer-capture <directory>|editor-stability-capture <directory>|localization-capture <directory>|records-capture <directory>|records-monkey-capture <directory>]" >&2
         exit 64
         ;;
 esac
@@ -102,7 +102,8 @@ run_smoke() {
         fi
         timeout_seconds=70
     fi
-    if [[ "$launch_argument" == "--ui-smoke-desktop" || "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" || "$launch_argument" == "--ui-smoke-event-copy" || "$launch_argument" == "--ui-smoke-subtask-transfer" ]]; then timeout_seconds=70; fi
+    if [[ "$launch_argument" == "--ui-smoke-desktop" ]]; then timeout_seconds=125; fi
+    if [[ "$launch_argument" == "--ui-smoke-menu-identity-captures" || "$launch_argument" == "--ui-smoke-attachment-preview" || "$launch_argument" == "--ui-smoke-week-creation" || "$launch_argument" == "--ui-smoke-editor-stability" || "$launch_argument" == "--ui-smoke-event-copy" || "$launch_argument" == "--ui-smoke-subtask-transfer" ]]; then timeout_seconds=70; fi
     if [[ "$launch_argument" == "--ui-smoke-attachment-preview" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-attachment-preview)
     fi
@@ -117,6 +118,10 @@ run_smoke() {
     fi
     if [[ "$launch_argument" == "--ui-smoke-editor-stability" ]]; then
         launch_arguments=(--ui-smoke-desktop --ui-smoke-editor-stability)
+    fi
+    if [[ "$launch_argument" == "--ui-smoke-records" || "$launch_argument" == "--ui-smoke-records-monkey" ]]; then
+        launch_arguments=(--ui-smoke-desktop "$launch_argument")
+        timeout_seconds=70
     fi
     mkdir -p "$test_home"
     touch "$test_home/.countdown-ui-smoke-environment"
@@ -308,6 +313,22 @@ copy_focused_desktop_evidence() {
 }
 
 case "$mode" in
+    records|records-capture|records-monkey|records-monkey-capture)
+        build_ui_app
+        scenario="${mode%-capture}"
+        echo "Verification: native $scenario"
+        if ! run_smoke "$scenario-smoke" "--ui-smoke-$scenario"; then
+            if [[ "$mode" == *-capture ]]; then
+                copy_focused_desktop_evidence "$scenario" failed "$scenario-smoke"
+            fi
+            exit 1
+        fi
+        if [[ "$mode" == *-capture ]]; then
+            test -s "$verify_root/$scenario-smoke/Captures/manifest.json"
+            copy_focused_desktop_evidence "$scenario" captures "$scenario-smoke"
+        fi
+        echo "PASS: native $scenario in desktop and mini-panel"
+        ;;
     localization-capture)
         build_ui_app 1
         for language in en ru; do

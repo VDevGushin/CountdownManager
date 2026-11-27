@@ -3,6 +3,7 @@ import CountdownCore
 import CryptoKit
 import QuickLookUI
 import SwiftUI
+import UniformTypeIdentifiers
 
 private final class WeekSmokePanel: NSPanel {
     override var canBecomeKey: Bool { true }
@@ -132,7 +133,9 @@ final class DesktopSmokeRuntime {
 
     func start() {
         let resultURL = configuration.resultURL
-        DispatchQueue.global().asyncAfter(deadline: .now() + 65) {
+        let modeArguments = ProcessInfo.processInfo.arguments.filter { $0.hasPrefix("--ui-smoke-") }
+        let timeout = modeArguments == [UISmokeConfiguration.desktopLaunchArgument] ? 120.0 : 65.0
+        DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
             try? "DesktopSmoke\nFAIL: hard timeout".write(to: resultURL, atomically: true, encoding: .utf8)
             Darwin._exit(124)
         }
@@ -163,6 +166,10 @@ final class DesktopSmokeRuntime {
                     try await verifySubtaskCompletionLayout()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
                     try await verifySubtaskTransfer()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-records") {
+                    try await verifyRecords()
+                } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-records-monkey") {
+                    try await verifyRecordsMonkey()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-event-copy") {
                     try await verifyEventCopy()
                 } else if ProcessInfo.processInfo.arguments.contains("--ui-smoke-week-creation") {
@@ -817,6 +824,405 @@ final class DesktopSmokeRuntime {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try JSONSerialization.data(withJSONObject: trace, options: [.prettyPrinted, .sortedKeys])
             .write(to: directory.appendingPathComponent("editor-stability-trace.json"))
+    }
+
+    private func verifyRecordsMonkey() async throws {
+        captureFixture = ["scenario": "records-monkey", "data": "Synthetic records and dated event in isolated Application Support"]
+        defer { captureFixture = nil }
+        let scenario = RecordsMonkeySmokeScenario(
+            configuration: configuration, store: store, editorSession: editorSession,
+            visualEnvironment: visualEnvironment, accessibility: accessibilitySettings,
+            desktopWindow: desktopWindow, panelWindow: panelWindow, statusButton: statusButton,
+            showDesktop: showDesktop, showPanel: showPanel,
+            pressStatusItem: pressStatusItem, replaceFocusedText: replaceFocusedText,
+            capture: { name, window in try self.capture(name, window: window) }
+        )
+        passed.append(contentsOf: try await scenario.run())
+    }
+
+    private func verifyRecords() async throws {
+        try await wait("isolated records and events loaded") { !self.store.isLoading && !self.store.isLoadingRecords }
+        try require(store.active.isEmpty && store.records.isEmpty, "records scenario requires an empty isolated profile")
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true)
+        visualEnvironment.colorSchemeOverride = .dark
+        captureFixture = ["scenario": "records", "data": "Synthetic records and dated event in isolated Application Support"]
+        defer { captureFixture = nil }
+
+        showDesktop()
+        let desktop = try value(desktopWindow(), "records desktop")
+        desktop.setContentSize(NSSize(width: 1120, height: 720))
+        try await wait("records desktop key") { desktop.isVisible && desktop.isKeyWindow }
+        try await press("desktop.section.records")
+        try await wait("empty desktop records") { self.controls.frame("desktop.record.empty") != nil }
+        try capture("desktop-records-empty-dark", window: desktop)
+
+        try await wait("status item available") { self.statusButton()?.window?.screen != nil }
+        try await press("desktop.panel")
+        let panel = try value(panelWindow(), "records mini-panel")
+        try await wait("empty mini-panel key") { panel.isVisible && panel.isKeyWindow }
+        try await wait("existing mini-panel empty events") { self.controls.entries["event.empty.today"]?.isEnabled == true }
+        try await press("panel.section.records")
+        try await wait("mini-panel empty record action") { self.controls.entries["panel.record.create"]?.isEnabled == true }
+        try capture("mini-records-empty-dark", window: panel)
+        showDesktop()
+        try await wait("desktop restored with selected section") {
+            desktop.isKeyWindow && self.controls.value("desktop.section") == "records"
+        }
+
+        try await press("desktop.record.empty.create")
+        try await wait("record editor title in native sheet") {
+            desktop.attachedSheet?.isKeyWindow == true && self.controls.frame("editor.title") != nil
+        }
+        try require(controls.entries["editor.date"] == nil, "a record editor must not register a date field")
+        try await replaceFocusedText(control: "editor.title", text: "Дом")
+        try await press("editor.note")
+        try await wait("native record description receives focus") {
+            (desktop.attachedSheet?.firstResponder as? NoteTextView)?.isEditable == true
+        }
+        let description = try value(desktop.attachedSheet?.firstResponder as? NoteTextView, "native record description")
+        let descriptionText = "Размеры, артикулы и мелкий ремонт."
+        description.insertText(descriptionText, replacementRange: description.selectedRange())
+        try await expect("editor.note", descriptionText)
+        try await press("editor.save")
+        try await wait("record saved from desktop editor") { self.store.records.first?.title == "Дом" && desktop.attachedSheet == nil }
+        try require(store.active.isEmpty, "creating a record must leave the calendar empty")
+
+        let task = try Subtask(text: "Найти подушку сиденья Mazda")
+        let secondTask = try Subtask(text: "Проверить состояние зимних щёток")
+        let completed = try Subtask(text: "Сохранить заказ-наряд", isCompleted: true)
+        let link = EventLink(name: "Каталог запчастей", address: "https://example.com/parts")
+        let draftID = UUID()
+        let draftOpened = await store.beginRecordAttachmentDraft(draftID)
+        try require(draftOpened, "cannot prepare a record attachment draft")
+        let content = TextAttachment(name: "Артикулы.txt", text: "Демонстрационный список артикулов")
+        let file = try value(await store.createTextAttachment(content, draftID: draftID), "record text attachment")
+        let record = UndatedRecord(title: "Машина", note: "Артикулы, документы и список дел на следующее ТО.",
+                                   subtasks: [task, secondTask, completed], attachments: [file], links: [link])
+        let saved = await store.saveRecord(record)
+        await store.discardAttachmentDraft(draftID)
+        try require(saved, "cannot seed the car record")
+        let event = Countdown(title: "Осмотр Mazda", date: Day(store.tomorrow), emoji: "")
+        let eventSaved = await store.save(event, primary: false)
+        try require(eventSaved, "cannot seed a dated event for scoped search")
+        try require(store.records.map(\.title) == ["Машина", "Дом"], "new records must appear first")
+        try await press("desktop.record.\(record.id.uuidString)")
+        try await wait("car in desktop inspector") { self.controls.frame("desktop.record.detail.\(record.id.uuidString)") != nil }
+        let house = try value(store.records.last, "second record grid fixture")
+        let carCard = "desktop.record.presentation.\(record.id.uuidString)"
+        let houseCard = "desktop.record.presentation.\(house.id.uuidString)"
+        try await wait("record card bounds render") {
+            self.controls.frame(carCard) != nil && self.controls.frame(houseCard) != nil
+        }
+        let carFrame = try value(controls.frame(carCard), "car card bounds")
+        let houseFrame = try value(controls.frame(houseCard), "house card bounds")
+        try require(abs(carFrame.minY - houseFrame.minY) < 1 && carFrame.midX < houseFrame.midX
+                    && abs(carFrame.width - houseFrame.width) < 1 && abs(carFrame.height - houseFrame.height) < 1,
+                    "record cards with different content must fill the same grid row: \(carFrame), \(houseFrame)")
+        try await captureWindowThemes("desktop-records", window: desktop)
+        try await captureRecordsContrast("desktop-records", window: desktop)
+
+        try await verifyCollectionResize(in: desktop, section: "records", card: carCard, neighbor: houseCard)
+        try await verifyScopedRecordSearch(recordID: record.id, eventID: event.id)
+
+        visualEnvironment.colorSchemeOverride = .light
+        try await wait("status item available") { self.statusButton()?.window?.screen != nil }
+        try await press("desktop.panel")
+        try await wait("records mini-panel key") { panel.isVisible && panel.isKeyWindow }
+        try await press("panel.section.events")
+        try await expect("header.active-count", eventCountLabel(1))
+        try await wait("event header create button") { self.controls.entries["event.add"]?.isEnabled == true }
+        let eventCreateFrame = try value(controls.frame("event.add"), "event header create button frame")
+        try await press("panel.section.records")
+        try await wait("car in mini-panel") { self.controls.frame("panel.record.card.\(record.id.uuidString)") != nil }
+        try await expect("panel.records.count", recordCountLabel(2))
+        try await wait("record header exposes only its creation action") {
+            self.controls.entries["panel.record.create"]?.isEnabled == true
+                && self.controls.entries["day.add"]?.isEnabled != true
+                && self.controls.entries["event.add"]?.isEnabled != true
+        }
+        let recordCreateFrame = try value(controls.frame("panel.record.create"), "record header create button frame")
+        try require(abs(eventCreateFrame.minX - recordCreateFrame.minX) < 1
+                    && abs(eventCreateFrame.minY - recordCreateFrame.minY) < 1
+                    && eventCreateFrame.size == recordCreateFrame.size,
+                    "mini-panel create button moved from \(eventCreateFrame) to \(recordCreateFrame)")
+        try await captureWindowThemes("mini-records", window: panel)
+        try await captureRecordsContrast("mini-records", window: panel)
+        try await press("panel.record.create")
+        try await expect("editor.title", "")
+        try require(controls.entries["editor.date"] == nil, "mini-panel header must open the undated editor")
+        try await press("editor.cancel")
+        try await wait("mini-panel creation cancellation") { !self.editorSession.hasActiveEditor }
+        try await press("subtask.toggle.\(task.id.uuidString)")
+        try await wait("record completion propagated to the shared store") {
+            self.store.records.first?.subtasks.first(where: { $0.id == task.id })?.isCompleted == true
+        }
+        try require(store.records.map(\.id).first == record.id, "completing a subtask must not move its record")
+        try await press("panel.record.edit.\(record.id.uuidString)")
+        try await expect("editor.title", "Машина")
+        try require(controls.entries["editor.date"] == nil, "the mini-panel record editor must not register a date field")
+        try await press("editor.cancel")
+        try await press("panel.section.events")
+        try await expect("event.title.\(event.id.uuidString)", event.title)
+        passed.append("Native record creation, aligned mini headers, stable record grid, scoped search, checklist and dated event navigation")
+        try await verifySavedMaterialParity(desktop: desktop, panel: panel, eventID: event.id, recordID: record.id)
+        passed.append("Stable event grid during resize; events and records accept file, link and text via desktop cards/details and mini cards")
+        try await verifyRecordChecklistDrag(record, first: task, second: secondTask, desktop: desktop, panel: panel)
+        passed.append("Record checklist drag commits and reopens in the other surface in both directions")
+        try await verifyRecordLinkLimit(record.id)
+        passed.append("An eleventh link dropped on a record is rejected without a durable change")
+    }
+
+    private func verifyRecordChecklistDrag(_ record: UndatedRecord, first: Subtask, second: Subtask,
+                                           desktop: NSWindow, panel: NSWindow) async throws {
+        let recordsURL = CountdownRepository.recordsFileURL(beside: configuration.dataURL)
+        let calendarBytes = try Data(contentsOf: configuration.dataURL)
+        let firstControl = "subtask.toggle.\(first.id)"
+        try await expect("panel.section", "records")
+        try await press(firstControl)
+        try await expect(firstControl, "active")
+        try await wait("mini record checklist ready for drag") {
+            panel.isKeyWindow && !self.store.hasPendingPersistence
+                && self.controls.frame("subtask.toggle.\(second.id)") != nil
+        }
+        let repository = CountdownRepository(fileURL: configuration.dataURL)
+        let baseline = try await repository.loadRecords()
+        let ownerIndex = try value(baseline.firstIndex { $0.id == record.id }, "durable reorder target")
+        try await dragSavedSubtask(second, before: first, window: panel, scope: "", snapshotURL: recordsURL)
+        try await wait("mini reorder commits to record") {
+            !self.store.hasPendingPersistence
+                && self.store.records.first(where: { $0.id == record.id })?.subtasks.first?.id == second.id
+        }
+        var reordered = baseline
+        reordered[ownerIndex].subtasks.swapAt(0, 1)
+        try await verifyDurableRecordOrder(reordered, calendarBytes: calendarBytes, repository: repository)
+        showDesktop()
+        try await wait("desktop reflects mini record reorder") {
+            guard desktop.isKeyWindow, self.controls.value("desktop.section") == "records",
+                  let earlier = self.controls.frame("desktop.record.subtask.toggle.\(second.id)"),
+                  let later = self.controls.frame("desktop.record.subtask.toggle.\(first.id)") else { return false }
+            return earlier.minY < later.minY
+        }
+        try await dragSavedSubtask(first, before: second, window: desktop, scope: "desktop.record.", snapshotURL: recordsURL)
+        try await wait("desktop reorder commits to record") {
+            !self.store.hasPendingPersistence
+                && self.store.records.first(where: { $0.id == record.id })?.subtasks == record.subtasks
+        }
+        try await verifyDurableRecordOrder(baseline, calendarBytes: calendarBytes, repository: repository)
+        try await press("desktop.panel")
+        try await wait("mini reflects desktop record reorder") {
+            guard panel.isKeyWindow, self.controls.value("panel.section") == "records",
+                  let earlier = self.controls.frame(firstControl),
+                  let later = self.controls.frame("subtask.toggle.\(second.id)") else { return false }
+            return earlier.minY < later.minY
+        }
+    }
+
+    private func verifyDurableRecordOrder(_ expected: [UndatedRecord], calendarBytes: Data,
+                                          repository: CountdownRepository) async throws {
+        let durable = try await repository.loadRecords()
+        let calendarAfter = try Data(contentsOf: configuration.dataURL)
+        try require(durable == expected && calendarAfter == calendarBytes,
+                    "record reorder failed to persist exactly or changed another record or the calendar")
+    }
+
+    private func verifySavedMaterialParity(desktop: NSWindow, panel: NSWindow, eventID: UUID, recordID: UUID) async throws {
+        let repository = CountdownRepository(fileURL: configuration.dataURL)
+        let alternateEvent = Countdown(title: "Другое событие", date: Day(store.tomorrow), emoji: "")
+        let alternateRecord = try value(store.records.first { $0.id != recordID }, "neighbor record")
+        let saved = await store.save(alternateEvent, primary: false)
+        try require(saved, "could not seed an unselected drop target neighbor")
+        let owners: [(section: String, id: SavedMaterialOwnerID, neighbor: UUID)] = [
+            ("events", .event(eventID), alternateEvent.id), ("records", .record(recordID), alternateRecord.id)
+        ]
+        showDesktop()
+        try await wait("material parity desktop is active") { desktop.isVisible && desktop.isKeyWindow }
+        for (section, owner, neighbor) in owners {
+            try await press("desktop.section.\(section)")
+            try await expect("desktop.section", section)
+            if owner.collection == .events {
+                try await verifyCollectionResize(in: desktop, section: section,
+                                                 card: "desktop.presentation.\(owner.id)", neighbor: "desktop.presentation.\(neighbor)")
+            }
+            let cardPrefix = owner.collection == .events ? "desktop.event." : "desktop.record."
+            try await press(cardPrefix + neighbor.uuidString)
+            try await expect("desktop.inspector", neighbor.uuidString)
+            try await verifySavedMaterialDrop(on: "desktop.card", section: section, owner: owner,
+                                              repository: repository, unchangedSelection: neighbor)
+            // Opening the desktop text composer focuses its saved owner.
+            try await expect("desktop.inspector", owner.id.uuidString)
+            try await verifySavedMaterialDrop(on: "desktop.detail", section: section, owner: owner, repository: repository)
+        }
+        try await press("desktop.panel")
+        try await wait("material parity panel is active") { panel.isVisible && panel.isKeyWindow }
+        for (section, owner, _) in owners {
+            try await press("panel.section.\(section)")
+            try await expect("panel.section", section)
+            try await verifySavedMaterialDrop(on: "panel.card", section: section, owner: owner, repository: repository)
+        }
+    }
+
+    private func verifySavedMaterialDrop(on surface: String, section: String, owner: SavedMaterialOwnerID,
+                                         repository: CountdownRepository, unchangedSelection: UUID? = nil) async throws {
+        let recordsURL = CountdownRepository.recordsFileURL(beside: configuration.dataURL)
+        let otherURL = owner.collection == .events ? recordsURL : configuration.dataURL
+        let otherBytes = try Data(contentsOf: otherURL)
+        let siblings = try await savedMaterialSiblings(owner, repository: repository)
+        let target = "materials.drop.\(surface).\(section).\(owner.id)"
+        let name = "\(section)-\(surface.replacingOccurrences(of: ".", with: "-"))"
+        let fileURL = configuration.homeURL.appendingPathComponent("\(name).txt")
+        let bytes = Data("Synthetic \(name) bytes\n".utf8)
+        try bytes.write(to: fileURL)
+        let link = "https://example.com/\(name)"
+        let fileProvider = NSItemProvider(item: fileURL as NSURL, typeIdentifier: UTType.fileURL.identifier)
+        let bookmarkType = try value(webURLsWithTitlesType, "WebKit bookmark pasteboard type")
+        let bookmarkTitle = "Bookmark \(name)"
+        let bookmarkData = try PropertyListSerialization.data(
+            fromPropertyList: [[link], [bookmarkTitle]], format: .binary, options: 0
+        )
+        let linkProvider = NSItemProvider()
+        linkProvider.registerDataRepresentation(forTypeIdentifier: bookmarkType.identifier, visibility: .all) { complete in
+            complete(bookmarkData, nil)
+            return nil
+        }
+        try await wait("material target \(target) is ready") {
+            self.controls.entries[target]?.isEnabled == true && self.controls.entries[target]?.drop != nil
+        }
+        try require(controls.drop([fileProvider, linkProvider], on: target), "\(target) rejected a file/link drop")
+        try await wait("\(target) file/link drop commits") {
+            guard !self.store.hasPendingPersistence, let saved = self.store.savedMaterialOwner(owner) else { return false }
+            return saved.attachments.contains { $0.name == fileURL.lastPathComponent }
+                && saved.links.contains { $0.address == link && $0.name == bookmarkTitle }
+        }
+        if let unchangedSelection {
+            try await expect("desktop.inspector", unchangedSelection.uuidString)
+        }
+        let originalFile = (fileURL.lastPathComponent, bytes)
+        let untouched = (url: otherURL, bytes: otherBytes, siblings: siblings)
+        try await verifyDurableMaterialDrop(owner, repository: repository, link: link, files: [originalFile], untouched: untouched)
+        let sourceAfterFile = try Data(contentsOf: fileURL)
+        try require(sourceAfterFile == bytes, "\(target) changed the original file")
+
+        let title = "Text \(name)"
+        let fragment = title + "\n\nТекст с переносом\n"
+        let text = NSItemProvider(item: fragment as NSString, typeIdentifier: UTType.utf8PlainText.identifier)
+        try await wait("material target \(target) is ready after saving") {
+            self.controls.entries[target]?.isEnabled == true
+        }
+        try require(controls.drop([text], on: target), "\(target) rejected a plain-text drop")
+        try await expect("materials.text.content", fragment)
+        try await press("materials.text.create")
+        let textName = TextAttachment(text: fragment).filename
+        try await wait("\(target) text composer saves and closes") {
+            !self.store.hasPendingPersistence && !self.editorSession.hasActiveEditor
+                && self.store.savedMaterialOwner(owner)?.attachments.contains { $0.name == textName } == true
+        }
+        let files = [originalFile, (textName, Data(fragment.utf8))]
+        try await verifyDurableMaterialDrop(owner, repository: repository, link: link, files: files, untouched: untouched)
+        let sourceAfterText = try Data(contentsOf: fileURL)
+        try require(sourceAfterText == bytes, "\(target) changed the original file")
+    }
+
+    private func verifyDurableMaterialDrop(_ owner: SavedMaterialOwnerID, repository: CountdownRepository,
+                                           link: String, files: [(String, Data)],
+                                           untouched: (url: URL, bytes: Data, siblings: Data)) async throws {
+        let saved: SavedMaterialOwner?
+        switch owner {
+        case let .event(id):
+            saved = try await repository.load().items.first { $0.id == id }.map(SavedMaterialOwner.init)
+        case let .record(id):
+            saved = try await repository.loadRecords().first { $0.id == id }.map(SavedMaterialOwner.init)
+        }
+        let durable = try value(saved, "durable material owner \(owner)")
+        try require(durable.links.contains { $0.address == link }, "\(owner) lost the durable link")
+        for (fileName, expected) in files {
+            let attachment = try value(durable.attachments.first { $0.name == fileName }, "\(owner) durable attachment \(fileName)")
+            let owned = try await repository.attachmentURL(for: attachment, in: owner.collection)
+            let savedBytes = try Data(contentsOf: owned)
+            try require(savedBytes == expected, "\(owner) persisted different attachment bytes")
+        }
+        let otherSavedBytes = try Data(contentsOf: untouched.url)
+        let savedSiblings = try await savedMaterialSiblings(owner, repository: repository)
+        try require(otherSavedBytes == untouched.bytes && savedSiblings == untouched.siblings,
+                    "drop on \(owner) changed a neighboring item or the other collection")
+    }
+
+    private func savedMaterialSiblings(_ owner: SavedMaterialOwnerID, repository: CountdownRepository) async throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        switch owner {
+        case let .event(id):
+            let events = try await repository.load().items
+            return try encoder.encode(events.filter { $0.id != id })
+        case let .record(id):
+            let records = try await repository.loadRecords()
+            return try encoder.encode(records.filter { $0.id != id })
+        }
+    }
+
+    private func verifyRecordLinkLimit(_ recordID: UUID) async throws {
+        var record = try value(store.records.first { $0.id == recordID }, "record link limit fixture")
+        record.links = (0..<EventLink.maximumCount).map { EventLink(address: "https://example.com/existing/\($0)") }
+        let saved = await store.saveRecord(record, requireExisting: true)
+        try require(saved, "could not seed the record link limit")
+        let recordURL = CountdownRepository.recordsFileURL(beside: configuration.dataURL)
+        let before = try Data(contentsOf: recordURL)
+        let target = "materials.drop.panel.card.records.\(recordID)"
+        let url = try value(URL(string: "https://example.com/overflow"), "overflow link")
+        let provider = NSItemProvider(item: url as NSURL, typeIdentifier: UTType.url.identifier)
+        try await wait("record link-limit target is ready") { self.controls.entries[target]?.isEnabled == true }
+        try require(controls.drop([provider], on: target), "record did not accept the link provider for validation")
+        try await expect("application.error", AppText.string("link.error.limit"))
+        let after = try Data(contentsOf: recordURL)
+        try require(after == before && !store.hasPendingPersistence, "the overflow link changed record storage")
+    }
+    private func verifyCollectionResize(in window: NSWindow, section: String, card: String, neighbor: String) async throws {
+        for (fraction, wrapped) in [(0.45, false), (0.36, true), (0.45, false)] {
+            let divider = try await positionDivider(in: window, fraction: fraction)
+            let viewport = divider - 48
+            try require((viewport < 372) == wrapped, "\(section) resize did not cross the two-column threshold")
+            try await wait("\(section) collection cards hold their width at viewport \(viewport)") {
+                guard let frame = self.controls.frame(card), abs(frame.width - 180) < 1 else { return false }
+                guard let other = self.controls.frame(neighbor), abs(other.width - frame.width) < 1 else { return false }
+                if wrapped { return abs(frame.minX - other.minX) < 1 && other.minY > frame.minY }
+                return abs(frame.minY - other.minY) < 1 && abs(other.minX - frame.maxX - 12) < 1
+            }
+        }
+        let divider = try value(controls.frame("desktop.overview"), "browser viewport").width
+        try await press("desktop.mode")
+        try await wait("\(section) feed fills the viewport") {
+            guard let frame = self.controls.frame(card) else { return false }
+            return abs(frame.width - (divider - 48)) < 2
+        }
+        try await requireDivider(divider, in: window, after: "\(section) feed switch")
+        try await press("desktop.mode")
+        try await expect("desktop.mode", "collection")
+    }
+
+    private func captureRecordsContrast(_ name: String, window: NSWindow) async throws {
+        accessibilitySettings.setIsolatedCaptureOverrides(highContrast: true, reduceMotion: true)
+        defer { accessibilitySettings.setIsolatedCaptureOverrides(highContrast: false, reduceMotion: true) }
+        visualEnvironment.colorSchemeOverride = .dark
+        window.appearance = NSAppearance(named: .darkAqua)
+        try await Task.sleep(nanoseconds: 150_000_000)
+        try capture("\(name)-dark-contrast", window: window)
+    }
+
+    private func verifyScopedRecordSearch(recordID: UUID, eventID: UUID) async throws {
+        try await replaceFocusedText(control: "desktop.search", text: "Mazda")
+        try await wait("record search keeps its matching record") {
+            self.controls.frame("desktop.record.\(recordID.uuidString)") != nil
+        }
+        try require(controls.frame("desktop.event.\(eventID.uuidString)") == nil, "record search exposed a dated event")
+        try await replaceFocusedText(control: "desktop.search", text: "")
+        try await press("desktop.section.events")
+        try await expect("desktop.section", "events")
+        try await expect("desktop.inspector", eventID.uuidString)
+        try await replaceFocusedText(control: "desktop.search", text: "Mazda")
+        try await wait("event search keeps its matching dated event") {
+            self.controls.frame("desktop.event.\(eventID.uuidString)") != nil
+        }
+        try require(controls.frame("desktop.record.\(recordID.uuidString)") == nil, "event search exposed a record")
+        try await replaceFocusedText(control: "desktop.search", text: "")
     }
 
     private func verifySubtaskTransfer() async throws {
@@ -2406,6 +2812,16 @@ final class DesktopSmokeRuntime {
                               date: store.today, emoji: "", subtasks: [first, doneFirst, second, third, doneSecond])
         let seeded = await store.save(event, primary: true)
         try require(seeded, "cannot seed reorder fixture")
+        let neighbor = Countdown(title: "Другое событие", date: Day(store.tomorrow), emoji: "")
+        let neighborRecord = UndatedRecord(title: "Независимая запись", subtasks: [try Subtask(text: "Сверить смету")])
+        let neighborSaved = await store.save(neighbor, primary: false)
+        let neighborRecordSaved = await store.saveRecord(neighborRecord)
+        try require(neighborSaved && neighborRecordSaved, "cannot seed neighboring event and record")
+        let repository = CountdownRepository(fileURL: configuration.dataURL)
+        var expected = try await repository.load()
+        let eventIndex = try value(expected.items.firstIndex { $0.id == event.id }, "durable event reorder target")
+        let recordsURL = CountdownRepository.recordsFileURL(beside: configuration.dataURL)
+        let recordBytes = try Data(contentsOf: recordsURL)
         store.setSubtasksExpanded(true, for: event.id)
         showDesktop()
         let window = try value(desktopWindow(), "reorder desktop")
@@ -2423,7 +2839,8 @@ final class DesktopSmokeRuntime {
             if task == second { try require(text.height > lineHeight + 5, "expected a wrapped fixture task") }
         }
         try await dragSavedSubtask(third, before: first, window: window, scope: "desktop.", sampleName: "subtask-reorder-moving")
-        try await requireSavedTaskOrder([third, doneFirst, first, second, doneSecond], eventID: event.id)
+        expected.items[eventIndex].subtasks = [third, doneFirst, first, second, doneSecond]
+        try await requireSavedEventOrder(expected, eventIndex: eventIndex, recordBytes: recordBytes, repository: repository)
         try await captureWindowThemes("subtask-reorder-desktop", window: window)
         try await verifyReorderCancelsOutside(second, first: third, window: window, scope: "desktop.")
         passed.append("Desktop drag stays within its column and group, cancels outside, moves neighbors before mouse-up and preserves arrow alignment")
@@ -2434,10 +2851,12 @@ final class DesktopSmokeRuntime {
             self.controls.frame("subtask.toggle.\(second.id)") != nil && mini.isKeyWindow
         }
         try await dragSavedSubtask(second, before: third, window: mini, scope: "", sampleName: "subtask-reorder-mini-moving")
-        try await requireSavedTaskOrder([second, doneFirst, third, first, doneSecond], eventID: event.id)
+        expected.items[eventIndex].subtasks = [second, doneFirst, third, first, doneSecond]
+        try await requireSavedEventOrder(expected, eventIndex: eventIndex, recordBytes: recordBytes, repository: repository)
         try await dragSavedSubtask(doneSecond, before: doneFirst, window: mini, scope: "")
         let final = [second, doneSecond, third, first, doneFirst]
-        try await requireSavedTaskOrder(final, eventID: event.id)
+        expected.items[eventIndex].subtasks = final
+        try await requireSavedEventOrder(expected, eventIndex: eventIndex, recordBytes: recordBytes, repository: repository)
         try await captureWindowThemes("subtask-reorder-mini", window: mini)
         try await verifyReorderCancelsOutside(first, first: second, window: mini, scope: "")
         try await press("desktop.open")
@@ -2446,10 +2865,19 @@ final class DesktopSmokeRuntime {
                   let next = self.controls.frame("desktop.subtask.toggle.\(third.id)") else { return false }
             return top.minY < next.minY
         }
-        let persisted = try JSONDecoder().decode(CountdownData.self, from: Data(contentsOf: configuration.dataURL))
-        try require(persisted.items.first?.subtasks == final, "saved checklist did not match the preview")
         passed.append("Mini-panel drag is bounded and cancels outside; repeated active/completed reordering saves a shared checklist")
         try await verifyReorderedEditor(eventID: event.id, displayed: [second, third, first, doneSecond, doneFirst], stored: final)
+    }
+
+    private func requireSavedEventOrder(_ expected: CountdownData, eventIndex: Int, recordBytes: Data,
+                                        repository: CountdownRepository) async throws {
+        let target = expected.items[eventIndex]
+        try await requireSavedTaskOrder(target.subtasks, eventID: target.id)
+        let durable = try await repository.load()
+        let recordsURL = CountdownRepository.recordsFileURL(beside: configuration.dataURL)
+        let recordsAfter = try Data(contentsOf: recordsURL)
+        try require(durable == expected && recordsAfter == recordBytes,
+                    "event reorder failed to persist exactly or changed another event or the records")
     }
 
     private func verifyReorderedEditor(eventID: UUID, displayed: [Subtask], stored: [Subtask]) async throws {
@@ -2514,7 +2942,6 @@ final class DesktopSmokeRuntime {
         try require(sourceSaved && receiverSaved, "cannot seed checklist chain")
         showDesktop()
         let window = try value(desktopWindow(), "checklist chain desktop")
-        window.setContentSize(NSSize(width: 960, height: 680))
         try await wait("checklist chain source rows ready") {
             window.isKeyWindow && self.controls.frame("desktop.subtask.toggle.\(moving.id)") != nil
         }
@@ -2718,8 +3145,8 @@ final class DesktopSmokeRuntime {
 
     private func verifyReorderCancelsOutside(_ source: Subtask, first: Subtask, window: NSWindow, scope: String) async throws {
         let sourceID = scope + "subtask.toggle.\(source.id)"
-        let sourceFrame = try value(controls.frame(sourceID), "outside-drag source")
-        let firstFrame = try value(controls.frame(scope + "subtask.toggle.\(first.id)"), "outside-drag top bound")
+        let firstID = scope + "subtask.toggle.\(first.id)"
+        let (sourceFrame, firstFrame) = try await reorderInputFrames(sourceID, firstID, in: window)
         // Keep native input inside its owning window so AppKit does not deactivate the app.
         let outside = CGPoint(x: 18, y: max(96, firstFrame.minY - 280))
         let savedBytes = try Data(contentsOf: configuration.dataURL)
@@ -2727,7 +3154,7 @@ final class DesktopSmokeRuntime {
         try postReorderMouse(.leftMouseDragged, at: outside, in: window)
         do {
             try await wait("outside pointer leaves the lifted row bounded (\(scope))") {
-                guard let moved = self.controls.frame(sourceID) else { return false }
+                guard let moved = self.controls.inputFrame(sourceID, in: window) else { return false }
                 return abs(moved.minX - sourceFrame.minX) < 1 && abs(moved.minY - firstFrame.minY) < 2
             }
         } catch {
@@ -2736,7 +3163,7 @@ final class DesktopSmokeRuntime {
         }
         try postReorderMouse(.leftMouseUp, at: outside, in: window)
         try await wait("outside drop restores the original row position (\(scope))") {
-            guard let restored = self.controls.frame(sourceID) else { return false }
+            guard let restored = self.controls.inputFrame(sourceID, in: window) else { return false }
             return abs(restored.minY - sourceFrame.minY) < 1 && !self.store.hasPendingPersistence
         }
         let after = try Data(contentsOf: configuration.dataURL)
@@ -2744,33 +3171,47 @@ final class DesktopSmokeRuntime {
     }
 
     private func dragSavedSubtask(_ source: Subtask, before target: Subtask, window: NSWindow,
-                                  scope: String, sampleName: String? = nil) async throws {
+                                  scope: String, sampleName: String? = nil, snapshotURL: URL? = nil) async throws {
         let sourceID = scope + "subtask.toggle.\(source.id)"
         let targetID = scope + "subtask.toggle.\(target.id)"
-        let sourceFrame = try value(controls.frame(sourceID), "drag source frame")
-        let targetFrame = try value(controls.frame(targetID), "drag target frame")
+        let (sourceFrame, targetFrame) = try await reorderInputFrames(sourceID, targetID, in: window)
         let from = CGPoint(x: sourceFrame.minX + 62, y: sourceFrame.minY + min(10, sourceFrame.height / 2))
         let to = CGPoint(x: from.x + 40, y: targetFrame.minY + 4)
-        let baseline = try Data(contentsOf: configuration.dataURL)
+        let dataURL = snapshotURL ?? configuration.dataURL
+        let baseline = try Data(contentsOf: dataURL)
         try await beginReorderMouse(at: from, in: window)
         try postReorderMouse(.leftMouseDragged, at: to, in: window)
         do {
             try await wait("dragged row and neighbor move before mouse-up (\(scope))") {
-                guard let moved = self.controls.frame(sourceID), let neighbor = self.controls.frame(targetID) else { return false }
+                guard let moved = self.controls.inputFrame(sourceID, in: window),
+                      let neighbor = self.controls.inputFrame(targetID, in: window) else { return false }
                 let expectedY = max(targetFrame.minY, sourceFrame.minY + to.y - from.y)
                 return abs(moved.minX - sourceFrame.minX) < 1 && abs(moved.minY - expectedY) < 4
                     && neighbor.minY > targetFrame.minY + 8
             }
-            let whileDragging = try Data(contentsOf: configuration.dataURL)
+            let whileDragging = try Data(contentsOf: dataURL)
             try require(baseline == whileDragging, "an intermediate pointer position wrote to disk")
             if let sampleName { try capture(sampleName, window: window) }
         } catch {
-            let observed = "source \(String(describing: controls.frame(sourceID))) and neighbor \(String(describing: controls.frame(targetID)))"
+            let moved = controls.inputFrame(sourceID, in: window)
+            let neighbor = controls.inputFrame(targetID, in: window)
+            let observed = "source \(String(describing: moved)) and neighbor \(String(describing: neighbor))"
             try? capture("subtask-reorder-unsettled", window: window)
             try? postReorderMouse(.leftMouseUp, at: .zero, in: window)
             throw Failure("\(error.localizedDescription). Start \(sourceFrame), target \(targetFrame), observed \(observed)")
         }
         try postReorderMouse(.leftMouseUp, at: to, in: window)
+    }
+
+    private func reorderInputFrames(_ sourceID: String, _ targetID: String, in window: NSWindow) async throws -> (CGRect, CGRect) {
+        try await wait("mounted reorder controls inside their input window") {
+            guard window.isKeyWindow, let source = self.controls.inputFrame(sourceID, in: window),
+                  let target = self.controls.inputFrame(targetID, in: window) else { return false }
+            let bounds = CGRect(origin: .zero, size: window.frame.size)
+            return bounds.contains(source) && bounds.contains(target)
+        }
+        return (try value(controls.inputFrame(sourceID, in: window), "drag source frame"),
+                try value(controls.inputFrame(targetID, in: window), "drag target frame"))
     }
 
     private func beginReorderMouse(at point: CGPoint, in window: NSWindow) async throws {
@@ -2781,7 +3222,7 @@ final class DesktopSmokeRuntime {
     }
 
     private func postReorderMouse(_ type: NSEvent.EventType, at topDown: CGPoint, in window: NSWindow) throws {
-        // SwiftUI's global frames include desktop chrome. NSEvent uses bottom-up window coordinates.
+        // The input measurements use top-down window coordinates. NSEvent uses bottom-up window coordinates.
         let location = CGPoint(x: topDown.x, y: window.frame.height - topDown.y)
         let event = try value(NSEvent.mouseEvent(with: type, location: location,
             modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
@@ -5220,6 +5661,19 @@ final class DesktopSmokeRuntime {
             "executableSHA256": digest, "captures": captures, "syntheticData": true,
             "scope": "Unreleased native desktop implementation; retained AppKit window render, not external desktop capture"
         ]
+        let recordsMonkey = ProcessInfo.processInfo.arguments.contains("--ui-smoke-records-monkey")
+        if ProcessInfo.processInfo.arguments.contains("--ui-smoke-records") || recordsMonkey {
+            manifest["scope"] = "Unreleased native records in the desktop and mini-panel"
+            if let url = Bundle.main.url(forResource: "NativeBuildProvenance", withExtension: "json") {
+                manifest["nativeBuildProvenance"] = try JSONSerialization.jsonObject(with: Data(contentsOf: url))
+            }
+            if recordsMonkey {
+                manifest["recordsMonkey"] = [
+                    "actions": "Production registry actions, AppKit field editor, retained native windows",
+                    "limits": "No physical click, compositor timing, Spaces or VoiceOver claim"
+                ]
+            }
+        }
         if ProcessInfo.processInfo.arguments.contains("--ui-smoke-subtask-transfer") {
             manifest["scope"] = "Unreleased native single-subtask transfer; isolated mini-panel and desktop inline controls"
             manifest["subtaskTransfer"] = [

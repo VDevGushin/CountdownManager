@@ -217,6 +217,20 @@ public struct Countdown: Identifiable, Codable, Equatable {
     }
 }
 
+extension Array where Element == Subtask {
+    package mutating func toggleCompletion(id: UUID) throws {
+        guard let index = firstIndex(where: { $0.id == id }) else { throw CountdownError.subtaskNotFound }
+        self[index].isCompleted.toggle()
+    }
+
+    package mutating func applyReorder(_ move: SubtaskReorder, to index: Int) throws -> Bool {
+        guard self == move.original else { throw CountdownError.subtaskOrderChanged }
+        guard index != move.originalIndex, let reordered = move.reordered(to: index) else { return false }
+        self = reordered
+        return true
+    }
+}
+
 package struct SubtaskReorder {
     package let original: [Subtask]
     package let subtaskID: UUID
@@ -413,20 +427,14 @@ public struct CountdownData: Codable, Equatable {
         guard let eventIndex = items.firstIndex(where: { $0.id == eventID }) else {
             throw CountdownError.eventNotFound
         }
-        guard let subtaskIndex = items[eventIndex].subtasks.firstIndex(where: { $0.id == subtaskID }) else {
-            throw CountdownError.subtaskNotFound
-        }
-        items[eventIndex].subtasks[subtaskIndex].isCompleted.toggle()
+        try items[eventIndex].subtasks.toggleCompletion(id: subtaskID)
     }
 
     package mutating func reorderSubtask(eventID: UUID, move: SubtaskReorder, to index: Int, today: Day) throws -> Bool {
         guard let eventIndex = items.firstIndex(where: { $0.id == eventID && $0.isAvailable(on: today) }) else {
             throw CountdownError.eventNotFound
         }
-        guard items[eventIndex].subtasks == move.original else { throw CountdownError.subtaskOrderChanged }
-        guard index != move.originalIndex, let tasks = move.reordered(to: index) else { return false }
-        items[eventIndex].subtasks = tasks
-        return true
+        return try items[eventIndex].subtasks.applyReorder(move, to: index)
     }
 
     public mutating func delete(_ id: UUID, today: Day) {

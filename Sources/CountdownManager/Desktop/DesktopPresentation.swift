@@ -71,22 +71,46 @@ package struct DesktopEventSearch {
     }
 
     package func firstSubtask(in item: Countdown) -> Subtask? {
-        checklistDisplayOrder(item.subtasks).first { matches($0.text) }
+        firstSubtask(in: item.subtasks)
     }
 
     package func cardMatch(in item: Countdown) -> DesktopSearchMatch? {
         guard !query.isEmpty else { return nil }
-        if let task = firstSubtask(in: item) {
+        return cardMatch(subtasks: item.subtasks, attachments: item.attachments, links: item.links)
+    }
+
+    package func cardMatch(in record: UndatedRecord) -> DesktopSearchMatch? {
+        guard !query.isEmpty else { return nil }
+        return cardMatch(subtasks: record.subtasks, attachments: record.attachments, links: record.links)
+    }
+
+    package func matchingRecords(in records: [UndatedRecord]) -> [UndatedRecord] {
+        guard !query.isEmpty else { return records }
+        return records.filter { record in
+            matches(record.title) || record.note.map(matches) == true || cardMatch(in: record) != nil
+        }
+    }
+
+    private func firstSubtask(in tasks: [Subtask]) -> Subtask? {
+        checklistDisplayOrder(tasks).first { matches($0.text) }
+    }
+
+    private func cardMatch(subtasks: [Subtask], attachments: [EventAttachment], links: [EventLink]) -> DesktopSearchMatch? {
+        if let task = firstSubtask(in: subtasks) {
             return DesktopSearchMatch(kind: .subtask, text: task.text, isCompleted: task.isCompleted)
         }
-        return firstMaterialMatch(in: item)
+        return firstMaterialMatch(attachments: attachments, links: links)
     }
 
     fileprivate func firstMaterialMatch(in item: Countdown) -> DesktopSearchMatch? {
-        if let file = item.attachments.first(where: { matches($0.name) }) {
+        firstMaterialMatch(attachments: item.attachments, links: item.links)
+    }
+
+    private func firstMaterialMatch(attachments: [EventAttachment], links: [EventLink]) -> DesktopSearchMatch? {
+        if let file = attachments.first(where: { matches($0.name) }) {
             return DesktopSearchMatch(kind: .attachment, text: file.name, isCompleted: false)
         }
-        for link in item.links {
+        for link in links {
             if matches(link.name) {
                 return DesktopSearchMatch(kind: .link, text: link.name, isCompleted: false)
             }
@@ -171,8 +195,18 @@ package func desktopMinimumPaneWidth(contentWidth: CGFloat) -> CGFloat {
 }
 
 package func desktopEventAccessibilityLabel(_ item: Countdown) -> String {
-    var label = AppText.string("desktop.accessibility.openEvent", item.displayTitle)
-    if !item.attachments.isEmpty { label += AppText.string("desktop.accessibility.attachmentCount", "\(item.attachments.count)") }
-    if !item.links.isEmpty { label += AppText.string("desktop.accessibility.linkCount", "\(item.links.count)") }
+    AppText.string("desktop.accessibility.openEvent", item.displayTitle)
+        + desktopMaterialAccessibilitySuffix(attachments: item.attachments.count, links: item.links.count)
+}
+
+func desktopRecordAccessibilityLabel(_ record: UndatedRecord) -> String {
+    AppText.string("desktop.accessibility.openRecord", record.title)
+        + desktopMaterialAccessibilitySuffix(attachments: record.attachments.count, links: record.links.count)
+}
+
+private func desktopMaterialAccessibilitySuffix(attachments: Int, links: Int) -> String {
+    var label = ""
+    if attachments > 0 { label += AppText.string("desktop.accessibility.attachmentCount", "\(attachments)") }
+    if links > 0 { label += AppText.string("desktop.accessibility.linkCount", "\(links)") }
     return label
 }

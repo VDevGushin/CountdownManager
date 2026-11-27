@@ -3,6 +3,52 @@ import SwiftUI
 import ServiceManagement
 import CountdownCore
 
+enum PlannerSection: String {
+    case events
+    case records
+
+    var title: String {
+        switch self {
+        case .events: AppText.string("record.section.events")
+        case .records: AppText.string("record.section.records")
+        }
+    }
+}
+
+struct PlannerSectionPicker: View {
+    @Binding var selection: PlannerSection
+    let surface: String
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Picker(AppText.string("record.section.label"), selection: $selection) {
+            Text(PlannerSection.events.title).tag(PlannerSection.events)
+            Text(PlannerSection.records.title).tag(PlannerSection.records)
+        }
+        .pickerStyle(.segmented)
+        // AppKit uses a white title on the selected tinted segment in both appearances.
+        .tint(AuroraInstrument.accentInk(for: .light, highContrast: colorScheme == .light || accessibilitySettings.prefersHighContrast))
+        .labelsHidden()
+        .frame(width: 184)
+        .accessibilityLabel(AppText.string("record.section.label"))
+        .accessibilityIdentifier("\(surface).section")
+        .uiSmokeControl(id: "\(surface).section", value: { selection.rawValue })
+        .uiSmokeControl(id: "\(surface).section.events", action: { selection = .events })
+        .uiSmokeControl(id: "\(surface).section.records", action: { selection = .records })
+    }
+}
+
+func recordCountLabel(_ count: Int) -> String {
+    let noun: String
+    switch AppText.pluralCategory(count) {
+    case .one: noun = AppText.string("record.count.one")
+    case .few: noun = AppText.string("record.count.few")
+    case .many: noun = AppText.string("record.count.many")
+    }
+    return AppText.string("event.count.label", String(count), noun)
+}
+
 struct ManagerView: View {
     @ObservedObject var store: Store
     @ObservedObject var updates: ApplicationUpdates
@@ -14,11 +60,13 @@ struct ManagerView: View {
     var showWhatsNew: () -> Void = {}
     @State private var textAttachmentRequest: TextAttachmentRequest?
     @State private var editing: Countdown?
+    @State private var recordEditor: RecordEditorRequest?
+    @State private var section: PlannerSection = .events
     @State private var copying: Countdown?
     private var showingEditor: Bool { editorSession.isPresented }
     @State private var showingDayChoices = false
     @State private var showingSettings = false
-    @State private var attachmentListEventID: UUID?
+    @State private var attachmentListOwnerID: SavedMaterialOwnerID?
     @State private var attachmentLibraryIsSource = false
     @StateObject private var attachmentPreview = AttachmentPreviewSession()
     @State private var dayPreset: DayCreationPreset?
@@ -29,8 +77,24 @@ struct ManagerView: View {
     @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
 
-    private var attachmentListEvent: Countdown? {
-        store.active.first { $0.id == attachmentListEventID && !$0.attachments.isEmpty }
+    private struct RecordEditorRequest {
+        let record: UndatedRecord?
+    }
+
+    private var attachmentListOwner: SavedMaterialOwner? {
+        guard let id = attachmentListOwnerID, let owner = store.savedMaterialOwner(id), !owner.attachments.isEmpty else {
+            return nil
+        }
+        return owner
+    }
+
+    private var canSelectSection: Bool { !editorSession.hasActiveEditor && !store.isResolvingMaterials }
+
+    private var sectionSelection: Binding<PlannerSection> {
+        Binding(get: { section }, set: { next in
+            guard canSelectSection else { return }
+            section = next
+        })
     }
 
     var body: some View {
@@ -52,12 +116,12 @@ struct ManagerView: View {
             }
             ZStack {
                 listScreen
-                    .opacity(showingEditor || showingSettings || attachmentListEvent != nil ? 0 : 1)
-                    .disabled(showingEditor || showingSettings || attachmentListEvent != nil)
-                    .allowsHitTesting(!showingEditor && !showingSettings && attachmentListEvent == nil)
-                    .accessibilityHidden(showingEditor || showingSettings || attachmentListEvent != nil)
-                if let item = attachmentListEvent, !showingEditor, !showingSettings {
-                    attachmentScreen(item: item)
+                    .opacity(showingEditor || showingSettings || attachmentListOwner != nil ? 0 : 1)
+                    .disabled(showingEditor || showingSettings || attachmentListOwner != nil)
+                    .allowsHitTesting(!showingEditor && !showingSettings && attachmentListOwner == nil)
+                    .accessibilityHidden(showingEditor || showingSettings || attachmentListOwner != nil)
+                if let ownerID = attachmentListOwnerID, let item = attachmentListOwner, !showingEditor, !showingSettings {
+                    attachmentScreen(item: item, ownerID: ownerID)
                     .id(item.id)
                 }
                 if showingSettings {
@@ -67,10 +131,12 @@ struct ManagerView: View {
                     }
                 }
                 if let request = textAttachmentRequest {
+                    let unavailable = request.ownerID.panelSection == .events
+                        ? AppText.string("event.unavailable") : AppText.string("record.unavailable")
                     TextAttachmentComposer(text: request.text,
-                        eventTitle: store.active.first(where: { $0.id == request.eventID })?.displayTitle ?? AppText.string("event.unavailable"),
+                        eventTitle: store.savedMaterialOwner(request.ownerID)?.displayTitle ?? unavailable,
                         submit: { text in
-                            let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.eventID)
+                            let saved = await store.appendMaterials(EventMaterials(textFile: text), to: request.ownerID)
                             if saved { finishEditor() }
                             return saved
                         }, cancel: finishEditor)
@@ -84,7 +150,10 @@ struct ManagerView: View {
                         }
                     }, cancel: finishEditor)
                 }
-                if showingEditor, textAttachmentRequest == nil, weekCreation == nil {
+                if showingEditor, let recordEditor {
+                    EditorView(store: store, record: recordEditor.record, didSave: { _ in }, done: finishEditor)
+                }
+                if showingEditor, textAttachmentRequest == nil, weekCreation == nil, recordEditor == nil {
                     EditorView(
                         store: store,
                         item: editing,
@@ -116,19 +185,19 @@ struct ManagerView: View {
                 editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
             }
         }
+        .onChange(of: store.records) { _ in closeUnavailableAttachmentList() }
+        .onChange(of: section) { _ in showingDayChoices = false }
         .onChange(of: store.today) { _ in
             closeUnavailableAttachmentList()
             editorSession.reconcileSubtaskTransfer(items: store.data.items, today: store.today)
         }
         .onChange(of: attachmentPreview.selection) { selection in
-            if selection == nil, !attachmentLibraryIsSource { attachmentListEventID = nil }
+            if selection == nil, !attachmentLibraryIsSource { attachmentListOwnerID = nil }
         }
     }
 
     private var listScreen: some View {
-        let displayed = store.active
-        let primaryID = store.data.primaryID
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             if editorSession.desktopIsPresented || editorSession.subtaskTransfer?.surface == .desktop {
                 Text(editorSession.subtaskTransfer?.surface == .desktop
                      ? AppText.string("panel.pendingTransfer") : AppText.string("panel.pendingEditor"))
@@ -136,39 +205,164 @@ struct ManagerView: View {
                     .padding(8)
                     .accessibilityIdentifier("desktop.editor.active")
             }
+            HStack {
+                PlannerSectionPicker(selection: sectionSelection, surface: "panel")
+                    .disabled(!canSelectSection)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 43)
+            Divider()
+            ZStack {
+                eventList
+                    .opacity(section == .events ? 1 : 0)
+                    .disabled(section != .events)
+                    .allowsHitTesting(section == .events)
+                    .accessibilityElement(children: section == .events ? .contain : .ignore)
+                    .accessibilityHidden(section != .events)
+                recordList
+                    .opacity(section == .records ? 1 : 0)
+                    .disabled(section != .records)
+                    .allowsHitTesting(section == .records)
+                    .accessibilityElement(children: section == .records ? .contain : .ignore)
+                    .accessibilityHidden(section != .records)
+            }
+            Divider()
+            footer
+        }
+    }
+
+    private var eventList: some View {
+        let displayed = store.active
+        let primaryID = store.data.primaryID
+        return VStack(spacing: 0) {
             if store.showsEmptyEventList {
                 emptyEventList
                     .disabled(editorSession.desktopIsPresented)
             } else {
-                header(activeCount: displayed.count)
+                eventListHeader(activeCount: displayed.count)
                     .disabled(editorSession.desktopIsPresented)
                 if showingDayChoices && !displayed.isEmpty {
                     dayChoices
                         .disabled(editorSession.desktopIsPresented)
                 }
-                ScrollView {
-                    VStack(spacing: 10) {
-                        if store.isLoading {
-                            VStack(spacing: 12) {
-                                AuroraLoadingPlaceholder()
-                                ProgressView(AppText.string("app.loadingEvents"))
-                            }
+                savedCardList(for: .events) {
+                    if store.isLoading {
+                        VStack(spacing: 12) {
+                            AuroraLoadingPlaceholder()
+                            ProgressView(AppText.string("app.loadingEvents"))
                         }
-                        ForEach(displayed) { item in row(item, primaryID: primaryID) }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
-                    .animation(
-                        accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
-                        value: store.data.primaryID
-                    )
+                    ForEach(displayed) { item in row(item, primaryID: primaryID) }
                 }
                 .accessibilityIdentifier("event.list")
                 .uiSmokeControl(id: "event.list")
                 .disabled(editorSession.desktopIsPresented)
             }
-            Divider()
-            footer
+        }
+    }
+
+    @ViewBuilder
+    private var recordList: some View {
+        if store.isLoadingRecords {
+            VStack(spacing: 12) {
+                AuroraLoadingPlaceholder()
+                ProgressView(AppText.string("record.loading"))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if store.showsEmptyRecordList {
+            emptyRecordList
+        } else if store.records.isEmpty {
+            Text(AppText.string("record.unavailable"))
+                .font(.system(size: 12))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 0) {
+                listHeader {
+                    listHeading(recordCountLabel(store.records.count), id: "panel.records.count")
+                } actions: {
+                    creationButton(AppText.string("record.create"), id: "panel.record.create", action: createRecord)
+                        .disabled(!canEditRecord)
+                }
+                savedCardList(for: .records) {
+                    ForEach(store.records) { recordCard($0) }
+                }
+                .accessibilityIdentifier("panel.records")
+                .uiSmokeControl(id: "panel.records", value: { String(store.records.count) })
+            }
+        }
+    }
+
+    private func savedCardList<Cards: View>(for section: PlannerSection, @ViewBuilder cards: () -> Cards) -> some View {
+        ScrollView {
+            VStack(spacing: 10, content: cards)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+                .animation(
+                    accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.2),
+                    value: section == .events ? store.data.primaryID : nil
+                )
+        }
+    }
+
+    private var emptyRecordList: some View {
+        VStack(spacing: 16) {
+            Text(AppText.string("record.empty.title"))
+                .font(.custom("Georgia", size: 24))
+                .tracking(-0.5)
+            Text(AppText.string("record.empty.message"))
+                .font(.system(size: 12))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+            emptyPrimaryAction(AppText.string("record.create"), id: "panel.record.create", symbol: "plus", action: createRecord)
+                .frame(width: 260)
+                .disabled(!canEditRecord)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 36)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("panel.records.empty")
+        .uiSmokeControl(id: "panel.records.empty")
+    }
+
+    private func creationButton(_ label: String, id: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: "plus")
+                .frame(width: 31, height: 31)
+                .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
+                .background(plannerAccent, in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
+        .help(label)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(id)
+        .uiSmokeControl(id: id, action: action)
+    }
+
+    private var canEditRecord: Bool {
+        store.recordCreationIsAvailable && !store.hasPendingPersistence && !editorSession.hasActiveEditor
+    }
+
+    private func recordCard(_ item: UndatedRecord) -> some View {
+        let id = item.id.uuidString
+        return savedCard(.record(item), note: item.note, noteSpacing: 0) {
+            HStack(alignment: .top, spacing: 8) {
+                Text(item.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .help(item.title)
+                AuroraSymbolAction(symbolName: "pencil", surface: .mini, tone: .secondary,
+                                   accessibilityLabel: AppText.string("record.editNamed", item.title)) {
+                    openRecordEditor(item.id)
+                }
+                .help(AppText.string("record.edit"))
+                .accessibilityIdentifier("panel.record.edit.\(id)")
+                .uiSmokeControl(id: "panel.record.edit.\(id)", action: { openRecordEditor(item.id) })
+                .disabled(!canEditRecord)
+            }
         }
     }
 
@@ -188,14 +382,9 @@ struct ManagerView: View {
                 .multilineTextAlignment(.center)
                 .padding(.bottom, 20)
             VStack(spacing: 8) {
-                Button { createDay(preset: .today(store.today)) } label: {
-                    Text(AppText.string("event.createToday")).font(.system(size: 13, weight: .semibold))
-                        .frame(maxWidth: .infinity).frame(height: 34)
-                        .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
-                        .background(plannerAccent, in: RoundedRectangle(cornerRadius: 6))
+                emptyPrimaryAction(AppText.string("event.createToday"), id: "event.empty.today") {
+                    createDay(preset: .today(store.today))
                 }
-                .accessibilityIdentifier("event.empty.today")
-                .uiSmokeControl(id: "event.empty.today", action: { createDay(preset: .today(store.today)) })
                 HStack(spacing: 8) {
                     emptySecondaryAction(AppText.string("event.createTomorrow"), id: "event.empty.tomorrow") { createDay(preset: .tomorrow(after: store.today)) }
                     emptySecondaryAction(AppText.string("event.chooseDate"), id: "event.empty.chooseDate") {
@@ -218,6 +407,23 @@ struct ManagerView: View {
         .uiSmokeControl(id: "event.empty")
     }
 
+    private func emptyPrimaryAction(_ title: String, id: String, symbol: String? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Group {
+                if let symbol { Label(title, systemImage: symbol) }
+                else { Text(title) }
+            }
+            .font(.system(size: 13, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 34)
+            .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
+            .background(plannerAccent, in: RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier(id)
+        .uiSmokeControl(id: id, action: action)
+    }
+
     private func emptySecondaryAction(_ title: String, id: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title).font(.system(size: 12))
@@ -231,19 +437,16 @@ struct ManagerView: View {
         .uiSmokeControl(id: id, action: action)
     }
 
-    private func header(activeCount: Int) -> some View {
-        HStack {
+    private func eventListHeader(activeCount: Int) -> some View {
+        listHeader {
             VStack(alignment: .leading, spacing: 3) {
-                Text(currentDayHeaderLabel(store.today, locale: locale))
-                    .font(.system(size: 15, weight: .semibold))
-                    .accessibilityIdentifier("header.today")
-                    .uiSmokeControl(id: "header.today", value: { currentDayHeaderLabel(store.today, locale: locale) })
+                listHeading(currentDayHeaderLabel(store.today, locale: locale), id: "header.today")
                 Text(eventCountLabel(activeCount))
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .uiSmokeControl(id: "header.active-count", value: { eventCountLabel(activeCount) })
             }
-            Spacer()
+        } actions: {
             Button(action: toggleDayChoices) {
                 Image(systemName: "calendar.badge.plus")
                     .frame(width: 31, height: 31)
@@ -253,21 +456,30 @@ struct ManagerView: View {
                 .accessibilityIdentifier("day.add")
                 .uiSmokeControl(id: "day.add", action: toggleDayChoices)
                 .disabled(!store.eventCreationIsAvailable || editorSession.hasActiveEditor)
-            Button(action: add) {
-                Image(systemName: "plus")
-                    .frame(width: 31, height: 31)
-                    .foregroundStyle(colorScheme == .dark ? AuroraInstrument.canvas(for: colorScheme) : .white)
-                    .background(plannerAccent, in: RoundedRectangle(cornerRadius: 8))
-            }
-                .buttonStyle(.plain)
-                .help(EventUIStrings.addEvent).accessibilityLabel(EventUIStrings.addEvent)
-                .accessibilityIdentifier("event.add")
-                .uiSmokeControl(id: "event.add", action: add)
+            creationButton(EventUIStrings.addEvent, id: "event.add", action: add)
                 .disabled(!store.eventCreationIsAvailable || editorSession.hasActiveEditor)
         }
+    }
+
+    private func listHeading(_ title: String, id: String) -> some View {
+        Text(title)
+            .font(.system(size: 15, weight: .semibold))
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier(id)
+            .uiSmokeControl(id: id, value: { title })
+    }
+
+    private func listHeader<Heading: View, Actions: View>(
+        @ViewBuilder heading: () -> Heading, @ViewBuilder actions: () -> Actions
+    ) -> some View {
+        HStack {
+            heading()
+            Spacer()
+            actions()
+        }
+        .frame(height: 36)
         .padding(.horizontal, 16)
-        .padding(.top, 12)
-        .padding(.bottom, 12)
+        .padding(.vertical, 12)
     }
 
     private var dayChoices: some View {
@@ -316,48 +528,39 @@ struct ManagerView: View {
             today: store.today,
             primaryID: primaryID
         )
-        return VStack(alignment: .leading, spacing: 0) {
+        return savedCard(.event(item), note: presentation.note, noteSpacing: presentation.isFeatured ? 7 : 8) {
             if presentation.isFeatured {
                 featuredEvent(item, presentation: presentation)
             } else {
                 secondaryEvent(item, presentation: presentation)
             }
-            if presentation.completionLabel != nil {
-                SubtaskChecklistView(store: store, item: item, presentation: presentation, editorSession: editorSession)
+        }
+    }
+
+    private func savedCard<Header: View>(_ owner: SubtaskChecklistView.Owner, note: String?, noteSpacing: CGFloat,
+                                         @ViewBuilder header: () -> Header) -> some View {
+        let ownerID = owner.materialID
+        let material = owner.materials
+        let record = ownerID.panelSection == .records
+        let identifier = "\(record ? "panel.record.card" : "event.card").\(owner.id.uuidString)"
+        return VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: noteSpacing) {
+                header()
+                itemNote(note, controlPrefix: record ? "record.note" : "event.note", id: owner.id)
+            }
+            if !owner.subtasks.isEmpty {
+                SubtaskChecklistView(store: store, owner: owner, editorSession: editorSession, section: $section)
                     .padding(.top, 8)
             }
-            if !item.attachments.isEmpty {
-                SavedAttachmentSection(item: item, compact: true, open: { attachment in
-                    showAttachmentPreview(attachment, item: item, origin: .summary)
-                }, thumbnailURL: { attachment in
-                    await store.attachmentThumbnailURL(attachment, eventID: item.id)
-                }, showAll: { showAttachmentList(item.id) })
-                .padding(.top, 8)
-            }
-            if !item.links.isEmpty {
-                SavedLinkSection(item: item, surface: "panel", open: { store.openLink($0, eventID: item.id) })
-                    .padding(.top, 8)
-            }
+            savedMaterialSections(material, ownerID: ownerID)
         }
-        .padding(12)
-        .background(AuroraInstrument.surface(
-            for: colorScheme,
-            elevated: false,
-            highContrast: accessibilitySettings.prefersHighContrast
-        ), in: RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius))
-        .overlay {
-            if accessibilitySettings.prefersHighContrast {
-                RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius)
-                    .stroke(plannerRule, lineWidth: 1)
-                    .allowsHitTesting(false)
-            }
-        }
+        .modifier(PlannerCardSurface())
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("event.card.\(item.id.uuidString)")
-        .uiSmokeControl(id: "event.card.\(item.id.uuidString)", value: { item.displayTitle })
-        .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
-            enabled: !showingSettings && attachmentListEventID == nil,
-            showText: { presentTextAttachment(eventID: item.id, text: $0) }))
+        .accessibilityIdentifier(identifier)
+        .uiSmokeControl(id: identifier, value: { material.displayTitle })
+        .modifier(SavedMaterialTarget(store: store, editorSession: editorSession, ownerID: ownerID,
+            enabled: section == ownerID.panelSection && !showingSettings && attachmentListOwnerID == nil,
+            targetSurface: "panel.card", showText: { presentTextAttachment(ownerID: ownerID, text: $0) }))
     }
 
     private func featuredEvent(_ item: Countdown, presentation: CountdownRowPresentation) -> some View {
@@ -398,7 +601,6 @@ struct ManagerView: View {
                 .accessibilityIdentifier(presentation.isToday ? "event.today" : "event.remaining")
                 .uiSmokeControl(id: "event.relative.\(item.id.uuidString)", value: { presentation.remainingLabel })
                 .padding(.top, 1)
-            eventNote(presentation, id: item.id)
         }
     }
 
@@ -459,7 +661,6 @@ struct ManagerView: View {
                 }
                 .frame(height: 51)
             }
-            eventNote(presentation, id: item.id)
         }
     }
 
@@ -502,15 +703,31 @@ struct ManagerView: View {
     }
 
     @ViewBuilder
-    private func eventNote(_ presentation: CountdownRowPresentation, id: UUID) -> some View {
-        if let note = presentation.note, !note.isEmpty {
-            Text(note)
+    private func itemNote(_ itemNote: String?, controlPrefix: String, id: UUID) -> some View {
+        if let itemNote, !itemNote.isEmpty {
+            Text(itemNote)
                 .font(.system(size: 12))
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityIdentifier("event.note")
-                .uiSmokeControl(id: "event.note.\(id.uuidString)", value: { note })
+                .accessibilityIdentifier(controlPrefix)
+                .uiSmokeControl(id: "\(controlPrefix).\(id.uuidString)", value: { itemNote })
+        }
+    }
+
+    @ViewBuilder
+    private func savedMaterialSections(_ owner: SavedMaterialOwner, ownerID: SavedMaterialOwnerID) -> some View {
+        if !owner.attachments.isEmpty {
+            SavedAttachmentSection(owner: owner, compact: true, open: { attachment in
+                showAttachmentPreview(attachment, ownerID: ownerID, origin: .summary)
+            }, thumbnailURL: { attachment in
+                await store.attachmentThumbnailURL(attachment, owner: ownerID)
+            }, showAll: { showAttachmentList(ownerID) })
+            .padding(.top, 8)
+        }
+        if !owner.links.isEmpty {
+            SavedLinkSection(owner: owner, surface: "panel", open: { store.openSavedLink($0, owner: ownerID) })
+                .padding(.top, 8)
         }
     }
 
@@ -529,6 +746,7 @@ struct ManagerView: View {
                 action: { togglePrimary(item.id) },
                 value: { presentation.isPrimary ? AppText.string("common.selected") : AppText.string("common.unselected") }
             )
+            .disabled(store.isHandlingMaterials)
             AuroraSymbolAction(symbolName: "pencil", surface: .mini, tone: .secondary,
                 accessibilityLabel: AppText.string("panel.editNamed", item.displayTitle), action: { edit(item.id) })
             .accessibilityIdentifier("event.edit.\(item.id.uuidString)")
@@ -544,7 +762,7 @@ struct ManagerView: View {
 
     private func togglePrimary(_ id: UUID) {
         Task {
-            guard !editorSession.hasActiveEditor else { return }
+            guard !editorSession.hasActiveEditor, !store.isHandlingMaterials else { return }
             if store.data.primaryID == id {
                 await store.clearPrimary()
             } else {
@@ -594,86 +812,96 @@ struct ManagerView: View {
     }
 
     private func openSettings() {
-        guard !editorSession.hasActiveEditor, attachmentListEventID == nil, !store.hasPendingPersistence else { return }
+        guard !editorSession.hasActiveEditor, attachmentListOwnerID == nil, !store.hasPendingPersistence else { return }
         attachmentPreview.close()
-        attachmentListEventID = nil
+        attachmentListOwnerID = nil
         showingSettings = true
     }
 
-    private func showAttachmentList(_ id: UUID) {
-        guard !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
-              attachmentListEventID == nil,
-              store.active.contains(where: { $0.id == id && !$0.attachments.isEmpty }) else { return }
+    private func showAttachmentList(_ ownerID: SavedMaterialOwnerID) {
+        guard section == ownerID.panelSection, !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
+              !store.isResolvingMaterials,
+              attachmentListOwnerID == nil, let owner = store.savedMaterialOwner(ownerID),
+              !owner.attachments.isEmpty else { return }
         attachmentPreview.close()
         attachmentLibraryIsSource = true
-        attachmentListEventID = id
+        attachmentListOwnerID = ownerID
     }
 
     private func closeUnavailableAttachmentList() {
-        attachmentPreview.reconcile(event: attachmentListEvent)
-        if attachmentListEventID != nil, attachmentListEvent == nil {
+        attachmentPreview.reconcile(owner: attachmentListOwner)
+        if attachmentListOwnerID != nil, attachmentListOwner == nil {
             attachmentPreview.close()
-            attachmentListEventID = nil
+            attachmentListOwnerID = nil
             attachmentLibraryIsSource = false
         }
     }
 
-    private func attachmentScreen(item: Countdown) -> some View {
+    private func attachmentScreen(item: SavedMaterialOwner, ownerID: SavedMaterialOwnerID) -> some View {
         ZStack {
             if attachmentLibraryIsSource {
-                AttachmentListView(item: item, compact: true, back: closeAttachments,
-                                   open: { showAttachmentPreview($0, item: item, origin: .library) },
-                                   thumbnailURL: { await store.attachmentThumbnailURL($0, eventID: item.id) })
+                AttachmentListView(owner: item, compact: true, back: closeAttachments,
+                                   open: { showAttachmentPreview($0, ownerID: ownerID, origin: .library) },
+                                   thumbnailURL: { await store.attachmentThumbnailURL($0, owner: ownerID) })
                     .opacity(attachmentPreview.selection == nil ? 1 : 0)
                     .disabled(attachmentPreview.selection != nil)
                     .allowsHitTesting(attachmentPreview.selection == nil)
                     .accessibilityHidden(attachmentPreview.selection != nil)
             }
             if attachmentPreview.selection != nil {
-                AttachmentPreviewView(item: item, compact: true, session: attachmentPreview,
+                AttachmentPreviewView(owner: item, compact: true, session: attachmentPreview,
                                       back: closeAttachmentPreview,
-                                      resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) },
-                                      openExternally: { [store] in await store.openAttachment($0, eventID: $1) })
+                                      resolveURL: { attachment, expectedID in
+                                          guard expectedID == item.id else { return nil }
+                                          return await store.attachmentThumbnailURL(attachment, owner: ownerID)
+                                      }, openExternally: { attachment, expectedID in
+                                          guard expectedID == item.id else { return }
+                                          await store.openSavedAttachment(attachment, owner: ownerID)
+                                      })
             }
         }
         .accessibilityElement(children: .contain)
     }
 
-    private func showAttachmentPreview(_ attachment: EventAttachment, item: Countdown,
+    private func showAttachmentPreview(_ attachment: EventAttachment, ownerID: SavedMaterialOwnerID,
                                        origin: AttachmentPreviewOrigin) {
-        guard !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
-              let current = store.active.first(where: { $0.id == item.id }),
+        guard section == ownerID.panelSection, !showingEditor, !showingSettings, !editorSession.hasActiveEditor,
+              !store.isResolvingMaterials,
+              let current = store.savedMaterialOwner(ownerID),
               current.attachments.contains(where: { $0.id == attachment.id }),
               attachmentPreview.selection == nil,
-              origin == .library ? attachmentListEventID == item.id : attachmentListEventID == nil else { return }
+              origin == .library ? attachmentListOwnerID == ownerID : attachmentListOwnerID == nil else { return }
         attachmentLibraryIsSource = origin == .library
-        attachmentListEventID = item.id
-        attachmentPreview.open(event: current, attachmentID: attachment.id, origin: origin,
-                               resolveURL: { [store] in await store.attachmentThumbnailURL($0, eventID: $1) })
+        attachmentListOwnerID = ownerID
+        attachmentPreview.open(owner: current, attachmentID: attachment.id, origin: origin, resolveURL: { attachment, expectedID in
+            guard expectedID == current.id else { return nil }
+            return await store.attachmentThumbnailURL(attachment, owner: ownerID)
+        })
     }
 
     private func closeAttachmentPreview() {
         guard attachmentPreview.selection != nil else { return }
         attachmentPreview.close()
-        if !attachmentLibraryIsSource { attachmentListEventID = nil }
+        if !attachmentLibraryIsSource { attachmentListOwnerID = nil }
     }
 
     private func closeAttachments() {
         attachmentPreview.close()
-        attachmentListEventID = nil
+        attachmentListOwnerID = nil
         attachmentLibraryIsSource = false
     }
 
-    private func presentTextAttachment(eventID: UUID, text: String) {
-        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
-              store.active.contains(where: { $0.id == eventID }), editorSession.beginPanelEditor() else { return }
-        textAttachmentRequest = TextAttachmentRequest(eventID: eventID, text: text)
+    private func presentTextAttachment(ownerID: SavedMaterialOwnerID, text: String) {
+        guard section == ownerID.panelSection, !showingSettings, attachmentListOwnerID == nil, !store.hasPendingPersistence,
+              store.savedMaterialOwner(ownerID) != nil, editorSession.beginPanelEditor() else { return }
+        textAttachmentRequest = TextAttachmentRequest(ownerID: ownerID, text: text)
         showingDayChoices = false
     }
 
     private func finishEditor() {
         textAttachmentRequest = nil
         weekCreation = nil
+        recordEditor = nil
         editorSession.endPanelEditor()
         editing = nil
         copying = nil
@@ -681,12 +909,29 @@ struct ManagerView: View {
         selectDayDate = false
     }
 
+    private func createRecord() {
+        openRecordEditor(nil)
+    }
+
+    private func openRecordEditor(_ recordID: UUID?) {
+        guard section == .records, canEditRecord, !showingSettings, attachmentListOwnerID == nil else { return }
+        let record: UndatedRecord?
+        if let recordID {
+            guard let current = store.records.first(where: { $0.id == recordID }) else { return }
+            record = current
+        } else {
+            record = nil
+        }
+        guard editorSession.beginPanelEditor() else { return }
+        recordEditor = RecordEditorRequest(record: record)
+    }
+
     private func add() {
         createEvent()
     }
 
     private func createEvent() {
-        guard !showingSettings, attachmentListEventID == nil,
+        guard !showingSettings, attachmentListOwnerID == nil,
               !store.hasPendingPersistence, store.eventCreationIsAvailable,
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=new")
@@ -698,13 +943,13 @@ struct ManagerView: View {
     }
 
     private func toggleDayChoices() {
-        guard !editorSession.hasActiveEditor, !showingSettings, attachmentListEventID == nil,
+        guard !editorSession.hasActiveEditor, !showingSettings, attachmentListOwnerID == nil,
               store.eventCreationIsAvailable else { return }
         showingDayChoices.toggle()
     }
 
     private func createDay(preset: DayCreationPreset?, selectDate: Bool = false) {
-        guard !showingSettings, attachmentListEventID == nil,
+        guard !showingSettings, attachmentListOwnerID == nil,
               !store.hasPendingPersistence, store.eventCreationIsAvailable, let preset,
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=day")
@@ -716,7 +961,7 @@ struct ManagerView: View {
     }
 
     private func createWeekDays() {
-        guard !showingSettings, attachmentListEventID == nil,
+        guard !showingSettings, attachmentListOwnerID == nil,
               !store.hasPendingPersistence, store.eventCreationIsAvailable,
               let week = DayCreationWeek(today: store.today), editorSession.beginPanelEditor() else { return }
         editing = nil
@@ -728,7 +973,7 @@ struct ManagerView: View {
     }
 
     private func copyEvent(_ id: UUID) {
-        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
+        guard !showingSettings, attachmentListOwnerID == nil, !store.hasPendingPersistence,
               store.eventCreationIsAvailable,
               let item = store.active.first(where: { $0.id == id }),
               editorSession.beginPanelEditor() else { return }
@@ -741,7 +986,7 @@ struct ManagerView: View {
     }
 
     private func edit(_ id: UUID) {
-        guard !showingSettings, attachmentListEventID == nil, !store.hasPendingPersistence,
+        guard !showingSettings, attachmentListOwnerID == nil, !store.hasPendingPersistence,
               let item = store.active.first(where: { $0.id == id }),
               editorSession.beginPanelEditor() else { return }
         DiagnosticLog.shared.record("editor.open mode=edit id=\(item.id.uuidString)")
@@ -750,6 +995,34 @@ struct ManagerView: View {
         dayPreset = nil
         selectDayDate = false
         showingDayChoices = false
+    }
+}
+
+private extension SavedMaterialOwnerID {
+    var panelSection: PlannerSection {
+        switch self {
+        case .event: .events
+        case .record: .records
+        }
+    }
+}
+
+private struct PlannerCardSurface: ViewModifier {
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let highContrast = accessibilitySettings.prefersHighContrast
+        let shape = RoundedRectangle(cornerRadius: AuroraInstrument.cardCornerRadius)
+        content
+            .padding(12)
+            .background(AuroraInstrument.surface(for: colorScheme, elevated: false, highContrast: highContrast), in: shape)
+            .overlay {
+                if highContrast {
+                    shape.stroke(AuroraInstrument.stroke(for: colorScheme, highContrast: true), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+            }
     }
 }
 
@@ -799,10 +1072,38 @@ struct PlannerCalendarDateTile: View {
 }
 
 private struct SubtaskChecklistView: View {
+    enum Owner {
+        case event(Countdown)
+        case record(UndatedRecord)
+
+        var id: UUID { materialID.id }
+
+        var subtasks: [Subtask] {
+            switch self {
+            case let .event(item): return item.subtasks
+            case let .record(item): return item.subtasks
+            }
+        }
+
+        var materialID: SavedMaterialOwnerID {
+            switch self {
+            case let .event(item): .event(item.id)
+            case let .record(item): .record(item.id)
+            }
+        }
+
+        var materials: SavedMaterialOwner {
+            switch self {
+            case let .event(item): SavedMaterialOwner(item)
+            case let .record(item): SavedMaterialOwner(item)
+            }
+        }
+    }
+
     @ObservedObject var store: Store
-    let item: Countdown
-    let presentation: CountdownRowPresentation
+    let owner: Owner
     @ObservedObject var editorSession: EventEditorSession
+    private let section: Binding<PlannerSection>
 
     @ObservedObject private var disclosureState: SubtaskDisclosureState
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
@@ -810,20 +1111,22 @@ private struct SubtaskChecklistView: View {
 
     init(
         store: Store,
-        item: Countdown,
-        presentation: CountdownRowPresentation,
-        editorSession: EventEditorSession
+        owner: Owner,
+        editorSession: EventEditorSession,
+        section: Binding<PlannerSection>
     ) {
         self.store = store
-        self.item = item
-        self.presentation = presentation
+        self.owner = owner
         self.editorSession = editorSession
-        _disclosureState = ObservedObject(wrappedValue: store.disclosureState(for: item.id))
+        self.section = section
+        _disclosureState = ObservedObject(wrappedValue: store.disclosureState(for: owner.materialID))
     }
 
     var body: some View {
         let isExpanded = disclosureState.isExpanded
-        let completionLabel = presentation.completionLabel ?? "0/0"
+        let completedCount = owner.subtasks.filter(\.isCompleted).count
+        let allCompleted = completedCount > 0 && completedCount == owner.subtasks.count
+        let completionLabel = "\(completedCount)/\(owner.subtasks.count)"
 
         VStack(alignment: .leading, spacing: 5) {
             Button(action: toggleDisclosure) {
@@ -835,22 +1138,22 @@ private struct SubtaskChecklistView: View {
                     Text(AppText.string("subtask.heading"))
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
-                        .uiSmokeControl(id: "panel.subtasks.heading.\(item.id.uuidString)")
+                        .uiSmokeControl(id: "panel.subtasks.heading.\(owner.id.uuidString)")
                     Spacer()
                     HStack(spacing: 4) {
-                        if presentation.allSubtasksCompleted {
+                        if allCompleted {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 11, weight: .semibold))
                                 .accessibilityHidden(true)
-                                .uiSmokeControl(id: "subtasks.complete.\(item.id.uuidString)")
+                                .uiSmokeControl(id: "subtasks.complete.\(owner.id.uuidString)")
                         }
                         Text(completionLabel.replacingOccurrences(of: "/", with: AppText.string("subtask.progressSeparator")))
                             .monospacedDigit()
                     }
-                    .foregroundStyle(presentation.allSubtasksCompleted
+                    .foregroundStyle(allCompleted
                         ? AuroraInstrument.todayColor(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
                         : AuroraInstrument.secondaryInk(for: colorScheme))
-                    .uiSmokeControl(id: "subtasks.progress.\(item.id.uuidString)", value: { completionLabel })
+                    .uiSmokeControl(id: "subtasks.progress.\(owner.id.uuidString)", value: { completionLabel })
                 }
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 .font(.system(size: 11))
@@ -858,16 +1161,16 @@ private struct SubtaskChecklistView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(AppText.string("subtask.disclosure", completionLabel, "\(presentation.allSubtasksCompleted ? AppText.string("subtask.completionSuffix") : "")", "\(isExpanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
-            .accessibilityIdentifier("subtasks.disclosure.\(item.id.uuidString)")
+            .accessibilityLabel(AppText.string("subtask.disclosure", completionLabel, "\(allCompleted ? AppText.string("subtask.completionSuffix") : "")", "\(isExpanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
+            .accessibilityIdentifier("subtasks.disclosure.\(owner.id.uuidString)")
             .uiSmokeControl(
-                id: "subtasks.disclosure.\(item.id.uuidString)",
+                id: "subtasks.disclosure.\(owner.id.uuidString)",
                 action: toggleDisclosure,
                 value: { disclosureState.isExpanded ? "expanded" : "collapsed" }
             )
 
-            SubtaskReorderRows(subtasks: item.subtasks, spacing: 0,
-                               isEnabled: isExpanded && canReorder, save: saveSubtaskOrder, row: subtaskRow)
+            SubtaskReorderRows(subtasks: owner.subtasks, spacing: 0,
+                               isEnabled: isExpanded && canMutateChecklist, save: saveSubtaskOrder, row: subtaskRow)
             .fixedSize(horizontal: false, vertical: true)
             // Disclosure clips the list's height while leaving room for the drag highlight on either side.
             .padding(.horizontal, subtaskLiftOutset)
@@ -899,13 +1202,25 @@ private struct SubtaskChecklistView: View {
         }
     }
 
-    private var canReorder: Bool {
-        !editorSession.hasActiveEditor && !store.hasPendingPersistence && store.eventCreationIsAvailable
+    private var isActive: Bool { section.wrappedValue == owner.materialID.panelSection }
+
+    private var canMutateChecklist: Bool {
+        guard isActive, !editorSession.hasActiveEditor, !store.hasPendingPersistence else { return false }
+        switch owner {
+        case .event: return store.eventCreationIsAvailable
+        case .record: return store.recordCreationIsAvailable
+        }
+    }
+
+    private var canToggleSubtask: Bool {
+        guard isActive, !editorSession.hasActiveEditor, !store.isHandlingMaterials else { return false }
+        if case .record = owner { return store.canEnqueuePanelRecordSubtaskToggle }
+        return true
     }
 
     private func saveSubtaskOrder(_ move: SubtaskReorder, _ index: Int) async -> Bool {
-        guard disclosureState.isExpanded, canReorder else { return false }
-        return await store.reorderSubtask(eventID: item.id, move: move, to: index)
+        guard disclosureState.isExpanded, canMutateChecklist else { return false }
+        return await store.reorderSubtask(owner: owner.materialID, move: move, to: index)
     }
 
     private func subtaskRow(_ subtask: Subtask, _ interaction: SubtaskReorderInteraction?) -> some View {
@@ -929,7 +1244,7 @@ private struct SubtaskChecklistView: View {
                 }
                 .toggleStyle(.checkbox)
                 .modifier(interaction ?? .disabled)
-                .disabled(editorSession.hasActiveEditor)
+                .disabled(!canToggleSubtask)
                 .tint(subtask.isCompleted
                     ? AuroraInstrument.completedCheck(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
                     : AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
@@ -939,32 +1254,47 @@ private struct SubtaskChecklistView: View {
                     id: "subtask.toggle.\(subtask.id.uuidString)",
                     action: { toggleSubtask(subtask.id) },
                     value: {
-                        let isCompleted = store.active
-                            .first(where: { $0.id == item.id })?
-                            .subtasks.first(where: { $0.id == subtask.id })?
-                            .isCompleted
+                        let isCompleted = currentSubtasks.first { $0.id == subtask.id }?.isCompleted
                         return isCompleted == true ? "completed" : "active"
                     }
                 )
 
-                SubtaskTransferButton(store: store, editorSession: editorSession, eventID: item.id,
-                                      subtask: subtask, surface: .panel)
+                if case .event = owner {
+                    SubtaskTransferButton(store: store, editorSession: editorSession, eventID: owner.id,
+                                          subtask: subtask, surface: .panel)
+                }
             }
-            SubtaskTransferForm(store: store, editorSession: editorSession, eventID: item.id,
-                                subtaskID: subtask.id, surface: .panel)
+            if case .event = owner {
+                SubtaskTransferForm(store: store, editorSession: editorSession, eventID: owner.id,
+                                    subtaskID: subtask.id, surface: .panel)
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(subtask.isCompleted ? "subtask.completed" : "subtask.active")
     }
 
+    private var currentSubtasks: [Subtask] {
+        switch owner {
+        case .event: return store.active.first { $0.id == owner.id }?.subtasks ?? []
+        case .record: return store.records.first { $0.id == owner.id }?.subtasks ?? []
+        }
+    }
+
     private func toggleDisclosure() {
+        guard isActive else { return }
         disclosureState.setExpanded(!disclosureState.isExpanded)
     }
 
     private func toggleSubtask(_ id: UUID) {
-        Task {
-            guard !editorSession.hasActiveEditor else { return }
-            _ = await store.toggleSubtask(eventID: item.id, subtaskID: id)
+        guard disclosureState.isExpanded, canToggleSubtask else { return }
+        switch owner {
+        case .record:
+            store.enqueuePanelRecordSubtaskToggle(recordID: owner.id, subtaskID: id)
+        case .event:
+            Task {
+                guard canToggleSubtask else { return }
+                _ = await store.toggleSubtask(eventID: owner.id, subtaskID: id)
+            }
         }
     }
 
@@ -972,19 +1302,24 @@ private struct SubtaskChecklistView: View {
 
 struct EditorView: View {
     @ObservedObject var store: Store
+    private enum Mode {
+        case event(didSave: (Countdown) -> Void)
+        case record(item: UndatedRecord?, didSave: (UndatedRecord) -> Void)
+    }
+
     let item: Countdown?
     private let copySource: Countdown?
-    let didSave: (Countdown) -> Void
+    private let mode: Mode
     let done: () -> Void
     private let isNewDay: Bool
     private let selectDayDate: Bool
     @State private var composingText: String?
     @State private var draft: EventEditorDraft
-    @State private var date: Date
+    @State private var date: Date?
     @State private var primary: Bool
     @State private var isSaving = false
     @State private var isImportingAttachments = false
-    @StateObject private var attachmentSession = EditorAttachmentSession()
+    @StateObject private var attachmentSession: EditorAttachmentSession
     @State private var confirmingDeletion = false
     @State private var removingPastRetention = false
     @State private var emojiPicker: EditorEmojiPickerState = .closed
@@ -1032,7 +1367,8 @@ struct EditorView: View {
     ) {
         self.store = store; self.item = item; self.done = done
         copySource = source
-        self.didSave = didSave
+        mode = .event(didSave: didSave)
+        _attachmentSession = StateObject(wrappedValue: EditorAttachmentSession())
         isNewDay = item == nil && source == nil && dayPreset != nil
         self.selectDayDate = source != nil || (item == nil && selectDayDate)
         if let source {
@@ -1046,6 +1382,46 @@ struct EditorView: View {
             ?? item?.date.date() ?? dayPreset?.day.date() ?? store.tomorrow)
         _primary = State(initialValue: source == nil && (item.map { store.data.primaryID == $0.id } ?? false))
     }
+
+    init(store: Store, record: UndatedRecord?, didSave: @escaping (UndatedRecord) -> Void, done: @escaping () -> Void) {
+        self.store = store
+        self.done = done
+        item = nil
+        copySource = nil
+        isNewDay = false
+        selectDayDate = false
+        mode = .record(item: record, didSave: didSave)
+        _draft = State(initialValue: EventEditorDraft(record: record))
+        _date = State(initialValue: nil)
+        _primary = State(initialValue: false)
+        _attachmentSession = StateObject(wrappedValue: EditorAttachmentSession(section: .records))
+    }
+
+    private var isRecord: Bool {
+        if case .record = mode { return true }
+        return false
+    }
+
+    private var originalRecord: UndatedRecord? {
+        if case let .record(record, _) = mode { return record }
+        return nil
+    }
+
+    private var heading: String {
+        if isRecord {
+            return originalRecord == nil ? AppText.string("record.editor.new") : AppText.string("record.editor.edit")
+        }
+        if copySource != nil { return AppText.string("editor.copyTitle") }
+        if item != nil { return EventUIStrings.editEvent }
+        return isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent
+    }
+
+    private var editorID: String {
+        if isRecord { return originalRecord == nil ? "record.editor.new" : "record.editor.edit" }
+        return copySource != nil ? "editor.copy" : item == nil ? "editor.new" : "editor.edit"
+    }
+
+    private var deletionID: String { isRecord ? "record.delete" : "event.delete" }
 
     private var emojiPage: Int { emojiPicker.pageIndex }
     private var emojiPickerAnimation: Animation? {
@@ -1064,16 +1440,22 @@ struct EditorView: View {
         savedEvent.flatMap { $0.keepsAfterDate ? $0.date : nil }
     }
     private var minimumDate: Date { min(retainedDate ?? store.today, store.today).date() }
-    private var validDate: Bool { Day(date) >= store.today || Day(date) == retainedDate }
+    private var selectedDay: Day { date.map { Day($0) } ?? store.today }
+    private var validDate: Bool { selectedDay >= store.today || selectedDay == retainedDate }
     private var isUnavailable: Bool {
+        if let originalRecord { return !store.records.contains { $0.id == originalRecord.id } }
         guard let original = copySource ?? item else { return false }
         return !store.active.contains(where: { $0.id == original.id })
     }
     private var canSave: Bool {
-        !isUnavailable && editorCanSave(
+        guard !isUnavailable else { return false }
+        if isRecord {
+            return editorContentCanSave(title: draft.title, note: draft.note, subtasks: draft.subtasks, links: draft.links)
+        }
+        return editorCanSave(
             title: draft.title,
             note: draft.note,
-            date: Day(date),
+            date: selectedDay,
             emoji: draft.emoji,
             subtasks: draft.subtasks,
             links: draft.links,
@@ -1104,8 +1486,7 @@ struct EditorView: View {
 
     private var editorContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(copySource != nil ? AppText.string("editor.copyTitle")
-                 : item != nil ? EventUIStrings.editEvent : (isNewDay ? EventUIStrings.newDay : EventUIStrings.newEvent))
+            Text(heading)
                 .font(.custom("Georgia", size: 21))
                 .tracking(-0.5)
                 .frame(maxWidth: .infinity, minHeight: 49, alignment: .leading)
@@ -1122,11 +1503,13 @@ struct EditorView: View {
                         }
                         titleField
                         noteControls
-                        dateControls
-                        VStack(alignment: .leading, spacing: 0) {
-                            Divider().padding(.bottom, 10)
-                            emojiControls
-                            eventOptions.padding(.top, 13)
+                        if !isRecord {
+                            dateControls
+                            VStack(alignment: .leading, spacing: 0) {
+                                Divider().padding(.bottom, 10)
+                                emojiControls
+                                eventOptions.padding(.top, 13)
+                            }
                         }
                         VStack(alignment: .leading, spacing: 0) {
                             Divider().padding(.bottom, 13)
@@ -1138,10 +1521,8 @@ struct EditorView: View {
                             EditorAttachmentSection(attachments: $draft.attachments,
                                                     keepsAfterDate: draft.keepsAfterDate,
                                                     isImporting: isImportingAttachments, add: addAttachments,
-                                                    thumbnailURL: { attachment in
-                                await store.editorAttachmentThumbnailURL(attachment, eventID: copySource?.id ?? item?.id,
-                                                                         draftID: attachmentSession.id)
-                            })
+                                                    thumbnailURL: editorAttachmentURL,
+                                                    showsExpiryNotice: !isRecord)
                             Button(AppText.string("material.pasteText")) { beginTextComposition() }
                                 .buttonStyle(.borderless)
                                 .padding(.top, 10)
@@ -1170,8 +1551,8 @@ struct EditorView: View {
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(copySource != nil ? "editor.copy" : item == nil ? "editor.new" : "editor.edit")
-        .uiSmokeControl(id: copySource != nil ? "editor.copy" : item == nil ? "editor.new" : "editor.edit")
+        .accessibilityIdentifier(editorID)
+        .uiSmokeControl(id: editorID)
         .task {
             await Task.yield()
             let initialFocus: EditorFocusTarget = copySource == nil ? .title : .date
@@ -1192,57 +1573,80 @@ struct EditorView: View {
         .environment(\.locale, appPreferences.language.locale)
         .environment(\.calendar, Day.calendar)
         .onChange(of: appPreferences.language) { _ in
-            draft.updateDayTitle(for: Day(date))
+            if let date { draft.updateDayTitle(for: Day(date)) }
         }
         .onChange(of: date) { newDate in
-            draft.updateDayTitle(for: Day(newDate))
+            if let newDate { draft.updateDayTitle(for: Day(newDate)) }
         }
+    }
+
+    private func editorAttachmentURL(_ attachment: EventAttachment) async -> URL? {
+        if isRecord {
+            return await store.editorAttachmentThumbnailURL(attachment, recordID: originalRecord?.id,
+                                                             draftID: attachmentSession.id)
+        }
+        return await store.editorAttachmentThumbnailURL(attachment, eventID: copySource?.id ?? item?.id,
+                                                         draftID: attachmentSession.id)
     }
 
     private var titleField: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
+            if isRecord {
                 Text(AppText.string("editor.name"))
                     .font(.system(size: 11))
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    .accessibilityIdentifier("editor.title.mode")
-                    .accessibilityValue(draft.usesAutomaticTitle ? AppText.string("editor.autoTitle") : AppText.string("editor.customTitle"))
-                    .uiSmokeControl(id: "editor.title.mode", value: { draft.usesAutomaticTitle ? "auto" : "custom" })
-                Spacer(minLength: 8)
-                if draft.usesAutomaticTitle {
-                    Text(AppText.string("editor.byDate"))
-                        .font(.system(size: 11))
-                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                } else {
-                    Button(AppText.string("editor.autoTitle"), action: useAutomaticTitle)
-                        .buttonStyle(.borderless)
-                        .controlSize(.small)
-                        .font(.system(size: 11))
-                        .accessibilityIdentifier("editor.title.automatic")
-                        .uiSmokeControl(id: "editor.title.automatic", action: useAutomaticTitle)
-                }
+            } else {
+                eventTitleMode
             }
-            TextField(AppText.string("editor.namePrompt"), text: Binding(get: { draft.title }, set: { draft.setTitle($0) }))
+            TextField(isRecord ? AppText.string("record.editor.titlePrompt") : AppText.string("editor.namePrompt"),
+                      text: Binding(get: { draft.title }, set: { draft.setTitle($0) }))
                 .textFieldStyle(.roundedBorder)
                 .font(.system(size: 14))
                 .frame(minHeight: 28)
                 .focused($focusedField, equals: .title)
+                .accessibilityLabel(AppText.string("editor.name"))
                 .accessibilityIdentifier("editor.title")
                 .uiSmokeControl(id: "editor.title", action: { focus(.title, id: "editor.title") }, value: { draft.title })
         }
     }
 
+    private var eventTitleMode: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(AppText.string("editor.name"))
+                .font(.system(size: 11))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .accessibilityIdentifier("editor.title.mode")
+                .accessibilityValue(draft.usesAutomaticTitle ? AppText.string("editor.autoTitle") : AppText.string("editor.customTitle"))
+                .uiSmokeControl(id: "editor.title.mode", value: { draft.usesAutomaticTitle ? "auto" : "custom" })
+            Spacer(minLength: 8)
+            if draft.usesAutomaticTitle {
+                Text(AppText.string("editor.byDate"))
+                    .font(.system(size: 11))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            } else {
+                Button(AppText.string("editor.autoTitle"), action: useAutomaticTitle)
+                    .buttonStyle(.borderless)
+                    .controlSize(.small)
+                    .font(.system(size: 11))
+                    .accessibilityIdentifier("editor.title.automatic")
+                    .uiSmokeControl(id: "editor.title.automatic", action: useAutomaticTitle)
+            }
+        }
+    }
+
     private func useAutomaticTitle() {
-        draft.useAutomaticTitle(for: Day(date))
+        draft.useAutomaticTitle(for: selectedDay)
     }
 
     private var noteControls: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(AppText.string("note.optional"))
+        let label = isRecord ? AppText.string("record.editor.noteLabel") : AppText.string("note.optional")
+        let placeholder = isRecord ? AppText.string("record.editor.notePrompt") : AppText.string("note.prompt")
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(label)
                 .font(.caption)
                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
             NoteEditor(text: $draft.note, focusRequest: noteFocusRequest,
-                       placeholder: AppText.string("note.prompt"), label: AppText.string("note.optional"))
+                       placeholder: placeholder, label: label)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("editor.note")
                 .uiSmokeControl(id: "editor.note", action: { focus(.note, id: "editor.note") }, value: { draft.note })
@@ -1272,14 +1676,15 @@ struct EditorView: View {
                     .accessibilityIdentifier("editor.copy.past-source")
                     .uiSmokeControl(id: "editor.copy.past-source")
             }
-            DatePicker(AppText.string("editor.date"), selection: $date, in: minimumDate..., displayedComponents: [.date])
+            DatePicker(AppText.string("editor.date"), selection: Binding(get: { date ?? store.tomorrow }, set: { date = $0 }),
+                       in: minimumDate..., displayedComponents: [.date])
                 .datePickerStyle(.field)
                 .font(.system(size: 12))
                 .frame(minHeight: 28)
                 .focused($focusedField, equals: .date)
                 .accessibilityIdentifier("editor.date")
-                .uiSmokeControl(id: "editor.date", action: { focus(.date, id: "editor.date") }, value: { "\(Day(date).year)-\(Day(date).month)-\(Day(date).day)" })
-            if (Day(date) == store.today && !draft.keepsAfterDate) || !validDate {
+                .uiSmokeControl(id: "editor.date", action: { focus(.date, id: "editor.date") }, value: { "\(selectedDay.year)-\(selectedDay.month)-\(selectedDay.day)" })
+            if (selectedDay == store.today && !draft.keepsAfterDate) || !validDate {
                 Text(dateHelp)
                     .font(.system(size: 10.5))
                     .foregroundStyle(validDate
@@ -1330,9 +1735,7 @@ struct EditorView: View {
     private var editorActions: some View {
         VStack(alignment: .leading, spacing: 0) {
             if isUnavailable {
-                Text(copySource != nil
-                     ? AppText.string("editor.copySourceUnavailable")
-                     : AppText.string("editor.unavailable"))
+                Text(unavailableMessage)
                     .font(.caption)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                     .padding(.horizontal, 16)
@@ -1343,7 +1746,7 @@ struct EditorView: View {
             if confirmingDeletion && !isUnavailable { deletionControls }
             Divider()
             HStack(spacing: 9) {
-                if item != nil && !isUnavailable {
+                if (item != nil || originalRecord != nil) && !isUnavailable {
                     Button(role: .destructive, action: requestDeletion) {
                         Label(AppText.string("editor.delete"), systemImage: "trash")
                             .font(.system(size: 11))
@@ -1351,14 +1754,14 @@ struct EditorView: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    .accessibilityIdentifier("event.delete")
-                    .uiSmokeControl(id: "event.delete", action: requestDeletion)
+                    .accessibilityIdentifier(deletionID)
+                    .uiSmokeControl(id: deletionID, action: requestDeletion)
                     .disabled(isSaving || isImportingAttachments || confirmingDeletion)
                 }
                 Spacer(minLength: 0)
                 Button(AppText.string("common.cancel"), action: cancel)
                     .auroraSecondaryAction()
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(confirmingDeletion && !isUnavailable ? nil : .cancelAction)
                     .accessibilityIdentifier("editor.cancel")
                     .uiSmokeControl(id: "editor.cancel", action: cancel)
                     .disabled(isSaving)
@@ -1379,21 +1782,32 @@ struct EditorView: View {
         }
     }
 
+    private var unavailableMessage: String {
+        if isRecord { return AppText.string("record.unavailable") }
+        return copySource != nil ? AppText.string("editor.copySourceUnavailable") : AppText.string("editor.unavailable")
+    }
+
+    private var deleteWarning: String {
+        if isRecord { return AppText.string("record.deleteWarning") }
+        return removingPastRetention ? AppText.string("editor.clearRetentionWarning") : AppText.string("editor.deleteWarning")
+    }
+
     private var deletionControls: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(removingPastRetention
-                 ? AppText.string("editor.clearRetentionWarning")
-                 : AppText.string("editor.deleteWarning"))
+            Text(deleteWarning)
                 .font(.system(size: 11)).fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("event.delete.explanation")
-                .uiSmokeControl(id: "event.delete.explanation", value: { removingPastRetention ? "past-retention" : "manual" })
+                .accessibilityIdentifier("\(deletionID).explanation")
+                .uiSmokeControl(id: "\(deletionID).explanation", value: { removingPastRetention ? "past-retention" : "manual" })
             HStack(spacing: 16) {
-                Button(AppText.string("editor.cancelDeletion"), action: cancelDeletion)
-                    .accessibilityIdentifier("event.delete.cancel")
-                    .uiSmokeControl(id: "event.delete.cancel", action: cancelDeletion)
-                Button(AppText.string("event.delete"), role: .destructive, action: delete)
-                    .accessibilityIdentifier("event.delete.confirm")
-                    .uiSmokeControl(id: "event.delete.confirm", action: delete)
+                Button(isRecord ? AppText.string("record.cancelDeletion") : AppText.string("editor.cancelDeletion"),
+                       action: cancelDeletion)
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityIdentifier("\(deletionID).cancel")
+                    .uiSmokeControl(id: "\(deletionID).cancel", action: cancelDeletion)
+                Button(isRecord ? AppText.string("record.delete") : AppText.string("event.delete"),
+                       role: .destructive, action: delete)
+                    .accessibilityIdentifier("\(deletionID).confirm")
+                    .uiSmokeControl(id: "\(deletionID).confirm", action: delete)
             }
             .buttonStyle(.plain)
             .font(.system(size: 11))
@@ -1407,10 +1821,11 @@ struct EditorView: View {
     }
 
     private func delete() {
-        guard let item, !isUnavailable, !isSaving, !isImportingAttachments else { return }
+        guard !isUnavailable, !isSaving, !isImportingAttachments, let id = originalRecord?.id ?? item?.id else { return }
         isSaving = true
         Task {
-            if await store.delete(item.id) {
+            let deleted = if isRecord { await store.deleteRecord(id) } else { await store.delete(id) }
+            if deleted {
                 await attachmentSession.discard(in: store)
                 done()
             }
@@ -1432,7 +1847,7 @@ struct EditorView: View {
     private var dateHelp: String {
         guard validDate else { return AppText.string("editor.pastDateWarning") }
         if draft.keepsAfterDate { return AppText.string("editor.retainedNotice") }
-        return Day(date) == store.today ? EventUIStrings.todayExpiryNotice : AppText.string("editor.allowedDate")
+        return selectedDay == store.today ? EventUIStrings.todayExpiryNotice : AppText.string("editor.allowedDate")
     }
 
     private func editorSubtasks(scrollProxy: ScrollViewProxy) -> some View {
@@ -1932,7 +2347,9 @@ struct EditorView: View {
 
     private func cancel() {
         guard !isSaving, composingText == nil else { return }
-        DiagnosticLog.shared.record("editor.cancel mode=\(copySource != nil ? "copy" : item == nil ? "new" : "edit")")
+        let logMode = isRecord ? (originalRecord == nil ? "record-new" : "record-edit")
+            : (copySource != nil ? "copy" : item == nil ? "new" : "edit")
+        DiagnosticLog.shared.record("editor.cancel mode=\(logMode)")
         attachmentSession.cancel()
         done()
     }
@@ -1959,7 +2376,7 @@ struct EditorView: View {
     private func receiveMaterials(_ materials: EventMaterials) {
         guard !isSaving, !isImportingAttachments, !isUnavailable, !confirmingDeletion, composingText == nil else { return }
         if let text = materials.text { composingText = text; return }
-        do { try materials.validateCapacity(for: draft.countdown(id: item?.id ?? UUID(), date: Day(date))) }
+        do { try materials.validateCapacity(attachments: draft.attachments, existingLinks: draft.links) }
         catch { store.error = error.localizedDescription; return }
         if materials.files.isEmpty { draft.links += materials.links; return }
         isImportingAttachments = true
@@ -1985,14 +2402,19 @@ struct EditorView: View {
 
     private func save() {
         guard canSave, !isSaving, !isImportingAttachments, !confirmingDeletion, composingText == nil else { return }
+        if case let .record(record, didSave) = mode {
+            saveRecord(original: record, didSave: didSave)
+            return
+        }
+        guard case let .event(didSave) = mode else { return }
         store.refresh()
         guard canSave else { return }
-        if Day(date) < store.today, !draft.keepsAfterDate {
+        if selectedDay < store.today, !draft.keepsAfterDate {
             removingPastRetention = true
             confirmingDeletion = true
             return
         }
-        let countdown = draft.countdown(id: item?.id ?? UUID(), date: Day(date))
+        let countdown = draft.countdown(id: item?.id ?? UUID(), date: selectedDay)
         isSaving = true
         Task {
             let saved: Countdown?
@@ -2009,6 +2431,20 @@ struct EditorView: View {
             if let saved {
                 await attachmentSession.discard(in: store)
                 didSave(saved)
+                done()
+            }
+            isSaving = false
+        }
+    }
+
+    private func saveRecord(original: UndatedRecord?, didSave: @escaping (UndatedRecord) -> Void) {
+        let record = UndatedRecord(id: original?.id ?? UUID(), title: draft.title, note: draft.note,
+                                  subtasks: draft.subtasks, attachments: draft.attachments, links: draft.links)
+        isSaving = true
+        Task {
+            if await store.saveRecord(record, requireExisting: original != nil) {
+                await attachmentSession.discard(in: store)
+                didSave(store.records.first { $0.id == record.id } ?? record)
                 done()
             }
             isSaving = false

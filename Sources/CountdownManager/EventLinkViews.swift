@@ -27,7 +27,7 @@ struct SavedMaterialHeading: View {
 }
 
 struct SavedLinkSection: View {
-    let item: Countdown
+    let owner: SavedMaterialOwner
     let surface: String
     let open: (EventLink) -> Void
     @State private var expanded = false
@@ -36,7 +36,7 @@ struct SavedLinkSection: View {
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
 
     var body: some View {
-        if !item.links.isEmpty {
+        if !owner.links.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 if compact {
                     Button { expanded.toggle() } label: {
@@ -48,39 +48,39 @@ struct SavedLinkSection: View {
                                 .accessibilityHidden(true)
                             heading
                             Spacer()
-                            Text(String(item.links.count)).font(.system(size: 11))
+                            Text(String(owner.links.count)).font(.system(size: 11))
                                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                                .uiSmokeControl(id: "panel.links.count.\(item.id)", value: { String(item.links.count) })
+                                .uiSmokeControl(id: "panel.links.count.\(owner.id)", value: { String(owner.links.count) })
                         }
                         .frame(minHeight: 22)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(AppText.string("link.disclosure", "\(item.links.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
-                    .accessibilityIdentifier("panel.links.toggle.\(item.id)")
-                    .uiSmokeControl(id: "panel.links.toggle.\(item.id)", action: { expanded.toggle() },
+                    .accessibilityLabel(AppText.string("link.disclosure", "\(owner.links.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
+                    .accessibilityIdentifier("panel.links.toggle.\(owner.id)")
+                    .uiSmokeControl(id: "panel.links.toggle.\(owner.id)", action: { expanded.toggle() },
                                     value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    SavedMaterialHeading(title: AppText.string("link.titlePlural"), count: item.links.count, symbolName: "link",
-                                         controlPrefix: "desktop.links", eventID: item.id)
+                    SavedMaterialHeading(title: AppText.string("link.titlePlural"), count: owner.links.count, symbolName: "link",
+                                         controlPrefix: "desktop.links", eventID: owner.id)
                 }
                 if !compact || expanded {
                     linkRows
                 }
             }
             .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
-            .uiSmokeControl(id: "\(surface).links.\(item.id)", value: { String(item.links.count) })
+            .uiSmokeControl(id: "\(surface).links.\(owner.id)", value: { String(owner.links.count) })
         }
     }
 
     private var heading: some View {
         Text(AppText.string("link.titlePlural"))
             .font(.system(size: 12, weight: .semibold))
-            .uiSmokeControl(id: "\(surface).links.heading.\(item.id)")
+            .uiSmokeControl(id: "\(surface).links.heading.\(owner.id)")
     }
 
     private var linkRows: some View {
-        ForEach(item.links) { link in
+        ForEach(owner.links) { link in
             Button { open(link) } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "link")

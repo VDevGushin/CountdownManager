@@ -30,6 +30,19 @@ public struct EventAttachment: Identifiable, Codable, Equatable {
     }
 
     static func markerName(for id: UUID) -> String { ".countdown-attachment-" + id.uuidString }
+
+    package static func isLocalFileSource(_ url: URL) -> Bool {
+        guard url.isFileURL, url.path.hasPrefix("/"),
+              let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
+              components.user == nil, components.password == nil,
+              components.query == nil, components.fragment == nil,
+              components.percentEncodedPath.removingPercentEncoding == url.path else { return false }
+        let host = components.host?.lowercased() ?? ""
+        guard host.isEmpty || host == "localhost" else { return false }
+        // Reject any port syntax, including an empty port or one that cannot be read as an Int.
+        guard let hostRange = components.rangeOfHost else { return true }
+        return hostRange.upperBound == components.rangeOfPath?.lowerBound
+    }
 }
 
 public enum EventAttachmentError: LocalizedError {
@@ -49,17 +62,24 @@ public enum EventAttachmentError: LocalizedError {
 
 extension CountdownData {
     func attachmentMetadata() throws -> [UUID: EventAttachment] {
-        var metadata: [UUID: EventAttachment] = [:]
-        for item in items {
-            var eventIDs = Set<UUID>()
-            for attachment in item.attachments {
-                guard eventIDs.insert(attachment.id).inserted,
-                      metadata[attachment.id] == nil || metadata[attachment.id] == attachment else {
-                    throw EventAttachmentError.invalidMetadata
-                }
-                metadata[attachment.id] = attachment
-            }
-        }
-        return metadata
+        try validatedAttachmentMetadata(items.map(\.attachments), allowsSharedReferences: true)
     }
+}
+
+func validatedAttachmentMetadata(
+    _ groups: [[EventAttachment]],
+    allowsSharedReferences: Bool
+) throws -> [UUID: EventAttachment] {
+    var metadata: [UUID: EventAttachment] = [:]
+    for group in groups {
+        var localIDs = Set<UUID>()
+        for attachment in group {
+            guard localIDs.insert(attachment.id).inserted else { throw EventAttachmentError.invalidMetadata }
+            if let existing = metadata[attachment.id], !allowsSharedReferences || existing != attachment {
+                throw EventAttachmentError.invalidMetadata
+            }
+            metadata[attachment.id] = attachment
+        }
+    }
+    return metadata
 }

@@ -225,8 +225,9 @@ segmented control switches collection/grid and feed/list, retaining names and ho
 One favorite stays above month-and-year sections; empty months and duplicate favorite rows are
 omitted. Retained past ordinary events form one last `Прошедшие` group, recent first. A past favorite
 stays featured above all groups without duplication; mini keeps its plain list, with ordinary past
-events last. `Вчера`/`N дней назад` uses secondary ink in both surfaces. Section headings use 20-point Georgia, with 24-point section gaps. Grid cards keep a
-180-point minimum width and 12-point gaps; list rows use 10-point gaps. A short 150 ms
+events last. `Вчера`/`N дней назад` uses secondary ink in both surfaces. Section headings use 20-point Georgia, with 24-point section gaps. The event and record grids use
+180-point cards with 12-point gaps. Resizing wraps whole columns and keeps card widths stable
+when crossing a column threshold. List rows fill the available width and use 10-point gaps. A short 150 ms
 ease-in-out reflows the same ordinary event identities without scaling text, spring effects or
 fading the entire browser. Calendar, title and metadata remain persistent visual elements;
 text reflows inside clipped moving containers rather than animating individual glyph positions.
@@ -251,6 +252,20 @@ visible or accessible placeholder. Mini-panel layouts are unchanged.
 The desktop detail action group uses neutral primary ink for the outline star, pencil, copy and trash.
 Only a selected, filled favorite star uses the accent color. Color communicates favorite state,
 not a permanent difference between otherwise equal icon actions; mini-panel controls are unchanged.
+
+### Records
+
+A native text segmented control selects Events or Records on each surface. Records reuse the
+paper/graphite card surfaces, browser selection treatment, Georgia headings and existing
+checklist and material components. In the mini-panel, the populated Records list shares the
+Events header layout and create button. Its count is the single heading, with one create action
+at the trailing edge. A record starts at its title. Compact records use the
+mini-panel's existing material disclosures, while desktop records display the expanded
+checklist and material sections in the retained inspector. Desktop grid cards fill the same
+width and height within each row, using the shared event grid's row measurements and keeping
+record content top-aligned. The record editor uses the
+existing native title, note and material fields, shared Save/Cancel actions and delete
+confirmation. The empty state uses the existing Georgia heading and primary action family.
 
 ## Elevation & Depth
 

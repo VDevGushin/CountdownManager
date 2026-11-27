@@ -4,11 +4,13 @@ import SwiftUI
 final class UISmokeControlRegistry {
     struct Entry {
         let action: (() -> Void)?
+        let drop: (([NSItemProvider]) -> Bool)?
         var value: (() -> String?)?
         var frame: CGRect?
         var isEnabled: Bool
         let ownerID: ObjectIdentifier?
         let nativeFrame: (() -> CGRect?)?
+        let windowInputFrame: ((NSWindow) -> CGRect?)?
     }
 
     static let shared = UISmokeControlRegistry()
@@ -24,16 +26,20 @@ final class UISmokeControlRegistry {
         value: (() -> String?)?,
         isEnabled: Bool,
         owner: AnyObject? = nil,
-        nativeFrame: (() -> CGRect?)? = nil
+        nativeFrame: (() -> CGRect?)? = nil,
+        windowInputFrame: ((NSWindow) -> CGRect?)? = nil,
+        drop: (([NSItemProvider]) -> Bool)? = nil
     ) {
         let frame = frames[id]
         entries[id] = Entry(
             action: action,
+            drop: drop,
             value: value,
             frame: frame,
             isEnabled: isEnabled,
             ownerID: owner.map(ObjectIdentifier.init),
-            nativeFrame: nativeFrame
+            nativeFrame: nativeFrame,
+            windowInputFrame: windowInputFrame
         )
     }
 
@@ -82,6 +88,11 @@ final class UISmokeControlRegistry {
         return true
     }
 
+    func drop(_ providers: [NSItemProvider], on id: String) -> Bool {
+        guard let entry = entries[id], entry.isEnabled, let drop = entry.drop else { return false }
+        return drop(providers)
+    }
+
     func value(_ id: String) -> String? {
         entries[id]?.value?()
     }
@@ -89,6 +100,10 @@ final class UISmokeControlRegistry {
     func frame(_ id: String) -> CGRect? {
         if let nativeFrame = entries[id]?.nativeFrame { return nativeFrame() }
         return frames[id]
+    }
+
+    func inputFrame(_ id: String, in window: NSWindow) -> CGRect? {
+        entries[id]?.windowInputFrame?(window)
     }
 
     func ids(withPrefix prefix: String) -> [String] {
@@ -136,6 +151,7 @@ private struct UISmokeRegistrationView: NSViewRepresentable {
     let id: String
     let action: (() -> Void)?
     let value: (() -> String?)?
+    let drop: (([NSItemProvider]) -> Bool)?
     let observedValue: String?
     let isEnabled: Bool
     let measuresNativeFrame: Bool
@@ -173,7 +189,7 @@ private struct UISmokeRegistrationView: NSViewRepresentable {
         } : nil
         UISmokeControlRegistry.shared.register(
             id: id, action: action, value: value, isEnabled: isEnabled, owner: coordinator,
-            nativeFrame: nativeFrame
+            nativeFrame: nativeFrame, drop: drop
         )
     }
 }
@@ -201,6 +217,7 @@ private struct UISmokeControlModifier: ViewModifier {
     let id: String
     let action: (() -> Void)?
     let value: (() -> String?)?
+    let drop: (([NSItemProvider]) -> Bool)?
     @StateObject private var owner = UISmokeRegistrationOwner()
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.uiSmokeControlScope) private var scope
@@ -208,7 +225,7 @@ private struct UISmokeControlModifier: ViewModifier {
     private var effectiveID: String { scope + id }
 
     private var usesNativeRegistration: Bool {
-        id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.") || id.hasPrefix("event.copy.")
+        drop != nil || id.hasPrefix("event.primary.") || id.hasPrefix("event.edit.") || id.hasPrefix("event.copy.")
             || id.hasPrefix("subtask.transfer.")
             || id.hasPrefix("desktop.event.")
             || id.hasPrefix("editor.links") || id.hasPrefix("desktop.links.") || id.hasPrefix("panel.links.")
@@ -238,16 +255,21 @@ private struct UISmokeControlModifier: ViewModifier {
         }
     }
 
+    private var measuresWindowInput: Bool {
+        ["subtask.toggle.", "desktop.subtask.toggle.", "desktop.record.subtask.toggle."]
+            .contains { id.hasPrefix($0) }
+    }
+
     func body(content: Content) -> some View {
         let currentValue = value?()
         content
             .background {
                 if usesNativeRegistration {
-                    UISmokeRegistrationView(id: effectiveID, action: action, value: value, observedValue: currentValue,
+                    UISmokeRegistrationView(id: effectiveID, action: action, value: value, drop: drop, observedValue: currentValue,
                                             isEnabled: isEnabled, measuresNativeFrame: measuresNativeFrame)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
-                } else if measuresNativeFrame {
+                } else if measuresNativeFrame || measuresWindowInput {
                     UISmokeFrameMeasurementView(owner: owner)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
@@ -291,8 +313,15 @@ private struct UISmokeControlModifier: ViewModifier {
             guard let view = owner?.measuredView, let root = view.window?.contentView else { return nil }
             return view.convert(view.bounds, to: root)
         } : nil
+        let inputFrame: ((NSWindow) -> CGRect?)? = measuresWindowInput ? { [weak owner] window in
+            guard let view = owner?.measuredView, view.window === window else { return nil }
+            let frame = view.convert(view.bounds, to: nil)
+            guard !frame.isEmpty else { return nil }
+            return CGRect(x: frame.minX, y: window.frame.height - frame.maxY, width: frame.width, height: frame.height)
+        } : nil
         UISmokeControlRegistry.shared.register(
-            id: effectiveID, action: action, value: value, isEnabled: enabled, owner: owner, nativeFrame: nativeFrame
+            id: effectiveID, action: action, value: value, isEnabled: enabled, owner: owner,
+            nativeFrame: nativeFrame, windowInputFrame: inputFrame, drop: drop
         )
     }
 }
@@ -311,10 +340,11 @@ extension View {
     func uiSmokeControl(
         id: String,
         action: (() -> Void)? = nil,
-        value: (() -> String?)? = nil
+        value: (() -> String?)? = nil,
+        drop: (([NSItemProvider]) -> Bool)? = nil
     ) -> some View {
         if UISmokeConfiguration.wasRequested {
-            modifier(UISmokeControlModifier(id: id, action: action, value: value))
+            modifier(UISmokeControlModifier(id: id, action: action, value: value, drop: drop))
         } else {
             self
         }

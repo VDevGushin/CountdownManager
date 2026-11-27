@@ -5,7 +5,10 @@ import CountdownCore
 // Concrete types also work when an external source advertises an encoded image without
 // registering its broader image conformance with the item provider.
 private let encodedMaterialImageTypes: [UTType] = [.png, .tiff, .jpeg, .heic, .heif, .gif, .bmp, .webP]
-let materialDropTypes: [UTType] = [.fileURL, .url, .utf8PlainText, .plainText, .image] + encodedMaterialImageTypes
+let webURLsWithTitlesType = UTType(tag: "WebURLsWithTitlesPboardType",
+                                  tagClass: UTTagClass(rawValue: "com.apple.nspboard-type"), conformingTo: .data)
+let materialDropTypes: [UTType] = [.fileURL, .url, .utf8PlainText, .plainText, .image]
+    + encodedMaterialImageTypes + (webURLsWithTitlesType.map { [$0] } ?? [])
 
 func materialImageType(for provider: NSItemProvider) -> UTType? {
     // Image objects may advertise a lossy JPEG preview before a lossless representation.
@@ -82,31 +85,25 @@ package final class StagedMaterialFile: Sendable {
 }
 
 @MainActor
-func loadMaterialImage(_ provider: NSItemProvider, type: UTType) async throws -> StagedMaterialFile {
+func startMaterialImageLoad(_ provider: NSItemProvider, type: UTType,
+                            complete: @escaping (Result<StagedMaterialFile, Error>) -> Void) -> () -> Void {
     let request = MaterialImageRequest()
     let suggestedName = provider.suggestedName
-    return try await withTaskCancellationHandler {
-        try await withCheckedThrowingContinuation { continuation in
-            let progress = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { source, error in
-                // Progress cancellation and a late source callback may both complete this load.
-                guard request.claimCompletion() else { return }
-                guard let source, error == nil else {
-                    continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.image.dropFailed")))
-                    return
-                }
-                do {
-                    // The provider may delete source immediately after this callback returns.
-                    let staged = try StagedMaterialFile.copy(from: source, suggestedName: suggestedName, type: type)
-                    continuation.resume(returning: staged)
-                } catch {
-                    continuation.resume(throwing: MaterialIntakeError.message(AppText.string("material.image.prepareFailed")))
-                }
-            }
-            request.install(progress)
+    let progress = provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { source, error in
+        guard request.claimCompletion() else { return }
+        guard let source, error == nil else {
+            complete(.failure(MaterialIntakeError.message(AppText.string("material.image.dropFailed"))))
+            return
         }
-    } onCancel: {
-        request.cancel()
+        do {
+            // The provider may delete source immediately after this callback returns.
+            complete(.success(try StagedMaterialFile.copy(from: source, suggestedName: suggestedName, type: type)))
+        } catch {
+            complete(.failure(MaterialIntakeError.message(AppText.string("material.image.prepareFailed"))))
+        }
     }
+    request.install(progress)
+    return request.cancel
 }
 
 /// Cancellation may race the synchronous return of loadFileRepresentation.
@@ -127,7 +124,7 @@ private final class MaterialImageRequest: @unchecked Sendable {
     func claimCompletion() -> Bool {
         lock.lock()
         defer { lock.unlock() }
-        guard !hasCompleted else { return false }
+        guard !hasCompleted, !isCancelled else { return false }
         hasCompleted = true
         progress = nil
         return true

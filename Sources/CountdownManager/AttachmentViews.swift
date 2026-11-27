@@ -2,6 +2,39 @@ import CountdownCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+package protocol SavedMaterialContent {
+    var id: UUID { get }
+    var displayTitle: String { get }
+    var materialOwnerID: SavedMaterialOwnerID { get }
+    var attachments: [EventAttachment] { get set }
+    var links: [EventLink] { get set }
+}
+
+extension Countdown: SavedMaterialContent {
+    package var materialOwnerID: SavedMaterialOwnerID { .event(id) }
+}
+
+extension UndatedRecord: SavedMaterialContent {
+    package var displayTitle: String { title }
+    package var materialOwnerID: SavedMaterialOwnerID { .record(id) }
+}
+
+package struct SavedMaterialOwner: Equatable {
+    let id: UUID
+    let collection: StoredAttachmentCollection
+    let displayTitle: String
+    let attachments: [EventAttachment]
+    let links: [EventLink]
+
+    package init(_ owner: some SavedMaterialContent) {
+        id = owner.id
+        collection = owner.materialOwnerID.collection
+        displayTitle = owner.displayTitle
+        attachments = owner.attachments
+        links = owner.links
+    }
+}
+
 package func attachmentSizeLabel(_ byteCount: Int64) -> String {
     ByteCountFormatStyle(style: .file, locale: AppText.language.locale).format(byteCount)
 }
@@ -18,8 +51,13 @@ private func attachmentFileSymbol(_ attachment: EventAttachment) -> String {
 /// Releases draft-only copies when the editor hierarchy is actually destroyed, not when its window hides.
 final class EditorAttachmentSession: ObservableObject {
     let id = UUID()
+    private let section: PlannerSection
     private var cleanup: (() -> Void)?
     private var importTask: Task<Void, Never>?
+
+    init(section: PlannerSection = .events) {
+        self.section = section
+    }
 
     @MainActor func importFiles(
         in store: Store,
@@ -36,8 +74,8 @@ final class EditorAttachmentSession: ObservableObject {
         let draftID = id
         importTask = Task { @MainActor [weak self] in
             defer { withExtendedLifetime(stagedFiles) {} }
-            guard !Task.isCancelled, self != nil else { return }
-            let prepared = await store.beginAttachmentDraft(draftID)
+            guard !Task.isCancelled, let section = self?.section else { return }
+            let prepared = await Self.beginDraft(in: store, id: draftID, section: section)
             guard !Task.isCancelled, self != nil else { return }
             var attachments: [EventAttachment] = []
             if prepared {
@@ -59,7 +97,15 @@ final class EditorAttachmentSession: ObservableObject {
             let draftID = id
             cleanup = { Task { @MainActor in await store.discardAttachmentDraft(draftID) } }
         }
-        return await store.beginAttachmentDraft(id)
+        return await Self.beginDraft(in: store, id: id, section: section)
+    }
+
+    @MainActor
+    private static func beginDraft(in store: Store, id: UUID, section: PlannerSection) async -> Bool {
+        switch section {
+        case .events: await store.beginAttachmentDraft(id)
+        case .records: await store.beginRecordAttachmentDraft(id)
+        }
     }
 
     @MainActor func cancel() {
@@ -130,7 +176,7 @@ struct AttachmentFileLabel: View {
 }
 
 struct SavedAttachmentSection: View {
-    let item: Countdown
+    let owner: SavedMaterialOwner
     let compact: Bool
     let open: (EventAttachment) -> Void
     var thumbnailURL: (@MainActor (EventAttachment) async -> URL?)?
@@ -147,7 +193,7 @@ struct SavedAttachmentSection: View {
     }
 
     var body: some View {
-        if !item.attachments.isEmpty {
+        if !owner.attachments.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 if compact {
                     Button { expanded.toggle() } label: {
@@ -159,7 +205,7 @@ struct SavedAttachmentSection: View {
                                 .accessibilityHidden(true)
                             heading
                             Spacer()
-                            Text(String(item.attachments.count))
+                            Text(String(owner.attachments.count))
                                 .font(.system(size: 11))
                                 .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                         }
@@ -167,46 +213,46 @@ struct SavedAttachmentSection: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(AppText.string("attachment.disclosure", "\(item.attachments.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
-                    .accessibilityIdentifier("panel.attachments.toggle.\(item.id.uuidString)")
-                    .uiSmokeControl(id: "panel.attachments.toggle.\(item.id.uuidString)",
+                    .accessibilityLabel(AppText.string("attachment.disclosure", "\(owner.attachments.count)", "\(expanded ? AppText.string("common.collapse") : AppText.string("common.expand"))"))
+                    .accessibilityIdentifier("panel.attachments.toggle.\(owner.id.uuidString)")
+                    .uiSmokeControl(id: "panel.attachments.toggle.\(owner.id.uuidString)",
                                     action: { expanded.toggle() }, value: { expanded ? "expanded" : "collapsed" })
                 } else {
-                    SavedMaterialHeading(title: AppText.string("attachment.titlePlural"), count: item.attachments.count, symbolName: "paperclip",
-                                         controlPrefix: "desktop.attachments", eventID: item.id)
+                    SavedMaterialHeading(title: AppText.string("attachment.titlePlural"), count: owner.attachments.count, symbolName: "paperclip",
+                                         controlPrefix: "desktop.attachments", eventID: owner.id)
                 }
                 if !compact || expanded {
                     LazyVGrid(columns: shelfColumns, alignment: .leading, spacing: compact ? 8 : 10) {
-                        ForEach(Array(item.attachments.prefix(summaryCount))) { attachment in
+                        ForEach(Array(owner.attachments.prefix(summaryCount))) { attachment in
                             Button { open(attachment) } label: {
                                 AttachmentShelfTile(attachment: attachment, compact: compact,
                                                     controlPrefix: "\(surface).attachment",
-                                                    eventID: item.id,
+                                                    eventID: owner.id,
                                                     thumbnailURL: thumbnailURL.map { resolve in { await resolve(attachment) } })
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(AppText.string("attachment.previewItem", attachment.name))
-                            .accessibilityIdentifier("attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)")
-                            .uiSmokeControl(id: "\(surface).attachments.open.\(item.id.uuidString).\(attachment.id.uuidString)",
+                            .accessibilityIdentifier("attachments.open.\(owner.id.uuidString).\(attachment.id.uuidString)")
+                            .uiSmokeControl(id: "\(surface).attachments.open.\(owner.id.uuidString).\(attachment.id.uuidString)",
                                             action: { open(attachment) })
                         }
                     }
                     .frame(maxWidth: compact ? .infinity : 490, alignment: .leading)
-                    .uiSmokeControl(id: "\(surface).attachments.shelf.\(item.id.uuidString)")
-                    if item.attachments.count > summaryCount {
-                        Button(AppText.string("attachment.showAll", "\(item.attachments.count)"), action: showAll)
+                    .uiSmokeControl(id: "\(surface).attachments.shelf.\(owner.id.uuidString)")
+                    if owner.attachments.count > summaryCount {
+                        Button(AppText.string("attachment.showAll", "\(owner.attachments.count)"), action: showAll)
                             .buttonStyle(.plain)
                             .foregroundStyle(AuroraInstrument.accent(
                                 for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
                             ))
-                            .accessibilityIdentifier("\(surface).attachments.all.\(item.id.uuidString)")
-                            .uiSmokeControl(id: "\(surface).attachments.all.\(item.id.uuidString)", action: showAll)
+                            .accessibilityIdentifier("\(surface).attachments.all.\(owner.id.uuidString)")
+                            .uiSmokeControl(id: "\(surface).attachments.all.\(owner.id.uuidString)", action: showAll)
                     }
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("\(surface).attachments.\(item.id.uuidString)")
-            .uiSmokeControl(id: "\(surface).attachments.\(item.id.uuidString)", value: { String(item.attachments.count) })
+            .accessibilityIdentifier("\(surface).attachments.\(owner.id.uuidString)")
+            .uiSmokeControl(id: "\(surface).attachments.\(owner.id.uuidString)", value: { String(owner.attachments.count) })
         }
     }
 
@@ -214,7 +260,7 @@ struct SavedAttachmentSection: View {
         Text(AppText.string("attachment.titlePlural"))
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
-            .uiSmokeControl(id: "\(surface).attachments.heading.\(item.id.uuidString)")
+            .uiSmokeControl(id: "\(surface).attachments.heading.\(owner.id.uuidString)")
     }
 }
 
@@ -282,7 +328,7 @@ private struct AttachmentShelfTile: View {
 }
 
 struct AttachmentListView: View {
-    let item: Countdown
+    let owner: SavedMaterialOwner
     let compact: Bool
     let back: () -> Void
     let open: (EventAttachment) -> Void
@@ -297,13 +343,13 @@ struct AttachmentListView: View {
     private var prefix: String { "\(compact ? "panel" : "desktop").attachments.list" }
     private var filtered: [EventAttachment] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return needle.isEmpty ? item.attachments : item.attachments.filter { $0.name.localizedStandardContains(needle) }
+        return needle.isEmpty ? owner.attachments : owner.attachments.filter { $0.name.localizedStandardContains(needle) }
     }
 
     private var summary: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? AppText.string("attachment.fileCount", "\(item.attachments.count)")
-            : AppText.string("attachment.searchCount", "\(filtered.count)", "\(item.attachments.count)")
+            ? AppText.string("attachment.fileCount", "\(owner.attachments.count)")
+            : AppText.string("attachment.searchCount", "\(filtered.count)", "\(owner.attachments.count)")
     }
 
     var body: some View {
@@ -312,7 +358,7 @@ struct AttachmentListView: View {
                 if compact { navigationButton }
                 Text(compact ? AppText.string("attachment.titlePlural") : AppText.string("attachment.title"))
                     .font(.custom("Georgia", size: 21))
-                    .uiSmokeControl(id: "\(prefix).title.\(item.id)", value: { compact ? AppText.string("attachment.titlePlural") : AppText.string("attachment.title") })
+                    .uiSmokeControl(id: "\(prefix).title.\(owner.id)", value: { compact ? AppText.string("attachment.titlePlural") : AppText.string("attachment.title") })
                 Spacer()
                 if !compact { navigationButton }
             }
@@ -327,15 +373,15 @@ struct AttachmentListView: View {
                         .textSelection(.enabled)
                     Spacer(minLength: 0)
                     Button(AppText.string("common.ok"), action: dismissError)
-                        .accessibilityIdentifier("\(prefix).error.dismiss.\(item.id)")
-                        .uiSmokeControl(id: "\(prefix).error.dismiss.\(item.id)", action: dismissError)
+                        .accessibilityIdentifier("\(prefix).error.dismiss.\(owner.id)")
+                        .uiSmokeControl(id: "\(prefix).error.dismiss.\(owner.id)", action: dismissError)
                 }
                 .padding(12)
                 .background(Color.red.opacity(0.1))
-                .accessibilityIdentifier("\(prefix).error.\(item.id)")
-                .uiSmokeControl(id: "\(prefix).error.\(item.id)", value: { error })
+                .accessibilityIdentifier("\(prefix).error.\(owner.id)")
+                .uiSmokeControl(id: "\(prefix).error.\(owner.id)", value: { error })
             }
-            Text(item.displayTitle).font(.system(size: 12, weight: .medium)).lineLimit(1)
+            Text(owner.displayTitle).font(.system(size: 12, weight: .medium)).lineLimit(1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16).padding(.top, 12)
             HStack(spacing: 8) {
@@ -343,12 +389,12 @@ struct AttachmentListView: View {
                     .textFieldStyle(.roundedBorder)
                     .focused($searchFocused)
                     .accessibilityLabel(AppText.string("attachment.search"))
-                    .accessibilityIdentifier("\(prefix).search.\(item.id)")
-                    .uiSmokeControl(id: "\(prefix).search.\(item.id)", action: { searchFocused = true }, value: { query })
+                    .accessibilityIdentifier("\(prefix).search.\(owner.id)")
+                    .uiSmokeControl(id: "\(prefix).search.\(owner.id)", action: { searchFocused = true }, value: { query })
                 Button(AppText.string("common.clear")) { query = "" }
                     .disabled(query.isEmpty)
-                    .accessibilityIdentifier("\(prefix).clear.\(item.id)")
-                    .uiSmokeControl(id: "\(prefix).clear.\(item.id)", action: { query = "" })
+                    .accessibilityIdentifier("\(prefix).clear.\(owner.id)")
+                    .uiSmokeControl(id: "\(prefix).clear.\(owner.id)", action: { query = "" })
             }
             .padding(16)
             if filtered.isEmpty {
@@ -357,8 +403,8 @@ struct AttachmentListView: View {
                     Text(AppText.string("attachment.retrySearch")).font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .accessibilityIdentifier("\(prefix).empty.\(item.id)")
-                .uiSmokeControl(id: "\(prefix).empty.\(item.id)")
+                .accessibilityIdentifier("\(prefix).empty.\(owner.id)")
+                .uiSmokeControl(id: "\(prefix).empty.\(owner.id)")
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 10) {
@@ -367,7 +413,7 @@ struct AttachmentListView: View {
                                 AttachmentFileLabel(
                                     attachment: attachment,
                                     thumbnailURL: { await thumbnailURL(attachment) },
-                                    thumbnailControlID: "\(compact ? "panel" : "desktop").attachment.list.thumbnail.\(item.id).\(attachment.id)",
+                                    thumbnailControlID: "\(compact ? "panel" : "desktop").attachment.list.thumbnail.\(owner.id).\(attachment.id)",
                                     thumbnailSize: compact ? 36 : 44
                                 )
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -375,8 +421,8 @@ struct AttachmentListView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel(AppText.string("attachment.openItem", attachment.name))
-                            .accessibilityIdentifier("\(prefix).open.\(item.id).\(attachment.id)")
-                            .uiSmokeControl(id: "\(prefix).open.\(item.id).\(attachment.id)", action: { open(attachment) })
+                            .accessibilityIdentifier("\(prefix).open.\(owner.id).\(attachment.id)")
+                            .uiSmokeControl(id: "\(prefix).open.\(owner.id).\(attachment.id)", action: { open(attachment) })
                         }
                     }
                     .padding(.horizontal, 16).padding(.bottom, 16)
@@ -387,14 +433,14 @@ struct AttachmentListView: View {
                 .font(.system(size: 11)).foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(16)
-                .uiSmokeControl(id: "\(prefix).summary.\(item.id)", value: { summary })
+                .uiSmokeControl(id: "\(prefix).summary.\(owner.id)", value: { summary })
         }
         .foregroundStyle(AuroraInstrument.ink(for: colorScheme))
         .tint(AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast))
         .background(AuroraPanelCanvas())
         .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("\(prefix).\(item.id)")
-        .uiSmokeControl(id: "\(prefix).\(item.id)", value: { "\(filtered.count)/\(item.attachments.count)" })
+        .accessibilityIdentifier("\(prefix).\(owner.id)")
+        .uiSmokeControl(id: "\(prefix).\(owner.id)", value: { "\(filtered.count)/\(owner.attachments.count)" })
     }
 
     private var navigationButton: some View {
@@ -407,8 +453,8 @@ struct AttachmentListView: View {
         .keyboardShortcut(.cancelAction)
         .accessibilityLabel(compact ? AppText.string("common.back") : AppText.string("attachment.closeLibrary"))
         .help(compact ? AppText.string("common.back") : AppText.string("attachment.closeLibrary"))
-        .accessibilityIdentifier("\(prefix).\(compact ? "back" : "close").\(item.id)")
-        .uiSmokeControl(id: "\(prefix).\(compact ? "back" : "close").\(item.id)", action: back)
+        .accessibilityIdentifier("\(prefix).\(compact ? "back" : "close").\(owner.id)")
+        .uiSmokeControl(id: "\(prefix).\(compact ? "back" : "close").\(owner.id)", action: back)
     }
 
 }
@@ -419,6 +465,7 @@ struct EditorAttachmentSection: View {
     let isImporting: Bool
     let add: () -> Void
     let thumbnailURL: @MainActor (EventAttachment) async -> URL?
+    var showsExpiryNotice = true
     @Environment(\.colorScheme) private var colorScheme
 
     private var atLimit: Bool { attachments.count >= EventAttachment.maximumCount }
@@ -476,8 +523,10 @@ struct EditorAttachmentSection: View {
                     .disabled(isImporting)
                 }
             }
-            attachmentExpiryFootnote(keepsAfterDate: keepsAfterDate)
-                .uiSmokeControl(id: "editor.attachments.expiry", value: { keepsAfterDate ? "retained" : "expires" })
+            if showsExpiryNotice {
+                attachmentExpiryFootnote(keepsAfterDate: keepsAfterDate)
+                    .uiSmokeControl(id: "editor.attachments.expiry", value: { keepsAfterDate ? "retained" : "expires" })
+            }
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("editor.attachments")

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Countdown Manager is a native macOS application for tracking dated events by calendar day, with a quick menu-bar panel and a larger desktop window. Events may be explicitly retained after their date.
+Countdown Manager is a native macOS application for tracking dated events by calendar day and keeping undated records, with a quick menu-bar panel and a larger desktop window. Events may be explicitly retained after their date.
 
 The product is intentionally small and quiet. The central concept is an event date and the number of calendar days remaining until that date, including `Сегодня` on the event's date. The application also provides one lightweight countdown timer for short time-based reminders.
 
@@ -168,6 +168,8 @@ the calendar, title and metadata retain their visual identities instead of insta
 one card composition with another. Month headings and cards move in the same layout transaction.
 Text is not scaled and the whole list is not faded out. Reduce Motion changes layouts immediately.
 Rapid switching follows the latest selection without changing saved data or the divider.
+When the event or record browser is resized, collection cards keep their width and wrap into
+the available columns. Feed rows follow the browser width.
 The featured favorite places its date and eligible forecast together on a full-width metadata
 row below the title/calendar identity, so the narrow browser pane retains room for both.
 Empty search/filter results offer a return to
@@ -269,10 +271,32 @@ remains inactive until native dismissal completes. Settings and file-library clo
 Escape and clicks on the parent content outside the sheet share their dismissal path; the
 editor requires Save or Cancel. Losing a file library's owning event requests native dismissal.
 
-Command-N creates an event in the desktop window. The footer Settings button and Command-comma
+Command-N opens an event or record editor for the current desktop section. The footer Settings button and Command-comma
 open the centered settings pane when no editor is active. Ordinary
 native controls retain keyboard focus and accessibility labels. Collection/feed selection and
 search are window-local browsing choices, not changes to saved event data.
+
+## Records
+
+Both surfaces offer a native `Events / Records` section selector. The mini-panel retains its timer
+and service footer. The desktop retains its browser/details split and its collection/feed layouts.
+The Records section has its own empty state and a `Create Record` action. Event creation remains
+in Events, including the existing empty-list day actions. A populated Records list in the
+mini-panel shows the record count and a single create button in the list header. The active
+section exposes its list to accessibility and each section retains its browsing position.
+
+A record has a required name, an optional description, subtasks, links and attached files. The
+existing content limits and checklist behavior apply. Saved records use the shared
+[drag and paste material intake](#adding-materials-by-drag-and-paste). Editing uses the existing shared editor
+reservation and explicit Save/Cancel behavior. Record details omit calendar, countdown, weather,
+favorite, and retention controls. The move-to-date subtask action belongs to dated events.
+Removing a record requires confirmation. Completing every subtask leaves the record available.
+
+Records keep their type and remain available until explicitly deleted. The newest created record appears first.
+Editing a name or description, changing materials, and toggling or reordering subtasks preserve
+the record's list position. Desktop search matches titles, descriptions, subtask text, filenames,
+and link names and addresses within the selected section. A record does not participate in event
+ordering, batch day creation, the menu-bar countdown, or event expiry.
 
 ## Settings
 
@@ -587,9 +611,9 @@ archive screen or implicit retention based on favorite status or attachments.
 
 ### Adding materials by drag and paste
 
-A saved event accepts ordinary local files and HTTP/HTTPS links on its desktop browser card,
-desktop details or mini-panel card. The target is the receiving event, including an unselected
-card; dropping does not change another event. Hover adds a stationary accent outline/tint without
+A saved event or record accepts ordinary local files and HTTP/HTTPS links on its desktop browser
+card, desktop details or mini-panel card. The target is the receiving owner, including an unselected
+card. Hover adds a stationary accent outline/tint without
 changing the card geometry or disclosure state. One preferred representation is used per dropped
 item: a file URL has priority over an encoded image representation, then a web URL and plain text.
 Images offered without a file URL are received as files and copied into the existing attachment
@@ -600,17 +624,17 @@ produce an actionable error rather than an attempt to load unadvertised plain te
 schemes, folders, packages and symbolic links remain rejected. Arbitrary file promises from
 Mail/Photos are not advertised; image representations exposed through NSItemProvider are supported.
 
-A successful saved-event addition commits immediately. There is no addition-Undo action,
+A successful addition to a saved event or record commits immediately. There is no addition-Undo action,
 receipt or status/progress/success row on either surface, and no replacement toast or notification.
-The event's existing file/link counts show the saved result. Existing editor Save/Cancel and native
+The owner's existing file/link counts show the saved result. Existing editor Save/Cancel and native
 text Undo/Redo retain their normal meaning. A potential future undo of deletion is a separate
 feature and is not implemented by this intake flow. Removal/expiry cannot resurrect an event.
-Both existing limits apply before importing a batch. A failed saved-event batch commits
+Both existing limits apply before importing a batch. A failed batch commits
 none of its materials and cleans up temporary owned copies. Failed writes preserve durable data.
 The pending addition blocks another addition and entry to an editor until it finishes.
 
-The event context menu exposes `Вставить текст как вложение…`. In desktop details, Paste also
-opens it when an event is selected and no text field is editing; text-field Paste keeps its normal
+The card context menu exposes `Вставить текст как вложение…`. In desktop details, Paste also
+opens it when a record or event is selected and no text field is editing; text-field Paste keeps its normal
 meaning. Clipboard text is read only in response to an explicit paste/menu/button action. A plain
 text drop opens the same composer. It previews the complete editable text and proposes a filename
 from its first nonempty line. The user may change both. `Создать вложение` writes a UTF-8 `.txt`
@@ -630,7 +654,7 @@ cancelled by an unconfirmed hidden occlusion observation; subsequent confirmed f
 explicit deactivation/Space/close retain their existing hide behavior.
 
 Hovering a supported drag over the status icon reveals the anchored mini-panel without activating
-the app or committing anything. The user then drops onto a specific event; the icon itself does not
+the app or committing anything. The user then drops onto a specific card; the icon itself does not
 accept a drop. Ordinary status-item clicks and panel hide/Space rules retain their existing meaning.
 
 ### Links
@@ -1130,6 +1154,10 @@ Countdown Manager stores event data locally on the current Mac.
 The production event data location is:
 
 `~/Library/Application Support/CountdownManager/countdowns.json`
+
+Undated records are stored in the sibling `records.json` with their app-managed copies under
+`RecordAttachments`. A record write leaves the event file untouched. The event store and its
+existing attachment directory remain readable by versions that predate records.
 
 Attachment metadata is stored with its event; file bytes are stored separately under the sibling
 `Attachments` directory. Legacy JSON without `attachments` decodes as an empty collection, and

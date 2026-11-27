@@ -23,6 +23,11 @@ Application state coordination and filesystem serialization remain separate resp
 
 Countdown persistence uses atomic file replacement.
 
+Undated records use an independent `records.json` snapshot and `RecordAttachments` directory
+behind the same repository actor. A record mutation replaces only its own snapshot. The two
+collections have independent read outcomes and attachment cleanup. This lets older
+event-only releases continue reading and writing their own data without losing record files.
+
 Attachment bytes are separate local copies owned by the same repository actor; their metadata
 is stored in the event JSON. An active editor draft pins newly imported copies. Successful JSON
 replacement establishes the durable references before unreferenced copies are collected; active

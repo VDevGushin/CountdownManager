@@ -52,6 +52,10 @@ different boundaries; apparent duplication is not enough reason to delete either
 | Single-subtask transfer captures | `./verify.sh subtask-transfer-capture <marked-output-directory>` | The same focused scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
 | Event copying | `./verify.sh event-copy` | Focused isolated mini/desktop copy actions, native date focus, Save/Cancel, editor ownership and independent files |
 | Event-copy captures | `./verify.sh event-copy-capture <marked-output-directory>` | The focused copy scenario plus native Light/Dark/Increase Contrast images, manifest and retained tested app |
+| Undated records | `./verify.sh records` | Focused native record creation, scoped search, checklist, editing, and dated-event navigation using an isolated profile |
+| Record captures | `./verify.sh records-capture <marked-output-directory>` | The same focused scenario with native window and mini-panel captures, executable manifest and retained app |
+| Record stress sequence | `./verify.sh records-monkey` | Reproducible adversarial sequence across both native surfaces with durable state assertions |
+| Record stress captures | `./verify.sh records-monkey-capture <marked-output-directory>` | The same sequence with captures, executable manifest and retained app |
 | Localization captures | `./verify.sh localization-capture <marked-output-directory>` | Native desktop, mini-panel and Settings captures for both languages with isolated events and the tested app |
 | Compact cards/notes | `./verify.sh compact-capture <marked-output-directory>` | Focused native note editing, 51pt cards, featured date/weather and 28 isolated PNGs |
 | Completed-subtask indicator | `./verify.sh completed-subtasks-capture <marked-output-directory>` | Focused native complete/partial/zero/empty headers, disclosure transitions, Light/Dark/contrast; 16 PNGs and retained tested app |
@@ -196,6 +200,48 @@ fixture uses wrapped text. The native
 registry action provides render evidence. Ordinary pointer checks for the sole completed
 and remaining incomplete rows live in `testWholeSubtaskRowHitAreasAndDisclosureIsolation`
 and the manual QA report. The drag scenario exercises animated neighbor movement.
+
+## Undated records
+
+The fast route exercises record ordering, validation, storage and attachment isolation. A native
+focused route opens the production desktop window and mini-panel using a marked isolated profile.
+It activates the production section and editor controls, enters text through the AppKit field
+editor, checks that a record has no date field, and exercises section-scoped search and a shared
+checklist update. The mini-panel check switches between populated sections and compares the create
+button position and size, the record-count heading and its undated creation action.
+The native grid check compares the rendered bounds of neighboring record cards
+with different amounts of content. It narrows and widens the browser across the one/two-column
+threshold in Records and Events, checks the fixed card width, and confirms that feed rows fill
+the same browser without moving the divider. The dated event remains in Events. The rendered captures use synthetic content
+and record the application executable hash and build provenance. In-process control activation
+does not exercise VoiceOver, external clicks or compositor transitions.
+
+Saved-material parity uses the production drop callbacks of the mounted desktop card, desktop
+detail and mini card for each owner type. Each accepts synthetic file, web link and plain-text
+providers. Provider checks distinguish a Finder document with a matching native file-URL item
+from a plain-text drop containing the same address. Plain text starting with a URL remains
+editable as a whole if it contains more lines.
+After each delivery, the scenario reloads the owner's metadata and checks owned file
+bytes, sibling metadata, the source file and the other collection. The native reorder scenarios
+also reload the whole collection after each completed drag and compare the other collection's bytes.
+Cross-application drag delivery requires a separate native interaction with the system drop target.
+
+The record stress sequence covers empty lists, checklists of zero, one and ten items, rapid
+desktop checkbox actions, repeated section/search/layout changes, the retained hidden mini
+draft and the other surface's editor exclusion, invalid Save, Cancel, failed-write recovery
+and deletion confirmation. It verifies that an accepted material resolution holds the
+desktop section, that both checklists write once per rapid toggle even when the final completion
+state cancels out, and that the mini checkbox and desktop editor show errors and recover on retry.
+It compares stored UUIDs, ordering, task states, event JSON and
+attachment bytes before and after the applicable actions. The fast route also contains a
+seeded Store sequence independent of native controls. The external XCUITest cases
+`testMiniRecordsDraftCancelSaveAndCrossSurfaceEdit` and
+`testDesktopRecordsSectionQueriesAndDeleteConfirmation` cover ordinary clicks, text entry,
+Cancel/Save, section-scoped search and deletion through the isolated Xcode test application.
+The cross-surface editor test checks that Escape dismisses delete confirmation while preserving
+the draft in both windows.
+`testFinderFileDropTargetsUnselectedRecordAndPersists` checks the actual macOS drag from
+Finder into an unselected desktop record, including owned bytes and isolation from its neighbors.
 
 ## Single-subtask transfer native evidence
 
@@ -625,7 +671,8 @@ exact receiving identity, local copy/original byte comparison, durable additions
 edits, full UTF-8 text round-trip (1000 lines, emoji, blank lines, trailing newline), text draft
 Cancel/late-write rejection, file/link capacity rejection, failed mixed imports, failed persistence
 cleanup and civil-day expiry. A deliberately delayed provider checks admission locking, duplicate
-rejection, cancellation and late results not clearing a newer reservation. The same Store API checks
+rejection, cancellation, the response deadline and late results not clearing a newer reservation.
+The same Store API checks
 that scheduling reserves its operation synchronously before creating its task.
 
 `ImageMaterialIntakeChecks.swift` additionally exercises PNG data/file representations, exact

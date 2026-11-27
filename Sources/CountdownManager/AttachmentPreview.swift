@@ -12,11 +12,18 @@ package struct AttachmentPreviewSelection: Equatable {
     package let eventID: UUID
     package let attachmentID: UUID
     package let origin: AttachmentPreviewOrigin
+    package let collection: StoredAttachmentCollection
 
-    package init(eventID: UUID, attachmentID: UUID, origin: AttachmentPreviewOrigin) {
+    package init(eventID: UUID, attachmentID: UUID, origin: AttachmentPreviewOrigin,
+                 collection: StoredAttachmentCollection = .events) {
         self.eventID = eventID
         self.attachmentID = attachmentID
         self.origin = origin
+        self.collection = collection
+    }
+
+    fileprivate func matches(_ owner: SavedMaterialOwner) -> Bool {
+        eventID == owner.id && collection == owner.collection
     }
 }
 
@@ -37,16 +44,22 @@ package final class AttachmentPreviewSession: ObservableObject {
 
     package func open(event: Countdown, attachmentID: UUID, origin: AttachmentPreviewOrigin,
                       resolveURL: @escaping URLResolver) {
-        guard let attachment = event.attachments.first(where: { $0.id == attachmentID }) else { return }
+        open(owner: SavedMaterialOwner(event), attachmentID: attachmentID, origin: origin, resolveURL: resolveURL)
+    }
+
+    package func open(owner: SavedMaterialOwner, attachmentID: UUID, origin: AttachmentPreviewOrigin,
+                      resolveURL: @escaping URLResolver) {
+        guard let attachment = owner.attachments.first(where: { $0.id == attachmentID }) else { return }
         invalidateEffects()
         let request = generation
-        let selected = AttachmentPreviewSelection(eventID: event.id, attachmentID: attachmentID, origin: origin)
+        let selected = AttachmentPreviewSelection(eventID: owner.id, attachmentID: attachmentID, origin: origin,
+                                                  collection: owner.collection)
         rendererID = request
         selection = selected
         url = nil
         isResolving = true
         resolveTask = Task { @MainActor [weak self] in
-            let resolved = await resolveURL(attachment, event.id)
+            let resolved = await resolveURL(attachment, owner.id)
             guard !Task.isCancelled, let self, self.generation == request, self.selection == selected else { return }
             self.url = resolved?.isFileURL == true ? resolved : nil
             self.isResolving = false
@@ -55,17 +68,25 @@ package final class AttachmentPreviewSession: ObservableObject {
     }
 
     package func move(by distance: Int, in event: Countdown, resolveURL: @escaping URLResolver) {
-        guard let selection, selection.eventID == event.id,
-              let index = event.attachments.firstIndex(where: { $0.id == selection.attachmentID }) else { return }
+        move(by: distance, in: SavedMaterialOwner(event), resolveURL: resolveURL)
+    }
+
+    fileprivate func move(by distance: Int, in owner: SavedMaterialOwner, resolveURL: @escaping URLResolver) {
+        guard let selection, selection.matches(owner),
+              let index = owner.attachments.firstIndex(where: { $0.id == selection.attachmentID }) else { return }
         let (next, overflow) = index.addingReportingOverflow(distance)
-        guard !overflow, next != index, event.attachments.indices.contains(next) else { return }
-        open(event: event, attachmentID: event.attachments[next].id, origin: selection.origin, resolveURL: resolveURL)
+        guard !overflow, next != index, owner.attachments.indices.contains(next) else { return }
+        open(owner: owner, attachmentID: owner.attachments[next].id, origin: selection.origin, resolveURL: resolveURL)
     }
 
     package func reconcile(event: Countdown?) {
+        reconcile(owner: event.map(SavedMaterialOwner.init))
+    }
+
+    package func reconcile(owner: SavedMaterialOwner?) {
         guard let selection else { return }
-        guard let event, event.id == selection.eventID,
-              event.attachments.contains(where: { $0.id == selection.attachmentID }) else {
+        guard let owner, selection.matches(owner),
+              owner.attachments.contains(where: { $0.id == selection.attachmentID }) else {
             close()
             return
         }
@@ -73,14 +94,19 @@ package final class AttachmentPreviewSession: ObservableObject {
 
     package func openExternally(in event: Countdown,
                                 action: @escaping @MainActor (EventAttachment, UUID) async -> Void) {
+        openExternally(in: SavedMaterialOwner(event), action: action)
+    }
+
+    fileprivate func openExternally(in owner: SavedMaterialOwner,
+                                    action: @escaping @MainActor (EventAttachment, UUID) async -> Void) {
         guard !isOpeningExternally, !isResolving, url != nil, let selection,
-              selection.eventID == event.id,
-              let attachment = event.attachments.first(where: { $0.id == selection.attachmentID }) else { return }
+              selection.matches(owner),
+              let attachment = owner.attachments.first(where: { $0.id == selection.attachmentID }) else { return }
         let request = generation
         isOpeningExternally = true
         externalTask = Task { @MainActor [weak self] in
             guard !Task.isCancelled else { return }
-            await action(attachment, event.id)
+            await action(attachment, owner.id)
             guard !Task.isCancelled, let self, self.generation == request else { return }
             self.isOpeningExternally = false
             self.externalTask = nil
@@ -115,7 +141,7 @@ package final class AttachmentPreviewSession: ObservableObject {
 }
 
 struct AttachmentPreviewView: View {
-    let item: Countdown
+    let owner: SavedMaterialOwner
     let compact: Bool
     @ObservedObject var session: AttachmentPreviewSession
     let back: () -> Void
@@ -128,9 +154,9 @@ struct AttachmentPreviewView: View {
 
     private var prefix: String { "\(compact ? "panel" : "desktop").attachment.preview" }
     private var attachment: EventAttachment? {
-        item.attachments.first { $0.id == session.selection?.attachmentID }
+        owner.attachments.first { $0.id == session.selection?.attachmentID }
     }
-    private var index: Int? { item.attachments.firstIndex { $0.id == session.selection?.attachmentID } }
+    private var index: Int? { owner.attachments.firstIndex { $0.id == session.selection?.attachmentID } }
     private var backLabel: String {
         compact ? AppText.string("common.back") : (session.selection?.origin == .library ? AppText.string("attachment.preview.backToLibrary") : AppText.string("attachment.preview.close"))
     }
@@ -160,10 +186,10 @@ struct AttachmentPreviewView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .help(attachment?.name ?? AppText.string("attachment.title"))
                     .uiSmokeControl(id: prefix + ".name", value: { attachment?.name })
-                Text(index.map { AppText.string("attachment.preview.position", "\($0 + 1)", "\(item.attachments.count)") } ?? "")
+                Text(index.map { AppText.string("attachment.preview.position", "\($0 + 1)", "\(owner.attachments.count)") } ?? "")
                     .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize()
                     .uiSmokeControl(id: prefix + ".position", value: {
-                        index.map { "\($0 + 1)/\(item.attachments.count)" }
+                        index.map { "\($0 + 1)/\(owner.attachments.count)" }
                     })
             }
             .padding(.horizontal, 16).padding(.vertical, 12)
@@ -231,8 +257,8 @@ struct AttachmentPreviewView: View {
 
     private func moveButton(distance: Int, symbol: String, label: String) -> some View {
         let destination = (index ?? -2) + distance
-        let canMove = index != nil && item.attachments.indices.contains(destination)
-        return Button { session.move(by: distance, in: item, resolveURL: resolveURL) } label: {
+        let canMove = index != nil && owner.attachments.indices.contains(destination)
+        return Button { session.move(by: distance, in: owner, resolveURL: resolveURL) } label: {
             Image(systemName: symbol).font(.system(size: 12)).frame(width: 16, height: 20)
         }
         .keyboardShortcut(distance < 0 ? .leftArrow : .rightArrow, modifiers: [])
@@ -240,13 +266,13 @@ struct AttachmentPreviewView: View {
         .accessibilityIdentifier(prefix + (distance < 0 ? ".previous" : ".next"))
         .uiSmokeControl(id: prefix + (distance < 0 ? ".previous" : ".next"), action: {
             guard canMove else { return }
-            session.move(by: distance, in: item, resolveURL: resolveURL)
+            session.move(by: distance, in: owner, resolveURL: resolveURL)
         })
         .disabled(!canMove)
     }
 
     private func performExternalOpen() {
-        session.openExternally(in: item, action: openExternally)
+        session.openExternally(in: owner, action: openExternally)
     }
 }
 

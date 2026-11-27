@@ -4,7 +4,9 @@ import SwiftUI
 struct DesktopEventBrowser: View {
     @ObservedObject var store: Store
     @ObservedObject var weather: WeatherController
+    let section: PlannerSection
     let collection: DesktopEventCollection
+    let records: [UndatedRecord]
     let mode: DesktopEventViewMode
     let selectedID: UUID?
     let search: DesktopEventSearch
@@ -13,26 +15,15 @@ struct DesktopEventBrowser: View {
     let create: () -> Void
     let canCreate: Bool
     @ObservedObject var editorSession: EventEditorSession
-    let showTextAttachment: (UUID, String) -> Void
+    let showTextAttachment: (SavedMaterialOwnerID, String) -> Void
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                overview
-                if store.isLoading {
-                    ProgressView(AppText.string("app.loadingEvents")).frame(maxWidth: .infinity).padding(.vertical, 48)
-                } else if collection.events.isEmpty && !store.eventCreationIsAvailable {
-                    unavailableState
-                } else if collection.events.isEmpty {
-                    emptyState
-                } else {
-                    if let favorite = collection.favorite {
-                        eventButton(favorite, featured: true)
-                    }
-                    monthSections
-                }
+                browserOverview
+                browserContent
             }
             .padding(24)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -41,33 +32,110 @@ struct DesktopEventBrowser: View {
         .uiSmokeControl(id: "desktop.browser")
     }
 
-    private var monthSections: some View {
-        DesktopEventFlowLayout(feedProgress: mode == .feed ? 1 : 0) {
-            ForEach(collection.monthSections) { section in
-                Text(section.title)
-                    .font(.custom("Georgia", size: 20))
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("desktop.month.\(section.id)")
-                    .uiSmokeControl(id: "desktop.month.\(section.id)", value: { section.title })
-                    .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
-                ForEach(section.items) { item in
-                    eventButton(item, featured: false)
-                }
+    @ViewBuilder private var browserContent: some View {
+        let isEvents = section == .events
+        let isLoading = isEvents ? store.isLoading : store.isLoadingRecords
+        let isEmpty = isEvents ? collection.events.isEmpty : records.isEmpty
+        let isAvailable = isEvents ? store.eventCreationIsAvailable : store.recordCreationIsAvailable
+        if isLoading {
+            ProgressView(isEvents ? AppText.string("app.loadingEvents") : AppText.string("record.loading"))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 48)
+        } else if isEmpty && !isAvailable {
+            if isEvents { unavailableState }
+            else {
+                Text(AppText.string("record.unavailable"))
+                    .font(.custom("Georgia", size: 23))
+                    .padding(.vertical, 32)
+                    .uiSmokeControl(id: "desktop.record.unavailable")
             }
-            if !collection.pastItems.isEmpty {
-                Text(AppText.string("event.past"))
-                    .font(.custom("Georgia", size: 20))
-                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+        } else if isEmpty {
+            if isEvents { emptyState }
+            else { emptyRecords }
+        } else {
+            if isEvents, let favorite = collection.favorite { eventButton(favorite, featured: true) }
+            DesktopEventFlowLayout(feedProgress: mode == .feed ? 1 : 0) {
+                if isEvents { monthSections }
+                else { ForEach(records) { recordButton($0) } }
+            }
+            .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15), value: mode)
+        }
+    }
+
+    @ViewBuilder private var browserOverview: some View {
+        if section == .events {
+            overview
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                Text(AppText.string("record.section.records")).font(.custom("Georgia", size: 32)).tracking(-0.5)
                     .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("desktop.past")
-                    .uiSmokeControl(id: "desktop.past", value: { AppText.string("event.past") })
-                    .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
-                ForEach(collection.pastItems) { item in
-                    eventButton(item, featured: false)
+                Spacer()
+                if store.recordCreationIsAvailable {
+                    Text(recordCountLabel(store.records.count))
+                        .font(.system(size: 12))
+                        .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
                 }
             }
         }
-        .animation(accessibilitySettings.prefersReducedMotion ? nil : .easeInOut(duration: 0.15), value: mode)
+    }
+
+    private var emptyRecords: some View {
+        let searching = !search.query.isEmpty
+        return VStack(alignment: .leading, spacing: 14) {
+            Text(searching ? AppText.string("desktop.browser.noSearchResults") : AppText.string("record.empty.title"))
+                .font(.custom("Georgia", size: 23))
+            Text(searching ? AppText.string("desktop.browser.retryRecordSearch") : AppText.string("record.empty.message"))
+                .font(.system(size: 13))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .fixedSize(horizontal: false, vertical: true)
+            if searching {
+                Button(AppText.string("desktop.browser.showAllRecords"), action: resetFilters)
+                    .uiSmokeControl(id: "desktop.record.search.clear", action: resetFilters)
+            } else {
+                Button(AppText.string("record.create"), action: create)
+                    .keyboardShortcut("n", modifiers: .command)
+                    .accessibilityIdentifier("desktop.record.empty.create")
+                    .uiSmokeControl(id: "desktop.record.empty.create", action: create)
+                    .disabled(!canCreate)
+            }
+        }
+        .padding(.vertical, 32)
+        .accessibilityIdentifier("desktop.record.empty")
+        .uiSmokeControl(id: "desktop.record.empty", value: { searching ? "search" : "empty" })
+    }
+
+    private func recordButton(_ record: UndatedRecord) -> some View {
+        let match = search.cardMatch(in: record)
+        return browserCard(.record(record.id), control: "desktop.record.\(record.id.uuidString)",
+                           accessibilityTitle: desktopRecordAccessibilityLabel(record) + (match?.accessibilitySuffix ?? "")) {
+            DesktopRecordCard(record: record, feed: mode == .feed, search: search, match: match)
+        }
+    }
+
+    @ViewBuilder private var monthSections: some View {
+        ForEach(collection.monthSections) { section in
+            Text(section.title)
+                .font(.custom("Georgia", size: 20))
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("desktop.month.\(section.id)")
+                .uiSmokeControl(id: "desktop.month.\(section.id)", value: { section.title })
+                .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
+            ForEach(section.items) { item in
+                eventButton(item, featured: false)
+            }
+        }
+        if !collection.pastItems.isEmpty {
+            Text(AppText.string("event.past"))
+                .font(.custom("Georgia", size: 20))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("desktop.past")
+                .uiSmokeControl(id: "desktop.past", value: { AppText.string("event.past") })
+                .layoutValue(key: DesktopMonthHeadingKey.self, value: true)
+            ForEach(collection.pastItems) { item in
+                eventButton(item, featured: false)
+            }
+        }
     }
 
     private var overview: some View {
@@ -125,20 +193,59 @@ struct DesktopEventBrowser: View {
 
     private func eventButton(_ item: Countdown, featured: Bool) -> some View {
         let match = search.cardMatch(in: item)
-        return Button { select(item.id) } label: {
+        return browserCard(.event(item.id), control: "desktop.event.\(item.id.uuidString)",
+                           accessibilityTitle: desktopEventAccessibilityLabel(item) + (match?.accessibilitySuffix ?? ""),
+                           featured: featured) {
             DesktopEventCard(item: item, today: store.today, primaryID: store.data.primaryID,
                              weather: weather, featured: featured, feed: !featured && mode == .feed,
-                             selected: item.id == selectedID, search: search, match: match)
+                             search: search, match: match)
+        }
+    }
+
+    private func browserCard<Content: View>(_ ownerID: SavedMaterialOwnerID, control: String,
+                                            accessibilityTitle: String, featured: Bool = false,
+                                            @ViewBuilder content: () -> Content) -> some View {
+        let selected = ownerID.id == selectedID
+        let presentationID = ownerID.collection == .events ? "desktop.presentation.\(ownerID.id)"
+            : "desktop.record.presentation.\(ownerID.id)"
+        return Button { select(ownerID.id) } label: {
+            content()
+                .modifier(DesktopBrowserCardChrome(selected: selected, padding: featured ? 22 : 16))
+                .uiSmokeControl(id: presentationID, value: {
+                    featured ? "favorite" : mode.rawValue
+                })
         }
         // The opaque card owns its appearance; avoid Plain's additional disabled fade.
         .buttonStyle(.borderless)
-        .accessibilityLabel(desktopEventAccessibilityLabel(item)
-            + (match?.accessibilitySuffix ?? ""))
-        .accessibilityAddTraits(item.id == selectedID ? [.isSelected] : [])
-        .accessibilityIdentifier("desktop.event.\(item.id.uuidString)")
-        .uiSmokeControl(id: "desktop.event.\(item.id.uuidString)", action: { select(item.id) })
-        .modifier(EventMaterialTarget(store: store, editorSession: editorSession, eventID: item.id,
-                                      enabled: canCreate, showText: { showTextAttachment(item.id, $0) }))
+        .accessibilityLabel(accessibilityTitle)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityIdentifier(control)
+        .uiSmokeControl(id: control, action: { select(ownerID.id) })
+        .modifier(SavedMaterialTarget(store: store, editorSession: editorSession, ownerID: ownerID,
+                                      enabled: canCreate, targetSurface: "desktop.card",
+                                      showText: { showTextAttachment(ownerID, $0) }))
+    }
+}
+
+private struct DesktopBrowserCardChrome: ViewModifier {
+    let selected: Bool
+    let padding: CGFloat
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        let highContrast = accessibilitySettings.prefersHighContrast
+        let shape = RoundedRectangle(cornerRadius: 8)
+        let outline = selected ? AuroraInstrument.accent(for: colorScheme, highContrast: highContrast)
+            : AuroraInstrument.stroke(for: colorScheme, highContrast: highContrast)
+        content
+            .transition(.identity)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(padding)
+            .background(AuroraInstrument.surface(for: colorScheme, elevated: selected, highContrast: highContrast))
+            .clipShape(shape)
+            .overlay { shape.strokeBorder(outline, lineWidth: selected ? 2 : 1) }
+            .contentShape(shape)
     }
 }
 
@@ -147,6 +254,7 @@ private struct DesktopMonthHeadingKey: LayoutValueKey {
 }
 
 private struct DesktopEventFlowLayout: Layout {
+    private static let collectionCardWidth: CGFloat = 180
     var feedProgress: CGFloat
 
     var animatableData: CGFloat {
@@ -155,7 +263,7 @@ private struct DesktopEventFlowLayout: Layout {
     }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = max(0, proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 180)
+        let width = max(0, proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? Self.collectionCardWidth)
         let frames = frames(width: width, subviews: subviews)
         return CGSize(width: width, height: frames.last?.maxY ?? 0)
     }
@@ -175,8 +283,8 @@ private struct DesktopEventFlowLayout: Layout {
 
     private func frames(width: CGFloat, mode: DesktopEventViewMode, subviews: Subviews) -> [CGRect] {
         let spacing: CGFloat = mode == .collection ? 12 : 10
-        let columns = mode == .collection ? max(1, Int((width + 12) / 192)) : 1
-        let cardWidth = max(0, (width - CGFloat(columns - 1) * spacing) / CGFloat(columns))
+        let cardWidth = mode == .collection ? min(Self.collectionCardWidth, width) : width
+        let columns = mode == .collection ? max(1, Int((width + spacing) / (cardWidth + spacing))) : 1
         var frames: [CGRect] = []
         var position = 0
         var rowTop: CGFloat = 0
@@ -294,7 +402,6 @@ private struct DesktopEventCard: View {
     @ObservedObject var weather: WeatherController
     let featured: Bool
     let feed: Bool
-    let selected: Bool
     let search: DesktopEventSearch
     let match: DesktopSearchMatch?
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
@@ -308,26 +415,8 @@ private struct DesktopEventCard: View {
     }
 
     var body: some View {
-        Group {
-            if featured { featuredContent }
-            else { ordinaryContent }
-        }
-        .transition(.identity)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(featured ? 22 : 16)
-        .background(AuroraInstrument.surface(for: colorScheme, elevated: selected,
-                                            highContrast: accessibilitySettings.prefersHighContrast))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay {
-            RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(selected ? accent : AuroraInstrument.stroke(
-                    for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
-                ), lineWidth: selected ? 2 : 1)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 8))
-        .uiSmokeControl(id: "desktop.presentation.\(item.id.uuidString)", value: {
-            featured ? "favorite" : (feed ? "feed" : "collection")
-        })
+        if featured { featuredContent }
+        else { ordinaryContent }
     }
 
     private var featuredContent: some View {
@@ -415,24 +504,9 @@ private struct DesktopEventCard: View {
         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
     }
 
-    @ViewBuilder
     private var searchMatch: some View {
-        if let match, let snippet = search.snippet(in: match.text) {
-            let highlighted = desktopSearchAttributedText(snippet.context, search: search, color: accent, singleLine: true)
-            ViewThatFits(in: .horizontal) {
-                Text(highlighted)
-                    .strikethrough(match.isCompleted)
-                Text(String(snippet.matchingText.map { $0.isNewline ? " " : $0 }))
-                    .foregroundColor(accent)
-                    .strikethrough(match.isCompleted)
-            }
-            .font(.system(size: 12))
-            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-            .lineLimit(1)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .transaction { $0.animation = nil }
-            .uiSmokeControl(id: "desktop.search.snippet.\(item.id)", value: { String(highlighted.characters) })
-        }
+        DesktopCardSearchSnippet(match: match, search: search, accent: accent,
+                                 controlID: "desktop.search.snippet.\(item.id)")
     }
 
     private var metadataLayout: AnyLayout {
@@ -487,6 +561,85 @@ private struct DesktopEventCard: View {
         return presentation.isToday ? AuroraInstrument.todayColor(
             for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast
         ) : accent
+    }
+}
+
+private struct DesktopRecordCard: View {
+    let record: UndatedRecord
+    let feed: Bool
+    let search: DesktopEventSearch
+    let match: DesktopSearchMatch?
+    @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var accent: Color {
+        AuroraInstrument.accent(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(desktopSearchAttributedText(record.title, search: search, color: accent))
+                .font(.system(size: 14, weight: .semibold))
+                .lineLimit(2)
+                .help(record.title)
+            if match != nil {
+                DesktopCardSearchSnippet(match: match, search: search, accent: accent,
+                                         controlID: "desktop.record.search.snippet.\(record.id)")
+            } else if let note = record.note, !note.isEmpty {
+                Text(desktopSearchAttributedText(note, search: search, color: accent, singleLine: true))
+                    .font(.system(size: 12))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .lineLimit(feed ? 1 : 2)
+            }
+            if !record.subtasks.isEmpty || !record.attachments.isEmpty || !record.links.isEmpty {
+                HStack(spacing: 8) {
+                    DesktopCompletionLabel(tasks: record.subtasks)
+                        .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.record.summary.tasks.\(record.id)"))
+                    materialCount(record.attachments.count, symbol: "paperclip")
+                    materialCount(record.links.count, symbol: "link")
+                }
+                .padding(.top, 2)
+            }
+        }
+        .multilineTextAlignment(.leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    @ViewBuilder private func materialCount(_ count: Int, symbol: String) -> some View {
+        if count > 0 {
+            Label(String(count), systemImage: symbol)
+                .labelStyle(DesktopSummaryLabelStyle(controlID: "desktop.record.summary.\(symbol).\(record.id)"))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                .fixedSize()
+        }
+    }
+}
+
+private struct DesktopCardSearchSnippet: View {
+    let match: DesktopSearchMatch?
+    let search: DesktopEventSearch
+    let accent: Color
+    let controlID: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        if let match, let snippet = search.snippet(in: match.text) {
+            let highlighted = desktopSearchAttributedText(snippet.context, search: search, color: accent, singleLine: true)
+            ViewThatFits(in: .horizontal) {
+                Text(highlighted)
+                    .strikethrough(match.isCompleted)
+                Text(String(snippet.matchingText.map { $0.isNewline ? " " : $0 }))
+                    .foregroundColor(accent)
+                    .strikethrough(match.isCompleted)
+            }
+            .font(.system(size: 12))
+            .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .transaction { $0.animation = nil }
+            .uiSmokeControl(id: controlID, value: { String(highlighted.characters) })
+        }
     }
 }
 
@@ -586,18 +739,29 @@ struct DesktopSummaryLabelStyle: LabelStyle {
 }
 
 struct DesktopCompletionLabel: View {
-    let presentation: CountdownRowPresentation
+    let completed: Int
+    let total: Int
     @EnvironmentObject private var accessibilitySettings: AuroraAccessibilitySettings
     @Environment(\.colorScheme) private var colorScheme
 
+    init(presentation: CountdownRowPresentation) {
+        completed = presentation.completedSubtasks.count
+        total = completed + presentation.activeSubtasks.count
+    }
+
+    init(tasks: [Subtask]) {
+        completed = tasks.filter(\.isCompleted).count
+        total = tasks.count
+    }
+
     var body: some View {
-        if let completion = presentation.completionLabel {
-            Label(completion, systemImage: presentation.allSubtasksCompleted ? "checkmark.circle.fill" : "checklist")
+        if total > 0 {
+            Label("\(completed)/\(total)", systemImage: completed == total ? "checkmark.circle.fill" : "checklist")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(presentation.allSubtasksCompleted
+                .foregroundStyle(completed == total
                     ? AuroraInstrument.todayColor(for: colorScheme, highContrast: accessibilitySettings.prefersHighContrast)
                     : AuroraInstrument.secondaryInk(for: colorScheme))
-                .accessibilityLabel(AppText.string("desktop.browser.checklistProgress", "\(presentation.completedSubtasks.count)", "\(presentation.completedSubtasks.count + presentation.activeSubtasks.count)"))
+                .accessibilityLabel(AppText.string("desktop.browser.checklistProgress", "\(completed)", "\(total)"))
         }
     }
 }

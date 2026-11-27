@@ -63,6 +63,182 @@ final class CountdownManagerXCUITests: XCTestCase {
         defaultsSuiteName = nil
     }
 
+    func testMiniRecordsDraftCancelSaveAndCrossSurfaceEdit() throws {
+        // Digits exercise real typing without depending on the owner's active keyboard layout.
+        let savedTitle = "202"
+        let savedNote = "303"
+        let updatedTitle = "404"
+        let temporaryTitle = "505"
+        try writeItems(persistedItems(), primaryID: nil)
+        let eventBytes = try Data(contentsOf: dataURL)
+        app.launch()
+
+        let panel = app.windows["main.panel"]
+        let recordsTab = panel.radioButtons["Записи"]
+        let create = panel.buttons["panel.record.create"]
+        XCTAssertTrue(recordsTab.waitForExistence(timeout: 4))
+        XCTAssertFalse(create.exists, "The inactive Records section must not expose its empty action")
+        recordsTab.click()
+        XCTAssertTrue(create.waitForExistence(timeout: 3))
+        XCTAssertTrue(panel.staticTexts["Пока нет записей"].exists)
+        XCTAssertTrue(waitForAbsence(panel.buttons["event.add"]))
+
+        create.click()
+        let title = app.textFields["editor.title"]
+        let note = app.textViews["editor.note"]
+        let save = app.buttons["editor.save"]
+        let cancel = app.buttons["editor.cancel"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertFalse(save.isEnabled, "A new record needs a title")
+        XCTAssertFalse(app.descendants(matching: .any)["editor.date"].exists)
+        XCTAssertFalse(app.checkBoxes["editor.weather"].exists)
+        XCTAssertFalse(app.checkBoxes["editor.keep"].exists)
+        replace(title, with: "101")
+        XCTAssertTrue(note.waitForExistence(timeout: 3))
+        replace(note, with: "102")
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(title))
+        XCTAssertTrue(create.waitForExistence(timeout: 3))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recordsURL.path))
+
+        create.click()
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.value as? String, "")
+        XCTAssertEqual(note.value as? String, "")
+        replace(title, with: savedTitle)
+        replace(note, with: savedNote)
+        save.click()
+        XCTAssertTrue(waitForRecordTitles([savedTitle]))
+        let saved = try XCTUnwrap(persistedRecords().first)
+        let recordID = try XCTUnwrap(saved["id"] as? String)
+        XCTAssertEqual(saved["note"] as? String, savedNote)
+        XCTAssertNil(saved["date"])
+
+        let miniEdit = panel.buttons["panel.record.edit.\(recordID)"]
+        XCTAssertTrue(miniEdit.waitForExistence(timeout: 3))
+        panel.buttons["desktop.open"].click()
+        let desktop = app.windows["desktop.window"]
+        XCTAssertTrue(desktop.waitForExistence(timeout: 4))
+        desktop.radioButtons["Записи"].click()
+        let record = desktop.buttons["desktop.record.\(recordID)"]
+        XCTAssertTrue(record.waitForExistence(timeout: 3))
+        record.click()
+        let desktopEdit = desktop.buttons["Редактировать запись"]
+        XCTAssertTrue(desktopEdit.waitForExistence(timeout: 3))
+        desktopEdit.click()
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.value as? String, savedTitle)
+        XCTAssertEqual(note.value as? String, savedNote)
+        replace(title, with: updatedTitle)
+        assertEscapeCancelsRecordDeletion(keeping: updatedTitle, title: title)
+        save.click()
+        XCTAssertTrue(waitForRecordTitles([updatedTitle]))
+        XCTAssertTrue(waitForAbsence(title))
+
+        desktop.buttons["desktop.panel"].click()
+        XCTAssertTrue(panel.waitForExistence(timeout: 4))
+        XCTAssertTrue(miniEdit.waitForExistence(timeout: 3))
+        miniEdit.click()
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.value as? String, updatedTitle)
+        XCTAssertEqual(note.value as? String, savedNote)
+        replace(title, with: temporaryTitle)
+        assertEscapeCancelsRecordDeletion(keeping: temporaryTitle, title: title)
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(title))
+        XCTAssertTrue(waitForRecordTitles([updatedTitle]))
+        XCTAssertEqual(try Data(contentsOf: dataURL), eventBytes)
+    }
+
+    private func assertEscapeCancelsRecordDeletion(keeping draft: String, title: XCUIElement) {
+        let delete = app.buttons["record.delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 3))
+        delete.click()
+        let confirmation = app.buttons["Не удалять"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 3))
+        app.typeKey(.escape, modifierFlags: [])
+        XCTAssertTrue(waitForAbsence(confirmation))
+        XCTAssertTrue(title.exists, "Escape must dismiss only the delete confirmation")
+        XCTAssertEqual(title.value as? String, draft)
+    }
+
+    func testDesktopRecordsSectionQueriesAndDeleteConfirmation() throws {
+        let alphaID = "41000000-0000-0000-0000-000000000001"
+        let betaID = "41000000-0000-0000-0000-000000000002"
+        let records: [[String: Any]] = [
+            ["id": alphaID, "title": "Alpha", "note": "Newer", "subtasks": [], "attachments": [], "links": []],
+            ["id": betaID, "title": "Beta", "note": "Older", "subtasks": [], "attachments": [], "links": []]
+        ]
+        try JSONSerialization.data(withJSONObject: records).write(to: recordsURL, options: .atomic)
+        try writeItems(persistedItems(), primaryID: nil)
+        let eventBytes = try Data(contentsOf: dataURL)
+        let recordBytes = try Data(contentsOf: recordsURL)
+        app.launch()
+
+        let openDesktop = app.buttons["desktop.open"]
+        XCTAssertTrue(openDesktop.waitForExistence(timeout: 3))
+        openDesktop.click()
+        let desktop = app.windows["desktop.window"]
+        XCTAssertTrue(desktop.waitForExistence(timeout: 4))
+        let recordsTab = desktop.radioButtons["Записи"]
+        let eventsTab = desktop.radioButtons["События"]
+        let search = desktop.textFields["desktop.search"]
+        let alpha = desktop.buttons["desktop.record.\(alphaID)"]
+        let beta = desktop.buttons["desktop.record.\(betaID)"]
+        let betaDetail = desktop.descendants(matching: .any)["desktop.record.detail.\(betaID)"]
+        let event = desktop.buttons["desktop.event.\(eventID)"]
+        XCTAssertTrue(recordsTab.waitForExistence(timeout: 3))
+        recordsTab.click()
+        XCTAssertTrue(beta.waitForExistence(timeout: 3))
+        XCTAssertTrue(alpha.exists)
+        XCTAssertTrue(waitForAbsence(event))
+        beta.click()
+        XCTAssertTrue(betaDetail.waitForExistence(timeout: 3))
+        replace(search, with: "Beta")
+        XCTAssertTrue(waitForAbsence(alpha))
+        XCTAssertTrue(betaDetail.exists)
+
+        eventsTab.click()
+        XCTAssertTrue(event.waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAbsence(beta))
+        XCTAssertTrue(waitForValue(search, equals: ""))
+        replace(search, with: "XCUITest Event")
+        XCTAssertTrue(event.exists)
+
+        recordsTab.click()
+        XCTAssertTrue(waitForValue(search, equals: "Beta"))
+        XCTAssertTrue(betaDetail.waitForExistence(timeout: 3))
+        XCTAssertTrue(waitForAbsence(alpha))
+        replace(search, with: "XCUITest Event")
+        let reset = desktop.buttons["Показать все записи"]
+        XCTAssertTrue(reset.waitForExistence(timeout: 3), "An event title must not match the record search")
+        XCTAssertTrue(waitForAbsence(beta))
+        reset.click()
+        XCTAssertTrue(beta.waitForExistence(timeout: 3))
+        beta.click()
+
+        let remove = desktop.buttons["Удалить запись: Beta"]
+        let cancel = desktop.buttons["Отмена"]
+        let confirm = desktop.buttons["Удалить"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 3))
+        remove.click()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        cancel.click()
+        XCTAssertTrue(waitForAbsence(confirm))
+        XCTAssertEqual(try Data(contentsOf: recordsURL), recordBytes)
+        remove.click()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        confirm.click()
+        XCTAssertTrue(waitForRecordTitles(["Alpha"]))
+        XCTAssertTrue(waitForAbsence(beta))
+        XCTAssertTrue(alpha.exists)
+
+        eventsTab.click()
+        XCTAssertTrue(waitForValue(search, equals: "XCUITest Event"))
+        XCTAssertTrue(event.waitForExistence(timeout: 3))
+        XCTAssertEqual(try Data(contentsOf: dataURL), eventBytes)
+    }
+
     func testNewNoteOverflowAndNativeFocus() throws {
         try checkNewNoteLimit(titleText: "New limit")
     }
@@ -576,6 +752,91 @@ final class CountdownManagerXCUITests: XCTestCase {
         try checkFinderFileDrop(name: "Original screenshot.png", bytes: bytes)
     }
 
+    func testFinderFileDropTargetsUnselectedRecordAndPersists() throws {
+        let selectedID = "81000000-0000-0000-0000-000000000001"
+        let recipientID = "81000000-0000-0000-0000-000000000002"
+        let selected: [String: Any] = ["id": selectedID, "title": "Selected record", "subtasks": [], "attachments": [], "links": []]
+        let recipient: [String: Any] = ["id": recipientID, "title": "Drop recipient", "subtasks": [], "attachments": [], "links": []]
+        try JSONSerialization.data(withJSONObject: [selected, recipient]).write(to: recordsURL, options: .atomic)
+        let eventBytes = try Data(contentsOf: dataURL)
+        let bytes = Data("External file for the record\n\nKeep every line.\n".utf8)
+        let file = try makeFinderDropFile(name: "Record drop.txt", bytes: bytes)
+        app.launch()
+        let openDesktop = app.buttons["desktop.open"]
+        waitForMaterialPanelControl(openDesktop)
+        openDesktop.click()
+        let desktop = app.windows["desktop.window"]
+        desktop.radioButtons["Записи"].click()
+        let selectedCard = desktop.buttons["desktop.record.\(selectedID)"]
+        XCTAssertTrue(selectedCard.waitForExistence(timeout: 5))
+        selectedCard.click()
+        try tileMaterialTestWindow(app, side: "Справа")
+        let target = desktop.buttons["desktop.record.\(recipientID)"]
+        XCTAssertTrue(target.waitForExistence(timeout: 5))
+        XCTAssertTrue(selectedCard.isSelected)
+        try dragFinderFile(file, to: target)
+        let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let records = try? self.persistedRecords(),
+                  let record = records.first(where: { $0["id"] as? String == recipientID }),
+                  let attachments = record["attachments"] as? [[String: Any]] else { return false }
+            return attachments.count == 1 && attachments.first?["name"] as? String == file.lastPathComponent
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [added], timeout: 8), .completed)
+        app.activate()
+        XCTAssertTrue(selectedCard.isSelected)
+        let records = try persistedRecords()
+        XCTAssertEqual(records.compactMap { $0["id"] as? String }, [selectedID, recipientID])
+        let savedNeighbor = try XCTUnwrap(records.first { $0["id"] as? String == selectedID })
+        XCTAssertEqual(savedNeighbor as NSDictionary, selected as NSDictionary)
+        let dropTarget = try XCTUnwrap(records.first { $0["id"] as? String == recipientID })
+        let attachment = try XCTUnwrap((dropTarget["attachments"] as? [[String: Any]])?.first)
+        let identity = try XCTUnwrap(attachment["id"] as? String)
+        let owned = recordsURL.deletingLastPathComponent().appendingPathComponent("RecordAttachments/\(identity)/\(file.lastPathComponent)")
+        XCTAssertEqual(try Data(contentsOf: owned), bytes)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        XCTAssertEqual(try Data(contentsOf: dataURL), eventBytes)
+    }
+
+    func testFinderFileDropOnMiniRecordPersists() throws {
+        let recipientID = "81000000-0000-0000-0000-000000000003"
+        let record: [String: Any] = ["id": recipientID, "title": "Mini drop recipient", "subtasks": [], "attachments": [], "links": []]
+        try JSONSerialization.data(withJSONObject: [record]).write(to: recordsURL, options: .atomic)
+        let eventBytes = try Data(contentsOf: dataURL)
+        let bytes = Data("Finder file for a mini-panel record\n".utf8)
+        let file = try makeFinderDropFile(name: "Mini record drop.txt", bytes: bytes)
+        app.launch()
+        let panel = app.windows["main.panel"]
+        let recordsTab = panel.radioButtons["Записи"]
+        waitForMaterialPanelControl(recordsTab)
+        recordsTab.click()
+        let target = panel.staticTexts["Mini drop recipient"]
+        XCTAssertTrue(target.waitForExistence(timeout: 5))
+        try dragFinderFile(file, to: target)
+        let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
+            guard let record = try? self.persistedRecords().first,
+                  let attachments = record["attachments"] as? [[String: Any]] else { return false }
+            return record["id"] as? String == recipientID && attachments.count == 1
+        }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [added], timeout: 8), .completed)
+        let saved = try XCTUnwrap(persistedRecords().first)
+        let attachment = try XCTUnwrap((saved["attachments"] as? [[String: Any]])?.first)
+        let identity = try XCTUnwrap(attachment["id"] as? String)
+        XCTAssertEqual(attachment["name"] as? String, file.lastPathComponent)
+        let owned = recordsURL.deletingLastPathComponent().appendingPathComponent("RecordAttachments/\(identity)/\(file.lastPathComponent)")
+        XCTAssertEqual(try Data(contentsOf: owned), bytes)
+        XCTAssertEqual(try Data(contentsOf: file), bytes)
+        XCTAssertEqual(try Data(contentsOf: dataURL), eventBytes)
+    }
+
+    private func waitForMaterialPanelControl(_ control: XCUIElement) {
+        if !control.waitForExistence(timeout: 5) {
+            let item = app.statusItems.matching(NSPredicate(format: "label == %@", "Countdown Manager")).firstMatch
+            XCTAssertTrue(item.waitForExistence(timeout: 5))
+            item.click()
+            XCTAssertTrue(control.waitForExistence(timeout: 5))
+        }
+    }
+
     private func checkFinderFileDrop(name filename: String, bytes: Data) throws {
         let recipientID = "77777777-7777-7777-7777-777777777777"
         var fixture = try persistedItems()
@@ -585,34 +846,16 @@ final class CountdownManagerXCUITests: XCTestCase {
         recipient["subtasks"] = []
         fixture.append(recipient)
         try writeItems(fixture, primaryID: nil)
-        let folder = testHome.appendingPathComponent("DragFixture-" + UUID().uuidString)
-        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        let file = folder.appendingPathComponent(filename)
-        try bytes.write(to: file)
+        let file = try makeFinderDropFile(name: filename, bytes: bytes)
         app.launch()
-        XCTAssertTrue(app.buttons["desktop.open"].waitForExistence(timeout: 5))
-        app.buttons["desktop.open"].click()
+        let openDesktop = app.buttons["desktop.open"]
+        waitForMaterialPanelControl(openDesktop)
+        openDesktop.click()
         try tileMaterialTestWindow(app, side: "Справа")
         let target = app.buttons["desktop.event.\(recipientID)"]
         XCTAssertTrue(target.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["desktop.event.\(eventID)"].isSelected)
-        XCTAssertTrue(NSWorkspace.shared.open(folder))
-        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
-        finder.activate()
-        let sourceWindow = finder.windows[folder.lastPathComponent]
-        XCTAssertTrue(sourceWindow.waitForExistence(timeout: 5))
-        defer {
-            if sourceWindow.exists {
-                let close = sourceWindow.buttons[XCUIIdentifierCloseWindow]
-                if close.exists { close.click() }
-            }
-        }
-        try tileMaterialTestWindow(finder, side: "Слева")
-        let source = sourceWindow.descendants(matching: .any)
-            .matching(NSPredicate(format: "label == %@", file.lastPathComponent)).firstMatch
-        XCTAssertTrue(source.waitForExistence(timeout: 5), sourceWindow.debugDescription)
-        XCTAssertTrue(source.isHittable)
-        source.press(forDuration: 0.6, thenDragTo: target)
+        try dragFinderFile(file, to: target)
         let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             let items = try? self.persistedItems()
             return (items?.first(where: { $0["id"] as? String == recipientID })?["attachments"] as? [[String: Any]])?.count == 1
@@ -643,6 +886,37 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file), bytes)
     }
 
+    private func makeFinderDropFile(name: String, bytes: Data) throws -> URL {
+        let folder = testHome.appendingPathComponent("DragFixture-" + UUID().uuidString)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let file = folder.appendingPathComponent(name)
+        try bytes.write(to: file)
+        return file
+    }
+
+    private func dragFinderFile(_ file: URL, to target: XCUIElement) throws {
+        let folder = file.deletingLastPathComponent()
+        XCTAssertTrue(NSWorkspace.shared.open(folder))
+        let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
+        finder.activate()
+        let sourceWindow = finder.windows[folder.lastPathComponent]
+        XCTAssertTrue(sourceWindow.waitForExistence(timeout: 5))
+        addTeardownBlock {
+            if sourceWindow.exists {
+                let close = sourceWindow.buttons[XCUIIdentifierCloseWindow]
+                if close.exists { close.click() }
+            }
+        }
+        try tileMaterialTestWindow(finder, side: "Слева")
+        let source = sourceWindow.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", file.lastPathComponent)).firstMatch
+        XCTAssertTrue(source.waitForExistence(timeout: 5), sourceWindow.debugDescription)
+        XCTAssertTrue(source.isHittable)
+        XCTAssertTrue(target.isHittable, "The drop target must remain visible beside the Finder window")
+        source.click()
+        source.click(forDuration: 0.3, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.5)
+    }
+
     func testSafariLinkDropCreatesOnlyWebLink() throws {
         let marker = "MaterialDragBrowserFixture-" + UUID().uuidString
         let html = testHome.appendingPathComponent(marker + ".html")
@@ -650,36 +924,54 @@ final class CountdownManagerXCUITests: XCTestCase {
         try "<!doctype html><html><head><title>\(marker)</title></head><body><a href='\(address)' style='display:block;padding:60px;font-size:24px'>Drag material URL</a></body></html>"
             .write(to: html, atomically: true, encoding: .utf8)
         app.launch()
-        XCTAssertTrue(app.buttons["desktop.open"].waitForExistence(timeout: 5))
-        app.buttons["desktop.open"].click()
+        let openDesktop = app.buttons["desktop.open"]
+        waitForMaterialPanelControl(openDesktop)
+        openDesktop.click()
         try tileMaterialTestWindow(app, side: "Справа")
         let target = app.buttons["desktop.event.\(eventID)"]
         XCTAssertTrue(target.waitForExistence(timeout: 5))
         let safari = XCUIApplication(bundleIdentifier: "com.apple.Safari")
         safari.activate()
-        let originalWindowCount = safari.windows.count
-        safari.typeKey("n", modifierFlags: .command)
+        let existingWindowIDs = Set(safari.windows.allElementsBoundByIndex.map(\.identifier))
+        safari.typeKey(try currentLayoutShortcutKey("n"), modifierFlags: .command)
         let newWindow = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
-            safari.windows.count > originalWindowCount
+            safari.windows.allElementsBoundByIndex.contains { !existingWindowIDs.contains($0.identifier) }
         }, object: nil)
         XCTAssertEqual(XCTWaiter.wait(for: [newWindow], timeout: 5), .completed)
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        let browserURL = try XCTUnwrap(NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.Safari"))
-        NSWorkspace.shared.open([html], withApplicationAt: browserURL, configuration: configuration)
-        let sourceWindow = safari.windows.matching(NSPredicate(format: "label CONTAINS %@", marker)).firstMatch
-        XCTAssertTrue(sourceWindow.waitForExistence(timeout: 8))
+        let windowID = try XCTUnwrap(safari.windows.allElementsBoundByIndex
+            .first { !existingWindowIDs.contains($0.identifier) }?.identifier)
+        XCTAssertFalse(windowID.isEmpty, "The new fixture window must have an accessible identifier")
+        let sourceWindow = safari.windows[windowID]
         defer {
-            if sourceWindow.exists, sourceWindow.label.contains(marker) {
-                safari.activate()
-                sourceWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)).click()
-                safari.typeKey("w", modifierFlags: .command)
+            if sourceWindow.exists {
+                let close = sourceWindow.buttons[XCUIIdentifierCloseWindow]
+                if close.exists { close.click() }
             }
         }
-        try tileMaterialTestWindow(safari, side: "Слева")
+        safari.typeKey(try currentLayoutShortcutKey("l"), modifierFlags: .command)
+        let addressField = sourceWindow.textFields["WEB_BROWSER_ADDRESS_AND_SEARCH_FIELD"]
+        XCTAssertTrue(addressField.waitForExistence(timeout: 5))
+        addressField.typeText(html.absoluteString)
+        XCTAssertTrue((addressField.value as? String)?.contains(marker) == true)
+        addressField.typeKey(.return, modifierFlags: [])
         let link = sourceWindow.links["Drag material URL"]
-        XCTAssertTrue(link.waitForExistence(timeout: 5))
-        link.press(forDuration: 0.6, thenDragTo: target)
+        XCTAssertTrue(link.waitForExistence(timeout: 8))
+        sourceWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)).click()
+        try tileMaterialTestWindow(safari, side: "Слева")
+        app.activate()
+        sourceWindow.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02)).click()
+        let desktop = app.windows["desktop.window"]
+        let windowFrame = desktop.frame
+        let card = target.frame
+        XCTAssertFalse(sourceWindow.frame.intersects(card), "The Safari fixture must stay beside the drop target")
+        XCTAssertTrue(windowFrame.contains(card), "The drop card must be fully visible in its own window")
+        XCTAssertTrue(target.isHittable, "Another browser window covers the drop target")
+        let point = desktop.coordinate(withNormalizedOffset: CGVector(
+            dx: (card.midX - windowFrame.minX) / windowFrame.width,
+            dy: (card.midY - windowFrame.minY) / windowFrame.height
+        ))
+        link.coordinate(withNormalizedOffset: CGVector(dx: 0.25, dy: 0.5))
+            .click(forDuration: 0.3, thenDragTo: point, withVelocity: .slow, thenHoldForDuration: 0.5)
         let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             guard let item = try? self.persistedItems().first else { return false }
             return (item["links"] as? [[String: Any]])?.first?["address"] as? String == address
@@ -2437,6 +2729,21 @@ final class CountdownManagerXCUITests: XCTestCase {
 
     private var dataURL: URL {
         testHome.appendingPathComponent("Application Support/CountdownManager/countdowns.json")
+    }
+
+    private var recordsURL: URL { dataURL.deletingLastPathComponent().appendingPathComponent("records.json") }
+
+    private func persistedRecords() throws -> [[String: Any]] {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: recordsURL)) as? [[String: Any]])
+    }
+
+    private func waitForRecordTitles(_ expected: [String]) -> Bool {
+        let predicate = NSPredicate { _, _ in
+            guard let bytes = try? Data(contentsOf: self.recordsURL),
+                  let records = try? JSONSerialization.jsonObject(with: bytes) as? [[String: Any]] else { return false }
+            return records.compactMap { $0["title"] as? String } == expected
+        }
+        return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: nil)], timeout: 3) == .completed
     }
 
     private func persistedItems() throws -> [[String: Any]] {

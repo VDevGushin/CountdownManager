@@ -5,12 +5,15 @@ struct AttachmentFiles {
     let directory: URL
     private let manager = FileManager.default
 
-    init(repositoryURL: URL) {
-        directory = repositoryURL.deletingLastPathComponent().appendingPathComponent("Attachments", isDirectory: true)
+    init(repositoryURL: URL, collection: StoredAttachmentCollection) {
+        directory = repositoryURL.deletingLastPathComponent()
+            .appendingPathComponent(collection.directoryName, isDirectory: true)
     }
 
     func copy(from source: URL) throws -> EventAttachment {
-        guard source.isFileURL else { throw EventAttachmentError.unsupportedFile }
+        guard EventAttachment.isLocalFileSource(source) else {
+            throw EventAttachmentError.unsupportedFile
+        }
         let values = try source.resourceValues(forKeys: [.isRegularFileKey, .isSymbolicLinkKey, .isPackageKey])
         guard values.isRegularFile == true, values.isSymbolicLink != true, values.isPackage != true else {
             throw EventAttachmentError.unsupportedFile
