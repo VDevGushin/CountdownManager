@@ -441,10 +441,10 @@
 "week.planned" = "Will Be Created";
 "week.remaining" = "Rest of This Week";
 
-"whatsNew.localizationHeading" = "English and Russian";
-"whatsNew.localizationText" = "English is the default. Change the interface language in Settings. Automatic weekday titles update immediately.";
-"whatsNew.statusItemHeading" = "Reopen the Mini Panel";
-"whatsNew.statusItemText" = "On macOS 27, the first click on the menu-bar icon after switching to another app opens the mini panel again.";
+"whatsNew.recordsHeading" = "Records";
+"whatsNew.recordsText" = "Keep descriptions, checklists, files and links without a date. Open Records in the desktop window or the mini panel.";
+"whatsNew.materialsHeading" = "Add files and links";
+"whatsNew.materialsText" = "Drop materials onto an event or record card. Drag a bookmark from Safari’s address bar to save its title and link.";
 "whatsNew.title" = "What’s New";
 
 "app.name" = "Countdown Manager";

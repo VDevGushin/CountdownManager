@@ -21,6 +21,8 @@ This document describes the current release procedure. Per-version reports under
 and evidence linked by them are records of those runs, not alternate current instructions.
 The project release skill is [countdown-release](../.agents/skills/countdown-release/SKILL.md).
 
+The next candidate is [1.28.0 / build 53](releases/v1.28.0.md), with undated Records.
+
 ## Stable identity
 
 - Bundle: `local.countdownmanager.app`.

@@ -441,10 +441,10 @@
 "week.planned" = "Будет создан";
 "week.remaining" = "До конца недели";
 
-"whatsNew.localizationHeading" = "Английский и русский";
-"whatsNew.localizationText" = "Английский теперь язык по умолчанию. Выберите язык в настройках. Интерфейс и автоматические названия дней изменятся сразу.";
-"whatsNew.statusItemHeading" = "Повторное открытие мини-панели";
-"whatsNew.statusItemText" = "На macOS 27 первый клик по значку после переключения в другое приложение снова открывает мини-панель.";
+"whatsNew.recordsHeading" = "Записи";
+"whatsNew.recordsText" = "Храните описания, подзадачи, файлы и ссылки без даты. Раздел «Записи» доступен в большом окне и мини-панели.";
+"whatsNew.materialsHeading" = "Файлы и ссылки";
+"whatsNew.materialsText" = "Перетаскивайте материалы на карточку события или записи. Из адресной строки Safari сохраняются название страницы и ссылка.";
 "whatsNew.title" = "Что нового";
 
 "app.name" = "Countdown Manager";

@@ -132,8 +132,8 @@ components:
 
 ## Overview
 
-Release 1.27.0 uses the existing release-help sections with native `globe` for the language
-chooser and `menubar.rectangle` for the mini-panel reopening fix. The existing
+Release 1.28.0 uses the existing release-help sections with native `tray.full` for Records
+and `paperclip` for adding files and links. The existing
 13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
