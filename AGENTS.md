@@ -14,6 +14,7 @@ Countdown Manager is a native macOS menu-bar application. Keep context and chang
 - Product acceptance for a feature or fix that changes Countdown Manager's user-visible behaviour: after automated checks are green, read `.agents/skills/product-qa/SKILL.md`.
 - Agent-harness, tooling and documentation-only changes: use their focused checks from `docs/VERIFICATION.md`. Do not apply `product-qa` or run application UI checks when product behaviour is unchanged. Explicit screenshot requests may use isolated capture mode to generate and inspect current images; do not rerun unrelated regression suites for them.
 - A technical direction that depends on uncertain macOS, SwiftUI, or AppKit behaviour: read `.agents/skills/macos-platform-research/SKILL.md`.
+- Explicit independent review (`нужно независимое ревью`, `$independent-review` or an equivalent user command): read `.agents/skills/independent-review/SKILL.md` and launch a fresh reviewer. Mere quotation of the command in documentation does not invoke it.
 - Codex hooks enforce mechanical SwiftLint and fast regression gates. They do not replace product-risk judgment or manual-only macOS acceptance.
 
 ## Sources of truth

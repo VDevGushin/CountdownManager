@@ -124,6 +124,14 @@ requires an unambiguous exit (standalone or in the final AND-only chain); comple
 should run it separately so skipped or masked checks cannot be credited.
 Verbose lint may instead provide its real final zero-violation `Done linting!` summary.
 
+## Independent review
+
+The user command `нужно независимое ревью` or an explicit `$independent-review` invocation routes
+through [the independent-review skill](../.agents/skills/independent-review/SKILL.md). A reviewer
+starts with fresh context and returns its own verdict, actionable findings and evidence gaps.
+Reviewers select targeted checks from this document for the actual task and use isolated data.
+The standard verification hooks and explicit extended or monkey QA keep their own routes.
+
 ## Native design-system gates
 
 `./verify.sh fast` first runs `Tests/test_native_design_system.py` and

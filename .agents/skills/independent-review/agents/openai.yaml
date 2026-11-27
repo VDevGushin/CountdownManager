@@ -1,0 +1,6 @@
+interface:
+  display_name: "Независимое ревью"
+  short_description: "Строгая независимая приёмка изменений"
+  default_prompt: "Используй $independent-review для этой задачи."
+policy:
+  allow_implicit_invocation: false
