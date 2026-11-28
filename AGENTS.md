@@ -30,6 +30,7 @@ Product truth takes precedence over current code and tests. Accepted decisions c
 ## Git workflow
 
 - The macOS repository is `MonolitST/CountdownManager`. Use the organization's GitHub URLs for development, release tooling and public links.
+- Work in the primary repository checkout on ordinary branches by default. Create or attach a Git worktree only when the Product Owner explicitly requests a worktree for the current task. A request for a separate branch is fulfilled in the primary checkout.
 - Product features and application bug fixes: start a new `codex/<task>` branch from up-to-date `main`, implement and verify there, then merge into `main` under the current chat's authorizations. Keep the feature's related tests and documentation in that branch.
 - Independent maintenance of skills, agent harness, tooling and documentation: work directly on `main`. Classify by the actual change; a task that changes application behaviour follows the product branch workflow even if it also updates tooling or instructions.
 - Finishing a feature, merging it or pushing `main` does not start a release. The Product Owner decides separately whether and when to release. Do not bump release versions, create release tags or publish merely because a feature is complete.
