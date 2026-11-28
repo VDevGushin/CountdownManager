@@ -1030,7 +1030,8 @@ final class UISmokeRuntime {
     }
 
     private func requireEmptyStateLayout() throws {
-        for id in ["header.today", "header.active-count", "day.add", "event.add", "creation.day.today"] {
+        try require(controls.entries["header.today"] != nil, "empty state removed the shared date")
+        for id in ["header.active-count", "day.add", "event.add", "creation.day.today"] {
             try require(controls.entries[id] == nil, "empty state retained redundant header: \(id)")
         }
         let content = try requireValue(controls.frame("event.empty.content"), "empty content")
@@ -1531,10 +1532,11 @@ final class UISmokeRuntime {
             clock = clock.addingTimeInterval(2)
             fixtureStore.refresh()
             try await waitForValue("event.empty.date", equals: "Чт, 15 октября")
+            try await waitForValue("header.today", equals: "Чт, 15 октября")
             try await settleLayout()
             try requireEmptyStateLayout()
             try captureWeatherIfRequested("weather-header-midnight-empty")
-            pass("nonempty header and empty calendar observe Store midnight/expiry in a native 390-point panel")
+            pass("shared date and empty calendar observe Store midnight/expiry in a native 390-point panel")
             try await verifyFailedKeepAwakeRestoration(fixtureKeepAwake, defaults: defaults)
         } catch {
             // Capture the failed fixture before defer restores the original hosting graph.
@@ -1554,13 +1556,15 @@ final class UISmokeRuntime {
     private func requireHeaderDateLayout() throws {
         let date = try requireValue(controls.frame("header.today"), "header date frame")
         let count = try requireValue(controls.frame("header.active-count"), "header count frame")
-        try require(date.maxY <= count.minY && date.minX >= 0 && date.maxX <= 390 && date.width > 50
-                    && count.width > 30 && count.minX >= 0 && count.maxX <= 390,
-                    "current date or event count is clipped or no longer forms two header lines")
+        let selector = try requireValue(controls.frame("panel.section"), "panel section selector frame")
+        try require(abs(date.minX - 16) < 1 && abs(selector.maxX - 374) < 1
+                    && date.maxX < selector.minX && abs(date.midY - selector.midY) < 2
+                    && date.maxY < count.minY && abs(date.minX - count.minX) < 1,
+                    "date, selector, and event count are misaligned: \(date), \(selector), \(count)")
         for id in ["day.add", "event.add"] {
             let button = try requireValue(controls.frame(id), "header creation action")
-            try require(button.minX >= max(date.maxX, count.maxX) && button.maxX <= 390,
-                        "header text overlaps its creation actions")
+            try require(button.minX >= count.maxX && button.maxX <= 374 && abs(button.midY - count.midY) < 2,
+                        "event count and creation actions do not share a row: \(count), \(button)")
         }
     }
 

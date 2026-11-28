@@ -932,6 +932,13 @@ final class DesktopSmokeRuntime {
         try await expect("header.active-count", eventCountLabel(1))
         try await wait("event header create button") { self.controls.entries["event.add"]?.isEnabled == true }
         let eventCreateFrame = try value(controls.frame("event.add"), "event header create button frame")
+        let eventCountFrame = try value(controls.frame("header.active-count"), "event count frame")
+        let dateFrame = try value(controls.frame("header.today"), "shared date frame")
+        let selectorFrame = try value(controls.frame("panel.section"), "mini section selector frame")
+        try require(dateFrame.maxX < selectorFrame.minX && abs(dateFrame.midY - selectorFrame.midY) < 2
+                    && dateFrame.maxY < eventCountFrame.minY && abs(eventCountFrame.midY - eventCreateFrame.midY) < 2,
+                    "the date and selector must sit above the single event count and actions row")
+        try capture("mini-events-light", window: panel)
         try await press("panel.section.records")
         try await wait("car in mini-panel") { self.controls.frame("panel.record.card.\(record.id.uuidString)") != nil }
         try await expect("panel.records.count", recordCountLabel(2))
@@ -941,6 +948,12 @@ final class DesktopSmokeRuntime {
                 && self.controls.entries["event.add"]?.isEnabled != true
         }
         let recordCreateFrame = try value(controls.frame("panel.record.create"), "record header create button frame")
+        let recordCountFrame = try value(controls.frame("panel.records.count"), "record count frame")
+        try require(abs(eventCountFrame.minX - recordCountFrame.minX) < 1
+                    && abs(eventCountFrame.midY - recordCountFrame.midY) < 1
+                    && eventCountFrame.height == recordCountFrame.height
+                    && controls.frame("header.today") == dateFrame && controls.frame("panel.section") == selectorFrame,
+                    "switching sections moved the date, selector or count heading")
         try require(abs(eventCreateFrame.minX - recordCreateFrame.minX) < 1
                     && abs(eventCreateFrame.minY - recordCreateFrame.minY) < 1
                     && eventCreateFrame.size == recordCreateFrame.size,

@@ -207,8 +207,9 @@ The fast route exercises record ordering, validation, storage and attachment iso
 focused route opens the production desktop window and mini-panel using a marked isolated profile.
 It activates the production section and editor controls, enters text through the AppKit field
 editor, checks that a record has no date field, and exercises section-scoped search and a shared
-checklist update. The mini-panel check switches between populated sections and compares the create
-button position and size, the record-count heading and its undated creation action.
+checklist update. The mini-panel check switches between populated sections and compares the shared
+date and selector frames, count alignment, and create button position and size. It exercises the
+undated creation action and captures the populated Events header.
 The native grid check compares the rendered bounds of neighboring record cards
 with different amounts of content. It narrows and widens the browser across the one/two-column
 threshold in Records and Events, checks the fixed card width, and confirms that feed rows fill
@@ -1536,14 +1537,14 @@ and removes itself. No native assertion is created in that recovery scenario.
 Header formatter checks exercise Russian event-count endings (`1 событие`, `2 события`,
 `6 событий`, including teen and compound-number cases), weekday/month/year boundaries and no-year
 date formatting. A controlled Store clock tests midnight publication.
-The focused native runtime observes `header.today` and the count with one event, then their absence
-and the updated `event.empty.date` after expiry across an injected midnight, without exposing
-Store.today, adding a view timer or changing the system clock.
+The focused native runtime observes `header.today` and the count with one event, then an updated
+shared date and `event.empty.date` after midnight expiry. The count row is hidden once the list is
+empty. An isolated Store clock drives the rollover.
 
 `./verify.sh weather` builds an isolated current-source app and runs only focused weather/header
 scenarios. Native NSPopUpButton enabled OFF/ON and its Auto/ten-city menu are inspected; the public
 NSMenu item action selects Moscow and updates its binding. Real view frames verify the featured badge beside its countdown, ordinary badge in the date/remaining
-metadata row, and a system-15-semibold header date above the compact event-count line at width 390.
+metadata row, and a left-aligned shared date beside the selector, above the event count and actions at width 390.
 Editor defaults, hide/show, durable Save/Cancel, OFF, false per-event flag and missing forecasts are
 checked. Weather has no links/tooltips/privacy/licence/info/loading/error text in app UI. These
 in-process actions do not claim physical popup clicks, external keyboard or real CoreLocation.

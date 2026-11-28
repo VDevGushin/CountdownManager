@@ -132,8 +132,8 @@ components:
 
 ## Overview
 
-Release 1.28.1 uses the existing release-help sections with native `paperclip` for the Finder
-attachment fix and `tray.full` for Records. The existing
+Release 1.28.2 uses the existing release-help sections with native `rectangle.topthird.inset.filled`
+for the mini-panel header and `tray.full` for Records. The existing
 13-point body, 12-point semibold section labels, Graphite palette and native control families apply.
 
 The read-only `Что нового` window introduced in 1.19.0 reuses the Settings header (Georgia 21, 49-point
@@ -205,7 +205,7 @@ Native semantic red is used for validation and errors; do not replace it with an
 - **Title:** editor and settings headings (21 points).
 - **Countdown:** the mini-panel's full featured relative label, `Сегодня`, `Завтра`, or `Через N дней`, in 21-point Georgia. Today uses green; future days use accent ink.
 - **Body:** settings use 13-point system text; form content and checklist text mostly use 12 points; secondary event names use 14-point semibold.
-- **Label:** metadata and secondary labels mostly use 11 points. Current-date heading is 15-point semibold. The functional featured-state label uses 10.5 points; small service text uses 10 points. Calendar month labels use 10-point semibold on featured leaves and 9-point semibold on secondary leaves, with tracking of 0.7 and 0.5 points respectively.
+- **Label:** metadata and secondary labels mostly use 11 points. The mini-panel date is 13-point semibold and the list counts are 15-point semibold. The functional featured-state label uses 10.5 points; small service text uses 10 points. Calendar month labels use 10-point semibold on featured leaves and 9-point semibold on secondary leaves, with tracking of 0.7 and 0.5 points respectively.
 - **Timer:** running countdown uses 23-point semibold tabular numerals; preset values use 11-point medium or semibold when selected.
 
 **The Calendar Leaf Rule.** Use the leaf to carry the actual month and day; the larger featured leaf sits on the right and secondary leaves on the left.
@@ -216,7 +216,7 @@ Native semantic red is used for validation and errors; do not replace it with an
 
 The native status-item panel is retained at 390 × 600 points: a 60-point timer strip above a 540-point manager area. List, editor, and settings replace the internal manager screen. There are no responsive web breakpoints; content scrolls within the native panel.
 
-The list starts with the current date and event count, then the selected favorite if any, followed by ordinary events. Without a favorite, all cards remain compact. The header has 16-point horizontal insets and 12-point vertical padding. The scrolling list uses 12-point side insets, 10-point gaps, and 12-point card padding. The service footer is fixed below the list at 33 points high with 18-point side insets.
+The mini-panel puts the current date on the left and the section selector on the right in a shared row. Each populated list uses a single count on the left and its creation actions on the right below that row. The selected favorite, if any, comes before ordinary events. Without a favorite, all cards remain compact. The header has 16-point horizontal insets and 12-point vertical padding. The scrolling list uses 12-point side insets, 10-point gaps, and 12-point card padding. The service footer is fixed below the list at 33 points high with 18-point side insets.
 
 Editor and settings headings occupy a 49-point header with 16-point side insets. The editor's form scrolls while its 58-point bottom action row stays fixed. Form content reserves a 4-point focus-ring inset and separate scroll-indicator clearance. Settings uses 16-point group spacing, 12-point internal group spacing, and 16-point side insets. The icon field is full-width and 38 points high; weather, favorite and retain-after-date checkboxes form the next distinct group after a 13-point gap. Retention is third, with its short explanation directly beneath it.
 

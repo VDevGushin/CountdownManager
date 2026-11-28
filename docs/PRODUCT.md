@@ -13,8 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.28.1 uses the read-only `What’s New` / `Что нового` screen to describe Records
-and the fix for Finder file drops onto saved cards. The release-help window
+Release 1.28.2 uses the read-only `What’s New` / `Что нового` screen to describe Records
+and the compact mini-panel header. The release-help window
 was introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
@@ -883,16 +883,16 @@ native location and weather HTTP; authorized public-city probes are separate evi
 The fixed manual list is Москва, Санкт-Петербург, Казань, Грозный, Нижний Новгород, Екатеринбург,
 Новосибирск, Самара, Ростов-на-Дону and Краснодар. Weather choices do not mutate event content.
 
-## Current date in the list header
+## Mini-panel date and list headers
 
-For a nonempty list, the app name is removed from the list header. A compact date, such as `Fri, October 16`
-or `Пт, 16 октября`,
-comes first in system 15-point semibold type, without a year. A secondary 11-point event count
-follows with a 3-point gap. The count uses the display language's plural rules. The existing 31 × 31
-calendar and add buttons remain beside these lines.
-The header uses horizontal 16-point and vertical 12-point padding. The date reads `Store.today`
-and updates through existing midnight, wake, clock/calendar changes and reopening refresh boundaries.
-No timer or duplicate date owner is added to the view. Both lines remain visible at panel width 390.
+The mini-panel shows the current date on the left and the Events / Records selector on the right.
+The localized date, such as `Fri, October 16` or `Пт, 16 октября`, uses 13-point semibold type
+without a year. The date remains in place across section switches and empty states.
+It reads `Store.today` and updates through the existing midnight, wake, clock/calendar and reopening refresh paths.
+
+Each populated section uses the same 15-point semibold localized count on the left.
+The 31 × 31 calendar and plus buttons sit on the right in Events. Records has the plus button
+in the same position. The count row uses 16-point side insets and 12-point vertical padding.
 
 ## Favorite and automatic event
 
@@ -1089,8 +1089,8 @@ no preference or persisted event state and does not change application activatio
 
 ## Empty state
 
-After a successful load with no active events, the whole list header is absent: date, count,
-calendar/plus controls and any expanded day-choice row. The 60-point timer and existing 33-point
+After a successful load with no active events, the count, calendar/plus controls and any expanded
+day-choice row are hidden. The shared date and section selector remain visible. The 60-point timer and existing 33-point
 footer remain in the retained 390 × 600 panel. The free event area centers a current-date calendar
 leaf, `Пока нет событий`, and `Выбери день события. Название и детали можно изменить.`
 The ordinary Georgia title and shared Light/Graphite Dark/Increase Contrast palette are retained.

@@ -197,7 +197,8 @@ struct ManagerView: View {
     }
 
     private var listScreen: some View {
-        VStack(spacing: 0) {
+        let todayLabel = currentDayHeaderLabel(store.today, locale: locale)
+        return VStack(spacing: 0) {
             if editorSession.desktopIsPresented || editorSession.subtaskTransfer?.surface == .desktop {
                 Text(editorSession.subtaskTransfer?.surface == .desktop
                      ? AppText.string("panel.pendingTransfer") : AppText.string("panel.pendingEditor"))
@@ -206,9 +207,15 @@ struct ManagerView: View {
                     .accessibilityIdentifier("desktop.editor.active")
             }
             HStack {
+                Text(todayLabel)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
+                    .lineLimit(1)
+                    .accessibilityIdentifier("header.today")
+                    .uiSmokeControl(id: "header.today", value: { todayLabel })
+                Spacer()
                 PlannerSectionPicker(selection: sectionSelection, surface: "panel")
                     .disabled(!canSelectSection)
-                Spacer()
             }
             .padding(.horizontal, 16)
             .frame(height: 43)
@@ -279,9 +286,7 @@ struct ManagerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(spacing: 0) {
-                listHeader {
-                    listHeading(recordCountLabel(store.records.count), id: "panel.records.count")
-                } actions: {
+                listHeader(recordCountLabel(store.records.count), id: "panel.records.count") {
                     creationButton(AppText.string("record.create"), id: "panel.record.create", action: createRecord)
                         .disabled(!canEditRecord)
                 }
@@ -438,15 +443,7 @@ struct ManagerView: View {
     }
 
     private func eventListHeader(activeCount: Int) -> some View {
-        listHeader {
-            VStack(alignment: .leading, spacing: 3) {
-                listHeading(currentDayHeaderLabel(store.today, locale: locale), id: "header.today")
-                Text(eventCountLabel(activeCount))
-                    .font(.system(size: 11))
-                    .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    .uiSmokeControl(id: "header.active-count", value: { eventCountLabel(activeCount) })
-            }
-        } actions: {
+        listHeader(eventCountLabel(activeCount), id: "header.active-count") {
             Button(action: toggleDayChoices) {
                 Image(systemName: "calendar.badge.plus")
                     .frame(width: 31, height: 31)
@@ -461,19 +458,13 @@ struct ManagerView: View {
         }
     }
 
-    private func listHeading(_ title: String, id: String) -> some View {
-        Text(title)
-            .font(.system(size: 15, weight: .semibold))
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier(id)
-            .uiSmokeControl(id: id, value: { title })
-    }
-
-    private func listHeader<Heading: View, Actions: View>(
-        @ViewBuilder heading: () -> Heading, @ViewBuilder actions: () -> Actions
-    ) -> some View {
+    private func listHeader<Actions: View>(_ title: String, id: String, @ViewBuilder actions: () -> Actions) -> some View {
         HStack {
-            heading()
+            Text(title)
+                .font(.system(size: 15, weight: .semibold))
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(id)
+                .uiSmokeControl(id: id, value: { title })
             Spacer()
             actions()
         }

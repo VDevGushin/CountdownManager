@@ -5,20 +5,22 @@
 локальные вложения доступны без интернета и учётной записи. Опциональный прогноз погоды
 требует сети.
 
-**1.28.1 · сборка 54 · Apple Silicon · macOS 13+.**
+**1.28.2 · сборка 55 · Apple Silicon · macOS 13+.**
 Язык по умолчанию — английский. Выберите **Settings → Language → Русский**,
 чтобы переключить интерфейс.
 
-[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.28.1-notes.md) · [Проверки выпуска](docs/releases/v1.28.1.md)
+[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.28.2-notes.md) · [Проверки выпуска](docs/releases/v1.28.2.md)
 
 ## Как выглядит приложение
 
-Раздел «Записи» в большом окне и мини-панели на демонстрационных данных.
+«Записи» в большом окне и «События» в мини-панели на демонстрационных данных.
+В мини-панели дата находится слева, переключатель разделов справа. Под ними находятся
+счётчик и кнопки создания.
 
-<img src="docs/images/v1.28.1/desktop-records-dark.png" alt="Записи в большом окне Countdown Manager в тёмной теме" width="900">
-<img src="docs/images/v1.28.1/mini-records-light.png" alt="Записи в мини-панели Countdown Manager в светлой теме" width="390">
+<img src="docs/images/v1.28.2/desktop-records-dark.png" alt="Записи в большом окне Countdown Manager в тёмной теме" width="900">
+<img src="docs/images/v1.28.2/mini-events-light.png" alt="События в мини-панели с датой слева и переключателем справа" width="390">
 
-[Как получены снимки](docs/images/v1.28.1/PROVENANCE.md)
+[Как получен снимок мини-панели](docs/images/v1.28.2/PROVENANCE.md)
 
 ## Установка и обновления
 

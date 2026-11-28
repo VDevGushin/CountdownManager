@@ -23,7 +23,7 @@ package final class WhatsNewHistory {
 }
 
 struct WhatsNewView: View {
-    static let releaseID = "1.28.1"
+    static let releaseID = "1.28.2"
     @ObservedObject var appPreferences: ApplicationPreferences
     let dismiss: () -> Void
     @Environment(\.colorScheme) private var colorScheme
@@ -40,7 +40,7 @@ struct WhatsNewView: View {
                     Text(AppText.string("app.releaseVersion", AppText.string("app.name"), Self.releaseID))
                         .font(.system(size: 11))
                         .foregroundStyle(AuroraInstrument.secondaryInk(for: colorScheme))
-                    feature(AppText.string("whatsNew.materialsHeading"), symbol: "paperclip",
+                    feature(AppText.string("whatsNew.materialsHeading"), symbol: "rectangle.topthird.inset.filled",
                             text: AppText.string("whatsNew.materialsText"))
                     feature(AppText.string("whatsNew.recordsHeading"), symbol: "tray.full",
                             text: AppText.string("whatsNew.recordsText"))
