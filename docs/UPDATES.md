@@ -2,18 +2,17 @@
 
 ## Current published release
 
-[Countdown Manager 1.28.0 / build 53](https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.0)
-was published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest) on
-2026-11-28. Undated Records are available in the desktop window and mini-panel.
-[Release status](releases/v1.28.0.md) and [notes](releases/v1.28.0-notes.md) describe the changes.
-[Public verification](images/v1.28.0/publication.json) records matching ZIP and feed bytes
-and verifies the default-branch homepage. The annotated tag targets frozen main source
-`ad4489bd4f7072ec2fb608493bca07757e7c6b94`. [Package and native evidence](images/v1.28.0/PROVENANCE.md)
-records signing, release-help checks and current homepage captures.
+[Countdown Manager 1.28.1 / build 54](https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.1)
+was published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest)
+on 2026-11-28. It fixes Finder file drops on Events and Records.
+[Release status](releases/v1.28.1.md) and [notes](releases/v1.28.1-notes.md) describe the change.
+[Public verification](images/v1.28.1/publication.json) records matching package and feed bytes
+and the displayed README. The annotated tag targets main source `6142f91f16d12bc6ee45d09ba4d5f8c0442ccf00`.
+[Package and native evidence](images/v1.28.1/PROVENANCE.md)
 
-[The previous public release, 1.27.0 / build 52](releases/v1.27.0.md), remains
-installed and running for the owner's manual update. Its embedded feed URL matches the
-verified stable feed. [Handoff](images/v1.28.0/handoff.json)
+[The previous public release, 1.28.0 / build 53](releases/v1.28.0.md), was left
+installed and running for the owner's manual update. Its embedded URL uses the verified
+stable feed. [Handoff](images/v1.28.1/handoff.json)
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.

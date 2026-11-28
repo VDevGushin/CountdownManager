@@ -1,0 +1,64 @@
+{
+  "status": "published-and-publicly-verified",
+  "version": "1.28.1",
+  "build": "54",
+  "verifiedAtUTC": "2026-11-28T00:34:59.652145+00:00",
+  "releaseURL": "https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.1",
+  "sourceCommit": "6142f91f16d12bc6ee45d09ba4d5f8c0442ccf00",
+  "annotatedTagObject": "942cca9f1811888001d096435cb3577073043e83",
+  "defaultBranch": "main",
+  "publishedUsing": "GitHub CLI with owner-approved device authorization",
+  "publicChecks": {
+    "latest": {
+      "url": "https://github.com/MonolitST/CountdownManager/releases/latest",
+      "status": 200,
+      "sha256": "b9c823b5511f6f029258547aeee55db37e1d27ed03b5b5d435ace659e99b1ce6",
+      "bytes": 145395,
+      "resolvedURL": "https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.1"
+    },
+    "archive": {
+      "url": "https://github.com/MonolitST/CountdownManager/releases/download/v1.28.1/CountdownManager-1.28.1-54.zip",
+      "status": 200,
+      "sha256": "e57f1cf5417dcb821fb0bec73dbcdacf99f5c65f865442b101bb45bc0f9e9d59",
+      "bytes": 7496215
+    },
+    "versionFeed": {
+      "url": "https://github.com/MonolitST/CountdownManager/releases/download/v1.28.1/appcast.xml",
+      "status": 200,
+      "sha256": "739e840d14602bcf84d31126d26bf1996637854b916904f6cdacb2ce42b7f468",
+      "bytes": 2346
+    },
+    "stableFeed": {
+      "url": "https://github.com/MonolitST/CountdownManager/releases/latest/download/appcast.xml",
+      "status": 200,
+      "sha256": "739e840d14602bcf84d31126d26bf1996637854b916904f6cdacb2ce42b7f468",
+      "bytes": 2346
+    }
+  },
+  "defaultBranchReadme": {
+    "url": "https://raw.githubusercontent.com/MonolitST/CountdownManager/HEAD/README.md",
+    "status": 200,
+    "sha256": "98eef27cc4577d5cdca6e49dcd281c9c8f007fb708b0d067db15375d516fbe63",
+    "bytes": 28363
+  },
+  "renderedHomepage": {
+    "url": "https://github.com/MonolitST/CountdownManager",
+    "status": 200,
+    "sha256": "a5298c47962909cf16292799bf66da42c7ef41f2a08c1a0b218a32ff64e07f8e",
+    "bytes": 324938
+  },
+  "homepageImages": {
+    "docs/images/v1.28.1/desktop-records-dark.png": {
+      "url": "https://github.com/MonolitST/CountdownManager/raw/main/docs/images/v1.28.1/desktop-records-dark.png",
+      "status": 200,
+      "sha256": "777706ed6d8a145a8647363af3a7b3462779b101cd33db974418c5976c2c1d8e",
+      "bytes": 226388
+    },
+    "docs/images/v1.28.1/mini-records-light.png": {
+      "url": "https://github.com/MonolitST/CountdownManager/raw/main/docs/images/v1.28.1/mini-records-light.png",
+      "status": 200,
+      "sha256": "57a9c3095478b2cad943136c6450f220d57ce9a0f70e774f64d735fca7045a6e",
+      "bytes": 105389
+    }
+  }
+}
