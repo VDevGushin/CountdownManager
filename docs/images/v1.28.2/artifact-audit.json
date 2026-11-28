@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "version": "1.28.2",
+  "build": "55",
+  "sourceCommit": "ed26117e0621e907090d19c14cee4c8979e33d7d",
+  "archiveSHA256": "b1928978f61dd68cca89325202e243024c4f0b6bd2940b2930f233ae2cbfa12d",
+  "archiveBytes": 7500546,
+  "feedSHA256": "5bbe664ac40558525cbc3fa74eb798f3f3f50b12dff570e2da773a5deec3c53e",
+  "feedBytes": 2075,
+  "finalExecutableSHA256": "c50ac71dca7b4b4165cd4bbb514106ac3978a5f1b646944656c284960fa17ee8",
+  "publicKeySHA256": "327e6e5300e230c81fc087b79bb529dae667723cefd319a4c706fb57562a80b2",
+  "signatureVerifier": "Apple CryptoKit Curve25519.Signing.PublicKey",
+  "signatureChecks": {
+    "archive": {
+      "original": true,
+      "changedPayload": false,
+      "changedSignature": false
+    },
+    "feed": {
+      "original": true,
+      "changedPayload": false,
+      "changedSignature": false
+    }
+  },
+  "feedSignedBytes": 1931,
+  "feedSignedBoundaryVerified": true,
+  "comparedEntries": 174,
+  "extractedEntriesMatch": true,
+  "deepStrictCodesignPassed": true,
+  "embeddedNotesMatch": true,
+  "feedMetadata": {
+    "shortVersionString": "1.28.2",
+    "version": "55",
+    "minimumSystemVersion": "13.0",
+    "hardwareRequirements": "arm64",
+    "archiveURL": "https://github.com/MonolitST/CountdownManager/releases/download/v1.28.2/CountdownManager-1.28.2-55.zip",
+    "stableFeedURL": "https://github.com/MonolitST/CountdownManager/releases/latest/download/appcast.xml",
+    "embeddedNotesSHA256": "fdd54f20088ea838cee8ee6c2072850e205fb9c4c4b0989192a8626342f9124f"
+  },
+  "previousInstalledBundleEntries": 174
+}

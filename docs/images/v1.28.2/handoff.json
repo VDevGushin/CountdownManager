@@ -1,0 +1,15 @@
+{
+  "status": "previous-public-release-installed-and-running",
+  "verifiedAtUTC": "2026-11-28T01:07:21.528776+00:00",
+  "installedVersion": "1.28.1",
+  "installedBuild": "54",
+  "installedExecutableSHA256": "fa54fc25febaa088da1ded7d74daf53b1bf93a9bd102166b8498c261a0ce329f",
+  "previousPublicArchiveSHA256": "e57f1cf5417dcb821fb0bec73dbcdacf99f5c65f865442b101bb45bc0f9e9d59",
+  "installedBundleMatchesPreviousPublicZIP": true,
+  "matchedBundleEntries": 174,
+  "runningExecutable": "/Applications/Countdown Manager.app/Contents/MacOS/CountdownManager",
+  "runningExecutableConfirmedByProcessAndOpenTextMapping": true,
+  "publishedVersion": "1.28.2",
+  "publishedBuild": "55",
+  "updateInitiatedByReleaseAgent": false
+}

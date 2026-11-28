@@ -2,17 +2,14 @@
 
 ## Current published release
 
-[Countdown Manager 1.28.1 / build 54](https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.1)
-was published as [Latest](https://github.com/MonolitST/CountdownManager/releases/latest)
-on 2026-11-28. It fixes Finder file drops on Events and Records.
-[Release status](releases/v1.28.1.md) and [notes](releases/v1.28.1-notes.md) describe the change.
-[Public verification](images/v1.28.1/publication.json) records matching package and feed bytes
-and the displayed README. The annotated tag targets main source `6142f91f16d12bc6ee45d09ba4d5f8c0442ccf00`.
-[Package and native evidence](images/v1.28.1/PROVENANCE.md)
+[Countdown Manager 1.28.2 / build 55](https://github.com/MonolitST/CountdownManager/releases/tag/v1.28.2) was published as
+[Latest](https://github.com/MonolitST/CountdownManager/releases/latest) on 2026-11-28. It aligns the date, section selector and list headers
+in the mini-panel. [Release status](releases/v1.28.2.md) and [release notes](releases/v1.28.2-notes.md)
 
-[The previous public release, 1.28.0 / build 53](releases/v1.28.0.md), was left
-installed and running for the owner's manual update. Its embedded URL uses the verified
-stable feed. [Handoff](images/v1.28.1/handoff.json)
+The annotated tag targets main source `ed26117e0621e907090d19c14cee4c8979e33d7d`. [Public verification](images/v1.28.2/publication.json)
+and [package evidence](images/v1.28.2/PROVENANCE.md) record the signed assets and displayed README.
+The previous public release, 1.28.1 / build 54, was left installed and running for the owner's
+manual update. [Handoff](images/v1.28.2/handoff.json)
 
 This document describes the current release procedure. Per-version reports under `releases/`
 and evidence linked by them are records of those runs, not alternate current instructions.
