@@ -5,20 +5,20 @@
 локальные вложения доступны без интернета и учётной записи. Опциональный прогноз погоды
 требует сети.
 
-**1.28.0 · сборка 53 · Apple Silicon · macOS 13+.**
+**1.28.1 · сборка 54 · Apple Silicon · macOS 13+.**
 Язык по умолчанию — английский. Выберите **Settings → Language → Русский**,
 чтобы переключить интерфейс.
 
-[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.28.0-notes.md) · [Проверки выпуска](docs/releases/v1.28.0.md)
+[Скачать последний выпуск](https://github.com/MonolitST/CountdownManager/releases/latest) · [Что изменилось](docs/releases/v1.28.1-notes.md) · [Проверки выпуска](docs/releases/v1.28.1.md)
 
 ## Как выглядит приложение
 
 Раздел «Записи» в большом окне и мини-панели на демонстрационных данных.
 
-<img src="docs/images/v1.28.0/desktop-records-dark.png" alt="Записи в большом окне Countdown Manager в тёмной теме" width="900">
-<img src="docs/images/v1.28.0/mini-records-light.png" alt="Записи в мини-панели Countdown Manager в светлой теме" width="390">
+<img src="docs/images/v1.28.1/desktop-records-dark.png" alt="Записи в большом окне Countdown Manager в тёмной теме" width="900">
+<img src="docs/images/v1.28.1/mini-records-light.png" alt="Записи в мини-панели Countdown Manager в светлой теме" width="390">
 
-[Как получены снимки](docs/images/v1.28.0/PROVENANCE.md)
+[Как получены снимки](docs/images/v1.28.1/PROVENANCE.md)
 
 ## Установка и обновления
 

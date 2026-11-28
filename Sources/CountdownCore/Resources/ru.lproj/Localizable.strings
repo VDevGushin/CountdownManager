@@ -443,8 +443,8 @@
 
 "whatsNew.recordsHeading" = "Записи";
 "whatsNew.recordsText" = "Храните описания, подзадачи, файлы и ссылки без даты. Раздел «Записи» доступен в большом окне и мини-панели.";
-"whatsNew.materialsHeading" = "Файлы и ссылки";
-"whatsNew.materialsText" = "Перетаскивайте материалы на карточку события или записи. Из адресной строки Safari сохраняются название страницы и ссылка.";
+"whatsNew.materialsHeading" = "Вложения из Finder";
+"whatsNew.materialsText" = "Исправили ошибку, из-за которой PDF, ZIP и другие файлы из Finder могли не добавляться. Перетащите файл на событие или запись, чтобы прикрепить его.";
 "whatsNew.title" = "Что нового";
 
 "app.name" = "Countdown Manager";

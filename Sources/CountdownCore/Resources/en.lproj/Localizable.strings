@@ -443,8 +443,8 @@
 
 "whatsNew.recordsHeading" = "Records";
 "whatsNew.recordsText" = "Keep descriptions, checklists, files and links without a date. Open Records in the desktop window or the mini panel.";
-"whatsNew.materialsHeading" = "Add files and links";
-"whatsNew.materialsText" = "Drop materials onto an event or record card. Drag a bookmark from Safari’s address bar to save its title and link.";
+"whatsNew.materialsHeading" = "Finder attachments";
+"whatsNew.materialsText" = "Fixed a drag-and-drop error that could reject PDFs, ZIP archives, and other files from Finder. Drop a file onto an event or record to attach it.";
 "whatsNew.title" = "What’s New";
 
 "app.name" = "Countdown Manager";

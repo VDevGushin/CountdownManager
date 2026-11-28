@@ -13,8 +13,8 @@ Optional weather forecasts require a network connection.
 
 ## What's new
 
-Release 1.28.0 uses the read-only `What’s New` / `Что нового` screen to describe Records
-and adding files and links to saved cards. The release-help window
+Release 1.28.1 uses the read-only `What’s New` / `Что нового` screen to describe Records
+and the fix for Finder file drops onto saved cards. The release-help window
 was introduced in 1.19.0. It is offered once on the first safe explicit opening of the panel or desktop after installing this release, including a first installation.
 Background/login startup and material-drag hover never trigger it. An active event/text editor,
 native sheet, loading, material import, persistence, diagnostics export or updater UI defers it
