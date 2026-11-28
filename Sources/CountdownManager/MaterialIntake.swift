@@ -87,14 +87,6 @@ package func safariBookmarkProvider(replacing providers: [NSItemProvider], from 
     return NSItemProvider(item: url as NSURL, typeIdentifier: UTType.url.identifier)
 }
 
-private func droppedFileURL(_ address: String) -> URL? {
-    guard !address.contains(where: \.isWhitespace),
-          !address.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains),
-          let url = URL(string: address), url.absoluteString == address,
-          EventAttachment.isLocalFileSource(url) else { return nil }
-    return url
-}
-
 /// Finder may publish an AppKit file-reference URL while SwiftUI supplies the item’s
 /// ordinary file URL as text. Keep native file provenance separate from that payload.
 @MainActor
@@ -134,7 +126,8 @@ private struct MaterialLoad {
                     return
                 }
                 let string: String?
-                if let url = value as? URL { string = url.absoluteString }
+                // Read an NSURL's original spelling before Swift URL can normalize a file reference.
+                if let url = value as? NSURL { string = url.absoluteString }
                 else if let text = value as? String { string = text }
                 else if let data = value as? Data { string = String(data: data, encoding: .utf8) }
                 else { string = nil }
@@ -204,7 +197,7 @@ private func collectMaterials(_ loads: [MaterialLoad]) async throws -> EventMate
         case let .webLinks(links):
             result.links += links
         case let .item(type, string, isNativeFile):
-            if isNativeFile || type == .fileURL, let url = droppedFileURL(string) {
+            if isNativeFile || type == .fileURL, let url = EventAttachment.localFileSource(from: string) {
                 result.files.append(url)
             } else {
                 guard !isNativeFile, type != .fileURL else { throw EventAttachmentError.unsupportedFile }

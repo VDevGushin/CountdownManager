@@ -1,3 +1,4 @@
+import CoreFoundation
 import Foundation
 
 /// Metadata only; the repository owns the separate local file copy.
@@ -34,9 +35,34 @@ public struct EventAttachment: Identifiable, Codable, Equatable {
     package static func isLocalFileSource(_ url: URL) -> Bool {
         guard url.isFileURL, url.path.hasPrefix("/"),
               let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
-              components.user == nil, components.password == nil,
-              components.query == nil, components.fragment == nil,
               components.percentEncodedPath.removingPercentEncoding == url.path else { return false }
+        return hasLocalFileAuthority(components)
+    }
+
+    package static func localFileSource(from address: String) -> URL? {
+        guard !address.contains(where: \.isWhitespace),
+              !address.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains),
+              let components = URLComponents(string: address), components.string == address,
+              hasLocalFileAuthority(components), let raw = NSURL(string: address) else { return nil }
+        if !raw.isFileReferenceURL() {
+            guard let source = URL(string: address), source.absoluteString == address,
+                  isLocalFileSource(source) else { return nil }
+            return source
+        }
+
+        // Foundation can also normalize malformed references. Match the file's own native ID.
+        guard let path = CFURLCreateFilePathURL(nil, raw as CFURL, nil)?.takeRetainedValue(),
+              isLocalFileSource(path as URL),
+              let reference = CFURLCreateFileReferenceURL(nil, path, nil)?.takeRetainedValue(),
+              let referenceAddress = CFURLGetString(reference) as String?,
+              let native = URLComponents(string: referenceAddress),
+              native.percentEncodedPath == components.percentEncodedPath else { return nil }
+        return path as URL
+    }
+
+    private static func hasLocalFileAuthority(_ components: URLComponents) -> Bool {
+        guard components.scheme?.lowercased() == "file", components.user == nil, components.password == nil,
+              components.query == nil, components.fragment == nil else { return false }
         let host = components.host?.lowercased() ?? ""
         guard host.isEmpty || host == "localhost" else { return false }
         // Reject any port syntax, including an empty port or one that cannot be read as an Int.

@@ -743,7 +743,8 @@ final class CountdownManagerXCUITests: XCTestCase {
     }
 
     func testFinderFileDropTargetsUnselectedEventAndPersists() throws {
-        try checkFinderFileDrop(name: "DropSample.txt", bytes: Data("Original drag fixture\n\nPreserve paragraphs.\n".utf8))
+        let bytes = try XCTUnwrap(Data(base64Encoded: "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="))
+        try checkFinderFileDrop(name: "Backup 100%.zip", bytes: bytes)
     }
 
     func testFinderImageDropPreservesFilenameAndBytes() throws {
@@ -759,22 +760,27 @@ final class CountdownManagerXCUITests: XCTestCase {
         let recipient: [String: Any] = ["id": recipientID, "title": "Drop recipient", "subtasks": [], "attachments": [], "links": []]
         try JSONSerialization.data(withJSONObject: [selected, recipient]).write(to: recordsURL, options: .atomic)
         let eventBytes = try Data(contentsOf: dataURL)
-        let bytes = Data("External file for the record\n\nKeep every line.\n".utf8)
-        let file = try makeFinderDropFile(name: "Record drop.txt", bytes: bytes)
-        app.launch()
-        let openDesktop = app.buttons["desktop.open"]
-        waitForMaterialPanelControl(openDesktop)
-        openDesktop.click()
+        let pdf = try XCTUnwrap(CFDataCreateMutable(nil, 0))
+        let consumer = try XCTUnwrap(CGDataConsumer(data: pdf))
+        var mediaBox = CGRect(x: 0, y: 0, width: 100, height: 100)
+        let context = try XCTUnwrap(CGContext(consumer: consumer, mediaBox: &mediaBox, nil))
+        context.beginPDFPage(nil)
+        context.fill(CGRect(x: 10, y: 10, width: 20, height: 20))
+        context.endPDFPage()
+        context.closePDF()
+        let bytes = pdf as Data
+        let file = try makeFinderDropFile(name: "Отчёт #1.pdf", bytes: bytes)
+        try launchDesktopMaterialDropFixture()
         let desktop = app.windows["desktop.window"]
         desktop.radioButtons["Записи"].click()
         let selectedCard = desktop.buttons["desktop.record.\(selectedID)"]
         XCTAssertTrue(selectedCard.waitForExistence(timeout: 5))
         selectedCard.click()
-        try tileMaterialTestWindow(app, side: "Справа")
+        try tileMaterialTestWindow(app, side: "Слева")
         let target = desktop.buttons["desktop.record.\(recipientID)"]
         XCTAssertTrue(target.waitForExistence(timeout: 5))
         XCTAssertTrue(selectedCard.isSelected)
-        try dragFinderFile(file, to: target)
+        try dragFinderFile(file, to: target, finderSide: "Справа")
         let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             guard let records = try? self.persistedRecords(),
                   let record = records.first(where: { $0["id"] as? String == recipientID }),
@@ -847,15 +853,12 @@ final class CountdownManagerXCUITests: XCTestCase {
         fixture.append(recipient)
         try writeItems(fixture, primaryID: nil)
         let file = try makeFinderDropFile(name: filename, bytes: bytes)
-        app.launch()
-        let openDesktop = app.buttons["desktop.open"]
-        waitForMaterialPanelControl(openDesktop)
-        openDesktop.click()
-        try tileMaterialTestWindow(app, side: "Справа")
+        try launchDesktopMaterialDropFixture()
+        try tileMaterialTestWindow(app, side: "Слева")
         let target = app.buttons["desktop.event.\(recipientID)"]
         XCTAssertTrue(target.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["desktop.event.\(eventID)"].isSelected)
-        try dragFinderFile(file, to: target)
+        try dragFinderFile(file, to: target, finderSide: "Справа")
         let added = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in
             let items = try? self.persistedItems()
             return (items?.first(where: { $0["id"] as? String == recipientID })?["attachments"] as? [[String: Any]])?.count == 1
@@ -886,6 +889,13 @@ final class CountdownManagerXCUITests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: file), bytes)
     }
 
+    private func launchDesktopMaterialDropFixture() throws {
+        try Data().write(to: testHome.appendingPathComponent(".countdown-visual-preview-environment"))
+        app.launchArguments = ["--visual-preview", "--desktop-preview", "-CountdownLaunchLanguage", "ru", "-AppleLanguages", "(ru)"]
+        app.launch()
+        XCTAssertTrue(app.windows["desktop.window"].waitForExistence(timeout: 5))
+    }
+
     private func makeFinderDropFile(name: String, bytes: Data) throws -> URL {
         let folder = testHome.appendingPathComponent("DragFixture-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -894,7 +904,7 @@ final class CountdownManagerXCUITests: XCTestCase {
         return file
     }
 
-    private func dragFinderFile(_ file: URL, to target: XCUIElement) throws {
+    private func dragFinderFile(_ file: URL, to target: XCUIElement, finderSide: String = "Слева") throws {
         let folder = file.deletingLastPathComponent()
         XCTAssertTrue(NSWorkspace.shared.open(folder))
         let finder = XCUIApplication(bundleIdentifier: "com.apple.finder")
@@ -907,7 +917,7 @@ final class CountdownManagerXCUITests: XCTestCase {
                 if close.exists { close.click() }
             }
         }
-        try tileMaterialTestWindow(finder, side: "Слева")
+        try tileMaterialTestWindow(finder, side: finderSide)
         let source = sourceWindow.descendants(matching: .any)
             .matching(NSPredicate(format: "label == %@", file.lastPathComponent)).firstMatch
         XCTAssertTrue(source.waitForExistence(timeout: 5), sourceWindow.debugDescription)

@@ -221,6 +221,9 @@ detail and mini card for each owner type. Each accepts synthetic file, web link 
 providers. Provider checks distinguish a Finder document with a matching native file-URL item
 from a plain-text drop containing the same address. Plain text starting with a URL remains
 editable as a whole if it contains more lines.
+File-reference coverage uses real Foundation file IDs delivered as strings, including a PDF,
+a ZIP archive and an unknown format. Each is copied byte for byte into an event and a record,
+and invalid file authorities, queries and fragments are rejected before copying.
 After each delivery, the scenario reloads the owner's metadata and checks owned file
 bytes, sibling metadata, the source file and the other collection. The native reorder scenarios
 also reload the whole collection after each completed drag and compare the other collection's bytes.
@@ -242,6 +245,7 @@ The cross-surface editor test checks that Escape dismisses delete confirmation w
 the draft in both windows.
 `testFinderFileDropTargetsUnselectedRecordAndPersists` checks the actual macOS drag from
 Finder into an unselected desktop record, including owned bytes and isolation from its neighbors.
+The Finder fixtures use a PDF for the record case and a ZIP archive for the desktop event case.
 
 ## Single-subtask transfer native evidence
 

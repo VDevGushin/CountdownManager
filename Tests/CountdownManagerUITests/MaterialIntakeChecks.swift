@@ -1,4 +1,5 @@
 import AppKit
+import CoreFoundation
 import CountdownCore
 import CountdownManagerUI
 import UniformTypeIdentifiers
@@ -195,7 +196,72 @@ func testMaterialIntake(in directory: URL) async throws {
     let expiredAdd = await expired.appendMaterials(link, to: first.id)
     precondition(!expiredAdd)
     try await testRecordMaterialWriteFailure(store: store, eventID: first.id, source: source, eventURL: fileURL)
-    print("PASS materials: provider priority, exact target, local copies, durable additions across edits, Unicode text, Cancel, caps, failed batch, stale owner")
+    try await testFinderFileReferences(in: directory, store: store, eventID: first.id)
+    print("PASS materials: Finder references, provider priority, exact target, local copies, durable additions, Unicode text, Cancel, limits and recovery")
+}
+
+@MainActor
+private func testFinderFileReferences(in directory: URL, store: Store, eventID: UUID) async throws {
+    let record = UndatedRecord(title: "Finder file references")
+    let saved = await store.saveRecord(record)
+    precondition(saved)
+    let fixtures = [
+        ("Отчёт #1.pdf", Data("%PDF-1.4\n".utf8)),
+        ("Export 100%.zip", Data(base64Encoded: "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA==")!),
+        ("raw.custom-extension", Data([0, 1, 255])),
+    ]
+    var providers: [NSItemProvider] = []
+    var sourceURLs: [URL] = []
+    for (index, fixture) in fixtures.enumerated() {
+        let file = directory.appendingPathComponent(fixture.0)
+        try fixture.1.write(to: file)
+        let reference = CFURLCreateFileReferenceURL(nil, file as CFURL, nil)!.takeRetainedValue()
+        let address = CFURLGetString(reference)! as String
+        precondition(address.hasPrefix("file:///.file/id="))
+        let type = index == 1 ? UTType.plainText : .fileURL
+        providers.append(NSItemProvider(item: address as NSString, typeIdentifier: type.identifier))
+        sourceURLs.append(file)
+    }
+    let resolved = try await resolveEventMaterials(providers, nativeFileIndices: [1])
+    precondition(resolved.files.map(\.lastPathComponent) == fixtures.map(\.0))
+    precondition(resolved.text == nil && resolved.links.isEmpty)
+    let savedEvent = await store.appendMaterials(resolved, to: .event(eventID))
+    let savedRecord = await store.appendMaterials(resolved, to: .record(record.id))
+    precondition(savedEvent && savedRecord)
+
+    let repository = CountdownRepository(fileURL: directory.appendingPathComponent("countdowns.json"))
+    let event = try await repository.load().items.first { $0.id == eventID }!
+    let savedRecordValue = try await repository.loadRecords().first { $0.id == record.id }!
+    for (attachments, collection) in [(event.attachments, StoredAttachmentCollection.events),
+                                       (savedRecordValue.attachments, .records)] {
+        precondition(attachments.map(\.name) == fixtures.map(\.0))
+        for (attachment, fixture) in zip(attachments, fixtures) {
+            let owned = try await repository.attachmentURL(for: attachment, in: collection)
+            let bytes = try Data(contentsOf: owned)
+            precondition(bytes == fixture.1)
+        }
+    }
+    for (source, fixture) in zip(sourceURLs, fixtures) {
+        let bytes = try Data(contentsOf: source)
+        precondition(bytes == fixture.1)
+    }
+
+    let reference = CFURLCreateFileReferenceURL(nil, sourceURLs[0] as CFURL, nil)!.takeRetainedValue()
+    let address = CFURLGetString(reference)! as String
+    let volume = address.split(separator: "=").last!.split(separator: ".").first!
+    let sourcePath = URLComponents(url: sourceURLs[0], resolvingAgainstBaseURL: false)!.percentEncodedPath
+    let malformedID = "file:///.file/id=\(volume).junk\(sourcePath)"
+    for invalid in [address + "?query", address + "#fragment", address + " suffix",
+                    address.replacingOccurrences(of: "file:///", with: "file://remote.invalid/"),
+                    address.replacingOccurrences(of: "file:///", with: "file://localhost:/"), malformedID] {
+        for item in [invalid as NSString, NSURL(string: invalid) as NSSecureCoding?].compactMap({ $0 }) {
+            let provider = NSItemProvider(item: item, typeIdentifier: UTType.fileURL.identifier)
+            do {
+                _ = try await resolveEventMaterials([provider])
+                preconditionFailure("Invalid file-reference address must be rejected before copying")
+            } catch is EventAttachmentError { }
+        }
+    }
 }
 
 @MainActor
